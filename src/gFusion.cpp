@@ -2259,7 +2259,7 @@ void gFusion::marchingCubes()
 	GLuint64 elapsed;
 	glGetQueryObjectui64vEXT(query[4], GL_QUERY_RESULT, &elapsed);
 
-	marchingCubesTime = elapsed / 1000000.0;
+	//marchingCubesTime = elapsed / 1000000.0;
 
 	std::cout << "time elapsed " << marchingCubesTime << " ms" << std::endl;
 

@@ -85,14 +85,14 @@ void gFusionInit()
 
 void mCubeInit()
 {
-	mcconfig.gridSize = gconfig.volumeSize;
-	mcconfig.gridSizeMask = glm::uvec3(mcconfig.gridSize.x - 1, mcconfig.gridSize.y - 1, mcconfig.gridSize.z - 1);
-	mcconfig.gridSizeShift = glm::uvec3(0, log2(mcconfig.gridSize.x), log2(mcconfig.gridSize.y) + log2(mcconfig.gridSize.z));
-	mcconfig.numVoxels = mcconfig.gridSize.x * mcconfig.gridSize.y * mcconfig.gridSize.z;
-	mcconfig.voxelSize = glm::vec3(gconfig.volumeDimensions.x * 1000.0f / gconfig.volumeSize.x, gconfig.volumeDimensions.y * 1000.0f / gconfig.volumeSize.y, gconfig.volumeDimensions.z * 1000.0f / gconfig.volumeSize.z);
-	mcconfig.maxVerts = std::min(mcconfig.gridSize.x * mcconfig.gridSize.y * 128, uint32_t(128 * 128 * 128));
+	//mcconfig.gridSize = gconfig.volumeSize;
+	//mcconfig.gridSizeMask = glm::uvec3(mcconfig.gridSize.x - 1, mcconfig.gridSize.y - 1, mcconfig.gridSize.z - 1);
+	//mcconfig.gridSizeShift = glm::uvec3(0, log2(mcconfig.gridSize.x), log2(mcconfig.gridSize.y) + log2(mcconfig.gridSize.z));
+	//mcconfig.numVoxels = mcconfig.gridSize.x * mcconfig.gridSize.y * mcconfig.gridSize.z;
+	//mcconfig.voxelSize = glm::vec3(gconfig.volumeDimensions.x * 1000.0f / gconfig.volumeSize.x, gconfig.volumeDimensions.y * 1000.0f / gconfig.volumeSize.y, gconfig.volumeDimensions.z * 1000.0f / gconfig.volumeSize.z);
+	//mcconfig.maxVerts = std::min(mcconfig.gridSize.x * mcconfig.gridSize.y * 128, uint32_t(128 * 128 * 128));
 
-	gfusion.setMcConfig(mcconfig);
+	//gfusion.setMcConfig(mcconfig);
 
 }
 
@@ -113,8 +113,8 @@ int main(int, char**)
 	ImVec4 clear_color = ImColor(114, 144, 154);
 
 	gFusionInit();
-	mCubeInit();
-	krender.setBuffersFromMarchingCubes(gfusion.getVertsMC(), gfusion.getNormsMC(), gfusion.getNumVerts());
+	//mCubeInit();
+	//krender.setBuffersFromMarchingCubes(gfusion.getVertsMC(), gfusion.getNormsMC(), gfusion.getNumVerts());
 
 	// op flow init
 	gdisoptflow.compileAndLinkShader();
@@ -540,7 +540,25 @@ int main(int, char**)
 
 
 				if (ImGui::Button("DO SUM")) gfusion.testPrefixSum();
-				if (ImGui::Button("save stl")) gfusion.exportSurfaceAsStlBinary();
+				if (ImGui::Button("save stl"))
+				{
+					//gfusion.marchingCubes();
+					//gfusion.exportSurfaceAsStlBinary();
+
+					mcconfig.gridSize = glm::uvec3(gconfig.volumeSize.x, gconfig.volumeSize.y, gconfig.volumeSize.z);
+					mcconfig.numVoxels = mcconfig.gridSize.x * mcconfig.gridSize.y * mcconfig.gridSize.z;
+					mcconfig.maxVerts = std::min(mcconfig.gridSize.x * mcconfig.gridSize.y * 128, uint32_t(128 * 128 * 128));
+
+					mcubes.setConfig(mcconfig);
+
+					mcubes.setVolumeTexture(gfusion.getVolume());
+					mcubes.init();
+
+					mcubes.setIsolevel(0.1);
+					mcubes.generateMarchingCubes();
+					mcubes.exportMesh();
+
+				}
 
 				ImGui::PlotHistogram("Timing", arr, IM_ARRAYSIZE(arr), 0, NULL, 0.0f, 33.0f, ImVec2(0, 80));
 

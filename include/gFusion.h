@@ -166,6 +166,7 @@ public:
 	void integrate();
 	void raycast();
 	void marchingCubes();
+	void marchingCubesHP();
 	void intensityProjection();
 
 	// fusion functions
@@ -264,6 +265,8 @@ public:
 
 	void testPrefixSum();
 	void exportSurfaceAsStlBinary();
+	void exportMeshPly();
+
 	void printTimes();
 	void getTimes(float arr[]);
 

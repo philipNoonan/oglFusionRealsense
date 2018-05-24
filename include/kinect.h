@@ -19,6 +19,7 @@
 //#include "openCVStuff.h"
 #include "gFusion.h"
 #include "gDisOptFlow.h"
+#include "mcubes.h"
 
 
 //#include "opencv2/core/utility.hpp"
@@ -65,11 +66,14 @@ kRender krender;
 
 Realsense2Camera kcamera;
 
+MCubes mcubes;
+
+
 //openCVStuff OCVStuff;
 
 gFusion gfusion;
 gFusionConfig gconfig;
-mCubeConfig mcconfig;
+mCubeConfig1 mcconfig;
 gDisOptFlow gdisoptflow;
 
 
