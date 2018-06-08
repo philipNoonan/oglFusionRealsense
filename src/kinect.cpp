@@ -66,8 +66,8 @@ void gFusionInit()
 	gconfig.mu = 0.05f;
 	gconfig.maxWeight = 100.0f;
 	gconfig.iterations[0] = 2;
-	gconfig.iterations[1] = 4;
-	gconfig.iterations[2] = 10;
+	gconfig.iterations[1] = 6;
+	gconfig.iterations[2] = 12;
 
 	glm::mat4 initPose = glm::translate(glm::mat4(1.0f), glm::vec3(gconfig.volumeDimensions.x / 2.0f, gconfig.volumeDimensions.y / 2.0f, 0.0f));
 
@@ -546,15 +546,16 @@ int main(int, char**)
 					//gfusion.exportSurfaceAsStlBinary();
 
 					mcconfig.gridSize = glm::uvec3(gconfig.volumeSize.x, gconfig.volumeSize.y, gconfig.volumeSize.z);
-					mcconfig.numVoxels = mcconfig.gridSize.x * mcconfig.gridSize.y * mcconfig.gridSize.z;
-					mcconfig.maxVerts = std::min(mcconfig.gridSize.x * mcconfig.gridSize.y * 128, uint32_t(128 * 128 * 128));
+					//mcconfig.numVoxels = mcconfig.gridSize.x * mcconfig.gridSize.y * mcconfig.gridSize.z;
+					//mcconfig.maxVerts = std::min(mcconfig.gridSize.x * mcconfig.gridSize.y * 128, uint32_t(128 * 128 * 128));
 
 					mcubes.setConfig(mcconfig);
 
 					mcubes.setVolumeTexture(gfusion.getVolume());
 					mcubes.init();
 
-					mcubes.setIsolevel(0.1);
+					mcubes.setIsolevel(0);
+					
 					mcubes.generateMarchingCubes();
 					mcubes.exportMesh();
 

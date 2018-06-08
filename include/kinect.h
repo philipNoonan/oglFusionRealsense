@@ -73,7 +73,7 @@ MCubes mcubes;
 
 gFusion gfusion;
 gFusionConfig gconfig;
-mCubeConfig1 mcconfig;
+mCubeConfig mcconfig;
 gDisOptFlow gdisoptflow;
 
 

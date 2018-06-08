@@ -2,14 +2,22 @@ cmake_minimum_required(VERSION 3.9)
 
 
 set(CMAKE_TOOLCHAIN_FILE "" CACHE FILEPATH "this file -> /scripts/buildsystems/vcpkg.cmake")
+
 if (EXISTS ${CMAKE_TOOLCHAIN_FILE})
 	message( STATUS "vcpkg cmake file found")
 else()
 	message( FATAL_ERROR "vcpkg cmake file not found")
 endif()
 
+if (WIN32)
+
+if ("${CMAKE_VERSION}" VERSION_GREATER 3.6.3)
+    set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT oglFusionRS)
+endif ("${CMAKE_VERSION}" VERSION_GREATER 3.6.3)
+  
 project(oglFusionRS)
 
+endif()
 
 # Save the command line compile commands in the build output
 set(CMAKE_EXPORT_COMPILE_COMMANDS 1)
@@ -30,7 +38,7 @@ set(CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake" ${CMAKE_MODULE_PATH})
 include(BasicConfig)
 
 
-
+#find_package(OpenCV REQUIRED)
 find_package(OpenGL REQUIRED)
 find_package(GLEW REQUIRED)
 find_package(glfw3 REQUIRED)
@@ -116,7 +124,7 @@ set_target_properties(${PROJECT_NAME} PROPERTIES COMPILE_PDB_NAME_DEBUG "${PROJE
 
 target_include_directories(${PROJECT_NAME} PUBLIC "include")
 target_include_directories(${PROJECT_NAME} PUBLIC "graphics")
-
+#target_include_directories(${PROJECT_NAME} PUBLIC ${OpenCV_INCLUDE_DIRS})
 
 
 
@@ -127,5 +135,5 @@ target_link_libraries(${PROJECT_NAME} glm)
 target_link_libraries(${PROJECT_NAME} imgui::imgui)
 target_link_libraries(${PROJECT_NAME} Eigen3::Eigen)
 target_link_libraries(${PROJECT_NAME} realsense2::realsense-file realsense2::realsense2)
-
+#target_link_libraries(${PROJECT_NAME} ${OpenCV_LIBS})
 

@@ -131,6 +131,29 @@ bool classifyCubes()
     field[6] = getVolumeData(pos + ivec3(cubeOffsets[6].xyz), 0).x;
     field[7] = getVolumeData(pos + ivec3(cubeOffsets[7].xyz), 0).x;
 
+    if (volumeType == 1)
+    {
+        // we are only interested in voxels that are on the +ve -> 0 -> -ve boundary
+        // not the 0 -> -ve boundary behind the front surface
+        // therefore need to have at least one positive value in field[]
+        bool positiveFound = false;
+        for (int i = 0; i < 7; i++)
+        {
+            if (field[i] > 0)
+            {
+                positiveFound = true;
+            }
+        }
+
+        if (positiveFound == false)
+        {
+            imageStore(histoPyramidBaseLevel, pos, uvec4(0, 0, 0, 0));
+
+
+            return false;
+        }
+    }
+
     // https://stackoverflow.com/questions/43769622/bit-manipulation-to-store-multiple-values-in-one-int-c
     uint cubeIndex;
     cubeIndex = uint(field[0] < isoLevel);

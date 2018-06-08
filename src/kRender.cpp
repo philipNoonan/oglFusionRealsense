@@ -663,7 +663,7 @@ void kRender::setVolumeSDFRenderPosition(float slice)
 
 	m_model_volume = glm::scale(glm::mat4(1.0f), scaleVec);
 
-	m_model_volume = glm::translate(m_model_volume, glm::vec3(0, 0, -zDist));
+	m_model_volume = glm::translate(m_model_volume, glm::vec3(-64, -64, -zDist));
 
 	m_volumeSDFRenderSlice = slice / m_volume_size.z;
 

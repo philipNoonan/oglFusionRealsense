@@ -80,7 +80,8 @@ void MCubes::allocateTextures()
 {
 	// MARCHING CUBES TEXTURES
 	// SHOULD WE PAD TO POWERS OF TWO TEXTURE SIZES?
-	m_textureHistoPyramid = GLHelper::createTexture(m_textureHistoPyramid, GL_TEXTURE_3D, 10, 512, 512, 512, GL_R32UI); // texture is define as R32UI however level 0 will be read in shader as rg16ui https://www.khronos.org/opengl/wiki/Image_Load_Store#Format_conversion
+	int numLevels = std::log2(m_mcubeConfiguration.gridSize.x) + 1;
+	m_textureHistoPyramid = GLHelper::createTexture(m_textureHistoPyramid, GL_TEXTURE_3D, numLevels, m_mcubeConfiguration.gridSize.x, m_mcubeConfiguration.gridSize.y, m_mcubeConfiguration.gridSize.z, GL_R32UI); // texture is define as R32UI however level 0 will be read in shader as rg16ui https://www.khronos.org/opengl/wiki/Image_Load_Store#Format_conversion
 	m_textureEdgeTable = GLHelper::createTexture(m_textureEdgeTable, GL_TEXTURE_1D, 1, 256, 1, 1, GL_R16UI);
 	m_textureTriTable = GLHelper::createTexture(m_textureTriTable, GL_TEXTURE_1D, 1, 256 * 16, 1, 1, GL_R16UI);
 	m_textureNumVertsTable = GLHelper::createTexture(m_textureNumVertsTable, GL_TEXTURE_1D, 1, 256, 1, 1, GL_R16UI);
@@ -230,7 +231,8 @@ void MCubes::histoPyramids()
 
 	// https://stackoverflow.com/questions/30110521/format-conversions-in-opengl-images
 	glBindImageTexture(2, m_textureHistoPyramid, 0, GL_TRUE, 0, GL_WRITE_ONLY, GL_RG16UI); 
-	glm::uvec3 nthreads = GLHelper::divup(glm::uvec3(512, 512, 512), glm::uvec3(32, 32, 1));
+	glm::uvec3 nthreads = GLHelper::divup(glm::uvec3(m_mcubeConfiguration.gridSize), glm::uvec3(32, 32, 1));
+
 	glUniformSubroutinesuiv(GL_COMPUTE_SHADER, 1, &m_classifyCubesID);
 	glUniform1f(m_isoLevelID, m_isoLevel);
 	glUniform1f(m_volumeTypeID, 1);
@@ -244,7 +246,7 @@ void MCubes::histoPyramids()
 	/// Do first level of histoprys
 	glBindImageTexture(2, m_textureHistoPyramid, 0, GL_TRUE, 0, GL_READ_ONLY, GL_RG16UI);
 	glBindImageTexture(1, m_textureHistoPyramid, 1, GL_TRUE, 0, GL_WRITE_ONLY, GL_R32UI);
-	nthreads = GLHelper::divup(glm::uvec3(512 / 2, 512 / 2, 512 / 2), glm::uvec3(32, 32, 1));
+	nthreads /= 2;
 	glUniformSubroutinesuiv(GL_COMPUTE_SHADER, 1, &m_constructHPLevelID);
 	glUniform1i(m_baseLevelID, 1);
 
@@ -255,13 +257,13 @@ void MCubes::histoPyramids()
 
 
 	/// Do other levels of histopyr
-	for (int i = 1; i < 9; i++)
+	for (int i = 1; i < std::log2(m_mcubeConfiguration.gridSize.x); i++)
 	{
 		// https://stackoverflow.com/questions/17015132/compute-shader-not-modifying-3d-texture
 		glBindImageTexture(0, m_textureHistoPyramid, i, GL_TRUE, 0, GL_READ_ONLY, GL_R32UI);
 		glBindImageTexture(1, m_textureHistoPyramid, i+1, GL_TRUE, 0, GL_WRITE_ONLY, GL_R32UI); // bind point 1 in shader, level 1 in pyr volume
 		
-		glm::uvec3 nthreads = GLHelper::divup(glm::uvec3((512 >> i ) / 2, (512 >> i) / 2, (512 >> i) / 2), glm::uvec3(32, 32, 1));
+		glm::uvec3 nthreads = GLHelper::divup(glm::uvec3((m_mcubeConfiguration.gridSize.x >> i ) / 2, (m_mcubeConfiguration.gridSize.y >> i) / 2, (m_mcubeConfiguration.gridSize.z >> i) / 2), glm::uvec3(32, 32, 1));
 		glUniformSubroutinesuiv(GL_COMPUTE_SHADER, 1, &m_constructHPLevelID);
 		glUniform1i(m_baseLevelID, 0);
 
@@ -285,11 +287,11 @@ void MCubes::histoPyramids()
 
 
 	/// Read top of pyramid to get total number of triangles in volume
-	std::vector<uint32_t> sumData((512 >> 9) * (512 >> 9) * (512 >> 9), 3);
-
+	std::vector<uint32_t> sumData(1, 5);
+	//uint32_t sumData;
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_3D, m_textureHistoPyramid);
-	glGetTexImage(GL_TEXTURE_3D, 9, GL_RED_INTEGER, GL_UNSIGNED_INT, sumData.data());
+	glGetTexImage(GL_TEXTURE_3D, std::log2(m_mcubeConfiguration.gridSize.x), GL_RED_INTEGER, GL_UNSIGNED_INT, sumData.data());
 	glBindTexture(GL_TEXTURE_3D, 0);
 	glActiveTexture(0);
 

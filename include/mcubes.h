@@ -23,22 +23,18 @@
 #include <fstream>
 
 
-struct mCubeConfig1
+struct mCubeConfig
 {
 	glm::uvec3 gridSize;
-	glm::uvec3 gridSizeMask;
-	glm::uvec3 gridSizeShift;
 	GLuint numVoxels;
 	glm::vec3 voxelSize;
 	float isoValue;
 	GLuint maxVerts;
 	float activeVoxels;
 
-	mCubeConfig1()
+	mCubeConfig()
 	{
 		gridSize = glm::uvec3(128, 128, 128);
-		gridSizeMask = glm::uvec3(gridSize.x - 1, gridSize.y - 1, gridSize.z - 1);
-		gridSizeShift = glm::uvec3(0, log2(gridSize.x), log2(gridSize.y) + log2(gridSize.z));
 		numVoxels = gridSize.x * gridSize.y * gridSize.z;
 		voxelSize = glm::vec3(1.0f * 1000.0f / 128.0f, 1.0f * 1000.0f / 128.0f, 1.0f * 1000.0f / 128.0f);
 		isoValue = 1650.0f;
@@ -61,7 +57,7 @@ public:
 	{
 		m_textureVolume = V;
 	}
-	void setConfig(mCubeConfig1 MCC)
+	void setConfig(mCubeConfig MCC)
 	{
 		m_mcubeConfiguration = MCC;
 	}
@@ -87,7 +83,7 @@ private:
 	GLSLProgram histoPyramidsProg;
 	GLSLProgram traverseHistoPyramidsProg;
 
-	mCubeConfig1 m_mcubeConfiguration;
+	mCubeConfig m_mcubeConfiguration;
 
 	// histopyramids
 	GLuint m_histoPyramidsSubroutineID;
@@ -161,7 +157,7 @@ private:
 
 
 	uint32_t m_totalVerts;
-	int m_totalSum = 0;
+	uint32_t m_totalSum;
 	float m_isoLevel = 1500.0f;
 
 

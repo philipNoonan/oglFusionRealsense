@@ -480,7 +480,7 @@ void main()
                 //{
                 //    huber = 0.0f;
                 //}
-                float huber = absD < 0.02f ? 1.0f : 0.02f / absD;
+                float huber = absD < 0.001f ? 1.0f : 0.001f / absD;
 
                 //imageStore(testImage, ivec2(pix), vec4(J[0] * 1.f, J[1] * 1.0f, J[2] * 1.0f, 1.0f));
 
