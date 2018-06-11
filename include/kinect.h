@@ -15,6 +15,8 @@
 
 
 #include "kRender.h"
+#include "renderHelpers.h"
+
 #include "interface.h"
 //#include "openCVStuff.h"
 #include "gFusion.h"
@@ -68,6 +70,12 @@ Realsense2Camera kcamera;
 
 MCubes mcubes;
 
+renderWindow navigationWindow;
+renderWindow display2DWindow;
+renderWindow display3DWindow;
+renderWindow graphWindow;
+anchorPoint controlPoint0;
+
 
 //openCVStuff OCVStuff;
 
@@ -94,8 +102,8 @@ const int screenHeight = 1080;
 const int colorWidth = 1920;
 const int colorHeight = 1080;
 
-const int depthWidth = 848;
-const int depthHeight = 480;
+const int depthWidth = 1280;
+const int depthHeight = 720;
 
 float *mainColor[colorWidth * colorHeight];
 
@@ -180,17 +188,17 @@ glm::vec3 iOff;
 
 glm::vec3 initOffset(int pixX, int pixY)
 {
-	int pointX = float(pixX) * (848.0f / 512.0f);
-	int pointY = float(pixY) * (480.0f / 424.0f);
+	int pointX = float(pixX) * (1280.0f / 512.0f);
+	int pointY = float(pixY) * (720.0f / 424.0f);
 
 	float z = float(depthArray[pointY * depthWidth + pointX]) * kcamera.getDepthUnit() / 1000000.0f;
 	//kcamera.fx(), kcamera.fx(), kcamera.ppx(), kcamera.ppy()
 
 	float x = (pointX - kcamera.ppx()) * (1.0f / kcamera.fx()) * z;
 	float y = (pointY - kcamera.ppy()) * (1.0f / kcamera.fx()) * z;
-	//std::cout << "px " << pointX << " py " << pointY << std::endl;
+	std::cout << "px " << pointX << " py " << pointY << std::endl;
 
-	//std::cout << "HAVE I BEEN SET CORRECTLY FROM DEPTH UNITS CFROM SENSOR??? x " << x << " y " << y << " z " << z << std::endl;
+	std::cout << "HAVE I BEEN SET CORRECTLY FROM DEPTH UNITS CFROM SENSOR??? x " << x << " y " << y << " z " << z << std::endl;
 
 
 	return glm::vec3(x, y, z);

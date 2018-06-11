@@ -170,8 +170,8 @@ private:
 	int m_colorframe_width = 1920;
 	int m_colorframe_height = 1080;
 
-	int m_depthframe_width = 848;
-	int m_depthframe_height = 480;
+	int m_depthframe_width = 1280;
+	int m_depthframe_height = 720;
 
 	float m_depth_fx;
 	float m_depth_fy;

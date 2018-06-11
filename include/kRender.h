@@ -40,10 +40,10 @@ public:
 	kRender()
 		: m_window()
 		, m_show_imgui(true)
-		, m_screen_height(900)
-		, m_screen_width(1600)
-		, m_depth_height(480)
-		, m_depth_width(848)
+		, m_screen_height(1080)
+		, m_screen_width(1920)
+		, m_depth_height(720)
+		, m_depth_width(1280)
 		, m_color_height(1080)
 		, m_color_width(1920)
 		, m_big_depth_height(1082)
@@ -99,6 +99,16 @@ public:
 		m_depthMin = min;
 		m_depthMax = max;
 	}
+	void setDepthHeight(int h)
+	{
+		m_depth_height = h;
+	}
+	void setDepthWidth(int w)
+	{
+		m_depth_width = w;
+	}
+
+
 	//std::vector<float> graphPointsX()
 	//{
 	//	return m_graph_vector_x;
@@ -210,11 +220,11 @@ public:
 
 	void setVolumeSDFRenderPosition(float slice);
 
-	void Render(bool useInfrared);
+	void Render(bool useInfrared, int x, int y, int w, int h);
 
 	void renderLiveVideoWindow(bool useInfrared);
 
-	void setComputeWindowPosition();
+	void setComputeWindowPosition(int x, int y, int w, int h);
 
 	void setCameraParams(glm::vec4 camPams, glm::vec4 camPamsColor)
 	{

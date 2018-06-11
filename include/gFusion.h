@@ -449,8 +449,8 @@ private:
 	float m_alignmentEnergy = 0.0f;
 
 
-	int m_depth_height = 480; // set these properly from main?
-	int m_depth_width = 848;
+	int m_depth_height = 720; // set these properly from main?
+	int m_depth_width = 1280;
 	int m_color_height = 1080;
 	int m_color_width = 1920;
 

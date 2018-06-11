@@ -1394,7 +1394,7 @@ bool gFusion::Track()
 
 			m_pose = delta * m_pose;
 
-			if (result.norm() < 1e-5 && result.norm() != 0)
+			if (result.norm() < 1e-6 && result.norm() != 0)
 				break;
 		}
 	}
@@ -1402,7 +1402,7 @@ bool gFusion::Track()
 
 
 	//std::cout << alignmentEnergy << std::endl;
-	if (alignmentEnergy > 0.5f || alignmentEnergy == 0)
+	if (alignmentEnergy > 1.0e-3f || alignmentEnergy == 0)
 	{
 		m_pose = oldPose;
 	}

@@ -80,7 +80,7 @@ void MCubes::allocateTextures()
 {
 	// MARCHING CUBES TEXTURES
 	// SHOULD WE PAD TO POWERS OF TWO TEXTURE SIZES?
-	int numLevels = std::log2(m_mcubeConfiguration.gridSize.x) + 1;
+	int numLevels = std::ceil(std::log2(m_mcubeConfiguration.gridSize.x)) + 1;
 	m_textureHistoPyramid = GLHelper::createTexture(m_textureHistoPyramid, GL_TEXTURE_3D, numLevels, m_mcubeConfiguration.gridSize.x, m_mcubeConfiguration.gridSize.y, m_mcubeConfiguration.gridSize.z, GL_R32UI); // texture is define as R32UI however level 0 will be read in shader as rg16ui https://www.khronos.org/opengl/wiki/Image_Load_Store#Format_conversion
 	m_textureEdgeTable = GLHelper::createTexture(m_textureEdgeTable, GL_TEXTURE_1D, 1, 256, 1, 1, GL_R16UI);
 	m_textureTriTable = GLHelper::createTexture(m_textureTriTable, GL_TEXTURE_1D, 1, 256 * 16, 1, 1, GL_R16UI);
@@ -390,6 +390,8 @@ void MCubes::histoPyramids()
 
 void MCubes::exportMesh()
 {
+
+	std::cout << "EXPORTING IS ONLY CURRENTLY PROPERLY SUPPORTED FOR POWER OF 2 DIMENSIONS" << std::endl;
 	std::vector<float> posData(m_totalSum * 4);
 
 	glBindBuffer(GL_SHADER_STORAGE_BUFFER, m_bufferPos);

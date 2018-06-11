@@ -49,12 +49,12 @@ void kRender::MouseButtonCallback(GLFWwindow* window, int button, int action, in
 
 	if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS && m_selectInitialPoseFlag == true)
 	{
-		if (m_mouse_pos_x > 32 && m_mouse_pos_x < m_depth_width + 32 && m_mouse_pos_y < 32 + 480 && m_mouse_pos_y > 32)
+		if (m_mouse_pos_x > 32 && m_mouse_pos_x < 512 + 32 && m_mouse_pos_y < 32 + 424 && m_mouse_pos_y > 32) // this is the hight and width of the render window, this is a bug
 		{
 			m_center_pixX = m_mouse_pos_x - 32;
 			m_center_pixY = m_mouse_pos_y - 32;
 
-			//std::cout << "x: " << m_center_pixX  << " y: " << m_center_pixY << std::endl;
+			std::cout << "x: " << m_center_pixX  << " y: " << m_center_pixY << std::endl;
 
 			// get depth value, from texture buffer or float array???
 
@@ -152,7 +152,7 @@ GLFWwindow * kRender::loadGLFWWindow()
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
 	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 	//glfwWindowHint(GLFW_REFRESH_RATE, 30);
-	glfwWindowHint(GLFW_RESIZABLE, GL_TRUE);
+	glfwWindowHint(GLFW_RESIZABLE, GL_FALSE);
 	glEnable(GL_DEPTH_TEST);
 
 	m_window = glfwCreateWindow(m_screen_width, m_screen_height, "oglfusion", nullptr, nullptr);
@@ -309,6 +309,8 @@ void kRender::setVertPositions()
 
 }
 
+
+
 void kRender::allocateBuffers()
 {
 	glEnable(GL_BLEND); glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -400,9 +402,10 @@ void kRender::setWindowLayout()
 
 }
 
-void kRender::setComputeWindowPosition()
+void kRender::setComputeWindowPosition(int x, int y, int w, int h)
 {
-	glViewport(m_anchorMW.first + m_depth_width * m_render_scale_width, m_anchorMW.second, m_depth_width * m_render_scale_width, m_depth_height * m_render_scale_height);
+	//glViewport(m_anchorMW.first + m_depth_width * m_render_scale_width, m_anchorMW.second, m_depth_width * m_render_scale_width, m_depth_height * m_render_scale_height);
+	glViewport(x, y, w, h);
 }
 
 //
@@ -537,7 +540,7 @@ void kRender::bindBuffersForRendering()
 
 
 
-void kRender::Render(bool useInfrared)
+void kRender::Render(bool useInfrared, int x, int y, int w, int h)
 {
 	// set positions
 	// set uniforms
@@ -546,7 +549,7 @@ void kRender::Render(bool useInfrared)
 	bindBuffersForRendering();
 	//setDepthImageRenderPosition();
 	setNormalImageRenderPosition();
-	setViewport(32, 900 - 32 - 424, 512, 424);
+	setViewport(x, y , w, h);
 
 	renderLiveVideoWindow(useInfrared);
 

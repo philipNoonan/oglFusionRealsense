@@ -180,7 +180,7 @@ void Realsense2Camera::captureLoop()
 
 	//Add desired streams to configuration
 	cfg.enable_stream(RS2_STREAM_COLOR, m_colorframe_width, m_colorframe_height, RS2_FORMAT_BGRA8, 30);
-	cfg.enable_stream(RS2_STREAM_DEPTH, m_depthframe_width, m_depthframe_height, RS2_FORMAT_Z16, 90);
+	cfg.enable_stream(RS2_STREAM_DEPTH, m_depthframe_width, m_depthframe_height, RS2_FORMAT_Z16, 30);
 
 
 	// Start streaming with default recommended configuration
