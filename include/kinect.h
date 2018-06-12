@@ -68,6 +68,8 @@ GLFWwindow *window;
 kRender krender;
 
 Realsense2Camera kcamera;
+static bool cameraRunning = false;
+
 
 MCubes mcubes;
 
@@ -84,6 +86,8 @@ gFusion gfusion;
 gFusionConfig gconfig;
 mCubeConfig mcconfig;
 gDisOptFlow gdisoptflow;
+
+void setUpGPU();
 
 
 //cv::Mat flow;// = cv::Mat(424, 512, CV_8UC3);
@@ -103,19 +107,19 @@ const int screenHeight = 1080;
 const int colorWidth = 1920;
 const int colorHeight = 1080;
 
-const int depthWidth = 1280;
-const int depthHeight = 720;
+int depthWidth = 640;
+int depthHeight = 480;
 
 float *mainColor[colorWidth * colorHeight];
 
 unsigned char colorArray[4 * colorWidth * colorHeight];
 
-float previousColorArray[depthWidth * depthHeight];
-float bigDepthArray[colorWidth * (colorHeight + 2)]; // 1082 is not a typo
+//float previousColorArray[depthWidth * depthHeight];
+//float bigDepthArray[colorWidth * (colorHeight + 2)]; // 1082 is not a typo
 													 //float color[512 * 424];
-uint16_t depthArray[depthWidth * depthHeight];
-float infraredArray[depthWidth * depthHeight];
-int colorDepthMap[depthWidth * depthHeight];
+std::vector<uint16_t> depthArray;
+//float infraredArray[depthWidth * depthHeight];
+//int colorDepthMap[depthWidth * depthHeight];
 
 // depth color points picking
 bool select_color_points_mode = false;
@@ -179,6 +183,7 @@ bool integratingFlag = true;
 bool selectInitialPoseFlag = false;
 
 const char* sizes[] = { "32", "64", "128", "256", "384", "512", "768", "1024" };
+
 static int sizeX = 2;
 static int sizeY = 2;
 static int sizeZ = 2;
@@ -189,8 +194,8 @@ glm::vec3 iOff;
 
 glm::vec3 initOffset(int pixX, int pixY)
 {
-	int pointX = float(pixX) * (1280.0f / 512.0f);
-	int pointY = float(pixY) * (720.0f / 424.0f);
+	int pointX = float(pixX) * (depthWidth / 512.0f);
+	int pointY = float(pixY) * (depthHeight / 424.0f);
 
 	float z = float(depthArray[pointY * depthWidth + pointX]) * kcamera.getDepthUnit() / 1000000.0f;
 	//kcamera.fx(), kcamera.fx(), kcamera.ppx(), kcamera.ppy()

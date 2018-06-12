@@ -47,6 +47,8 @@ public:
 		}
 	}
 
+	void setPreset(int rate, int res);
+
 	void start();
 
 	void stop();
@@ -60,7 +62,7 @@ public:
 
 	void frames(unsigned char * colorArray, float * bigDepthArray);
 
-	void frames(unsigned char * colorArray, uint16_t * depthArray, float * infraredArray, float * bigDepthArray, int * colorDepthMapping);
+	void frames(unsigned char * colorArray, std::vector<uint16_t> &depthArray, float * infraredArray, float * bigDepthArray, int * colorDepthMapping);
 
 	//void frames(cv::Mat &color, cv::Mat &depth, cv::Mat &infra, float & fullColor);
 
@@ -170,8 +172,9 @@ private:
 	int m_colorframe_width = 1920;
 	int m_colorframe_height = 1080;
 
-	int m_depthframe_width = 1280;
-	int m_depthframe_height = 720;
+	int m_depthRate;
+	int m_depthframe_width = 640;
+	int m_depthframe_height = 480;
 
 	float m_depth_fx;
 	float m_depth_fy;

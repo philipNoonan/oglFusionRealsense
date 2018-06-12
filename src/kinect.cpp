@@ -57,17 +57,20 @@ void kRenderInit()
 
 void gFusionInit()
 {
+	depthArray.resize(depthHeight * depthWidth, 1);
 	gfusion.queryDeviceLimits();
 	gfusion.compileAndLinkShader();
 	gfusion.setLocations();
 
 	gconfig.volumeSize = glm::vec3(128);
 	gconfig.volumeDimensions = glm::vec3(1.0f);
+	gconfig.depthFrameSize = glm::vec2(depthWidth, depthHeight);
 	gconfig.mu = 0.05f;
 	gconfig.maxWeight = 100.0f;
 	gconfig.iterations[0] = 2;
 	gconfig.iterations[1] = 6;
 	gconfig.iterations[2] = 12;
+	
 
 	glm::mat4 initPose = glm::translate(glm::mat4(1.0f), glm::vec3(gconfig.volumeDimensions.x / 2.0f, gconfig.volumeDimensions.y / 2.0f, 0.0f));
 
@@ -112,11 +115,43 @@ void setImguiWindows()
 
 }
 
+void setUIStyle()
+{
+	ImGui::StyleColorsDark();
+	ImGuiStyle& style = ImGui::GetStyle();
+
+	style.Alpha = 1.0f;
+
+	style.WindowBorderSize = 1.0f;
+	style.WindowRounding = 0.0f;
+
+	style.FrameBorderSize = 1.0f;
+	style.FrameRounding = 12.0f;
+
+	style.PopupBorderSize = 0.0f;
+
+	style.ScrollbarRounding = 12.0f;
+	style.GrabRounding = 12.0f;
+	style.GrabMinSize = 20.0f;
+
+
+	// spacings
+	style.ItemSpacing = ImVec2(8.0f, 8.0f);
+	style.FramePadding = ImVec2(8.0f, 8.0f);
+	style.WindowPadding = ImVec2(8.0f, 8.0f);
+
+
+
+}
+
 void setUI()
 {
 	setImguiWindows();
 	// graphs
 	{
+		ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(0, 0));
+		ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(0, 0));
+		ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
 
 		ImGui::SetNextWindowSize(ImVec2(graphWindow.w, graphWindow.h), ImGuiSetCond_Always);
 		ImGuiWindowFlags window_flags = 0;
@@ -129,11 +164,14 @@ void setUI()
 		ImGui::Begin("Slider Graph", &graphWindow.visible, window_flags);
 		//ImGui::PushItemWidth(-krender.guiPadding().first);
 		ImGui::SetWindowPos(ImVec2(graphWindow.x, graphWindow.y));
-		ImGui::PlotLines("X", &arrayX[0], 900, 0, "", minmaxX.first, minmaxX.second, ImVec2(0, 80));
-		ImGui::PlotLines("Y", &arrayY[0], 900, 0, "", minmaxY.first, minmaxY.second, ImVec2(0, 80));
-		ImGui::PlotLines("Z", &arrayZ[0], 900, 0, "", minmaxZ.first, minmaxZ.second, ImVec2(0, 80));
+		ImGui::PlotLines("X", &arrayX[0], graphWindow.w, 0, "", minmaxX.first, minmaxX.second, ImVec2(graphWindow.w, graphWindow.h / 3));
+		ImGui::PlotLines("Y", &arrayY[0], graphWindow.w, 0, "", minmaxY.first, minmaxY.second, ImVec2(graphWindow.w, graphWindow.h / 3));
+		ImGui::PlotLines("Z", &arrayZ[0], graphWindow.w, 0, "", minmaxZ.first, minmaxZ.second, ImVec2(graphWindow.w, graphWindow.h / 3));
 
 		ImGui::End();
+		ImGui::PopStyleVar();
+		ImGui::PopStyleVar();
+		ImGui::PopStyleVar();
 
 	}
 
@@ -192,6 +230,53 @@ void setUI()
 		//ImGui::PushItemWidth(-krender.guiPadding().first);
 		//ImGui::SetWindowPos(ImVec2(display_w - (display_w / 4) - krender.guiPadding().first, ((krender.guiPadding().second) + (0))));
 		ImGui::Text("Help menu - press 'H' to hide");
+
+		static int eRate = 90;
+		static int eRes = 0;
+
+		int prevERate = eRate;
+		int prevERes = eRes;
+
+
+		ImGui::RadioButton("30 Hz", &eRate, 30); ImGui::SameLine();
+		ImGui::RadioButton("90 Hz", &eRate, 90); ImGui::SameLine();
+		if (cameraRunning) eRate = prevERate;
+		if (eRate == 90) eRes = 0;
+
+		
+		ImGui::RadioButton("848x480", &eRes, 0); ImGui::SameLine();
+		ImGui::RadioButton("1280x720", &eRes, 1); ImGui::SameLine();
+		
+		if (cameraRunning) eRes = prevERes;
+		if (eRes == 1) eRate = 30;
+
+
+		if (ImGui::Button("Start Realsense"))
+		{
+			if (cameraRunning == false)
+			{
+				cameraRunning = true;
+				kcamera.setPreset(eRate, eRes);
+				if (eRes == 0)
+				{
+					depthWidth = 848;
+					depthHeight = 480;
+				}
+				else if (eRes == 1)
+				{
+					depthWidth = 1280;
+					depthHeight = 720;
+				}
+
+				setUpGPU();
+
+				kcamera.start();
+			}
+
+		}
+
+		
+		
 		static bool openFileDialog = false;
 
 		if (ImGui::Button("Open File Dialog"))
@@ -252,6 +337,7 @@ void setUI()
 
 			gconfig.volumeSize = glm::vec3(std::stoi(sizes[sizeX]), std::stoi(sizes[sizeY]), std::stoi(sizes[sizeZ]));
 			gconfig.volumeDimensions = glm::vec3(dimension);
+			
 			gfusion.setConfig(gconfig);
 
 			iOff = initOffset(krender.getCenterPixX(), krender.getCenterPixY());
@@ -309,8 +395,11 @@ void setUI()
 		ImGui::PopItemWidth();
 		ImGui::PushItemWidth((avail_width / 3) - label_width);
 		ImGui::Combo("X  ", &sizeX, sizes, IM_ARRAYSIZE(sizes)); ImGui::SameLine(0.0f, 0.0f);
-		ImGui::Combo("Y  ", &sizeY, sizes, IM_ARRAYSIZE(sizes)); ImGui::SameLine(0.0f, 0.0f);
-		ImGui::Combo("Z  ", &sizeZ, sizes, IM_ARRAYSIZE(sizes));
+		ImGui::Combo("Y  ", &sizeX, sizes, IM_ARRAYSIZE(sizes)); ImGui::SameLine(0.0f, 0.0f);
+		ImGui::Combo("Z  ", &sizeX, sizes, IM_ARRAYSIZE(sizes));
+
+		sizeY = sizeX;
+		sizeZ = sizeX;
 
 		ImGui::PopItemWidth();
 
@@ -410,24 +499,8 @@ void setUI()
 	}
 }
 
-int main(int, char**)
+void setUpGPU()
 {
-
-	controlPoint0.x = 512;
-	controlPoint0.y = 1080 - 420;
-
-	int display_w, display_h;
-	// load openGL window
-	window = krender.loadGLFWWindow();
-
-	setImguiWindows();
-
-	glfwGetFramebufferSize(window, &display_w, &display_h);
-	// Setup ImGui binding
-	ImGui::CreateContext();
-	ImGui_ImplGlfwGL3_Init(window, true);
-	ImVec4 clear_color = ImColor(114, 144, 154);
-
 	gFusionInit();
 	//mCubeInit();
 	//krender.setBuffersFromMarchingCubes(gfusion.getVertsMC(), gfusion.getNormsMC(), gfusion.getNumVerts());
@@ -452,6 +525,37 @@ int main(int, char**)
 
 	gfusion.setUsingDepthFloat(false);
 
+	krender.setCameraParams(glm::vec4(kcamera.fx(), kcamera.fx(), kcamera.ppx(), kcamera.ppy()), glm::vec4(kcamera.fx_col(), kcamera.fx_col(), kcamera.ppx_col(), kcamera.ppy_col())); // FIX ME
+	gfusion.setCameraParams(glm::vec4(kcamera.fx(), kcamera.fx(), kcamera.ppx(), kcamera.ppy()), glm::vec4(kcamera.fx_col(), kcamera.fx_col(), kcamera.ppx_col(), kcamera.ppy_col())); // FIX ME
+
+	
+	gfusion.setDepthUnit(kcamera.getDepthUnit());
+}
+
+int main(int, char**)
+{
+
+	controlPoint0.x = 512;
+	controlPoint0.y = 1080 - 420;
+
+	int display_w, display_h;
+	// load openGL window
+	window = krender.loadGLFWWindow();
+
+
+
+	glfwGetFramebufferSize(window, &display_w, &display_h);
+	// Setup ImGui binding
+	ImGui::CreateContext();
+	ImGui_ImplGlfwGL3_Init(window, true);
+	ImVec4 clear_color = ImColor(114, 144, 154);
+
+	setUIStyle();
+	setImguiWindows();
+
+
+	
+
 	//gfusion.queryWorkgroupSizes();
 
 
@@ -474,7 +578,7 @@ int main(int, char**)
 	float time[samples];
 	int index = 0;
 
-	kcamera.start();
+	//kcamera.start();
 
 
 
@@ -506,13 +610,10 @@ int main(int, char**)
 	// Main loop
 	while (!glfwWindowShouldClose(window))
 	{
-		glfwGetFramebufferSize(window, &display_w, &display_h);
-		krender.renderScaleHeight((float)display_h / 1080.0f);
-		krender.renderScaleWidth((float)display_w / 1920.0f);
-		gfusion.setDepthUnit(kcamera.getDepthUnit());
 
 
-		krender.anchorMW(std::make_pair<int, int>(50, 1080 - 424 - 50 ));
+
+		//krender.anchorMW(std::make_pair<int, int>(50, 1080 - 424 - 50 ));
 
 		//// Rendering
 		glViewport(0, 0, display_w, display_h);
@@ -524,12 +625,10 @@ int main(int, char**)
 
 		//krender.requestShaderInfo();
 
-		krender.setCameraParams(glm::vec4(kcamera.fx(), kcamera.fx(), kcamera.ppx(), kcamera.ppy()), glm::vec4(kcamera.fx_col(), kcamera.fx_col(), kcamera.ppx_col(), kcamera.ppy_col())); // FIX ME
-		gfusion.setCameraParams(glm::vec4(kcamera.fx(), kcamera.fx(), kcamera.ppx(), kcamera.ppy()), glm::vec4(kcamera.fx_col(), kcamera.fx_col(), kcamera.ppx_col(), kcamera.ppy_col())); // FIX ME
-
+		
 		if (kcamera.ready())
 		{
-			kcamera.frames(colorArray, depthArray, infraredArray, bigDepthArray, colorDepthMap);
+			kcamera.frames(colorArray, depthArray, NULL, NULL, NULL);
 
 			/*cv::Mat testCol = cv::Mat(1080, 1920, CV_8UC3, &colorArray[0]);
 
@@ -606,7 +705,8 @@ int main(int, char**)
 			//cv::Mat depthShortArray = cv::Mat(480, 848, CV_16SC1, &depthArray[0]); // ?? WHY WHY WHY DOES MIPMAPING NOT LIKE SHORT DATAT???
 			//depthShortArray.convertTo(depthFloatArray, CV_32FC1);
 			//gfusion.depthToVertex((float *)depthFloatArray.data);
-			gfusion.depthToVertex(depthArray);
+			gfusion.depthToVertex(depthArray.data());
+
 			gfusion.vertexToNormal();
 
 			//gfusion.showNormals();
@@ -851,11 +951,15 @@ int main(int, char**)
 
 
 			}
+
+			if (cameraRunning)
+			{
 #ifdef USEINFRARED
-			krender.Render(true, display2DWindow.x, display_h - display2DWindow.y, display2DWindow.w, display2DWindow.h);
+				krender.Render(true, display2DWindow.x, display_h - display2DWindow.y, display2DWindow.w, display2DWindow.h);
 #else
-			krender.Render(false, display2DWindow.x, display_h - display2DWindow.y - display2DWindow.h, display2DWindow.w, display2DWindow.h);
+				krender.Render(false, display2DWindow.x, display_h - display2DWindow.y - display2DWindow.h, display2DWindow.w, display2DWindow.h);
 #endif
+			}
 
 
 			if (calibratingFlag)

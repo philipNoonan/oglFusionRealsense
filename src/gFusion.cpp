@@ -204,11 +204,11 @@ void gFusion::initTextures()
 {
 	if (m_usingFloatDepth)
 	{
-		m_textureDepth = createTexture(GL_TEXTURE_2D, 3, m_depth_width, m_depth_height, 1, GL_R32F);
+		m_textureDepth = createTexture(GL_TEXTURE_2D, 3, configuration.depthFrameSize.x, configuration.depthFrameSize.y, 1, GL_R32F);
 	}
 	else
 	{
-		m_textureDepth = createTexture(GL_TEXTURE_2D, 3, m_depth_width, m_depth_height, 1, GL_R16);
+		m_textureDepth = createTexture(GL_TEXTURE_2D, 3, configuration.depthFrameSize.x, configuration.depthFrameSize.y, 1, GL_R16);
 		// https://www.khronos.org/opengl/wiki/Normalized_Integer
 	}
 
@@ -234,15 +234,15 @@ void gFusion::initTextures()
 
 
 	m_textureColor = createTexture(GL_TEXTURE_2D, 1, m_color_width, m_color_height, 1, GL_RGBA8UI);
-	m_textureVertex = createTexture(GL_TEXTURE_2D, 3, m_depth_width, m_depth_height, 1, GL_RGBA32F);
-	m_textureNormal = createTexture(GL_TEXTURE_2D, 3, m_depth_width, m_depth_height, 1, GL_RGBA32F);
-	m_textureReferenceVertex = createTexture(GL_TEXTURE_2D, 1, m_depth_width, m_depth_height, 1, GL_RGBA32F);
-	m_textureReferenceNormal = createTexture(GL_TEXTURE_2D, 1, m_depth_width, m_depth_height, 1, GL_RGBA32F);
-	m_textureDifferenceVertex = createTexture(GL_TEXTURE_2D, 1, m_depth_width, m_depth_height, 1, GL_R32F);
-	m_textureTestImage = createTexture(GL_TEXTURE_2D, 1, m_depth_width, m_depth_height, 1, GL_RGBA32F);
-	m_textureTrackImage = createTexture(GL_TEXTURE_2D, 1, m_depth_width, m_depth_height, 1, GL_RGBA32F);
-	m_textureTest = createTexture(GL_TEXTURE_2D, 1, m_depth_width, m_depth_height, 1, GL_RGBA32F);
-	m_textureMip = createTexture(GL_TEXTURE_2D, 1, m_depth_width, m_depth_height, 1, GL_RGBA32F);
+	m_textureVertex = createTexture(GL_TEXTURE_2D, 3, configuration.depthFrameSize.x, configuration.depthFrameSize.y, 1, GL_RGBA32F);
+	m_textureNormal = createTexture(GL_TEXTURE_2D, 3, configuration.depthFrameSize.x, configuration.depthFrameSize.y, 1, GL_RGBA32F);
+	m_textureReferenceVertex = createTexture(GL_TEXTURE_2D, 1, configuration.depthFrameSize.x, configuration.depthFrameSize.y, 1, GL_RGBA32F);
+	m_textureReferenceNormal = createTexture(GL_TEXTURE_2D, 1, configuration.depthFrameSize.x, configuration.depthFrameSize.y, 1, GL_RGBA32F);
+	m_textureDifferenceVertex = createTexture(GL_TEXTURE_2D, 1, configuration.depthFrameSize.x, configuration.depthFrameSize.y, 1, GL_R32F);
+	m_textureTestImage = createTexture(GL_TEXTURE_2D, 1, configuration.depthFrameSize.x, configuration.depthFrameSize.y, 1, GL_RGBA32F);
+	m_textureTrackImage = createTexture(GL_TEXTURE_2D, 1, configuration.depthFrameSize.x, configuration.depthFrameSize.y, 1, GL_RGBA32F);
+	m_textureTest = createTexture(GL_TEXTURE_2D, 1, configuration.depthFrameSize.x, configuration.depthFrameSize.y, 1, GL_RGBA32F);
+	m_textureMip = createTexture(GL_TEXTURE_2D, 1, configuration.depthFrameSize.x, configuration.depthFrameSize.y, 1, GL_RGBA32F);
 
 	// MARCHING CUBES TEXTURES
 	m_textureEdgeTable = createTexture(GL_TEXTURE_1D, 1, 256, 1, 1, GL_R32F);
@@ -324,8 +324,8 @@ void gFusion::allocateBuffers()
 {
 
 	// REDUCTION BUFFER OBJECT
-	m_reduction.resize(m_depth_height * m_depth_width);
-	size_t reductionSize = m_depth_height * m_depth_width * (sizeof(GLint) + (sizeof(GLfloat) * 7)); // this is the size of one reduction element 1 int + 1 float + 6 float
+	m_reduction.resize(configuration.depthFrameSize.x * configuration.depthFrameSize.y);
+	size_t reductionSize = configuration.depthFrameSize.x * configuration.depthFrameSize.y * (sizeof(GLint) + (sizeof(GLfloat) * 7)); // this is the size of one reduction element 1 int + 1 float + 6 float
 
 	glGenBuffers(1, &m_buffer_reduction);
 	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, m_buffer_reduction);
@@ -375,7 +375,7 @@ void gFusion::allocateBuffers()
 
 
 
-	size_t reductionSDFSize = m_depth_height * m_depth_width * (sizeof(GLfloat) * 8); // this is the size of one reduction element 1 float + 1 float + 6 float
+	size_t reductionSDFSize = configuration.depthFrameSize.y * configuration.depthFrameSize.x * (sizeof(GLfloat) * 8); // this is the size of one reduction element 1 float + 1 float + 6 float
 	glGenBuffers(1, &m_bufferSDFReduction);
 	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 12, m_bufferSDFReduction);
 	glBufferData(GL_SHADER_STORAGE_BUFFER, reductionSDFSize, NULL, GL_STATIC_DRAW);
@@ -394,19 +394,19 @@ void gFusion::allocateBuffers()
 
 
 
-	m_trackedPoints3D.resize(m_depth_height * m_depth_height * 3);
-	int xOffTrack = m_depth_height / 2;
-	int yOffTrack = m_depth_height / 2;
-	int xSpacing = 2 * xOffTrack / m_depth_height;
-	int ySpacing = 2 * yOffTrack / m_depth_height;
+	m_trackedPoints3D.resize(configuration.depthFrameSize.y * configuration.depthFrameSize.y * 3);
+	int xOffTrack = configuration.depthFrameSize.y / 2;
+	int yOffTrack = configuration.depthFrameSize.y / 2;
+	int xSpacing = 2 * xOffTrack / configuration.depthFrameSize.y;
+	int ySpacing = 2 * yOffTrack / configuration.depthFrameSize.y;
 
-	for (int i = 0; i < m_depth_height * 3; i += 3)
+	for (int i = 0; i < configuration.depthFrameSize.y * 3; i += 3)
 	{
-		for (int j = 0; j < m_depth_height; j++)
+		for (int j = 0; j < configuration.depthFrameSize.y; j++)
 		{
-			m_trackedPoints3D[j * m_depth_height * 2 + i] = (m_depth_width >> 1) - xOffTrack + (i / 3) * xSpacing;
-			m_trackedPoints3D[j * m_depth_height * 2 + i + 1] = (m_depth_width >> 1) - yOffTrack + j * ySpacing;
-			m_trackedPoints3D[j * m_depth_height * 2 + i + 2] = 0.0f;
+			m_trackedPoints3D[j * configuration.depthFrameSize.y * 2 + i] = ((int)configuration.depthFrameSize.x >> 1) - xOffTrack + (i / 3) * xSpacing;
+			m_trackedPoints3D[j * configuration.depthFrameSize.y * 2 + i + 1] = ((int)configuration.depthFrameSize.x >> 1) - yOffTrack + j * ySpacing;
+			m_trackedPoints3D[j * configuration.depthFrameSize.y * 2 + i + 2] = 0.0f;
 
 
 		}
@@ -1138,7 +1138,7 @@ void gFusion::depthToVertex(float * depthArray)
 	glBindTexture(GL_TEXTURE_2D, m_textureDepth);
 	if (depthArray != NULL)
 	{
-		glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, m_depth_width, m_depth_height, GL_RED, GL_FLOAT, depthArray);
+		glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, configuration.depthFrameSize.x, configuration.depthFrameSize.y, GL_RED, GL_FLOAT, depthArray);
 	}
 	glGenerateMipmap(GL_TEXTURE_2D);
 
@@ -1159,8 +1159,8 @@ void gFusion::depthToVertex(float * depthArray)
 
 	for (int i = 0; i < 3; i++) // here 3 is the number of mipmap levels
 	{
-		compWidth = divup(m_depth_width >> i, 32);
-		compHeight = divup(m_depth_height >> i, 32);
+		compWidth = divup((int)configuration.depthFrameSize.x >> i, 32);
+		compHeight = divup((int)configuration.depthFrameSize.y >> i, 32);
 
 		glm::mat4 invK = getInverseCameraMatrix(m_camPamsDepth / float(1 << i));
 		glBindImageTexture(0, m_textureDepth, i, GL_FALSE, 0, GL_READ_WRITE, GL_R32F);
@@ -1184,7 +1184,7 @@ void gFusion::depthToVertex(uint16_t * depthArray)
 	glBindTexture(GL_TEXTURE_2D, m_textureDepth);
 	if (depthArray != NULL) 
 	{
-		glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, m_depth_width, m_depth_height, GL_RED, GL_UNSIGNED_SHORT, depthArray);
+		glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, configuration.depthFrameSize.x, configuration.depthFrameSize.y, GL_RED, GL_UNSIGNED_SHORT, depthArray);
 	}
 	glGenerateMipmap(GL_TEXTURE_2D);
 
@@ -1208,8 +1208,8 @@ void gFusion::depthToVertex(uint16_t * depthArray)
 
 	for (int i = 0; i < 3; i++) // here 3 is the number of mipmap levels
 	{
-		compWidth = divup(m_depth_width >> i, 32);
-		compHeight = divup(m_depth_height >> i, 32);
+		compWidth = divup((int)configuration.depthFrameSize.x >> i, 32);
+		compHeight = divup((int)configuration.depthFrameSize.y >> i, 32);
 		
 
 		glm::mat4 invK = getInverseCameraMatrix(m_camPamsDepth / float(1 << i));
@@ -1238,8 +1238,8 @@ void gFusion::vertexToNormal()
 		glBindImageTexture(0, m_textureVertex, i, GL_FALSE, 0, GL_READ_WRITE, GL_RGBA32F);
 		glBindImageTexture(1, m_textureNormal, i, GL_FALSE, 0, GL_READ_WRITE, GL_RGBA32F);
 
-		compWidth = divup(m_depth_width >> i, 32);
-		compHeight = divup(m_depth_height >> i, 32);
+		compWidth = divup((int)configuration.depthFrameSize.x >> i, 32);
+		compHeight = divup((int)configuration.depthFrameSize.y >> i, 32);
 
 		glDispatchCompute(compWidth, compHeight, 1);
 		glMemoryBarrier(GL_ALL_BARRIER_BITS);
@@ -1457,8 +1457,8 @@ void gFusion::track(int layer)
 	glBindImageTexture(5, m_textureTrackImage, 0, GL_FALSE, 0, GL_READ_WRITE, GL_RGBA32F);
 
 	
-	compWidth = divup(m_depth_width >> layer, 32); // right bitshift does division by powers of 2
-	compHeight = divup(m_depth_height >> layer, 32);
+	compWidth = divup((int)configuration.depthFrameSize.x >> layer, 32); // right bitshift does division by powers of 2
+	compHeight = divup((int)configuration.depthFrameSize.y >> layer, 32);
 
 	glDispatchCompute(compWidth, compHeight, 1);
 	glMemoryBarrier(GL_ALL_BARRIER_BITS);
@@ -1473,7 +1473,7 @@ void gFusion::reduce(int layer)
 
 	glBeginQuery(GL_TIME_ELAPSED, query[1]);
 
-	glm::ivec2 imageSize = glm::ivec2(m_depth_width >> layer, m_depth_height >> layer);
+	glm::ivec2 imageSize = glm::ivec2((int)configuration.depthFrameSize.x >> layer, (int)configuration.depthFrameSize.y >> layer);
 
 	reduceProg.use();
 
@@ -1736,9 +1736,9 @@ void gFusion::trackSDF(int layer, Eigen::Matrix4f camToWorld)
 	trackSDFProg.use();
 
 	int xthreads, ythreads;
-	xthreads = divup(m_depth_width >> layer, 32); // right bitshift does division by powers of 2
-	ythreads = divup(m_depth_height >> layer, 32);
-	glm::ivec2 imageSize = glm::ivec2(m_depth_width >> layer, m_depth_height >> layer);
+	xthreads = divup((int)configuration.depthFrameSize.x >> layer, 32); // right bitshift does division by powers of 2
+	ythreads = divup((int)configuration.depthFrameSize.y >> layer, 32);
+	glm::ivec2 imageSize = glm::ivec2((int)configuration.depthFrameSize.x >> layer, (int)configuration.depthFrameSize.y >> layer);
 
 	// bind textures
 	glActiveTexture(GL_TEXTURE0);
@@ -1792,7 +1792,7 @@ void gFusion::reduceSDF(int layer)
 {
 	glBeginQuery(GL_TIME_ELAPSED, query[6]);
 
-	glm::ivec2 imageSize = glm::ivec2(m_depth_width >> layer, m_depth_height >> layer);
+	glm::ivec2 imageSize = glm::ivec2((int)configuration.depthFrameSize.x >> layer, (int)configuration.depthFrameSize.y >> layer);
 
 	reduceSDFProg.use();
 
@@ -1861,7 +1861,7 @@ void gFusion::getReduction(std::vector<float>& b, std::vector<float>& C, float &
 void gFusion::getPreRedu(Eigen::Matrix<double, 6, 6> &A, Eigen::Matrix<double, 6, 1> &b)
 {
 	std::vector<float> outputSDFData;
-	size_t reductionSDFSize = m_depth_height * m_depth_width * 8; // this is the size of one reduction element 1 float + 1 float + 6 float
+	size_t reductionSDFSize = configuration.depthFrameSize.y * configuration.depthFrameSize.x * 8; // this is the size of one reduction element 1 float + 1 float + 6 float
 	outputSDFData.resize(reductionSDFSize);
 	glBindBuffer(GL_SHADER_STORAGE_BUFFER, m_bufferSDFReduction);
 	void *ptr = glMapBuffer(GL_SHADER_STORAGE_BUFFER, GL_READ_ONLY);
@@ -2036,8 +2036,8 @@ void gFusion::raycast()
 	int yWidth;
 
 
-	xWidth = divup(m_depth_width, 32);
-	yWidth = divup(m_depth_height, 32);
+	xWidth = divup(configuration.depthFrameSize.x, 32);
+	yWidth = divup(configuration.depthFrameSize.y, 32);
 
 
 	glDispatchCompute(xWidth, yWidth, 1);
@@ -2093,8 +2093,8 @@ void gFusion::intensityProjection()
 	int yWidth;
 
 
-	xWidth = divup(m_depth_width, 32);
-	yWidth = divup(m_depth_height, 32);
+	xWidth = divup(configuration.depthFrameSize.x, 32);
+	yWidth = divup(configuration.depthFrameSize.y, 32);
 
 
 	glDispatchCompute(xWidth, yWidth, 1);
@@ -2303,11 +2303,11 @@ void gFusion::addPoseToLibrary()
 
 	gPosePair newPose;
 	GLuint new_textureID;
-	new_textureID = createTexture(GL_TEXTURE_2D, 0, m_depth_width, m_depth_height, 1, GL_R32F);
+	new_textureID = createTexture(GL_TEXTURE_2D, 0, configuration.depthFrameSize.x, configuration.depthFrameSize.y, 1, GL_R32F);
 
 	glCopyImageSubData(m_textureDepth, GL_TEXTURE_2D, 0, 0, 0, 0,
 		new_textureID, GL_TEXTURE_2D, 0, 0, 0, 0,
-		m_depth_width, m_depth_height, 1);
+		configuration.depthFrameSize.x, configuration.depthFrameSize.y, 1);
 
 	newPose.textureID = new_textureID;
 	newPose.pose = m_pose;
@@ -2332,7 +2332,7 @@ bool gFusion::recoverPose()
 			m_pose = poseLibrary[i].pose;
 			glCopyImageSubData(poseLibrary[i].textureID, GL_TEXTURE_2D, 0, 0, 0, 0,
 				m_textureDepth, GL_TEXTURE_2D, 0, 0, 0, 0,
-				m_depth_width, m_depth_height, 1);
+				configuration.depthFrameSize.x, configuration.depthFrameSize.y, 1);
 			//raycast();
 			//depthToVertex(NULL);
 			//vertexToNormal();
@@ -2364,7 +2364,7 @@ void gFusion::trackPoints3D(GLuint trackedPoints2Dbuffer)
 
 	glm::mat4 invK = getInverseCameraMatrix(m_camPamsDepth);
 	glUniformMatrix4fv(m_invKID_h, 1, GL_FALSE, glm::value_ptr(invK));
-	glUniform1i(m_buffer2DWidthID, m_depth_height * 2);
+	glUniform1i(m_buffer2DWidthID, configuration.depthFrameSize.y * 2);
 
 	// BIND IMAGE
 	glBindImageTexture(1, m_textureDepth, 0, GL_FALSE, 0, GL_READ_ONLY, GL_R32F);
@@ -2372,8 +2372,8 @@ void gFusion::trackPoints3D(GLuint trackedPoints2Dbuffer)
 	//glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, trackedPoints2Dbuffer);
 	//glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, m_trackedPoints3DBuffer);
 
-	compWidth = divup(m_depth_width, 32); 
-	compHeight = divup(m_depth_height, 32);
+	compWidth = divup(configuration.depthFrameSize.x, 32); 
+	compHeight = divup(configuration.depthFrameSize.y, 32);
 
 	glDispatchCompute(compWidth, compHeight, 1);
 	glMemoryBarrier(GL_ALL_BARRIER_BITS);

@@ -51,6 +51,7 @@ struct gFusionConfig
 	float normal_threshold;
 	std::vector<int> iterations;
 	float track_threshold;
+	glm::vec2 depthFrameSize;
 
 	gFusionConfig() 
 	{
@@ -67,6 +68,7 @@ struct gFusionConfig
 		iterations.push_back(5);
 		iterations.push_back(5);
 		track_threshold = 0.5f;
+		depthFrameSize = glm::vec2(640, 480);
 	}
 
 	float stepSize()
@@ -449,8 +451,8 @@ private:
 	float m_alignmentEnergy = 0.0f;
 
 
-	int m_depth_height = 720; // set these properly from main?
-	int m_depth_width = 1280;
+	//int m_depth_height = 0; // set these properly from main?
+	//int m_depth_width = 0;
 	int m_color_height = 1080;
 	int m_color_width = 1920;
 

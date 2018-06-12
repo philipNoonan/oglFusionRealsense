@@ -2,17 +2,26 @@
 
 
 
+void Realsense2Camera::setPreset(int rate, int res)
+{
+	m_depthRate = rate;
+	if (res == 0)
+	{
+		m_depthframe_height = 480;
+		m_depthframe_width = 848;
+	}
+	else if (res == 1)
+	{
+		m_depthframe_height = 720;
+		m_depthframe_width = 1280;
+	}
 
+}
 
 void Realsense2Camera::start()
 {
 	if (m_status == STOPPED)
 	{
-
-
-
-
-
 
 		m_status = CAPTURING;
 		m_thread = new std::thread(&Realsense2Camera::captureLoop, this);
@@ -50,7 +59,7 @@ void Realsense2Camera::frames(unsigned char * colorAray, float * bigDepthArray)
 }
 
 // get all the frames available, pass a null pointer in for each array you dont want back
-void Realsense2Camera::frames(unsigned char * colorArray, uint16_t * depthArray, float * infraredArray, float * bigDepthArray, int * colorDepthMapping)
+void Realsense2Camera::frames(unsigned char * colorArray, std::vector<uint16_t> &depthArray, float * infraredArray, float * bigDepthArray, int * colorDepthMapping)
 {
 	//m_mtx.lock();
 
@@ -61,9 +70,9 @@ void Realsense2Camera::frames(unsigned char * colorArray, uint16_t * depthArray,
 			memcpy_s(colorArray, m_colorframe_width * m_colorframe_height * 4, m_color_frame, m_colorframe_width * m_colorframe_height * 4);
 		}
 
-		if (depthArray != NULL)
+		if (depthArray.data() != NULL)
 		{
-			memcpy_s(depthArray, m_depthframe_width * m_depthframe_height * 2, m_depth_frame, m_depthframe_width * m_depthframe_height * 2);
+			memcpy_s(depthArray.data(), m_depthframe_width * m_depthframe_height * 2, m_depth_frame, m_depthframe_width * m_depthframe_height * 2);
 		}
 
 		if (infraredArray != NULL)
@@ -180,8 +189,8 @@ void Realsense2Camera::captureLoop()
 
 	//Add desired streams to configuration
 	cfg.enable_stream(RS2_STREAM_COLOR, m_colorframe_width, m_colorframe_height, RS2_FORMAT_BGRA8, 30);
-	cfg.enable_stream(RS2_STREAM_DEPTH, m_depthframe_width, m_depthframe_height, RS2_FORMAT_Z16, 30);
-
+	cfg.enable_stream(RS2_STREAM_DEPTH, m_depthframe_width, m_depthframe_height, RS2_FORMAT_Z16, m_depthRate);
+	
 
 	// Start streaming with default recommended configuration
 	rs2::pipeline_profile selection = pipe.start(cfg);
@@ -212,6 +221,7 @@ void Realsense2Camera::captureLoop()
 
 		m_ctrl_curr = advanced.get_depth_table(0);
 		advanced.set_depth_table(m_ctrl_curr);
+		
 	}
 	
 
