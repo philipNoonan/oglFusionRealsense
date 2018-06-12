@@ -9,13 +9,15 @@ else()
 	message( FATAL_ERROR "vcpkg cmake file not found")
 endif()
 
+project(oglFusionRS)
+
+
 if (WIN32)
 
 if ("${CMAKE_VERSION}" VERSION_GREATER 3.6.3)
-    set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT oglFusionRS)
+    set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT ${PROJECT_NAME})
 endif ("${CMAKE_VERSION}" VERSION_GREATER 3.6.3)
   
-project(oglFusionRS)
 
 endif()
 
@@ -46,7 +48,8 @@ find_package(glm REQUIRED)
 find_package(imgui REQUIRED)
 find_package(eigen3 REQUIRED)
 find_package(realsense2 REQUIRED)
-
+# header only
+find_path (DIRENT_INCLUDE_DIR dirent.h)
 
 
 file(GLOB_RECURSE SRC "src/*")
@@ -130,7 +133,8 @@ set_target_properties(${PROJECT_NAME} PROPERTIES COMPILE_PDB_NAME_DEBUG "${PROJE
 target_include_directories(${PROJECT_NAME} PUBLIC "include")
 target_include_directories(${PROJECT_NAME} PUBLIC "graphics")
 #target_include_directories(${PROJECT_NAME} PUBLIC ${OpenCV_INCLUDE_DIRS})
-
+# header only
+include_directories(${DIRENT_INCLUDE_DIR})
 
 
 target_link_libraries(${PROJECT_NAME} ${OPENGL_gl_LIBRARY})

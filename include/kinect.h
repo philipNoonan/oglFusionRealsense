@@ -23,6 +23,7 @@
 #include "gDisOptFlow.h"
 #include "mcubes.h"
 
+#include "ImGuiFileDialog.h"
 
 //#include "opencv2/core/utility.hpp"
 //#include "opencv2/highgui.hpp"

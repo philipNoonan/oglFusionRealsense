@@ -192,7 +192,44 @@ void setUI()
 		//ImGui::PushItemWidth(-krender.guiPadding().first);
 		//ImGui::SetWindowPos(ImVec2(display_w - (display_w / 4) - krender.guiPadding().first, ((krender.guiPadding().second) + (0))));
 		ImGui::Text("Help menu - press 'H' to hide");
-		if (ImGui::Button("test")) gfusion.testPrefixSum();
+		static bool openFileDialog = false;
+
+		if (ImGui::Button("Open File Dialog"))
+		{
+			openFileDialog = true;
+		}
+
+		static std::string filePathName = "";
+		static std::string path = "";
+		static std::string fileName = "";
+		static std::string filter = "";
+
+		if (openFileDialog)
+		{
+			if (ImGuiFileDialog::Instance()->FileDialog("Choose File", ".cpp\0.h\0.hpp\0\0", ".", ""))
+			{
+				if (ImGuiFileDialog::Instance()->IsOk == true)
+				{
+					filePathName = ImGuiFileDialog::Instance()->GetFilepathName();
+					path = ImGuiFileDialog::Instance()->GetCurrentPath();
+					fileName = ImGuiFileDialog::Instance()->GetCurrentFileName();
+					filter = ImGuiFileDialog::Instance()->GetCurrentFilter();
+				}
+				else
+				{
+					filePathName = "";
+					path = "";
+					fileName = "";
+					filter = "";
+				}
+				openFileDialog = false;
+			}
+		}
+
+		if (filePathName.size() > 0) ImGui::Text("Choosed File Path Name : %s", filePathName.c_str());
+		if (path.size() > 0) ImGui::Text("Choosed Path Name : %s", path.c_str());
+		if (fileName.size() > 0) ImGui::Text("Choosed File Name : %s", fileName.c_str());
+		if (filter.size() > 0) ImGui::Text("Choosed Filter : %s", filter.c_str());
 		ImGui::Separator();
 		ImGui::Text("Fusion Options");
 
