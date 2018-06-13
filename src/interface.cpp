@@ -23,6 +23,88 @@ void Realsense2Camera::start()
 	if (m_status == STOPPED)
 	{
 
+		rs2::context ctx;
+		rs2::device_list devices = ctx.query_devices();
+
+
+		if (devices.size() == 0)
+		{
+			std::cerr << "No device connected, please connect a RealSense device" << std::endl;
+
+			//To help with the boilerplate code of waiting for a device to connect
+			//The SDK provides the rs2::device_hub class
+			rs2::device_hub device_hub(ctx);
+
+			//Using the device_hub we can block the program until a device connects
+			dev = device_hub.wait_for_device();
+		}
+		else
+		{
+			std::cout << "Found the following devices:\n" << std::endl;
+
+			// device_list is a "lazy" container of devices which allows
+			//The device list provides 2 ways of iterating it
+			//The first way is using an iterator (in this case hidden in the Range-based for loop)
+			//int index = 0;
+			//for (rs2::device device : devices)
+			//{
+			//	std::cout << "  " << index++ << " : " << get_device_name(device) << std::endl;
+			//}
+
+			//uint32_t selected_device_index = get_user_selection("Select a device by index: ");
+
+			//// The second way is using the subscript ("[]") operator:
+			//if (selected_device_index >= devices.size())
+			//{
+			//	throw std::out_of_range("Selected device index is out of range");
+			//}
+
+			// Update the selected device
+			dev = devices[0];
+		}
+
+		std::string serial_number(dev.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER));
+
+		// Declare RealSense pipeline, encapsulating the actual device and sensors
+
+		//Create a configuration for configuring the pipeline with a non default profile
+		rs2::config cfg;
+
+		cfg.enable_device(serial_number);
+
+
+		//Add desired streams to configuration
+		cfg.enable_stream(RS2_STREAM_COLOR, m_colorframe_width, m_colorframe_height, RS2_FORMAT_BGRA8, 30);
+		cfg.enable_stream(RS2_STREAM_DEPTH, m_depthframe_width, m_depthframe_height, RS2_FORMAT_Z16, m_depthRate);
+
+
+		// Start streaming with default recommended configuration
+		selection = pipe.start(cfg);
+
+
+
+
+
+
+
+
+
+
+		//auto sensor = selection.get_device().first<rs2::depth_sensor>();
+		//sensor.set_option(RS2_OPTION_ENABLE_AUTO_EXPOSURE, 1);
+
+		//sensor.set_option(RS2_OPTION_EMITTER_ENABLED, 1);
+		//sensor.set_option(RS2_OPTION_LASER_POWER, 30.0f);
+
+
+		auto depth_stream = selection.get_stream(RS2_STREAM_DEPTH).as<rs2::video_stream_profile>();
+
+		auto i = depth_stream.get_intrinsics();
+		m_depth_ppx = i.ppx;
+		m_depth_ppy = i.ppy;
+		m_depth_fx = i.fx;
+		m_depth_fy = i.fy;
+
 		m_status = CAPTURING;
 		m_thread = new std::thread(&Realsense2Camera::captureLoop, this);
 	}
@@ -135,73 +217,12 @@ std::vector<float> Realsense2Camera::getColorCameraParameters()
 
 void Realsense2Camera::captureLoop()
 {
-	rs2::context ctx;
-	rs2::device_list devices = ctx.query_devices();
-
-
-	rs2::device dev;
-	if (devices.size() == 0)
-	{
-		std::cerr << "No device connected, please connect a RealSense device" << std::endl;
-
-		//To help with the boilerplate code of waiting for a device to connect
-		//The SDK provides the rs2::device_hub class
-		rs2::device_hub device_hub(ctx);
-
-		//Using the device_hub we can block the program until a device connects
-		dev = device_hub.wait_for_device();
-	}
-	else
-	{
-		std::cout << "Found the following devices:\n" << std::endl;
-
-		// device_list is a "lazy" container of devices which allows
-		//The device list provides 2 ways of iterating it
-		//The first way is using an iterator (in this case hidden in the Range-based for loop)
-		//int index = 0;
-		//for (rs2::device device : devices)
-		//{
-		//	std::cout << "  " << index++ << " : " << get_device_name(device) << std::endl;
-		//}
-
-		//uint32_t selected_device_index = get_user_selection("Select a device by index: ");
-
-		//// The second way is using the subscript ("[]") operator:
-		//if (selected_device_index >= devices.size())
-		//{
-		//	throw std::out_of_range("Selected device index is out of range");
-		//}
-
-		// Update the selected device
-		dev = devices[0];
-	}
-
-	std::string serial_number(dev.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER));
-
-	// Declare RealSense pipeline, encapsulating the actual device and sensors
-	rs2::pipeline pipe;
-
-	//Create a configuration for configuring the pipeline with a non default profile
-	rs2::config cfg;
-
-	cfg.enable_device(serial_number);
-
-
-	//Add desired streams to configuration
-	cfg.enable_stream(RS2_STREAM_COLOR, m_colorframe_width, m_colorframe_height, RS2_FORMAT_BGRA8, 30);
-	cfg.enable_stream(RS2_STREAM_DEPTH, m_depthframe_width, m_depthframe_height, RS2_FORMAT_Z16, m_depthRate);
-	
-
-	// Start streaming with default recommended configuration
-	rs2::pipeline_profile selection = pipe.start(cfg);
-
-
 
 	auto advanced = dev.as<rs400::advanced_mode>(); // NOTE rs400 namespace!
 
 	if (advanced.is_enabled())
 	{
-		std::string f = "./resources/nearmode.json"; 
+		std::string f = "./resources/nearmode.json";
 		//std::string f = "./resources/standard.json";
 		//std::string f = "./resources/nearmode435.json"; 
 		//std::string f = "./resources/standard435.json";
@@ -221,30 +242,8 @@ void Realsense2Camera::captureLoop()
 
 		m_ctrl_curr = advanced.get_depth_table(0);
 		advanced.set_depth_table(m_ctrl_curr);
-		
+
 	}
-	
-
-
-
-
-
-	//auto sensor = selection.get_device().first<rs2::depth_sensor>();
-	//sensor.set_option(RS2_OPTION_ENABLE_AUTO_EXPOSURE, 1);
-
-	//sensor.set_option(RS2_OPTION_EMITTER_ENABLED, 1);
-	//sensor.set_option(RS2_OPTION_LASER_POWER, 30.0f);
-	rs2::frameset data;
-	
-
-	auto depth_stream = selection.get_stream(RS2_STREAM_DEPTH).as<rs2::video_stream_profile>();
-
-	auto i = depth_stream.get_intrinsics();
-	m_depth_ppx = i.ppx;
-	m_depth_ppy = i.ppy;
-	m_depth_fx = i.fx; 
-	m_depth_fy = i.fy;
-
 
 
 	rs2::frame depth;

@@ -203,4 +203,11 @@ private:
 	bool m_valuesChanged = false;
 	STDepthTableControl m_ctrl_curr{};
 
+	rs2::pipeline_profile selection;
+	rs2::device dev;
+
+	rs2::pipeline pipe;
+	rs2::frameset data;
+
+
 };

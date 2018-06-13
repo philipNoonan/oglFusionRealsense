@@ -46,6 +46,8 @@ void kRenderInit()
 {
 	krender.SetCallbackFunctions();
 	krender.compileAndLinkShader();
+	krender.setCameraParams(glm::vec4(kcamera.fx(), kcamera.fx(), kcamera.ppx(), kcamera.ppy()), glm::vec4(kcamera.fx_col(), kcamera.fx_col(), kcamera.ppx_col(), kcamera.ppy_col())); // FIX ME
+
 	// Set locations
 	krender.setLocations();
 	krender.setVertPositions();
@@ -71,6 +73,7 @@ void gFusionInit()
 	gconfig.iterations[1] = 6;
 	gconfig.iterations[2] = 12;
 	
+	gfusion.setCameraParams(glm::vec4(kcamera.fx(), kcamera.fx(), kcamera.ppx(), kcamera.ppy()), glm::vec4(kcamera.fx_col(), kcamera.fx_col(), kcamera.ppx_col(), kcamera.ppy_col())); // FIX ME
 
 	glm::mat4 initPose = glm::translate(glm::mat4(1.0f), glm::vec3(gconfig.volumeDimensions.x / 2.0f, gconfig.volumeDimensions.y / 2.0f, 0.0f));
 
@@ -164,9 +167,17 @@ void setUI()
 		ImGui::Begin("Slider Graph", &graphWindow.visible, window_flags);
 		//ImGui::PushItemWidth(-krender.guiPadding().first);
 		ImGui::SetWindowPos(ImVec2(graphWindow.x, graphWindow.y));
+		ImGui::PushStyleColor(ImGuiCol_PlotLines, ImVec4(1.0, 0.0, 0.0, 1.0));
 		ImGui::PlotLines("X", &arrayX[0], graphWindow.w, 0, "", minmaxX.first, minmaxX.second, ImVec2(graphWindow.w, graphWindow.h / 3));
+		ImGui::PopStyleColor();
+
+		ImGui::PushStyleColor(ImGuiCol_PlotLines, ImVec4(0.0, 1.0, 0.0, 1.0));
 		ImGui::PlotLines("Y", &arrayY[0], graphWindow.w, 0, "", minmaxY.first, minmaxY.second, ImVec2(graphWindow.w, graphWindow.h / 3));
+		ImGui::PopStyleColor();
+
+		ImGui::PushStyleColor(ImGuiCol_PlotLines, ImVec4(0.0, 0.0, 1.0, 1.0));
 		ImGui::PlotLines("Z", &arrayZ[0], graphWindow.w, 0, "", minmaxZ.first, minmaxZ.second, ImVec2(graphWindow.w, graphWindow.h / 3));
+		ImGui::PopStyleColor();
 
 		ImGui::End();
 		ImGui::PopStyleVar();
@@ -268,9 +279,10 @@ void setUI()
 					depthHeight = 720;
 				}
 
+				kcamera.start();
+
 				setUpGPU();
 
-				kcamera.start();
 			}
 
 		}
@@ -538,8 +550,6 @@ void setUpGPU()
 
 	gfusion.setUsingDepthFloat(false);
 
-	krender.setCameraParams(glm::vec4(kcamera.fx(), kcamera.fx(), kcamera.ppx(), kcamera.ppy()), glm::vec4(kcamera.fx_col(), kcamera.fx_col(), kcamera.ppx_col(), kcamera.ppy_col())); // FIX ME
-	gfusion.setCameraParams(glm::vec4(kcamera.fx(), kcamera.fx(), kcamera.ppx(), kcamera.ppy()), glm::vec4(kcamera.fx_col(), kcamera.fx_col(), kcamera.ppx_col(), kcamera.ppy_col())); // FIX ME
 
 	
 	gfusion.setDepthUnit(kcamera.getDepthUnit());
@@ -641,6 +651,8 @@ int main(int, char**)
 		
 		if (kcamera.ready())
 		{
+			gfusion.setDepthUnit(kcamera.getDepthUnit());
+
 			kcamera.frames(colorArray, depthArray, NULL, NULL, NULL);
 
 			/*cv::Mat testCol = cv::Mat(1080, 1920, CV_8UC3, &colorArray[0]);
@@ -722,7 +734,7 @@ int main(int, char**)
 
 			gfusion.vertexToNormal();
 
-			gfusion.showNormals();
+			//gfusion.showNormals();
 
 			bool tracked = false;
 
@@ -786,7 +798,7 @@ int main(int, char**)
 
 			graphPoints.push_back(gfusion.getTransPose());
 
-			if (graphPoints.size() > 900)
+			if (graphPoints.size() > graphWindow.w)
 			{
 				graphPoints.pop_front();
 			}

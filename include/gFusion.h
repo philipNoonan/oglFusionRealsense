@@ -405,9 +405,9 @@ private:
 	GLuint m_textureTestImage;
 	GLuint m_textureTrackImage;
 
-	GLuint m_textureEdgeTable;
-	GLuint m_textureTriTex;
-	GLuint m_textureNumVertsTable;
+	//GLuint m_textureEdgeTable;
+	//GLuint m_textureTriTex;
+	//GLuint m_textureNumVertsTable;
 
 	GLuint m_textureVolume;
 
@@ -584,35 +584,6 @@ private:
 	uint32_t m_totalVerts;
 
 	
-
-
-
-
-	// MARCHING CUBES
-	// SET UP TABLES TEXTURES
-	void setTablesForMarchingCubes();
-	/*{
-		glActiveTexture(GL_TEXTURE0);
-		glBindTexture(GL_TEXTURE_1D, m_textureEdgeTable);
-		glTexSubImage1D(GL_TEXTURE_1D, 0, 0, 256, GL_RED, GL_UNSIGNED_BYTE, &edgeTable[0]);
-
-		glBindTexture(GL_TEXTURE_1D, m_textureTriTex);
-		glTexSubImage1D(GL_TEXTURE_1D, 0, 0, 256 * 16, GL_RED, GL_UNSIGNED_BYTE, &triTable[0]);
-
-		glBindTexture(GL_TEXTURE_1D, m_textureNumVertsTable);
-		glTexSubImage1D(GL_TEXTURE_1D, 0, 0, 256, GL_RED, GL_UNSIGNED_BYTE, &numVertsTable[0]);
-
-		std::vector<uint> tableOut;
-		tableOut.resize(256);
-		glActiveTexture(GL_TEXTURE0);
-		glBindTexture(GL_TEXTURE_2D, m_textureNumVertsTable);
-		glGetTexImage(GL_TEXTURE_2D, 0, GL_RED, GL_R8UI, tableOut.data());
-		glBindTexture(GL_TEXTURE_2D, 0);
-		glActiveTexture(0);
-
-
-	}*/
-
 	std::vector<uint32_t> debugArray;
 
 	//GLuint  prefixSum(GLuint inputBuffer, GLuint outputBuffer);
