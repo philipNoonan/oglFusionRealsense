@@ -1,6 +1,8 @@
 # oglFusionRealsense
 An openGL GLSL implementation of KinectFusion for the Intel Realsense
 
+![Alt text](docs/oglfusionrs.jpg?raw=true "Title")
+
 <h2>Installation</h2>
 
 <h3>Dependencies</h2>
