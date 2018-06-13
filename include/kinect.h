@@ -194,17 +194,19 @@ glm::vec3 iOff;
 
 glm::vec3 initOffset(int pixX, int pixY)
 {
-	int pointX = float(pixX) * (depthWidth / 512.0f);
-	int pointY = float(pixY) * (depthHeight / 424.0f);
-
+	int pointX = float(pixX) * (float(depthWidth) / float(display2DWindow.w));
+	int pointY = depthHeight - float(pixY) * (float(depthHeight) / float(display2DWindow.h));
+	//std::cout << std::endl;
+	//std::cout << "depth width " << depthWidth << " px " << pointX << " py " << pointY << " size " << depthArray.size() << " valu " << pointY * depthWidth + pointX << std::endl;
+	// this crashes if its being written to? need a lock?
 	float z = float(depthArray[pointY * depthWidth + pointX]) * kcamera.getDepthUnit() / 1000000.0f;
 	//kcamera.fx(), kcamera.fx(), kcamera.ppx(), kcamera.ppy()
+	std::cout << z << std::endl;
 
 	float x = (pointX - kcamera.ppx()) * (1.0f / kcamera.fx()) * z;
 	float y = (pointY - kcamera.ppy()) * (1.0f / kcamera.fx()) * z;
-	std::cout << "px " << pointX << " py " << pointY << std::endl;
 
-	std::cout << "HAVE I BEEN SET CORRECTLY FROM DEPTH UNITS CFROM SENSOR??? x " << x << " y " << y << " z " << z << std::endl;
+	//std::cout << "HAVE I BEEN SET CORRECTLY FROM DEPTH UNITS CFROM SENSOR??? x " << x << " y " << y << " z " << z << std::endl;
 
 
 	return glm::vec3(x, y, z);
@@ -232,6 +234,10 @@ std::deque<std::vector<float> > graphPoints;
 
 int imageNumber = 0;
 
+bool imguiFocus2D = false;
+
 
 float mouseX = 0;
 float mouseY = 0;
+
+glm::vec2 mousePos = glm::vec2(0,0);

@@ -188,7 +188,7 @@ void setUI()
 		window_flags |= ImGuiWindowFlags_NoCollapse;
 
 		ImGui::Begin("Video ", &display2DWindow.visible, window_flags);
-
+		imguiFocus2D = ImGui::IsWindowHovered();
 		ImGui::End();
 	}
 
@@ -340,9 +340,9 @@ void setUI()
 			
 			gfusion.setConfig(gconfig);
 
-			iOff = initOffset(krender.getCenterPixX(), krender.getCenterPixY());
+			iOff = initOffset(mousePos.x - controlPoint0.x, controlPoint0.y - mousePos.y);
 
-
+			//std::cout << "lalala " << mousePos.x - controlPoint0.x << " " << controlPoint0.y - mousePos.y<< std::endl;
 
 			glm::mat4 initPose = glm::translate(glm::mat4(1.0f), glm::vec3(-iOff.x + gconfig.volumeDimensions.x / 2.0f, -iOff.y + gconfig.volumeDimensions.y / 2.0f, -iOff.z + dimension / 2.0));
 
@@ -497,6 +497,18 @@ void setUI()
 		ImGui::End();
 
 	}
+
+	ImGuiIO& io = ImGui::GetIO();
+	if (ImGui::IsMouseClicked(0) && imguiFocus2D == true)
+	{
+		ImVec2 mPos = ImGui::GetMousePos();
+		mousePos.x = mPos.x;
+		mousePos.y = mPos.y;
+		std::cout << "from imgui " << mousePos.x << " " << mousePos.y << std::endl;
+		std::cout << "lalala " << mousePos.x - controlPoint0.x << " " << controlPoint0.y - mousePos.y << std::endl;
+		iOff = initOffset(mousePos.x - controlPoint0.x, controlPoint0.y - mousePos.y);
+
+	}
 }
 
 void setUpGPU()
@@ -519,6 +531,7 @@ void setUpGPU()
 
 
 #endif
+	
 	gdisoptflow.allocateBuffers();
 
 	kRenderInit();
@@ -709,7 +722,7 @@ int main(int, char**)
 
 			gfusion.vertexToNormal();
 
-			//gfusion.showNormals();
+			gfusion.showNormals();
 
 			bool tracked = false;
 
@@ -954,10 +967,11 @@ int main(int, char**)
 
 			if (cameraRunning)
 			{
+				krender.setDisplayOriSize(display2DWindow.x, display_h - display2DWindow.y - display2DWindow.h, display2DWindow.w, display2DWindow.h);
 #ifdef USEINFRARED
-				krender.Render(true, display2DWindow.x, display_h - display2DWindow.y, display2DWindow.w, display2DWindow.h);
+				krender.Render(true);
 #else
-				krender.Render(false, display2DWindow.x, display_h - display2DWindow.y - display2DWindow.h, display2DWindow.w, display2DWindow.h);
+				krender.Render(false);
 #endif
 			}
 

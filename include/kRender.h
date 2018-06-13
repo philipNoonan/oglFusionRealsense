@@ -107,6 +107,11 @@ public:
 	{
 		m_depth_width = w;
 	}
+	void setDisplayOriSize(int x, int y, int w, int h)
+	{
+		m_display2DPos = glm::vec2(x, y);
+		m_display2DSize = glm::vec2(w, h);
+	}
 
 
 	//std::vector<float> graphPointsX()
@@ -220,7 +225,7 @@ public:
 
 	void setVolumeSDFRenderPosition(float slice);
 
-	void Render(bool useInfrared, int x, int y, int w, int h);
+	void Render(bool useInfrared);
 
 	void renderLiveVideoWindow(bool useInfrared);
 
@@ -489,4 +494,7 @@ private:
 	float m_center_pixY;
 
 	float m_volumeSDFRenderSlice = 0;
+
+	glm::vec2 m_display2DPos;
+	glm::vec2 m_display2DSize;
 };

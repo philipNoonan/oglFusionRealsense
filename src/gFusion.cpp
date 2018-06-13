@@ -1188,19 +1188,19 @@ void gFusion::depthToVertex(uint16_t * depthArray)
 	}
 	glGenerateMipmap(GL_TEXTURE_2D);
 
-	//std::vector<uint16_t> testvec(480 * 848 / 2, 10);
+	/*std::vector<uint16_t> testvec(480 * 848 / 2, 10);
 
 
-	//glActiveTexture(GL_TEXTURE0);
-	//glBindTexture(GL_TEXTURE_2D, m_textureDepth);
-	//glGetTexImage(GL_TEXTURE_2D, 1, GL_RED, GL_UNSIGNED_SHORT, testvec.data());
-	//glBindTexture(GL_TEXTURE_2D, 0);
-	//glActiveTexture(0);
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, m_textureDepth);
+	glGetTexImage(GL_TEXTURE_2D, 1, GL_RED, GL_UNSIGNED_SHORT, testvec.data());
+	glBindTexture(GL_TEXTURE_2D, 0);
+	glActiveTexture(0);
 
-	//cv::Mat lvl1d = cv::Mat(480 / 2, 848 / 2, CV_16SC1, testvec.data()); 
-	//cv::Mat converted;
-	//lvl1d.convertTo(converted, CV_32FC1);
-	//cv::imshow("lvl1!d", (converted * 100.0 / 1000000.0 - 0.1) / (0.2 - 0.1));
+	cv::Mat lvl1d = cv::Mat(480 / 2, 848 / 2, CV_16SC1, testvec.data()); 
+	cv::Mat converted;
+	lvl1d.convertTo(converted, CV_32FC1);
+	cv::imshow("lvl1!d", (converted * 100.0 / 1000000.0 - 0.1) / (0.2 - 0.1));*/
 
 
 
@@ -1249,7 +1249,7 @@ void gFusion::vertexToNormal()
 
 void gFusion::showNormals()
 {
-	/*cv::Mat lvl0 = cv::Mat(480, 848, CV_32FC4);
+	cv::Mat lvl0 = cv::Mat(480, 848, CV_32FC4);
 	cv::Mat lvl1 = cv::Mat(480 / 2, 848 / 2, CV_32FC4);
 	cv::Mat lvl2 = cv::Mat(480 / 4, 848 / 4, CV_32FC4);
 
@@ -1288,7 +1288,7 @@ void gFusion::showNormals()
 
 	cv::imshow("lvl0", image0[2]);
 	cv::imshow("lvl1", image1[2]);
-	cv::imshow("lvl2", image2[2]);*/
+	cv::imshow("lvl2", image2[2]);
 
 }
 

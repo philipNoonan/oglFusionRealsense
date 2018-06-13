@@ -49,12 +49,16 @@ void kRender::MouseButtonCallback(GLFWwindow* window, int button, int action, in
 
 	if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS && m_selectInitialPoseFlag == true)
 	{
-		if (m_mouse_pos_x > 32 && m_mouse_pos_x < 512 + 32 && m_mouse_pos_y < 32 + 424 && m_mouse_pos_y > 32) // this is the hight and width of the render window, this is a bug
+		if (m_mouse_pos_x > m_display2DPos.x && m_mouse_pos_x < m_display2DPos.x + m_display2DSize.x && m_mouse_pos_y < m_display2DPos.y + m_display2DSize.y && m_mouse_pos_y > 0) // this is the hight and width of the render window, this is a bug
 		{
-			m_center_pixX = m_mouse_pos_x - 32;
-			m_center_pixY = m_mouse_pos_y - 32;
+			m_center_pixX = m_mouse_pos_x - m_display2DPos.x;
+			m_center_pixY = m_mouse_pos_y - m_display2DPos.y + m_display2DSize.y;
 
-			std::cout << "x: " << m_center_pixX  << " y: " << m_center_pixY << std::endl;
+		/*	std::cout << std::endl;
+			std::cout << "cente pix x: " << m_center_pixX  << " y: " << m_center_pixY << std::endl;
+			std::cout << "mouse pos x: " << m_mouse_pos_x << " y: " << m_mouse_pos_y << std::endl;
+			std::cout << "displ pos x: " << m_display2DPos.x << " y: " << m_display2DPos.y << std::endl;
+			std::cout << "displ siz x: " << m_display2DSize.x << " y: " << m_display2DSize.y << std::endl;*/
 
 			// get depth value, from texture buffer or float array???
 
@@ -540,7 +544,7 @@ void kRender::bindBuffersForRendering()
 
 
 
-void kRender::Render(bool useInfrared, int x, int y, int w, int h)
+void kRender::Render(bool useInfrared)
 {
 	// set positions
 	// set uniforms
@@ -549,7 +553,7 @@ void kRender::Render(bool useInfrared, int x, int y, int w, int h)
 	bindBuffersForRendering();
 	//setDepthImageRenderPosition();
 	setNormalImageRenderPosition();
-	setViewport(x, y , w, h);
+	setViewport(m_display2DPos.x, m_display2DPos.y , m_display2DSize.x, m_display2DSize.y);
 
 	renderLiveVideoWindow(useInfrared);
 
