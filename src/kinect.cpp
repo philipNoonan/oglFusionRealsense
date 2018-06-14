@@ -104,9 +104,14 @@ void mCubeInit()
 
 void setImguiWindows()
 {
-	int width = 1920;
-	int height = 1080;
+	int width;
+	int height;
 	int topBarHeight = 128;
+
+	glfwGetFramebufferSize(window, &width, &height);
+
+	controlPoint0.x = width / 4.0f;
+	controlPoint0.y = height - height / 3.0f;
 
 	navigationWindow.set(0, topBarHeight, controlPoint0.x, height - topBarHeight, true, true, "navi");
 
@@ -558,8 +563,7 @@ void setUpGPU()
 int main(int, char**)
 {
 
-	controlPoint0.x = 512;
-	controlPoint0.y = 1080 - 420;
+
 
 	int display_w, display_h;
 	// load openGL window
@@ -568,6 +572,10 @@ int main(int, char**)
 
 
 	glfwGetFramebufferSize(window, &display_w, &display_h);
+
+	controlPoint0.x = display_w / 4.0f;
+	controlPoint0.y = display_h - display_h / 3.0f;
+
 	// Setup ImGui binding
 	ImGui::CreateContext();
 	ImGui_ImplGlfwGL3_Init(window, true);

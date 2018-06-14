@@ -198,7 +198,6 @@ glm::vec3 initOffset(int pixX, int pixY)
 	int pointY = depthHeight - float(pixY) * (float(depthHeight) / float(display2DWindow.h));
 	//std::cout << std::endl;
 	//std::cout << "depth width " << depthWidth << " px " << pointX << " py " << pointY << " size " << depthArray.size() << " valu " << pointY * depthWidth + pointX << std::endl;
-	// this crashes if its being written to? need a lock?
 	float z = float(depthArray[pointY * depthWidth + pointX]) * kcamera.getDepthUnit() / 1000000.0f;
 	//kcamera.fx(), kcamera.fx(), kcamera.ppx(), kcamera.ppy()
 	std::cout << z << std::endl;

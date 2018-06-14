@@ -156,7 +156,7 @@ GLFWwindow * kRender::loadGLFWWindow()
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
 	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 	//glfwWindowHint(GLFW_REFRESH_RATE, 30);
-	glfwWindowHint(GLFW_RESIZABLE, GL_FALSE);
+	glfwWindowHint(GLFW_RESIZABLE, GL_TRUE);
 	glEnable(GL_DEPTH_TEST);
 
 	m_window = glfwCreateWindow(m_screen_width, m_screen_height, "oglfusion", nullptr, nullptr);

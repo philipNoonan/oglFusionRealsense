@@ -797,7 +797,7 @@ bool gFusion::Track()
 
 			m_pose = delta * m_pose;
 
-			if (result.norm() < 1e-6 && result.norm() != 0)
+			if (result.norm() < 1e-4 && result.norm() != 0)
 				break;
 		}
 	}
