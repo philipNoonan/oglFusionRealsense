@@ -24,14 +24,14 @@ layout(std430, binding = 0) buffer posBuf
     // DONT USE VEC3 IN SSBO https://stackoverflow.com/questions/38172696/should-i-ever-use-a-vec3-inside-of-a-uniform-buffer-or-shader-storage-buffer-o
     vec4 pos [];
 };
-//layout(std430, binding = 1) buffer normBuf
-//{
-//    vec3 norm [];
-//};
+layout(std430, binding = 1) buffer normBuf
+{
+    vec4 norm [];
+};
 
 // uniforms
 uniform int baseLevel;
-uniform float isoValue = 1000.0f;
+uniform float isoLevel;
 uniform uint totalSum;
 uniform int volumeType = 1;
 
@@ -206,14 +206,14 @@ bool traverseHPLevel()
         //    );
 
         float value0 = getVolumeData(ivec3(point0.x, point0.y, point0.z), 0).x;
-        float diff = (isoValue - value0) / (getVolumeData(ivec3(point1.x, point1.y, point1.z), 0).x - value0);
+        float diff = (isoLevel - value0) / (getVolumeData(ivec3(point1.x, point1.y, point1.z), 0).x - value0);
 
 
         // THIS FIX IS BECAUSE SOMETHING IS DIVIDNG BY ZERO AND FUCKING UP
-        if (diff > 1 || diff < 0)
-        {
-            diff = 0.5;
-        }
+        //if (diff > 1 || diff < 0)
+        //{
+        //    diff = 0.5;
+        //}
         // 0.5 ==== diff
         const vec3 vertex = mix(vec3(point0.x, point0.y, point0.z), vec3(point1.x, point1.y, point1.z), diff);
         //const vec3 normal = mix(forwardDifference0, forwardDifference1, diff);

@@ -74,6 +74,7 @@ public:
 	{
 		return m_totalSum;
 	}
+	void exportPointCloud();
 	void exportMesh();
 
 
@@ -95,6 +96,8 @@ private:
 	GLuint m_totalSumID;
 	GLuint m_baseLevelID;
 	GLuint m_volumeTypeTHPID;
+	GLuint m_isoLevelTHPID;
+
 
 	// prefix sum
 	GLuint m_prefixSumSubroutineID;

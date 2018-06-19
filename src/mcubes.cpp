@@ -49,7 +49,7 @@ void MCubes::setLocations()
 	m_traverseHPLevelID = glGetSubroutineIndex(traverseHistoPyramidsProg.getHandle(), GL_COMPUTE_SHADER, "traverseHPLevel");
 	m_totalSumID = glGetUniformLocation(traverseHistoPyramidsProg.getHandle(), "totalSum");
 	m_volumeTypeTHPID = glGetUniformLocation(traverseHistoPyramidsProg.getHandle(), "volumeType");
-
+	m_isoLevelTHPID = glGetUniformLocation(traverseHistoPyramidsProg.getHandle(), "isoLevel");
 
 	// PREFIX SUMS
 	m_prefixSumSubroutineID = glGetSubroutineUniformLocation(prefixSumProg.getHandle(), GL_COMPUTE_SHADER, "getPrefixSum");
@@ -328,8 +328,8 @@ void MCubes::histoPyramids()
 	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, m_bufferPos);
 	glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(float) * m_totalSum * 4, NULL, GL_DYNAMIC_DRAW); // this is the * 9 buffer in FAST vec3 * 3
 
-	//glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, m_bufferNorm);
-	//glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(float) * m_totalSum * 5, NULL, GL_DYNAMIC_DRAW);
+	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, m_bufferNorm);
+	glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(float) * m_totalSum * 4, NULL, GL_DYNAMIC_DRAW);
 
 
 	/// Traverse HP level
@@ -338,6 +338,7 @@ void MCubes::histoPyramids()
 	glUniformSubroutinesuiv(GL_COMPUTE_SHADER, 1, &m_traverseHPLevelID);
 	glUniform1ui(m_totalSumID, sumData[0]);
 	glUniform1ui(m_volumeTypeTHPID, 1);
+	glUniform1f(m_isoLevelTHPID, m_isoLevel);
 
 	
 
@@ -387,8 +388,7 @@ void MCubes::histoPyramids()
 
 
 }
-
-void MCubes::exportMesh()
+void MCubes::exportPointCloud() 
 {
 
 	std::cout << "EXPORTING IS ONLY CURRENTLY PROPERLY SUPPORTED FOR POWER OF 2 DIMENSIONS" << std::endl;
@@ -419,13 +419,54 @@ void MCubes::exportMesh()
 	outFile << "property float x" << std::endl;
 	outFile << "property float y" << std::endl;
 	outFile << "property float z" << std::endl;
-	
+
 	outFile << "end_header" << std::endl;
 	for (int pi = 0; pi < pointNum * 4; pi += 4)
 	{
 		const float* point = (float*)(&posData[pi]);
 		outFile << point[0] << " " << point[1] << " " << point[2] << std::endl;
 	}
+}
+
+void MCubes::exportMesh()
+{
+	std::cout << "EXPORTING IS ONLY CURRENTLY PROPERLY SUPPORTED FOR POWER OF 2 DIMENSIONS" << std::endl;
+	std::vector<float> posData(m_totalSum * 4);
+
+	glBindBuffer(GL_SHADER_STORAGE_BUFFER, m_bufferPos);
+	void *ptr = glMapBuffer(GL_SHADER_STORAGE_BUFFER, GL_READ_ONLY);
+	memcpy_s(posData.data(), posData.size() * sizeof(float), ptr, posData.size() * sizeof(float));
+	glUnmapBuffer(GL_SHADER_STORAGE_BUFFER);
+
+	std::string modelFileName = "data/meshes/marchingCubesBin.stl";
+
+
+	std::ofstream outFile(modelFileName, std::ios::out | std::ios::binary);
+
+	if (!outFile)
+	{
+		//cerr << "Error opening output file: " << FileName << "!" << endl;
+		printf("Error opening output file: %s!\n", modelFileName);
+		exit(1);
+	}
+
+	outFile << "solid STL made from Phils Cuda Marching Cubes" << std::endl;
+
+	for (int i = 0; i < posData.size(); i+=12) // total verts should be les than maxverts,
+	{
+		outFile << "facet normal " << 1.0 << " " << 1.0 << " " << 1.0 << std::endl;
+		outFile << "outer loop" << std::endl;
+		outFile << "vertex " << posData[i + 0] / 1000.0f << " " << posData[i + 1] / 1000.0f << " " << posData[i + 2] / 1000.0f << std::endl;
+		outFile << "vertex " << posData[i + 4] / 1000.0f << " " << posData[i + 5] / 1000.0f << " " << posData[i + 6] / 1000.0f << std::endl;
+		outFile << "vertex " << posData[i + 8] / 1000.0f << " " << posData[i + 9] / 1000.0f << " " << posData[i + 10] / 1000.0f << std::endl;
+		outFile << "endloop" << std::endl;
+		outFile << "endfacet" << std::endl;
+
+	}
+	outFile << "endsolid STL made from Phils Cuda Marching Cubes" << std::endl;
+
+	outFile.close();
+
 }
 
 

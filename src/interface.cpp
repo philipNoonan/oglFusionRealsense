@@ -73,7 +73,7 @@ void Realsense2Camera::start()
 		cfg.enable_device(serial_number);
 
 
-		//Add desired streams to configuration
+		//Add desired streams to configuration // 
 		cfg.enable_stream(RS2_STREAM_COLOR, m_colorframe_width, m_colorframe_height, RS2_FORMAT_BGRA8, 30);
 		cfg.enable_stream(RS2_STREAM_DEPTH, m_depthframe_width, m_depthframe_height, RS2_FORMAT_Z16, m_depthRate);
 
@@ -223,7 +223,7 @@ void Realsense2Camera::captureLoop()
 	if (advanced.is_enabled())
 	{
 		std::string f = "./resources/nearmode.json";
-		//std::string f = "./resources/standard.json";
+	    //std::string f = "./resources/standard.json";
 		//std::string f = "./resources/nearmode435.json"; 
 		//std::string f = "./resources/standard435.json";
 

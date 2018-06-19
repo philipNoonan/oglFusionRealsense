@@ -129,7 +129,7 @@ void setUIStyle()
 	ImGuiStyle& style = ImGui::GetStyle();
 
 	style.Alpha = 1.0f;
-
+	
 	style.WindowBorderSize = 1.0f;
 	style.WindowRounding = 0.0f;
 
