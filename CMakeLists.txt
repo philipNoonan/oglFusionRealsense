@@ -4,7 +4,7 @@ cmake_minimum_required(VERSION 3.9)
 set(CMAKE_TOOLCHAIN_FILE "" CACHE FILEPATH "this file -> /scripts/buildsystems/vcpkg.cmake")
 
 if (EXISTS ${CMAKE_TOOLCHAIN_FILE})
-	message( STATUS "vcpkg cmake file found ")
+	message( STATUS "vcpkg cmake file found")
 else()
 	message( FATAL_ERROR "vcpkg cmake file not found")
 endif()
