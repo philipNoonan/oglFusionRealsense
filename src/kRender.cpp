@@ -49,26 +49,26 @@ void kRender::MouseButtonCallback(GLFWwindow* window, int button, int action, in
 
 	if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS && m_selectInitialPoseFlag == true)
 	{
-		if (m_mouse_pos_x > m_display2DPos.x && m_mouse_pos_x < m_display2DPos.x + m_display2DSize.x && m_mouse_pos_y < m_display2DPos.y + m_display2DSize.y && m_mouse_pos_y > 0) // this is the hight and width of the render window, this is a bug
-		{
-			m_center_pixX = m_mouse_pos_x - m_display2DPos.x;
-			m_center_pixY = m_mouse_pos_y - m_display2DPos.y + m_display2DSize.y;
+		//if (m_mouse_pos_x > m_display2DPos.x && m_mouse_pos_x < m_display2DPos.x + m_display2DSize.x && m_mouse_pos_y < m_display2DPos.y + m_display2DSize.y && m_mouse_pos_y > 0) // this is the hight and width of the render window, this is a bug
+		//{
+		//	m_center_pixX = m_mouse_pos_x - m_display2DPos.x;
+		//	m_center_pixY = m_mouse_pos_y - m_display2DPos.y + m_display2DSize.y;
 
-		/*	std::cout << std::endl;
-			std::cout << "cente pix x: " << m_center_pixX  << " y: " << m_center_pixY << std::endl;
-			std::cout << "mouse pos x: " << m_mouse_pos_x << " y: " << m_mouse_pos_y << std::endl;
-			std::cout << "displ pos x: " << m_display2DPos.x << " y: " << m_display2DPos.y << std::endl;
-			std::cout << "displ siz x: " << m_display2DSize.x << " y: " << m_display2DSize.y << std::endl;*/
+		///*	std::cout << std::endl;
+		//	std::cout << "cente pix x: " << m_center_pixX  << " y: " << m_center_pixY << std::endl;
+		//	std::cout << "mouse pos x: " << m_mouse_pos_x << " y: " << m_mouse_pos_y << std::endl;
+		//	std::cout << "displ pos x: " << m_display2DPos.x << " y: " << m_display2DPos.y << std::endl;
+		//	std::cout << "displ siz x: " << m_display2DSize.x << " y: " << m_display2DSize.y << std::endl;*/
 
-			// get depth value, from texture buffer or float array???
+		//	// get depth value, from texture buffer or float array???
 
-			//// need to get depth pixel of this point
-			//float x = (pixX - m_cameraParams.z) * (1.0f / m_cameraParams.x) * depth.x;
-			//float y = (pixY - m_cameraParams.w) * (1.0f / m_cameraParams.y) * depth.x;
-			//float z = depth.x;
+		//	//// need to get depth pixel of this point
+		//	//float x = (pixX - m_cameraParams.z) * (1.0f / m_cameraParams.x) * depth.x;
+		//	//float y = (pixY - m_cameraParams.w) * (1.0f / m_cameraParams.y) * depth.x;
+		//	//float z = depth.x;
 
-			//m_cameraParams.x
-		}
+		//	//m_cameraParams.x
+		//}
 	}
 
 
@@ -406,11 +406,11 @@ void kRender::setWindowLayout()
 
 }
 
-void kRender::setComputeWindowPosition(int x, int y, int w, int h)
-{
-	//glViewport(m_anchorMW.first + m_depth_width * m_render_scale_width, m_anchorMW.second, m_depth_width * m_render_scale_width, m_depth_height * m_render_scale_height);
-	glViewport(x, y, w, h);
-}
+//void kRender::setComputeWindowPosition(int x, int y, int w, int h)
+//{
+//	//glViewport(m_anchorMW.first + m_depth_width * m_render_scale_width, m_anchorMW.second, m_depth_width * m_render_scale_width, m_depth_height * m_render_scale_height);
+//	glViewport(x, y, w, h);
+//}
 
 //
 //void kRender::setColorDepthMapping(int* colorDepthMap)

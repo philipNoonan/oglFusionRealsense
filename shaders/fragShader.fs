@@ -35,7 +35,9 @@ vec4 fromDepth()
 	vec4 tColor = vec4(textureLod(currentTextureDepth, vec2(TexCoord), 0)) * 65535.0f;
 	//float outVal = smoothstep(0.0, 200000.0, float(tColor.x) * depthScale);
 	//return vec4((tColor.x * 100.0 / 1000000.0 - 0.15) / (0.2 - 0.15), (tColor.x  * 100.0 / 1000000.0 - 0.1) / (0.15 - 0.1),( tColor.x  * 100.0 / 1000000.0 - 0.2) / (0.3 - 0.2), 1.0f);
-	return vec4(tColor.x * depthScale - depthRange.x / (depthRange.y - depthRange.x), tColor.x * depthScale - depthRange.x / (depthRange.y - depthRange.x), tColor.x * depthScale - depthRange.x / (depthRange.y - depthRange.x), 1.0f);
+    float depthVal = smoothstep(depthRange.x, depthRange.y, tColor.x * depthScale);
+	//return vec4(tColor.x * depthScale - depthRange.x / (depthRange.y - depthRange.x), tColor.x * depthScale - depthRange.x / (depthRange.y - depthRange.x), tColor.x * depthScale - depthRange.x / (depthRange.y - depthRange.x), 1.0f);
+    return vec4(depthVal.xxx, 1.0f);
 }
 
 subroutine(getColor)

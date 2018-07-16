@@ -645,6 +645,7 @@ int main(int, char**)
 
 
 		//krender.anchorMW(std::make_pair<int, int>(50, 1080 - 424 - 50 ));
+		glfwGetFramebufferSize(window, &display_w, &display_h);
 
 		//// Rendering
 		glViewport(0, 0, display_w, display_h);
