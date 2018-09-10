@@ -652,7 +652,7 @@ void gFusion::vertexToNormal()
 
 void gFusion::showNormals()
 {
-	cv::Mat lvl0 = cv::Mat(480, 848, CV_32FC4);
+	/*cv::Mat lvl0 = cv::Mat(480, 848, CV_32FC4);
 	cv::Mat lvl1 = cv::Mat(480 / 2, 848 / 2, CV_32FC4);
 	cv::Mat lvl2 = cv::Mat(480 / 4, 848 / 4, CV_32FC4);
 
@@ -691,7 +691,7 @@ void gFusion::showNormals()
 
 	cv::imshow("lvl0", image0[2]);
 	cv::imshow("lvl1", image1[2]);
-	cv::imshow("lvl2", image2[2]);
+	cv::imshow("lvl2", image2[2]);*/
 
 }
 

@@ -6,6 +6,7 @@
 
 #include "glutils.h"
 #include "glslprogram.h"
+#define GLM_ENABLE_EXPERIMENTAL
 
 #include <glm/gtc/type_ptr.hpp>
 

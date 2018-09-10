@@ -15,6 +15,7 @@
 #include <string>
 using std::string;
 #include <map>
+#define GLM_ENABLE_EXPERIMENTAL
 
 #include <glm/glm.hpp>
 using glm::vec2;
