@@ -87,7 +87,7 @@ void gFusion::setLocations()
 	m_imageSizeID = glGetUniformLocation(reduceProg.getHandle(), "imageSize");
 
 	m_invTrackID = glGetUniformLocation(integrateProg.getHandle(), "invTrack");
-	m_KID = glGetUniformLocation(integrateProg.getHandle(), "K");
+	m_KID = glGetUniformLocation(integrateProg.getHandle(), "Kmat");
 	m_muID = glGetUniformLocation(integrateProg.getHandle(), "mu");
 	m_maxWeightID = glGetUniformLocation(integrateProg.getHandle(), "maxWeight");
 	m_volDimID = glGetUniformLocation(integrateProg.getHandle(), "volDim");
@@ -175,8 +175,8 @@ GLuint gFusion::createTexture(GLenum target, int levels, int w, int h, int d, GL
 	glGenTextures(1, &texid);
 	glBindTexture(target, texid);
 
-	glTexParameteri(target, GL_TEXTURE_MAG_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-	glTexParameteri(target, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+	glTexParameteri(target, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameteri(target, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_NEAREST);
 	glTexParameteri(target, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 	glTexParameteri(target, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
@@ -210,6 +210,7 @@ void gFusion::initTextures()
 	{
 		m_textureDepth = createTexture(GL_TEXTURE_2D, 3, configuration.depthFrameSize.x, configuration.depthFrameSize.y, 1, GL_R16);
 		// https://www.khronos.org/opengl/wiki/Normalized_Integer
+		// I think that we have to use normailsed images here, because we cannot use ints for mip maps, they just dont work
 	}
 
 	//////////////////
@@ -249,7 +250,9 @@ void gFusion::initTextures()
 
 void gFusion::initVolume()
 {
+	//GLenum err = glGetError();
 	m_textureVolume = createTexture(GL_TEXTURE_3D, 1, configuration.volumeSize.x, configuration.volumeSize.y, configuration.volumeSize.z, GL_RG16I);
+	//err = glGetError();
 }
 
 void gFusion::Reset(glm::mat4 pose, bool deleteFlag)
@@ -576,6 +579,9 @@ void gFusion::depthToVertex(float * depthArray)
 		glDispatchCompute(compWidth, compHeight, 1);
 		glMemoryBarrier(GL_ALL_BARRIER_BITS);
 	}
+
+
+
 }
 
 void gFusion::depthToVertex(uint16_t * depthArray)
@@ -591,19 +597,19 @@ void gFusion::depthToVertex(uint16_t * depthArray)
 	}
 	glGenerateMipmap(GL_TEXTURE_2D);
 
-	/*std::vector<uint16_t> testvec(480 * 848 / 2, 10);
+	//std::vector<uint16_t> testvec(480 * 848 / 2, 10);
 
 
-	glActiveTexture(GL_TEXTURE0);
-	glBindTexture(GL_TEXTURE_2D, m_textureDepth);
-	glGetTexImage(GL_TEXTURE_2D, 1, GL_RED, GL_UNSIGNED_SHORT, testvec.data());
-	glBindTexture(GL_TEXTURE_2D, 0);
-	glActiveTexture(0);
+	//glActiveTexture(GL_TEXTURE0);
+	//glBindTexture(GL_TEXTURE_2D, m_textureDepth);
+	//glGetTexImage(GL_TEXTURE_2D, 1, GL_RED, GL_UNSIGNED_SHORT, testvec.data());
+	//glBindTexture(GL_TEXTURE_2D, 0);
+	//glActiveTexture(0);
 
-	cv::Mat lvl1d = cv::Mat(480 / 2, 848 / 2, CV_16SC1, testvec.data()); 
-	cv::Mat converted;
-	lvl1d.convertTo(converted, CV_32FC1);
-	cv::imshow("lvl1!d", (converted * 100.0 / 1000000.0 - 0.1) / (0.2 - 0.1));*/
+	//cv::Mat lvl1d = cv::Mat(480 / 2, 848 / 2, CV_16SC1, testvec.data()); 
+	//cv::Mat converted;
+	//lvl1d.convertTo(converted, CV_32FC1);
+	//cv::imshow("lvl1!d", (converted * 100.0 / 1000000.0 - 0.1) / (0.2 - 0.1));
 
 
 
@@ -616,7 +622,7 @@ void gFusion::depthToVertex(uint16_t * depthArray)
 		
 
 		glm::mat4 invK = getInverseCameraMatrix(m_camPamsDepth / float(1 << i));
-		glBindImageTexture(1, m_textureDepth, i, GL_FALSE, 0, GL_READ_ONLY, GL_R16);
+		glBindImageTexture(1, m_textureDepth, i, GL_FALSE, 0, GL_READ_ONLY, GL_R16UI);
 		glBindImageTexture(2, m_textureVertex, i, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA32F);
 		glUniformMatrix4fv(m_invkID, 1, GL_FALSE, glm::value_ptr(invK));
 		glUniform4fv(m_camPamsID, 1, glm::value_ptr(m_camPamsDepth));
@@ -626,6 +632,16 @@ void gFusion::depthToVertex(uint16_t * depthArray)
 		glDispatchCompute(compWidth, compHeight, 1);
 		glMemoryBarrier(GL_ALL_BARRIER_BITS);
 	}
+
+	//std::vector<float> testvec(480 * 848, 10);
+
+
+	//glActiveTexture(GL_TEXTURE0);
+	//glBindTexture(GL_TEXTURE_2D, m_textureVertex);
+	//glGetTexImage(GL_TEXTURE_2D, 2, GL_RGBA, GL_FLOAT, testvec.data());
+	//glBindTexture(GL_TEXTURE_2D, 0);
+	//glActiveTexture(0);
+
 }
 
 
@@ -866,7 +882,14 @@ void gFusion::track(int layer)
 	glDispatchCompute(compWidth, compHeight, 1);
 	glMemoryBarrier(GL_ALL_BARRIER_BITS);
 
+	//std::vector<float> testvec(480 * 848*4, 10);
 
+
+	//glActiveTexture(GL_TEXTURE0);
+	//glBindTexture(GL_TEXTURE_2D, m_textureReferenceVertex);
+	//glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_FLOAT, testvec.data());
+	//glBindTexture(GL_TEXTURE_2D, 0);
+	//glActiveTexture(0);
 
 }
 
@@ -1328,6 +1351,7 @@ void gFusion::getSDFReduction(std::vector<float>& b, std::vector<float>& C, floa
 void gFusion::integrate()
 {
 
+	//GLenum errInt = glGetError();
 
 	glBeginQuery(GL_TIME_ELAPSED, query[2]);
 
@@ -1345,6 +1369,7 @@ void gFusion::integrate()
 	glUniform3fv(m_volSizeID, 1, glm::value_ptr(configuration.volumeSize));
 	//bind image textures
 	glBindImageTexture(0, m_textureVolume, 0, GL_FALSE, 0, GL_READ_WRITE, GL_RG16I);
+	//errInt = glGetError();
 	if (m_usingFloatDepth)
 	{
 		glUniform1i(m_imageTypeID_i, 1); // image type 1 == float
@@ -1354,11 +1379,12 @@ void gFusion::integrate()
 	}
 	else
 	{
+		
 		glUniform1i(m_imageTypeID_i, 0); // image type 0 == short
 		glUniform1f(m_depthScaleID, m_depthUnit / 1000000.0f); // 1000 == each depth unit == 1 mm
-		glBindImageTexture(2, m_textureDepth, 0, GL_FALSE, 0, GL_READ_ONLY, GL_R16);
+		glBindImageTexture(2, m_textureDepth, 0, GL_FALSE, 0, GL_READ_ONLY, GL_R16UI);
 	}
-
+	//errInt = glGetError();
 
 	int xWidth;
 	int yWidth;

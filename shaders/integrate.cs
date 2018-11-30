@@ -4,10 +4,10 @@ layout(local_size_x = 32, local_size_y = 32) in;
 
 layout(binding = 0, rg16i) uniform iimage3D volumeData; // Gimage3D, where G = i, u, or blank, for int, u int, and floats respectively
 layout(binding = 1, r32f) uniform image2D depthImage;
-layout(binding = 2, r16) uniform image2D depthImageShort;
+layout(binding = 2, r16ui) uniform uimage2D depthImageShort;
 
 uniform mat4 invTrack;
-uniform mat4 K; 
+uniform mat4 Kmat; 
 uniform float mu; 
 uniform float maxWeight;
 uniform vec3 volDim; // vol dim real world span of the volume in meters
@@ -54,13 +54,21 @@ void set(uvec3 _pix, vec4 _data)
 
 void main()
 {
-    ivec2 depthSize = ivec2(imageSize(depthImage).xy);
+    ivec2 depthSize;
+    if (imageType == 0)
+    {
+        depthSize = ivec2(imageSize(depthImageShort).xy);
+    }
+    else
+    {
+        depthSize = ivec2(imageSize(depthImage).xy);
+    }
     uvec3 pix = gl_GlobalInvocationID.xyz;
 
     vec3 pos = opMul(invTrack, getVolumePosition(pix));
-    vec3 cameraX = opMul(K, pos);
+    vec3 cameraX = opMul(Kmat, pos);
     vec3 delta = rotate(invTrack, vec3(0.0f, 0.0f, volDim.z / volSize.z));
-    vec3 cameraDelta = rotate(K, delta);
+    vec3 cameraDelta = rotate(Kmat, delta);
 
     for (pix.z = 0; pix.z < volSize.z; ++pix.z, pos += delta, cameraX += cameraDelta)
     {
@@ -77,7 +85,7 @@ void main()
         float depth;
         if (imageType == 0)
         {
-            depth = float(imageLoad(depthImageShort, ivec2(px)).x) * 65535.0f * depthScale;
+            depth = float(imageLoad(depthImageShort, ivec2(px)).x) * depthScale;
         }
         else if (imageType == 1)
         {

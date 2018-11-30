@@ -8,7 +8,7 @@ uniform int imageType; // 0 = short, 1 = float
 uniform float depthScale; // value to convert whatever unit the depth data comes in to be in units of metres
 
 layout(binding=0, r32f) uniform image2D InputImage;
-layout(binding=1, r16) uniform image2D InputImageShort; // JUST USE r16 HERE!¬¬!"¬!"¬!"¬!"¬!"¬
+layout(binding=1, r16ui) uniform uimage2D InputImageShort; // JUST USE r16 HERE!¬¬!"¬!"¬!"¬!"¬!"¬
 
 layout(binding=2, rgba32f) uniform image2D OutputImage;
 
@@ -49,7 +49,7 @@ void main()
         float depth;
         if (imageType == 0)
         {
-            depth = float(imageLoad(InputImageShort, ivec2(pix)).x) * 65535.0f;
+            depth = float(imageLoad(InputImageShort, ivec2(pix)).x);
         }
         else if (imageType == 1)
         {
