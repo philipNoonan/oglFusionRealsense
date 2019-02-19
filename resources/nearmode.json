@@ -14,7 +14,7 @@
     "aux-param-colorcorrection9": "0.930664",
     "aux-param-depthclampmax": "1560",
     "aux-param-depthclampmin": "0",
-    "aux-param-disparityshift": "150",
+    "aux-param-disparityshift": "0",
     "controls-autoexposure-auto": "True",
     "controls-autoexposure-manual": "33000",
     "controls-color-autoexposure-auto": "True",

@@ -74,7 +74,7 @@ void Realsense2Camera::start()
 
 
 		//Add desired streams to configuration // 
-		cfg.enable_stream(RS2_STREAM_COLOR, m_colorframe_width, m_colorframe_height, RS2_FORMAT_BGRA8, 30);
+		//cfg.enable_stream(RS2_STREAM_COLOR, m_colorframe_width, m_colorframe_height, RS2_FORMAT_BGRA8, 30);
 		cfg.enable_stream(RS2_STREAM_DEPTH, m_depthframe_width, m_depthframe_height, RS2_FORMAT_Z16, m_depthRate);
 
 
@@ -222,9 +222,9 @@ void Realsense2Camera::captureLoop()
 
 	if (advanced.is_enabled())
 	{
-		std::string f = "./resources/nearmode.json";
+		//std::string f = "./resources/nearmode.json";
 	    //std::string f = "./resources/standard.json";
-		//std::string f = "./resources/nearmode435.json"; 
+		std::string f = "./resources/nearmode435.json"; 
 		//std::string f = "./resources/standard435.json";
 
 		std::ifstream file(f, std::ifstream::in);
@@ -241,6 +241,8 @@ void Realsense2Camera::captureLoop()
 		advanced.load_json(str);
 
 		m_ctrl_curr = advanced.get_depth_table(0);
+		m_ctrl_curr.disparityShift = 0;
+
 		advanced.set_depth_table(m_ctrl_curr);
 
 	}
@@ -252,6 +254,8 @@ void Realsense2Camera::captureLoop()
 	m_color_frame = new float[m_colorframe_width * m_colorframe_height * 3];
 	m_depth_frame = new uint16_t[m_depthframe_width * m_depthframe_height];
 
+	//rs2::frame_queue fq_depth;
+
 	while (m_status == CAPTURING)
 	{
 		if (m_valuesChanged)
@@ -259,17 +263,20 @@ void Realsense2Camera::captureLoop()
 			advanced.set_depth_table(m_ctrl_curr);
 			m_valuesChanged = false;
 		}
+
+		//fq_depth.enqueue(std::move(depth));
+
 		data = pipe.wait_for_frames(); // Wait for next set of frames from the camera
 
 		depth = data.get_depth_frame(); // Find and colorize the depth data
-		color = data.get_color_frame();            // Find the color data
+		//color = data.get_color_frame();            // Find the color data
 
 		auto dbg = selection.get_device().as<rs2::debug_protocol>();
 		std::vector<uint8_t> cmd = { 0x14, 0, 0xab, 0xcd, 0x2a, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
 
 												   // Query frame size (width and height)
-		const int w = color.as<rs2::video_frame>().get_width();
-		const int h = color.as<rs2::video_frame>().get_height();
+		//const int w = color.as<rs2::video_frame>().get_width();
+		//const int h = color.as<rs2::video_frame>().get_height();
 
 		const int wD = depth.as<rs2::video_frame>().get_width();
 		const int hD = depth.as<rs2::video_frame>().get_height();
@@ -281,7 +288,7 @@ void Realsense2Camera::captureLoop()
 		//cv::imshow("cv wsrtyindow", colMat);
 		//cv::waitKey(1);
 
-		memcpy_s(m_color_frame, w * h * 4, color.get_data(), w * h * 4);
+		//memcpy_s(m_color_frame, w * h * 4, color.get_data(), w * h * 4);
 		memcpy_s(m_depth_frame, wD * hD * 2, depth.get_data(), wD * hD * 2);
 
 		auto res = dbg.send_and_receive_raw_data(cmd);

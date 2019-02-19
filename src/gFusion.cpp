@@ -79,12 +79,25 @@ void gFusion::setLocations()
 	m_imageTypeID = glGetUniformLocation(depthToVertProg.getHandle(), "imageType");
 	m_depthScaleID = glGetUniformLocation(depthToVertProg.getHandle(), "depthScale");
 
+	std::cout << "invK " << m_invkID << std::endl;
+	std::cout << "camPams " << m_camPamsID << std::endl;
+	std::cout << "imageType " << m_imageTypeID << std::endl;
+	std::cout << "depthScale " << m_depthScaleID << std::endl;
+
 	m_viewID_t = glGetUniformLocation(trackProg.getHandle(), "view");
 	m_TtrackID = glGetUniformLocation(trackProg.getHandle(), "Ttrack");
 	m_distThresh_t = glGetUniformLocation(trackProg.getHandle(), "dist_threshold");
 	m_normThresh_t = glGetUniformLocation(trackProg.getHandle(), "normal_threshold");
 
+	std::cout << "view " << m_viewID_t << std::endl;
+	std::cout << "Ttrack " << m_TtrackID << std::endl;
+	std::cout << "dist_threshold " << m_distThresh_t << std::endl;
+	std::cout << "normal_threshold " << m_normThresh_t << std::endl;
+
 	m_imageSizeID = glGetUniformLocation(reduceProg.getHandle(), "imageSize");
+
+	std::cout << "imageSize " << m_imageSizeID << std::endl;
+
 
 	m_invTrackID = glGetUniformLocation(integrateProg.getHandle(), "invTrack");
 	m_KID = glGetUniformLocation(integrateProg.getHandle(), "Kmat");
@@ -94,6 +107,15 @@ void gFusion::setLocations()
 	m_volSizeID = glGetUniformLocation(integrateProg.getHandle(), "volSize");
 	m_imageTypeID_i = glGetUniformLocation(integrateProg.getHandle(), "imageType");
 	m_depthScaleID_i = glGetUniformLocation(integrateProg.getHandle(), "depthScale");
+
+	std::cout << "invTrack " << m_invTrackID << std::endl;
+	std::cout << "Kmat " << m_KID << std::endl;
+	std::cout << "mu " << m_muID << std::endl;
+	std::cout << "maxWeight " << m_maxWeightID << std::endl;
+	std::cout << "volDim " << m_volDimID << std::endl;
+	std::cout << "volSize " << m_volSizeID << std::endl;
+	std::cout << "imageType " << m_imageTypeID_i << std::endl;
+	std::cout << "depthScale " << m_depthScaleID_i << std::endl;
 
 	m_viewID_r = glGetUniformLocation(raycastProg.getHandle(), "view");
 	m_nearPlaneID = glGetUniformLocation(raycastProg.getHandle(), "nearPlane");
@@ -194,6 +216,7 @@ GLuint gFusion::createTexture(GLenum target, int levels, int w, int h, int d, GL
 	}
 	else if (target == GL_TEXTURE_3D)
 	{
+		glTexParameteri(target, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
 		glTexStorage3D(target, levels, internalformat, w, h, d);
 	}
 
@@ -625,7 +648,7 @@ void gFusion::depthToVertex(uint16_t * depthArray)
 		glBindImageTexture(1, m_textureDepth, i, GL_FALSE, 0, GL_READ_ONLY, GL_R16UI);
 		glBindImageTexture(2, m_textureVertex, i, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA32F);
 		glUniformMatrix4fv(m_invkID, 1, GL_FALSE, glm::value_ptr(invK));
-		glUniform4fv(m_camPamsID, 1, glm::value_ptr(m_camPamsDepth));
+		//glUniform4fv(m_camPamsID, 1, glm::value_ptr(m_camPamsDepth));
 		glUniform1i(m_imageTypeID, 0); // 0 == type short
 		glUniform1f(m_depthScaleID, m_depthUnit / 1000000.0f); // 1000 == each depth unit == 1 mm
 
@@ -767,7 +790,6 @@ void gFusion::showTrack()
 
 bool gFusion::Track()
 {
-	glBeginQuery(GL_TIME_ELAPSED, query[0]);
 
 	bool tracked = false;
 	glm::mat4 oldPose = m_pose;
@@ -820,37 +842,34 @@ bool gFusion::Track()
 
 
 
-	//std::cout << alignmentEnergy << std::endl;
-	if (alignmentEnergy > 1.0e-3f || alignmentEnergy == 0)
-	{
+	////std::cout << alignmentEnergy << std::endl;
+	//if (alignmentEnergy > 1.0e-3f || alignmentEnergy == 0)
+	//{
 		m_pose = oldPose;
-	}
-	else
-	{
+	//}
+	//else
+	//{
 		tracked = true;
-		updatePoseFinder();
-	}
+	//	updatePoseFinder();
+	//}
 
 	m_alignmentEnergy = alignmentEnergy;
 	//tracked = true;
 
 	//m_pose = oldPose;
 
-	glEndQuery(GL_TIME_ELAPSED);
-	GLuint available = 0;
-	while (!available) {
-		glGetQueryObjectuiv(query[0], GL_QUERY_RESULT_AVAILABLE, &available);
-	}
-	// elapsed time in nanoseconds
-	GLuint64 elapsed;
-	glGetQueryObjectui64vEXT(query[0], GL_QUERY_RESULT, &elapsed);
-	trackTime = elapsed / 1000000.0;
+	//std::cout << " p2p " << std::endl;
+	//std::cout << m_pose[0][0] << " " << m_pose[1][0] << " " << m_pose[2][0] << " " << m_pose[3][0] << std::endl;
+	//std::cout << m_pose[0][1] << " " << m_pose[1][1] << " " << m_pose[2][1] << " " << m_pose[3][1] << std::endl;
+	//std::cout << m_pose[0][2] << " " << m_pose[1][2] << " " << m_pose[2][2] << " " << m_pose[3][2] << std::endl;
+	//std::cout << m_pose[0][3] << " " << m_pose[1][3] << " " << m_pose[2][3] << " " << m_pose[3][3] << std::endl;
 
 	return tracked;
 }
 
 void gFusion::track(int layer)
 {
+	glBeginQuery(GL_TIME_ELAPSED, query[0]);
 
 	glm::mat4 invK = getInverseCameraMatrix(m_camPamsDepth);
 	glm::mat4 oldPose = pose;
@@ -891,6 +910,16 @@ void gFusion::track(int layer)
 	//glBindTexture(GL_TEXTURE_2D, 0);
 	//glActiveTexture(0);
 
+	glEndQuery(GL_TIME_ELAPSED);
+	GLuint available = 0;
+	while (!available) {
+		glGetQueryObjectuiv(query[0], GL_QUERY_RESULT_AVAILABLE, &available);
+	}
+	// elapsed time in nanoseconds
+	GLuint64 elapsed;
+	glGetQueryObjectui64vEXT(query[0], GL_QUERY_RESULT, &elapsed);
+	trackTime = elapsed / 1000000.0;
+
 }
 
 void gFusion::reduce(int layer)
@@ -913,14 +942,14 @@ void gFusion::reduce(int layer)
 	glMemoryBarrier(GL_ALL_BARRIER_BITS);
 
 	glEndQuery(GL_TIME_ELAPSED);
-	//GLuint available = 0;
-	//while (!available) {
-	//	glGetQueryObjectuiv(query[1], GL_QUERY_RESULT_AVAILABLE, &available);
-	//}
-	//// elapsed time in nanoseconds
-	//GLuint64 elapsed;
-	//glGetQueryObjectui64vEXT(query[1], GL_QUERY_RESULT, &elapsed);
-	//reduceTime = elapsed / 1000000.0;
+	GLuint available = 0;
+	while (!available) {
+		glGetQueryObjectuiv(query[1], GL_QUERY_RESULT_AVAILABLE, &available);
+	}
+	// elapsed time in nanoseconds
+	GLuint64 elapsed;
+	glGetQueryObjectui64vEXT(query[1], GL_QUERY_RESULT, &elapsed);
+	reduceTime = elapsed / 1000000.0;
 
 }
 
@@ -957,7 +986,7 @@ bool gFusion::TrackSDF() {
 
 	glm::mat4 sdfPose = m_pose;
 
-	Eigen::Matrix4f m_pose_eig_prev = m_pose_eig;
+	Eigen::Matrix<float, 4, 4, Eigen::ColMajor> m_pose_eig_prev = m_pose_eig;
 
 	Eigen::Vector3d trans;
 	Eigen::Matrix3d rot;
@@ -1111,10 +1140,9 @@ bool gFusion::TrackSDF() {
 		{
 			m_pose_eig = Twist(result).exp() * m_pose_eig_prev;
 
-			m_pose[0][0] = m_pose_eig(0, 0); m_pose[1][0] = m_pose_eig(0, 1); m_pose[2][0] = m_pose_eig(0, 2); m_pose[3][0] = m_pose_eig(0, 3);
-			m_pose[0][1] = m_pose_eig(1, 0); m_pose[1][1] = m_pose_eig(1, 1); m_pose[2][1] = m_pose_eig(1, 2); m_pose[3][1] = m_pose_eig(1, 3);
-			m_pose[0][2] = m_pose_eig(2, 0); m_pose[1][2] = m_pose_eig(2, 1); m_pose[2][2] = m_pose_eig(2, 2); m_pose[3][2] = m_pose_eig(2, 3);
-			m_pose[0][3] = 0;				 m_pose[1][3] = 0;				  m_pose[2][3] = 0;				   m_pose[3][3] = 1.0f;
+			std::memcpy(glm::value_ptr(m_pose), m_pose_eig.data(), 16 * sizeof(float));
+
+
 
 			//updatePoseFinder();
 
@@ -1129,7 +1157,7 @@ bool gFusion::TrackSDF() {
 
 		m_alignmentEnergy = alignmentEnergy;
 
-	//std::cout << " m_pose " << std::endl;
+	//std::cout << " sdf " << std::endl;
 	//std::cout << m_pose[0][0] << " " << m_pose[1][0] << " " << m_pose[2][0] << " " << m_pose[3][0] << std::endl;
 	//std::cout << m_pose[0][1] << " " << m_pose[1][1] << " " << m_pose[2][1] << " " << m_pose[3][1] << std::endl;
 	//std::cout << m_pose[0][2] << " " << m_pose[1][2] << " " << m_pose[2][2] << " " << m_pose[3][2] << std::endl;
@@ -1386,6 +1414,9 @@ void gFusion::integrate()
 	}
 	//errInt = glGetError();
 
+	glBindImageTexture(3, m_textureVertex, 0, GL_FALSE, 0, GL_READ_ONLY, GL_RGBA32F);
+
+
 	int xWidth;
 	int yWidth;
 
@@ -1393,7 +1424,8 @@ void gFusion::integrate()
 	xWidth = divup(configuration.volumeSize.x, 32);
 	yWidth = divup(configuration.volumeSize.y, 32);
 
-
+	xWidth = divup(configuration.depthFrameSize.x, 32);
+	yWidth = divup(configuration.depthFrameSize.y, 32);
 
 	glDispatchCompute(xWidth, yWidth, 1);
 	glMemoryBarrier(GL_ALL_BARRIER_BITS);
@@ -1412,7 +1444,7 @@ void gFusion::integrate()
 
 	integrateTime = elapsed / 1000000.0;
 
-	
+	//std::cout << "i time " << integrateTime << std::endl;
 
 
 }

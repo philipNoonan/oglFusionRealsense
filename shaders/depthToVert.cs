@@ -3,7 +3,7 @@
 layout (local_size_x = 32, local_size_y = 32) in;
 
 uniform mat4 invK;
-uniform vec4 camPams; // camPams.x = fx, camPams.y = fy, camPams.z = cx, camPams.w = cy
+//uniform vec4 camPams; // camPams.x = fx, camPams.y = fy, camPams.z = cx, camPams.w = cy
 uniform int imageType; // 0 = short, 1 = float
 uniform float depthScale; // value to convert whatever unit the depth data comes in to be in units of metres
 
@@ -68,7 +68,7 @@ void main()
 
         tPos = (float(depth) * depthScale) * rotate(invK, vec3(pix.x, pix.y, 1.0f));
         imageStore(OutputImage, ivec2(pix.x, pix.y), vec4(tPos, 0.0f));
-        Position3D[(pix.y * size.x) + pix.x] = vec4(tPos, 0.0f);
+        //Position3D[(pix.y * size.x) + pix.x] = vec4(tPos, 0.0f);
 
         //Color3D[(pix.y * size.x) + pix.x] = vec4(color.xyz,0); // FIX ME DONT USE FLOAT £" FOR COLOR USE BYTES!!!
         //Position3D[(pix.x * size.x) + pix.y] = vec3(pix.x / 100.0f, pix.y / 100.0f, -depth / 100.0f);

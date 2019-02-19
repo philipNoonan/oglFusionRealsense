@@ -1,13 +1,14 @@
 cmake_minimum_required(VERSION 3.9)
 
-
-set(CMAKE_TOOLCHAIN_FILE "" CACHE FILEPATH "this file -> /scripts/buildsystems/vcpkg.cmake")
-
-if (EXISTS ${CMAKE_TOOLCHAIN_FILE})
-	message( STATUS "vcpkg cmake file found")
+# Toolchain file needs to be set before project() 
+### FIND VCPKG
+if(DEFINED ENV{VCPKG_ROOT} AND NOT DEFINED CMAKE_TOOLCHAIN_FILE)
+  set(CMAKE_TOOLCHAIN_FILE "$ENV{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake"
+      CACHE STRING "")
 else()
-	message( FATAL_ERROR "vcpkg cmake file not found")
+	message(STATUS "VCPKG_ROOT not set in environment variables")	  
 endif()
+
 
 project(oglFusionRS)
 

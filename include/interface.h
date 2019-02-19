@@ -1,5 +1,16 @@
 #pragma once
 
+#define GLUT_NO_LIB_PRAGMA
+//##### OpenGL ######
+#include <GL/glew.h>
+#define GLFW_INCLUDE_GLU
+#include <GLFW/glfw3.h>
+
+#include "glutils.h"
+#include "glslprogram.h"
+
+#include "glhelper.h"
+
 #include <librealsense2/rs.hpp> // Include RealSense Cross Platform API
 #include <librealsense2/rs_advanced_mode.hpp>
 
@@ -9,7 +20,11 @@
 #include <thread>
 #include <mutex>
 #include <vector>
-//#include "opencv2/opencv.hpp"
+
+#include "opencv2/core/utility.hpp"
+#include "opencv2/opencv.hpp"
+#include "opencv2/imgproc/imgproc.hpp"
+#include "opencv2/highgui/highgui.hpp"
 
 class Realsense2Camera
 {
@@ -59,6 +74,26 @@ public:
 	}
 
 	std::vector<float> getColorCameraParameters();
+
+	void setFrameHandles(GLuint colorFrameHandle, GLuint depthFrameHandle)
+	{
+		m_textureColor = colorFrameHandle;
+		m_textureDepth = depthFrameHandle;
+		//m_infraFrameHandle = colorFrameHandle;
+		//m_colorFrameHandle = colorFrameHandle;
+
+
+	}
+
+	GLuint getColorFrameHandle()
+	{
+		return m_textureColor;
+	}
+
+	GLuint getDepthFramehandle()
+	{
+		return m_textureDepth;
+	}
 
 	void frames(unsigned char * colorArray, float * bigDepthArray);
 
@@ -157,6 +192,11 @@ public:
 
 private:
 	void captureLoop();
+
+	// openGL stuff
+	GLuint m_textureColor;
+	GLuint m_textureDepth;
+
 
 	float* m_color_frame;
 	uint16_t * m_depth_frame;

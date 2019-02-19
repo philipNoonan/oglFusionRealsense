@@ -149,6 +149,24 @@ public:
 	{
 		m_depthUnit = value;
 	}
+	void setDepthTexture(GLuint depthTex)
+	{
+
+		GLenum theerror;
+		theerror = glGetError();
+
+		glCopyImageSubData(depthTex, GL_TEXTURE_2D, 0, 0, 0, 0, m_textureDepth, GL_TEXTURE_2D, 0, 0, 0, 0, configuration.depthFrameSize.x, configuration.depthFrameSize.y, 1);
+
+		theerror = glGetError();
+
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, m_textureDepth);
+		glGenerateMipmap(GL_TEXTURE_2D);
+
+		theerror = glGetError();
+
+
+	}
 	// buffers setup
 	void initVolume();
 	// reset functions
@@ -157,6 +175,7 @@ public:
 	void resetPose(glm::mat4 pose);
 	void allocateBuffers();
 	// depth functions
+	void depthToVertex();
 	void depthToVertex(float * depthArray);
 	void depthToVertex(uint16_t * depthArray);
 
@@ -465,7 +484,7 @@ private:
 	glm::vec4 m_camPamsColor;
 	glm::mat4 m_pose;
 
-	Eigen::Matrix4f m_pose_eig;// = Eigen::MatrixXf::Identity(4, 4);
+	Eigen::Matrix<float, 4, 4, Eigen::ColMajor> m_pose_eig;// = Eigen::MatrixXf::Identity(4, 4);
 
 
 

@@ -70,8 +70,8 @@ void gFusionInit()
 	gconfig.mu = 0.05f;
 	gconfig.maxWeight = 100.0f;
 	gconfig.iterations[0] = 2;
-	gconfig.iterations[1] = 6;
-	gconfig.iterations[2] = 12;
+	gconfig.iterations[1] = 4;
+	gconfig.iterations[2] = 6;
 	
 	gfusion.setCameraParams(glm::vec4(kcamera.fx(), kcamera.fx(), kcamera.ppx(), kcamera.ppy()), glm::vec4(kcamera.fx_col(), kcamera.fx_col(), kcamera.ppx_col(), kcamera.ppy_col())); // FIX ME
 
@@ -657,28 +657,28 @@ int main(int, char**)
 
 		//krender.requestShaderInfo();
 
-		
+
 		if (kcamera.ready())
 		{
 			gfusion.setDepthUnit(kcamera.getDepthUnit());
 
-			kcamera.frames(colorArray, depthArray, NULL, NULL, NULL);
+			kcamera.frames(NULL, depthArray, NULL, NULL, NULL);
 
 			/*cv::Mat testCol = cv::Mat(1080, 1920, CV_8UC3, &colorArray[0]);
 
 			cv::imshow("wsdfs", testCol);
 
-			cv::Mat testDep = cv::Mat(480, 
+			cv::Mat testDep = cv::Mat(480,
 			, CV_16SC1, &depthArray[0]);
 
 			cv::imshow("wsasdasdfs", testDep);
 
 			cv::waitKey(1);*/
 
-		
+
 
 #ifdef USEINFRARED
-	//		gdisoptflow.setTexture(infraredArray);
+			//		gdisoptflow.setTexture(infraredArray);
 #else
 			//gdisoptflow.setTexture(colorArray);
 #endif
@@ -691,9 +691,9 @@ int main(int, char**)
 #endif
 
 
-			
+
 			//gdisoptflow.track();
-			
+
 		//	gfusion.trackPoints3D(gdisoptflow.getTrackedPointsBuffer());
 
 		//	krender.setTrackedPointsBuffer(gdisoptflow.getTrackedPointsBuffer());
@@ -756,7 +756,7 @@ int main(int, char**)
 			{
 				tracked = gfusion.TrackSDF();
 			}
-			
+
 
 			//gfusion.testLargeUpload();
 
@@ -855,297 +855,163 @@ int main(int, char**)
 
 		bool show_test_window = true;
 
+		//gfusion.printTimes();
+		glfwPollEvents();
+		ImGui_ImplGlfwGL3_NewFrame();
 
-			glfwPollEvents();
-			ImGui_ImplGlfwGL3_NewFrame();
-			
-			setUI();
+		setUI();
 
-			// GRAPHS
-			// Tip: if we don't call ImGui::Begin()/ImGui::End() the widgets appears in a window automatically called "Debug"
-			//{
+		// GRAPHS
+		// Tip: if we don't call ImGui::Begin()/ImGui::End() the widgets appears in a window automatically called "Debug"
+		//{
 
-			//	ImGui::SetNextWindowSize(ImVec2(display_w - (2 * 32), 390), ImGuiSetCond_Always);
-			//	ImGuiWindowFlags window_flags = 0;
-			//	window_flags |= ImGuiWindowFlags_NoTitleBar;
-			//	//window_flags |= ImGuiWindowFlags_ShowBorders;
-			//	window_flags |= ImGuiWindowFlags_NoResize;
-			//	window_flags |= ImGuiWindowFlags_NoMove;
-			//	window_flags |= ImGuiWindowFlags_NoCollapse;
+		//	ImGui::SetNextWindowSize(ImVec2(display_w - (2 * 32), 390), ImGuiSetCond_Always);
+		//	ImGuiWindowFlags window_flags = 0;
+		//	window_flags |= ImGuiWindowFlags_NoTitleBar;
+		//	//window_flags |= ImGuiWindowFlags_ShowBorders;
+		//	window_flags |= ImGuiWindowFlags_NoResize;
+		//	window_flags |= ImGuiWindowFlags_NoMove;
+		//	window_flags |= ImGuiWindowFlags_NoCollapse;
 
-			//	ImGui::Begin("Slider Graph", &show_slider_graph, window_flags);
-			//	ImGui::PushItemWidth(-krender.guiPadding().first);
-			//	ImGui::SetWindowPos(ImVec2(32, 900 - 32 - 390));
-			//	ImGui::PlotLines("X", &arrayX[0], 900, 0, "", minmaxX.first, minmaxX.second, ImVec2(0, 80));
-			//	ImGui::PlotLines("Y", &arrayY[0], 900, 0, "", minmaxY.first, minmaxY.second, ImVec2(0, 80));
-			//	ImGui::PlotLines("Z", &arrayZ[0], 900, 0, "", minmaxZ.first, minmaxZ.second, ImVec2(0, 80));
+		//	ImGui::Begin("Slider Graph", &show_slider_graph, window_flags);
+		//	ImGui::PushItemWidth(-krender.guiPadding().first);
+		//	ImGui::SetWindowPos(ImVec2(32, 900 - 32 - 390));
+		//	ImGui::PlotLines("X", &arrayX[0], 900, 0, "", minmaxX.first, minmaxX.second, ImVec2(0, 80));
+		//	ImGui::PlotLines("Y", &arrayY[0], 900, 0, "", minmaxY.first, minmaxY.second, ImVec2(0, 80));
+		//	ImGui::PlotLines("Z", &arrayZ[0], 900, 0, "", minmaxZ.first, minmaxZ.second, ImVec2(0, 80));
 
-			//	ImGui::End();
+		//	ImGui::End();
 
-			//}
-
-
-			//// MAIN VIDEO
-			//bool show_main_video = true;
-			//{
-			//	ImGui::SetNextWindowPos(ImVec2(32, 32));
-			//	ImGui::SetNextWindowSize(ImVec2(512, 424), ImGuiSetCond_Always);
-
-			//	ImGuiWindowFlags window_flags = 0;
-			//	window_flags |= ImGuiWindowFlags_NoTitleBar;
-			//	//window_flags |= ImGuiWindowFlags_ShowBorders;
-			//	window_flags |= ImGuiWindowFlags_NoResize;
-			//	window_flags |= ImGuiWindowFlags_NoMove;
-			//	window_flags |= ImGuiWindowFlags_NoCollapse;
-
-			//	ImGui::Begin("Video ", &show_main_video, window_flags);
-
-			//	ImGui::End();
-			//}
-
-			//// THUMBNAILS
+		//}
 
 
+		//// MAIN VIDEO
+		//bool show_main_video = true;
+		//{
+		//	ImGui::SetNextWindowPos(ImVec2(32, 32));
+		//	ImGui::SetNextWindowSize(ImVec2(512, 424), ImGuiSetCond_Always);
 
-			
+		//	ImGuiWindowFlags window_flags = 0;
+		//	window_flags |= ImGuiWindowFlags_NoTitleBar;
+		//	//window_flags |= ImGuiWindowFlags_ShowBorders;
+		//	window_flags |= ImGuiWindowFlags_NoResize;
+		//	window_flags |= ImGuiWindowFlags_NoMove;
+		//	window_flags |= ImGuiWindowFlags_NoCollapse;
 
-		
+		//	ImGui::Begin("Video ", &show_main_video, window_flags);
 
-			krender.setRenderingOptions(showDepthFlag, showBigDepthFlag, showInfraFlag, showColorFlag, showLightFlag, showPointFlag, showFlowFlag, showEdgesFlag, showNormalFlag, showVolumeFlag, showTrackFlag);
+		//	ImGui::End();
+		//}
+
+		//// THUMBNAILS
 
 
-			//ImGui::ShowTestWindow();
-			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-			glEnable(GL_DEPTH_TEST);
 
-			ImGui::Render();
-			ImGui_ImplGlfwGL3_RenderDrawData(ImGui::GetDrawData());
 
-			
-			if (newFrame)
-			{
-				//krender.setColorDepthMapping(colorDepthMap);
-				//krender.computeEdges();
 
-				//krender.setRenderingOptions(showDepthFlag, showBigDepthFlag, showInfraFlag, showColorFlag, showLightFlag, showPointFlag, showFlowFlag, showEdgesFlag);
 
-				//krender.setBuffersForRendering(depthArray, bigDepthArray, infraredArray, colorArray, flow.ptr());
-				krender.setDepthImageRenderPosition(vertFov);
-				krender.setRayNormImageRenderPosition(vertFov);
-				krender.setTrackImageRenderPosition(vertFov);
 
-				//krender.setInfraImageRenderPosition();
-				krender.setColorImageRenderPosition(vertFov);
+		krender.setRenderingOptions(showDepthFlag, showBigDepthFlag, showInfraFlag, showColorFlag, showLightFlag, showPointFlag, showFlowFlag, showEdgesFlag, showNormalFlag, showVolumeFlag, showTrackFlag);
+
+
+		//ImGui::ShowTestWindow();
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+		glEnable(GL_DEPTH_TEST);
+
+		ImGui::Render();
+		ImGui_ImplGlfwGL3_RenderDrawData(ImGui::GetDrawData());
+
+
+		if (newFrame)
+		{
+			//krender.setColorDepthMapping(colorDepthMap);
+			//krender.computeEdges();
+
+			//krender.setRenderingOptions(showDepthFlag, showBigDepthFlag, showInfraFlag, showColorFlag, showLightFlag, showPointFlag, showFlowFlag, showEdgesFlag);
+
+			//krender.setBuffersForRendering(depthArray, bigDepthArray, infraredArray, colorArray, flow.ptr());
+			krender.setDepthImageRenderPosition(vertFov);
+			krender.setRayNormImageRenderPosition(vertFov);
+			krender.setTrackImageRenderPosition(vertFov);
+
+			//krender.setInfraImageRenderPosition();
+			krender.setColorImageRenderPosition(vertFov);
 
 #ifdef USEINFRARED
-				krender.setFlowImageRenderPosition(depthHeight, depthWidth, vertFov);
+			krender.setFlowImageRenderPosition(depthHeight, depthWidth, vertFov);
 #else
-				krender.setFlowImageRenderPosition(colorHeight, colorWidth, vertFov);
+			krender.setFlowImageRenderPosition(colorHeight, colorWidth, vertFov);
 
 #endif
-				
-				
-				//krender.setPointCloudRenderPosition(zModelPC_offset);
-				//krender.setLightModelRenderPosition();
-				krender.setVolumeSDFRenderPosition(volSlice);
-				
-				krender.setMarchingCubesRenderPosition(zModelPC_offset);
-				krender.setViewMatrix(xRot, yRot, zRot, xTran, yTran, zTran);
-				krender.setDepthTextureProjectionMatrix();
 
 
-				// compute time
-				//krender.filterDepth(showBigDepthFlag);
-				//krender.computeDepthToVertex(showBigDepthFlag);
-				//krender.computeVertexToNormal(showBigDepthFlag);
-				//krender.filterGaps();
+			//krender.setPointCloudRenderPosition(zModelPC_offset);
+			//krender.setLightModelRenderPosition();
+			krender.setVolumeSDFRenderPosition(volSlice);
 
-				//krender.computeBlur(showBigDepthFlag);
-
-				//krender.integrateVolume();
-				//krender.raycastVolume();
-
-				//krender.getSlice();
-				//krender.getRayCastImage();
-				//krender.renderLiveVideoWindow();
+			krender.setMarchingCubesRenderPosition(zModelPC_offset);
+			krender.setViewMatrix(xRot, yRot, zRot, xTran, yTran, zTran);
+			krender.setDepthTextureProjectionMatrix();
 
 
-				//krender.renderPointCloud(showBigDepthFlag);
-				//krender.renderTSDFPointCloud();
+			// compute time
+			//krender.filterDepth(showBigDepthFlag);
+			//krender.computeDepthToVertex(showBigDepthFlag);
+			//krender.computeVertexToNormal(showBigDepthFlag);
+			//krender.filterGaps();
 
-			}
-			else 
-			{
-				//krender.setColorDepthMapping(colorDepthMap);
-				//krender.setBuffersForRendering(NULL, NULL, NULL, NULL, NULL);
-				//krender.renderLiveVideoWindow();
-				//krender.renderPointCloud(showBigDepthFlag);
-				//krender.renderTSDFPointCloud();
+			//krender.computeBlur(showBigDepthFlag);
 
+			//krender.integrateVolume();
+			//krender.raycastVolume();
 
-
-			}
-
-			if (cameraRunning)
-			{
-				krender.setDisplayOriSize(display2DWindow.x, display_h - display2DWindow.y - display2DWindow.h, display2DWindow.w, display2DWindow.h);
-#ifdef USEINFRARED
-				krender.Render(true);
-#else
-				krender.Render(false);
-#endif
-			}
+			//krender.getSlice();
+			//krender.getRayCastImage();
+			//krender.renderLiveVideoWindow();
 
 
-			if (calibratingFlag)
-			{
-				//krender.renderInfraWindow();
-			}
+			//krender.renderPointCloud(showBigDepthFlag);
+			//krender.renderTSDFPointCloud();
 
-			if (select_color_points_mode && newFrame == true)
-			{
-				//krender.getMouseClickPositionsColor();
-				//krender.drawMouseClickPositionsColor();
-
-				//cv::Mat newColor = cv::Mat(1080, 1920, CV_32FC1, colorArray);
-				//cv::Mat depCol = cv::Mat(424, 512, CV_32FC1);
-				//int ind = 0;
-				//for (int i = 0; i < 424; i++)
-				//{
-				//	for (int j = 0; j < 512; j++)
-				//	{
-				//		int y = colorDepthMap[ind] / 1920;
-				//		int x = colorDepthMap[ind] % 1920;
-				//		//int index = colorDepthMap[ind];
-				//		ind++;
-				//		//if (index > 0)
-				//		//{
-				//		depCol.at<float>(i, j) = newColor.at<float>(y, x);
-				//		//std::cout << index << " ";
-
-				//		//}
-				//	}
-				//}
-
-
-
-
-				//cv::Mat outImg = cv::Mat(424, 512, CV_8UC4, depCol.data);
-				//cv::circle(outImg, cv::Point2f(200.0f, 100.0f), 10, cv::Scalar(255.0f, 0.0f, 0.0f, 255.0f), 5);
-				//cv::circle(outImg, cv::Point2f(272.0f, 120.0f), 10, cv::Scalar(255.0f, 0.0f, 0.0f, 255.0f), 5);
-				//cv::circle(outImg, cv::Point2f(386.0f, 140.0f), 10, cv::Scalar(255.0f, 0.0f, 0.0f, 255.0f), 5);
-
-				//cv::imshow("regi", outImg);
-
-				//depthPoints.resize(4);
-				//colorPoints.resize(4);
-
-				//depthPoints[0] = cv::Point2f(120.0f, 80.0f);
-				//depthPoints[0] = cv::Point2f(120.0f, 80.0f);
-
-			}
-
-			if (select_depth_points_mode  && newFrame == true)
-			{
-				//krender.getDepthPoints3D();
-				std::vector<float> depthPointsFromBuffer = krender.getDepthPoints();
-				int numPoints = depthPointsFromBuffer.size() / 4;
-				if (numPoints > 0)
-				{
-
-
-					//krender.getMouseClickPositionsDepth();
-
-
-
-
-
-
-					//depthPoints.resize(numPoints);
-					//colorPoints.resize(numPoints);
-					//cv::Mat tDepth = cv::Mat(424, 512, CV_32SC1, colorDepthMap);
-
-
-					//int ind = 0;
-					//for (int j = 0; j < numPoints; j++)
-					//{
-					//	depthPoints[j].x = depthPointsFromBuffer[ind] / 1.0f;
-					//	depthPoints[j].y = depthPointsFromBuffer[ind + 1] / 1.0f;
-					//	depthPoints[j].z = depthPointsFromBuffer[ind + 2] / 1.0f;
-
-					//	int index = depthPointsFromBuffer[ind + 3];
-
-					//	int xPixDepth = index % 512;
-					//	int yPixDepth = index / 512;
-					//	cv::circle(tDepth, cv::Point2f(xPixDepth, yPixDepth), 10, cv::Scalar(0.0f, 0.0f, 0.0f, 255.0f), 5);
-
-
-					//	int colIndex = colorDepthMap[index];
-
-					//	int xColor = colIndex % 1920;
-					//	int yColor = colIndex / 1920;
-
-					//	colorPoints[j] = cv::Point2f(xColor, yColor);
-
-					//	std::cout << "xCol: " << xColor << " yCol: " << yColor <<std::endl;
-					//	std::cout << "xDep: " << xPixDepth << " yDep: " << yPixDepth << std::endl;
-
-
-
-					//	ind += 4;
-
-					//}
-
-					////std::cout << "dep: " << depthPoints << std::endl;
-					////std::cout << "col: " << colorPoints << std::endl;
-
-					//if (numPoints >= 4)
-					//{
-					//	cv::Mat registration;
-					//	//registration = OCVStuff.getDepthToColorMatrix(depthPoints, colorPoints);
-
-					//	//cv::Mat rvec = OCVStuff.getRVec();
-					//	//cv::Mat tvec = OCVStuff.getTVec();
-
-					//	//krender.setRVec(rvec);
-					//	//krender.setTVec(tvec);
-
-					//	glm::mat4 registrationGLM;
-					//	memcpy_s(&registrationGLM[0], 16 * sizeof(float), registration.data, 16 * sizeof(float));
-					//	//krender.setRegistrationMatrix(registrationGLM);
-
-
-					//	//std::cout << "reg: " << registration << std::endl;
-					//}
-					//
-
-					//for (int k = 0; k < numPoints; k++)
-					//{
-					//	cv::circle(newColor, colorPoints[k], 10, cv::Scalar(255.0f, 0.0f, 0.0f, 255.0f), 5);
-
-					//}
-					//cv::Mat pDown;
-					//cv::pyrDown(newColor, pDown);
-
-					//cv::imshow("with circles", pDown);
-					//cv::imshow("tde", tDepth);
-
-					//
-
-					////krender.labelDepthPointsOnColorImage(depthArray, colorDepthMap);
-					////krender.getMouseClickPositionsDepth();
-					////krender.drawMouseClickPositionsDepth();
-				}
-			}
-
-			//krender.drawLightModel();
-			//krender.renderFlow(flow.ptr());
-
-
-			//krender.setComputeWindowPosition(display2DWindow.x, display2DWindow.y, display2DWindow.w, display2DWindow.h);
-			//gfusion.render();
-			glfwSwapBuffers(window);
 		}
+		else
+		{
+			//krender.setColorDepthMapping(colorDepthMap);
+			//krender.setBuffersForRendering(NULL, NULL, NULL, NULL, NULL);
+			//krender.renderLiveVideoWindow();
+			//krender.renderPointCloud(showBigDepthFlag);
+			//krender.renderTSDFPointCloud();
+
+
+
+		}
+
+		if (cameraRunning)
+		{
+			krender.setDisplayOriSize(display2DWindow.x, display_h - display2DWindow.y - display2DWindow.h, display2DWindow.w, display2DWindow.h);
+#ifdef USEINFRARED
+			krender.Render(true);
+#else
+			krender.Render(false);
+#endif
+		}
+
+
+
+
+
+
+		//krender.drawLightModel();
+		//krender.renderFlow(flow.ptr());
+
+
+		//krender.setComputeWindowPosition(display2DWindow.x, display2DWindow.y, display2DWindow.w, display2DWindow.h);
+		//gfusion.render();
+		glfwSwapBuffers(window);
+
+
+		//std::this_thread::sleep_for(std::chrono::milliseconds(25));
+	}
 
 	
 

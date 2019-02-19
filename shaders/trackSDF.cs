@@ -426,7 +426,7 @@ void main()
         //  getPartialDerivative(cameraPoint.xyz, projectedVertex.xyz, isInterpolated, sdf_der, D);
         //  vec3 dSDF_dx = vec3(sdf_der[0], sdf_der[1], sdf_der[2]);
 
-        vec3 cvp = vec3(((projectedVertex.x) * volSize.x / volDim.x) - 0.5f, ((projectedVertex.y) * volSize.y / volDim.y) - 0.5f, ((projectedVertex.z) * volSize.z / volDim.z)) - 0.5f;
+        vec3 cvp = vec3(((projectedVertex.x) * volSize.x / volDim.x), ((projectedVertex.y) * volSize.y / volDim.y), ((projectedVertex.z) * volSize.z / volDim.z));
         float D = SDF(cvp);
 
         //float Dup = SDF(cvp + vec3(0,0,1));

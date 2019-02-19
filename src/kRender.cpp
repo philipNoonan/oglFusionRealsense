@@ -1014,7 +1014,7 @@ void kRender::renderLiveVideoWindow(bool useInfrared)
 		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 	}
 
-	glBindVertexArray(m_VAO_MC);
+	//glBindVertexArray(m_VAO_MC);
 
 	//glBindVertexArray(m_VAO_MC);
 	//glm::mat4 projection = glm::perspective(glm::radians(61.087f), 1920.0f / 1080.0f, 0.1f, 10000.0f); // 61 was obtained https://codeyarns.com/2015/09/08/how-to-compute-intrinsic-camera-matrix-for-a-camera/ from fy = y / tan(FOVy / 2) , where y = halfHeight = 1080 / 2
@@ -1027,28 +1027,28 @@ void kRender::renderLiveVideoWindow(bool useInfrared)
 	//glDrawArrays(GL_TRIANGLES, 0, m_numVerts);
 	////glDrawArrays(GL_POINTS, 0, m_numVerts    
 
-	glEnable(GL_PROGRAM_POINT_SIZE);
+	//glEnable(GL_PROGRAM_POINT_SIZE);
 
-	MVP = m_projection * m_view * m_model_flow;
+	//MVP = m_projection * m_view * m_model_flow;
 	//MVP = m_projection * m_view * m_model_color;
-	glm::vec2 imageSize;
-	if (useInfrared)
-	{
-		imageSize = glm::vec2(m_depth_width, m_depth_height);
-	}
-	else
-	{
-		imageSize = glm::vec2(m_color_width, m_color_height);
-	}
-	glUniform2fv(m_imSizeID, 1, glm::value_ptr(imageSize));
+	//glm::vec2 imageSize;
+	//if (useInfrared)
+	//{
+	//	imageSize = glm::vec2(m_depth_width, m_depth_height);
+	//}
+	//else
+	//{
+	//	imageSize = glm::vec2(m_color_width, m_color_height);
+	//}
+	//glUniform2fv(m_imSizeID, 1, glm::value_ptr(imageSize));
 
-	MVP = glm::translate(MVP, glm::vec3(0.0f, 0.0f, 10.0f));
-	glUniformSubroutinesuiv(GL_VERTEX_SHADER, 1, &m_fromPosition2DID);
-	glUniformSubroutinesuiv(GL_FRAGMENT_SHADER, 1, &m_fromPointsID);
+	//MVP = glm::translate(MVP, glm::vec3(0.0f, 0.0f, 10.0f));
+	//glUniformSubroutinesuiv(GL_VERTEX_SHADER, 1, &m_fromPosition2DID);
+	//glUniformSubroutinesuiv(GL_FRAGMENT_SHADER, 1, &m_fromPointsID);
 	//glUniformMatrix4fv(m_ProjectionID, 1, GL_FALSE, glm::value_ptr(m_projection));
-	glUniformMatrix4fv(m_MvpID, 1, GL_FALSE, glm::value_ptr(MVP));
+	//glUniformMatrix4fv(m_MvpID, 1, GL_FALSE, glm::value_ptr(MVP));
 	//glDrawArrays(GL_TRIANGLES, 0, 3);
-	glDrawArrays(GL_POINTS, 0, m_trackedPoints.size() / 2);
+	//glDrawArrays(GL_POINTS, 0, m_trackedPoints.size() / 2);
 
 
 	glBindVertexArray(0);

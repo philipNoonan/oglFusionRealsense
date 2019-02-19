@@ -10,7 +10,8 @@
 #define GLFW_INCLUDE_GLU
 #include <GLFW/glfw3.h>
 #include <deque>
-
+#include <thread>
+#include <chrono>
 #include <fstream>
 
 
@@ -24,6 +25,7 @@
 #include "mcubes.h"
 
 #include "ImGuiFileDialog.h"
+
 
 //#include "opencv2/core/utility.hpp"
 //#include "opencv2/highgui.hpp"
@@ -97,7 +99,7 @@ void setUpGPU();
 int dispShift = 0;
 
 float depthMin = 0.0f;
-float depthMax = 10.0f;
+float depthMax = 4.0f;
 /////////////////////////
 // KINECT STUFF
 
