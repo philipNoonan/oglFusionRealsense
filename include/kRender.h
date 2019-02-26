@@ -113,8 +113,12 @@ public:
 		m_display2DPos = glm::vec2(x, y);
 		m_display2DSize = glm::vec2(w, h);
 	}
-
-
+	
+	void set3DDisplayOriSize(int x, int y, int w, int h)
+	{
+		m_display3DPos = glm::vec2(x, y);
+		m_display3DSize = glm::vec2(w, h);
+	}
 	//std::vector<float> graphPointsX()
 	//{
 	//	return m_graph_vector_x;
@@ -272,6 +276,13 @@ public:
 	void renderPointCloud(bool useBigDepth = false);
 	void renderTSDFPointCloud();
 
+	// FLOOD STUFF
+	void setFloodTexture(GLuint floodTex)
+	{
+		m_textureFlood = floodTex;
+	}
+
+
 	// TSDF STUFF
 
 	void genTexCoordOffsets(GLuint width, GLuint height, GLfloat step);
@@ -350,6 +361,8 @@ private:
 	GLuint m_textureVolume;
 	GLuint m_textureTrack;
 	GLuint m_textureFlow;
+
+	GLuint m_textureFlood;
 
 	int m_screen_height;
 	int m_screen_width;
@@ -499,4 +512,8 @@ private:
 
 	glm::vec2 m_display2DPos;
 	glm::vec2 m_display2DSize;
+
+	glm::vec2 m_display3DPos;
+	glm::vec2 m_display3DSize;
+
 };

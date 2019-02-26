@@ -26,6 +26,7 @@
 
 #include "ImGuiFileDialog.h"
 
+#include "flood.h"
 
 //#include "opencv2/core/utility.hpp"
 //#include "opencv2/highgui.hpp"
@@ -74,6 +75,8 @@ static bool cameraRunning = false;
 
 
 MCubes mcubes;
+
+gFlood gflood;
 
 renderWindow navigationWindow;
 renderWindow display2DWindow;

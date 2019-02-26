@@ -67,7 +67,7 @@ void main()
         //Position3D[(pix.y * size.x) + pix.x] = vec4(x, y, z, 0.0f);
 
         tPos = (float(depth) * depthScale) * rotate(invK, vec3(pix.x, pix.y, 1.0f));
-        imageStore(OutputImage, ivec2(pix.x, pix.y), vec4(tPos, 0.0f));
+        imageStore(OutputImage, ivec2(pix.x, pix.y), vec4(tPos, 1.001f));
         //Position3D[(pix.y * size.x) + pix.x] = vec4(tPos, 0.0f);
 
         //Color3D[(pix.y * size.x) + pix.x] = vec4(color.xyz,0); // FIX ME DONT USE FLOAT £" FOR COLOR USE BYTES!!!

@@ -108,14 +108,14 @@ void gFusion::setLocations()
 	m_imageTypeID_i = glGetUniformLocation(integrateProg.getHandle(), "imageType");
 	m_depthScaleID_i = glGetUniformLocation(integrateProg.getHandle(), "depthScale");
 
-	std::cout << "invTrack " << m_invTrackID << std::endl;
-	std::cout << "Kmat " << m_KID << std::endl;
-	std::cout << "mu " << m_muID << std::endl;
-	std::cout << "maxWeight " << m_maxWeightID << std::endl;
-	std::cout << "volDim " << m_volDimID << std::endl;
-	std::cout << "volSize " << m_volSizeID << std::endl;
-	std::cout << "imageType " << m_imageTypeID_i << std::endl;
-	std::cout << "depthScale " << m_depthScaleID_i << std::endl;
+	//std::cout << "invTrack " << m_invTrackID << std::endl;
+	//std::cout << "Kmat " << m_KID << std::endl;
+	//std::cout << "mu " << m_muID << std::endl;
+	//std::cout << "maxWeight " << m_maxWeightID << std::endl;
+	//std::cout << "volDim " << m_volDimID << std::endl;
+	//std::cout << "volSize " << m_volSizeID << std::endl;
+	//std::cout << "imageType " << m_imageTypeID_i << std::endl;
+	//std::cout << "depthScale " << m_depthScaleID_i << std::endl;
 
 	m_viewID_r = glGetUniformLocation(raycastProg.getHandle(), "view");
 	m_nearPlaneID = glGetUniformLocation(raycastProg.getHandle(), "nearPlane");
@@ -843,15 +843,15 @@ bool gFusion::Track()
 
 
 	////std::cout << alignmentEnergy << std::endl;
-	//if (alignmentEnergy > 1.0e-3f || alignmentEnergy == 0)
-	//{
+	if (alignmentEnergy > 1.0e-3f || alignmentEnergy == 0)
+	{
 		m_pose = oldPose;
-	//}
-	//else
-	//{
+	}
+	else
+	{
 		tracked = true;
-	//	updatePoseFinder();
-	//}
+		updatePoseFinder();
+	}
 
 	m_alignmentEnergy = alignmentEnergy;
 	//tracked = true;

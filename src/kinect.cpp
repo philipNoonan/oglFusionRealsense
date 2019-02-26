@@ -371,6 +371,10 @@ void setUI()
 			gfusion.raycast();
 
 			counter = 0;
+
+			gflood.setVolumeConfig(gconfig.volumeSize.x, gconfig.volumeDimensions.x);
+			gflood.allocateTextures();
+
 		}
 
 		if (ImGui::Button("Integrate")) integratingFlag ^= 1; ImGui::SameLine();
@@ -558,6 +562,15 @@ void setUpGPU()
 
 	
 	gfusion.setDepthUnit(kcamera.getDepthUnit());
+
+	// FLOOD
+	gflood.compileAndLinkShader();
+	gflood.setLocations();
+	gflood.setVolumeConfig(gconfig.volumeSize.x, gconfig.volumeDimensions.x);
+
+	gflood.allocateTextures();
+
+
 }
 
 int main(int, char**)
@@ -585,7 +598,14 @@ int main(int, char**)
 	setImguiWindows();
 
 
-	
+
+
+
+	//gflood.allocateBuffers();
+
+	//gflood.uploadTP();
+
+
 
 	//gfusion.queryWorkgroupSizes();
 
@@ -644,6 +664,8 @@ int main(int, char**)
 
 
 
+		krender.setFloodTexture(gflood.getFloodOutputTexture());
+
 		//krender.anchorMW(std::make_pair<int, int>(50, 1080 - 424 - 50 ));
 		glfwGetFramebufferSize(window, &display_w, &display_h);
 
@@ -656,6 +678,9 @@ int main(int, char**)
 		//gfusion.update(float(glfwGetTime()));
 
 		//krender.requestShaderInfo();
+
+
+
 
 
 		if (kcamera.ready())
@@ -742,6 +767,10 @@ int main(int, char**)
 			gfusion.depthToVertex(depthArray.data());
 
 			gfusion.vertexToNormal();
+			gflood.setVertices(gfusion.getVerts());
+			gflood.setFloodInitialFromDepth();
+			gflood.setPose(gfusion.getPose());
+			gflood.jumpFloodCalc();
 
 			//gfusion.showNormals();
 
@@ -989,6 +1018,8 @@ int main(int, char**)
 		if (cameraRunning)
 		{
 			krender.setDisplayOriSize(display2DWindow.x, display_h - display2DWindow.y - display2DWindow.h, display2DWindow.w, display2DWindow.h);
+			krender.set3DDisplayOriSize(display3DWindow.x, display_h - display3DWindow.y - display3DWindow.h, display3DWindow.w, display3DWindow.h);
+
 #ifdef USEINFRARED
 			krender.Render(true);
 #else

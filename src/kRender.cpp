@@ -518,7 +518,9 @@ void kRender::bindTexturesForRendering()
 	if (m_showVolumeSDFFlag)
 	{
 		glActiveTexture(GL_TEXTURE5);
-		glBindTexture(GL_TEXTURE_3D, m_textureVolume);
+		//glBindTexture(GL_TEXTURE_3D, m_textureVolume);
+		glBindTexture(GL_TEXTURE_3D, m_textureFlood);
+
 	}
 
 
@@ -553,9 +555,10 @@ void kRender::Render(bool useInfrared)
 	bindBuffersForRendering();
 	//setDepthImageRenderPosition();
 	setNormalImageRenderPosition();
-	setViewport(m_display2DPos.x, m_display2DPos.y , m_display2DSize.x, m_display2DSize.y);
 
 	renderLiveVideoWindow(useInfrared);
+
+
 
 
 
@@ -670,7 +673,7 @@ void kRender::setVolumeSDFRenderPosition(float slice)
 
 	m_model_volume = glm::scale(glm::mat4(1.0f), scaleVec);
 
-	m_model_volume = glm::translate(m_model_volume, glm::vec3(-64, -64, -zDist));
+	m_model_volume = glm::translate(m_model_volume, glm::vec3(-m_volume_size.x/2.0f, -m_volume_size.y/2.0f, -m_volume_size.z));
 
 	m_volumeSDFRenderSlice = slice / m_volume_size.z;
 
@@ -906,6 +909,8 @@ void kRender::renderLiveVideoWindow(bool useInfrared)
 	//// FOR DEPTH
 	if (m_showDepthFlag)
 	{
+		setViewport(m_display2DPos.x, m_display2DPos.y, m_display2DSize.x, m_display2DSize.y);
+
 		glBindVertexArray(m_VAO);
 		MVP = m_projection * m_view * m_model_depth;
 		glm::vec2 imageSize(m_depth_width, m_depth_height);
@@ -926,6 +931,8 @@ void kRender::renderLiveVideoWindow(bool useInfrared)
 	//// FOR RAYNORM
 	if (m_showNormalFlag)
 	{
+		setViewport(m_display2DPos.x, m_display2DPos.y, m_display2DSize.x, m_display2DSize.y);
+
 		glBindVertexArray(m_VAO);
 		MVP = m_projection * m_view * m_model_raynorm;
 		glm::vec2 imageSize(m_depth_width, m_depth_height);
@@ -942,11 +949,12 @@ void kRender::renderLiveVideoWindow(bool useInfrared)
 	if (m_showVolumeSDFFlag)
 	{
 		// chnage verts for size of texture
+		setViewport(m_display3DPos.x, m_display3DPos.y, m_display3DSize.x, m_display3DSize.y);
 
 		//updateVerts(m_volume_size.x, m_volume_size.y);
 		glm::vec2 imageSize(m_volume_size.x, m_volume_size.y);
 
-		glBindImageTexture(5, m_textureVolume, 0, GL_FALSE, 0, GL_READ_ONLY, GL_RG16I);
+		//glBindImageTexture(5, m_textureVolume, 0, GL_FALSE, 0, GL_READ_ONLY, GL_RG16I);
 
 		glBindVertexArray(m_VAO);
 		MVP = m_projection * m_view * m_model_volume;
@@ -961,8 +969,29 @@ void kRender::renderLiveVideoWindow(bool useInfrared)
 		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 	}
 
+	//if (m_showFloodFlag)
+	//{
+	//	glm::vec2 imageSize(m_volume_size.x, m_volume_size.y);
+
+	//	glBindImageTexture(5, m_textureVolume, 0, GL_FALSE, 0, GL_READ_ONLY, GL_RG16I);
+
+	//	glBindVertexArray(m_VAO);
+	//	MVP = m_projection * m_view * m_model_volume;
+	//	glUniformSubroutinesuiv(GL_VERTEX_SHADER, 1, &m_fromStandardTextureID);
+	//	glUniformSubroutinesuiv(GL_FRAGMENT_SHADER, 1, &m_fromVolumeID);
+	//	glUniform1f(m_sliceID, m_volumeSDFRenderSlice);
+
+	//	//glUniformMatrix4fv(m_ProjectionID, 1, GL_FALSE, glm::value_ptr(m_projection));
+	//	glUniformMatrix4fv(m_MvpID, 1, GL_FALSE, glm::value_ptr(MVP));
+	//	glUniform2fv(m_imSizeID, 1, glm::value_ptr(imageSize));
+
+	//	glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+	//}
+
 	if (m_showTrackFlag)
 	{
+		setViewport(m_display3DPos.x, m_display3DPos.y, m_display3DSize.x, m_display3DSize.y);
+
 		glBindVertexArray(m_VAO);
 		MVP = m_projection * m_view * m_model_track;
 		glm::vec2 imageSize(m_depth_width, m_depth_height);
@@ -981,6 +1010,8 @@ void kRender::renderLiveVideoWindow(bool useInfrared)
 
 	if (m_showFlowFlag)
 	{
+		setViewport(m_display2DPos.x, m_display2DPos.y, m_display2DSize.x, m_display2DSize.y);
+
 		glm::vec2 imageSize;
 		if (useInfrared)
 		{

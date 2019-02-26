@@ -244,9 +244,9 @@ public:
 	}
 	GLuint getVerts()
 	{
-		//return m_textureVertex;
+		return m_textureVertex;
 
-		return m_textureReferenceVertex;
+		//return m_textureReferenceVertex;
 
 	}
 	GLuint getNorms()

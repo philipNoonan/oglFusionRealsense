@@ -7,7 +7,10 @@ layout (binding=2) uniform sampler2D currentTextureTrack;
 layout (binding=3) uniform sampler2D currentTextureFlow;
 layout (binding=4) uniform sampler2D currentTextureColor;
 
-layout (binding=5) uniform isampler3D currentTextureVolume; 
+//layout (binding=5) uniform isampler3D currentTextureVolume; 
+layout (binding=5) uniform sampler3D currentTextureVolume; 
+
+
 layout(binding = 5, rg16ui) uniform uimage3D volumeData; // texel access
 
 
@@ -191,10 +194,18 @@ vec4 color = vec4(0);
 subroutine(getColor)
 vec4 fromVolume()
 {
-	ivec4 tData = texture(currentTextureVolume, vec3(TexCoord, slice) );
+	vec4 tData = texture(currentTextureVolume, vec3(TexCoord, slice) );
 	//ivec4 tData = imageLoad(volumeData, ivec3(TexCoord.x * 128.0f, TexCoord.y * 128.0f, slice));
+	
+	//// FOR TSDF VOLUME
+	//return vec4(1.0f * float(tData.x) * 0.00003051944088f, 1.0f * float(tData.x) * -0.00003051944088f, 0.0, 1.0f);
+	
+	//// FOR SDF VOLUME
+    vec3 texSize = vec3(textureSize(currentTextureVolume, 0));
+	float distCol = distance(vec3(TexCoord.xy, slice), tData.xyz / texSize.x);
+	//return vec4(tData.xyz*100.0, 1.0f);
 
-	return vec4(1.0f * float(tData.x) * 0.00003051944088f, 1.0f * float(tData.x) * -0.00003051944088f, 0.0, 1.0f);
+	return vec4(distCol.xxx * 2.0, 1.0f);
 	//return vec4(1.0, 0.0, 0.0, 1.0);
 }
 

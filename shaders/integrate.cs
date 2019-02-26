@@ -13,7 +13,8 @@ uniform mat4 Kmat;
 uniform float mu; 
 uniform float maxWeight;
 uniform vec3 volDim; // vol dim real world span of the volume in meters
-uniform vec3 volSize; // voxel grid size of the volume
+uniform vec3 volSize; // voxel grid size of the volume 
+    // volDim.x / volSize.x = sizeOfVoxel
 uniform int imageType;
 uniform float depthScale;
 
@@ -85,7 +86,7 @@ void main()
     vec3 cameraDelta = vec3(Kmat * vec4(delta, 0.0f)).xyz;
     //vec3 cameraDelta = rotate(Kmat, delta);
 
-    bool useOld = false;
+    bool useOld = true;
     if (useOld)
     {
         for (pix.z = 0; pix.z < volSize.z; ++pix.z, pos += delta, cameraX += cameraDelta)
@@ -93,7 +94,7 @@ void main()
             if (pos.z < 0.0001f)
                 continue;
 
-            vec2 pixel = vec2(cameraX.x / cameraX.z + 0.5f, cameraX.y / cameraX.z + 0.5f);
+            vec2 pixel = vec2(cameraX.x / cameraX.z, cameraX.y / cameraX.z);
 
             if (pixel.x < 0 || pixel.x > depthSize.x - 1 || pixel.y < 0 || pixel.y > depthSize.y - 1)
                 continue;
@@ -119,7 +120,7 @@ void main()
             {
                 //if ((diff) < 0.1)
                 //{
-                float sdf = min(1.0f, diff / mu);
+                float sdf = diff / mu;
                 vec4 data = getSDF(pix);
                 float weightedDistance = (data.y * data.x + sdf) / (data.y + 1);
                 //float weightedDistance = (data.y * data.x + diff) / (data.y + 1);
@@ -167,16 +168,16 @@ void main()
 
 
 
+        float voxelLength = volDim.x / volSize.x;
 
-
-        for (float z = -0.2; z < 0.2; z++)
+        for (float z = -voxelLength * 5.0; z < voxelLength * 5.0; z+= voxelLength / 10.0)
         {
-            vec3 volPos = vec3(depthInVolumeSpace.xy, depthInVolumeSpace.z + (z * volDim.x / volSize.x));
+            vec3 volPos = vec3(depthInVolumeSpace.xy, depthInVolumeSpace.z + z);
 
-            vec4 previousSDF = getSDF(uvec3(volPos));
-            float weightedDistance = (previousSDF.y * previousSDF.x + min(1.0f, (z / 100.0f) / mu)) / (previousSDF.y + 1);
+            vec4 previousSDF = getSDF(uvec3(volPos * volSize / volDim));
+            float weightedDistance = (previousSDF.y * previousSDF.x + z / mu) / (previousSDF.y + 1);
 
-            vec4 newSDF = vec4(clamp(weightedDistance, -0.2f, 0.2f),
+            vec4 newSDF = vec4(clamp(weightedDistance, -voxelLength * 5.0, voxelLength * 5.0),
                                min(previousSDF.y + 1.0f, maxWeight), 
                                0.0f,
                                0.0f);
