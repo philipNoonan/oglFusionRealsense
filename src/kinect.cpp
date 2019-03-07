@@ -626,7 +626,7 @@ int main(int, char**)
 	float midDepth3 = 0.0f;
 	
 	std::stringstream filenameSS;
-	filenameSS << "data/motion/" << return_current_time_and_date() << ".txt";
+	filenameSS << "data/motion/motion_" << return_current_time_and_date() << ".txt";
 
 	// Main loop
 	while (!glfwWindowShouldClose(window))
