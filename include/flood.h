@@ -101,6 +101,7 @@ private:
 	GLuint m_jfaInitID;
 	GLuint m_jfaInitFromDepthID;
 	GLuint m_jfaUpdateID;
+	GLuint m_jfaUpscaleID;
 	GLuint m_jumpID;
 	GLuint m_applyFilterID;
 	GLuint m_edgeThresholdID;

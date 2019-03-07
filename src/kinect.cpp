@@ -85,7 +85,41 @@ void gFusionInit()
 	gfusion.allocateBuffers();
 
 
+	gfusion.setUsingDepthFloat(false);
+	gfusion.setDepthUnit(kcamera.getDepthUnit());
 
+}
+
+void gDisOptFlowInit()
+{
+	gdisoptflow.compileAndLinkShader();
+	gdisoptflow.setLocations();
+#ifdef USEINFRARED
+	gdisoptflow.setNumLevels(depthWidth);
+	gdisoptflow.setTextureParameters(depthWidth, depthHeight);
+	gdisoptflow.allocateTextures(true);
+#else
+	gdisoptflow.setNumLevels(colorWidth);
+	gdisoptflow.setTextureParameters(colorWidth, colorHeight);
+	gdisoptflow.allocateTextures(false);
+
+
+#endif
+
+	gdisoptflow.allocateBuffers();
+
+}
+
+void gFloodInit()
+{
+	gflood.compileAndLinkShader();
+	gflood.setLocations();
+	gflood.setVolumeConfig(gconfig.volumeSize.x, gconfig.volumeDimensions.x);
+
+	gflood.allocateTextures();
+
+	krender.setFloodTexture(gflood.getFloodOutputTexture());
+	gflood.setVertices(gfusion.getVerts());
 
 }
 
@@ -335,8 +369,10 @@ void setUI()
 		ImGui::Separator();
 		ImGui::Text("Fusion Options");
 
-		if (ImGui::Button("P2P")) trackDepthToPoint ^= 1; ImGui::SameLine(); ImGui::Checkbox("", &trackDepthToPoint);
+		if (ImGui::Button("P2P")) trackDepthToPoint ^= 1; ImGui::SameLine(); ImGui::Checkbox("", &trackDepthToPoint); ImGui::SameLine();
 		if (ImGui::Button("P2V")) trackDepthToVolume ^= 1; ImGui::SameLine(); ImGui::Checkbox("", &trackDepthToVolume);
+		if (ImGui::Button("Flood")) performFlood ^= 1; ImGui::SameLine(); ImGui::Checkbox("", &performFlood);
+
 
 		if (ImGui::Button("Reset Volume"))
 		{	// update config
@@ -385,7 +421,7 @@ void setUI()
 		ImGui::Checkbox("", &selectInitialPoseFlag);
 
 
-		if (ImGui::Button("DO SUM")) gfusion.testPrefixSum();
+		//if (ImGui::Button("DO SUM")) gfusion.testPrefixSum();
 		if (ImGui::Button("save stl"))
 		{
 			//gfusion.marchingCubes();
@@ -538,51 +574,19 @@ void setUpGPU()
 	//mCubeInit();
 	//krender.setBuffersFromMarchingCubes(gfusion.getVertsMC(), gfusion.getNormsMC(), gfusion.getNumVerts());
 
-	// op flow init
-	gdisoptflow.compileAndLinkShader();
-	gdisoptflow.setLocations();
-#ifdef USEINFRARED
-	gdisoptflow.setNumLevels(depthWidth);
-	gdisoptflow.setTextureParameters(depthWidth, depthHeight);
-	gdisoptflow.allocateTextures(true);
-#else
-	gdisoptflow.setNumLevels(colorWidth);
-	gdisoptflow.setTextureParameters(colorWidth, colorHeight);
-	gdisoptflow.allocateTextures(false);
-
-
-#endif
-	
-	gdisoptflow.allocateBuffers();
+	gDisOptFlowInit();
 
 	kRenderInit();
 
-	gfusion.setUsingDepthFloat(false);
-
-
-	
-	gfusion.setDepthUnit(kcamera.getDepthUnit());
-
-	// FLOOD
-	gflood.compileAndLinkShader();
-	gflood.setLocations();
-	gflood.setVolumeConfig(gconfig.volumeSize.x, gconfig.volumeDimensions.x);
-
-	gflood.allocateTextures();
-
+	gFloodInit();
 
 }
 
 int main(int, char**)
 {
-
-
-
 	int display_w, display_h;
 	// load openGL window
 	window = krender.loadGLFWWindow();
-
-
 
 	glfwGetFramebufferSize(window, &display_w, &display_h);
 
@@ -596,21 +600,6 @@ int main(int, char**)
 
 	setUIStyle();
 	setImguiWindows();
-
-
-
-
-
-	//gflood.allocateBuffers();
-
-	//gflood.uploadTP();
-
-
-
-	//gfusion.queryWorkgroupSizes();
-
-
-
 
 	//cv::Ptr<cv::DenseOpticalFlow> algorithm = cv::optflow::createOptFlow_DIS(cv::optflow::DISOpticalFlow::PRESET_MEDIUM);
 	
@@ -629,44 +618,20 @@ int main(int, char**)
 	float time[samples];
 	int index = 0;
 
-	//kcamera.start();
-
-
-
 	bool newFrame = false;
 	bool show_slider_graph = true;
 
 	float midDepth1 = 0.0f;
 	float midDepth2 = 0.0f;
 	float midDepth3 = 0.0f;
-	//OCVStuff.setupAruco();
-
-	//cv::Mat irCamPams = cv::Mat::eye(3, 3, CV_32F);
-	//cv::Mat irCamDist = cv::Mat(5, 1, CV_32F);
-
-	//irCamPams.at<float>(0, 0) = kcamera.fx();
-	//irCamPams.at<float>(1, 1) = kcamera.fy();
-	//irCamPams.at<float>(0, 2) = 512.0f - kcamera.ppx();
-	//irCamPams.at<float>(1, 2) = 424.0f - kcamera.ppy();
-
-	//irCamDist.at<float>(0, 0) = kcamera.k1();
-	//irCamDist.at<float>(1, 0) = kcamera.k2();
-	//irCamDist.at<float>(2, 0) = kcamera.p1(); // k3 not used in aruco
-	//irCamDist.at<float>(3, 0) = kcamera.p2();
-
-	//cv::Mat newcol = cv::Mat(1080, 1920, CV_8UC3, colorArray);
-
-	//glHint(GL_GENERATE_MIPMAP_HINT, GL_NICEST);
+	
+	std::stringstream filenameSS;
+	filenameSS << "data/motion/" << return_current_time_and_date() << ".txt";
 
 	// Main loop
 	while (!glfwWindowShouldClose(window))
 	{
 
-
-
-		krender.setFloodTexture(gflood.getFloodOutputTexture());
-
-		//krender.anchorMW(std::make_pair<int, int>(50, 1080 - 424 - 50 ));
 		glfwGetFramebufferSize(window, &display_w, &display_h);
 
 		//// Rendering
@@ -677,28 +642,11 @@ int main(int, char**)
 
 		//gfusion.update(float(glfwGetTime()));
 
-		//krender.requestShaderInfo();
-
-
-
-
-
 		if (kcamera.ready())
 		{
 			gfusion.setDepthUnit(kcamera.getDepthUnit());
 
 			kcamera.frames(NULL, depthArray, NULL, NULL, NULL);
-
-			/*cv::Mat testCol = cv::Mat(1080, 1920, CV_8UC3, &colorArray[0]);
-
-			cv::imshow("wsdfs", testCol);
-
-			cv::Mat testDep = cv::Mat(480,
-			, CV_16SC1, &depthArray[0]);
-
-			cv::imshow("wsasdasdfs", testDep);
-
-			cv::waitKey(1);*/
 
 
 
@@ -760,17 +708,15 @@ int main(int, char**)
 
 
 
-			//cv::Mat depthFloatArray = cv::Mat(480, 848, CV_32FC1);
-			//cv::Mat depthShortArray = cv::Mat(480, 848, CV_16SC1, &depthArray[0]); // ?? WHY WHY WHY DOES MIPMAPING NOT LIKE SHORT DATAT???
-			//depthShortArray.convertTo(depthFloatArray, CV_32FC1);
-			//gfusion.depthToVertex((float *)depthFloatArray.data);
 			gfusion.depthToVertex(depthArray.data());
 
 			gfusion.vertexToNormal();
-			gflood.setVertices(gfusion.getVerts());
-			gflood.setFloodInitialFromDepth();
-			gflood.setPose(gfusion.getPose());
-			gflood.jumpFloodCalc();
+			if (performFlood)
+			{
+				gflood.setPose(gfusion.getPose());
+				gflood.jumpFloodCalc();
+			}
+
 
 			//gfusion.showNormals();
 
@@ -809,22 +755,17 @@ int main(int, char**)
 
 			// log tracking data to file
 
-			std::string motionTrackingFile = "data/motion/motion-test.txt";
 
 
-			std::ofstream out(motionTrackingFile, std::ios::out | std::ios::app);
+			//std::string motionTrackingFile = "data/motion/motion-test.txt";
+
+
+			std::ofstream out(filenameSS.str(), std::ios::out | std::ios::app);
 			//iOff = initOffset(krender.getCenterPixX(), krender.getCenterPixY());
 
 			glm::vec4 position = glm::vec4(iOff, 1.0f);
 
 			glm::vec4 transformedPosition = gfusion.getPose() * position;
-
-			//out << epochTime() << " " << gfusion.alignmentEnergy() << " " << kcamera.getTemperature();
-			//out << " " << gfusion.getPose()[0].x << " " << gfusion.getPose()[0].y << " " << gfusion.getPose()[0].z << " " << gfusion.getPose()[0].w << \
-			//	" " << gfusion.getPose()[1].x << " " << gfusion.getPose()[1].y << " " << gfusion.getPose()[1].z << " " << gfusion.getPose()[1].w << \
-			//	" " << gfusion.getPose()[2].x << " " << gfusion.getPose()[2].y << " " << gfusion.getPose()[2].z << " " << gfusion.getPose()[2].w << \
-			//	" " << transformedPosition.x << " " << transformedPosition.y << " " << transformedPosition.z << " " << transformedPosition.w << std::endl;
-			//out.close();
 
 			out << epochTime() << " " << gfusion.alignmentEnergy() << " " << kcamera.getTemperature();
 			out << " " << gfusion.getPose()[0].x << " " << gfusion.getPose()[0].y << " " << gfusion.getPose()[0].z << " " << gfusion.getPose()[0].w << \
@@ -890,55 +831,6 @@ int main(int, char**)
 
 		setUI();
 
-		// GRAPHS
-		// Tip: if we don't call ImGui::Begin()/ImGui::End() the widgets appears in a window automatically called "Debug"
-		//{
-
-		//	ImGui::SetNextWindowSize(ImVec2(display_w - (2 * 32), 390), ImGuiSetCond_Always);
-		//	ImGuiWindowFlags window_flags = 0;
-		//	window_flags |= ImGuiWindowFlags_NoTitleBar;
-		//	//window_flags |= ImGuiWindowFlags_ShowBorders;
-		//	window_flags |= ImGuiWindowFlags_NoResize;
-		//	window_flags |= ImGuiWindowFlags_NoMove;
-		//	window_flags |= ImGuiWindowFlags_NoCollapse;
-
-		//	ImGui::Begin("Slider Graph", &show_slider_graph, window_flags);
-		//	ImGui::PushItemWidth(-krender.guiPadding().first);
-		//	ImGui::SetWindowPos(ImVec2(32, 900 - 32 - 390));
-		//	ImGui::PlotLines("X", &arrayX[0], 900, 0, "", minmaxX.first, minmaxX.second, ImVec2(0, 80));
-		//	ImGui::PlotLines("Y", &arrayY[0], 900, 0, "", minmaxY.first, minmaxY.second, ImVec2(0, 80));
-		//	ImGui::PlotLines("Z", &arrayZ[0], 900, 0, "", minmaxZ.first, minmaxZ.second, ImVec2(0, 80));
-
-		//	ImGui::End();
-
-		//}
-
-
-		//// MAIN VIDEO
-		//bool show_main_video = true;
-		//{
-		//	ImGui::SetNextWindowPos(ImVec2(32, 32));
-		//	ImGui::SetNextWindowSize(ImVec2(512, 424), ImGuiSetCond_Always);
-
-		//	ImGuiWindowFlags window_flags = 0;
-		//	window_flags |= ImGuiWindowFlags_NoTitleBar;
-		//	//window_flags |= ImGuiWindowFlags_ShowBorders;
-		//	window_flags |= ImGuiWindowFlags_NoResize;
-		//	window_flags |= ImGuiWindowFlags_NoMove;
-		//	window_flags |= ImGuiWindowFlags_NoCollapse;
-
-		//	ImGui::Begin("Video ", &show_main_video, window_flags);
-
-		//	ImGui::End();
-		//}
-
-		//// THUMBNAILS
-
-
-
-
-
-
 
 		krender.setRenderingOptions(showDepthFlag, showBigDepthFlag, showInfraFlag, showColorFlag, showLightFlag, showPointFlag, showFlowFlag, showEdgesFlag, showNormalFlag, showVolumeFlag, showTrackFlag);
 
@@ -953,11 +845,7 @@ int main(int, char**)
 
 		if (newFrame)
 		{
-			//krender.setColorDepthMapping(colorDepthMap);
-			//krender.computeEdges();
-
-			//krender.setRenderingOptions(showDepthFlag, showBigDepthFlag, showInfraFlag, showColorFlag, showLightFlag, showPointFlag, showFlowFlag, showEdgesFlag);
-
+			
 			//krender.setBuffersForRendering(depthArray, bigDepthArray, infraredArray, colorArray, flow.ptr());
 			krender.setDepthImageRenderPosition(vertFov);
 			krender.setRayNormImageRenderPosition(vertFov);
@@ -983,37 +871,9 @@ int main(int, char**)
 			krender.setDepthTextureProjectionMatrix();
 
 
-			// compute time
-			//krender.filterDepth(showBigDepthFlag);
-			//krender.computeDepthToVertex(showBigDepthFlag);
-			//krender.computeVertexToNormal(showBigDepthFlag);
-			//krender.filterGaps();
-
-			//krender.computeBlur(showBigDepthFlag);
-
-			//krender.integrateVolume();
-			//krender.raycastVolume();
-
-			//krender.getSlice();
-			//krender.getRayCastImage();
-			//krender.renderLiveVideoWindow();
-
-
-			//krender.renderPointCloud(showBigDepthFlag);
-			//krender.renderTSDFPointCloud();
 
 		}
-		else
-		{
-			//krender.setColorDepthMapping(colorDepthMap);
-			//krender.setBuffersForRendering(NULL, NULL, NULL, NULL, NULL);
-			//krender.renderLiveVideoWindow();
-			//krender.renderPointCloud(showBigDepthFlag);
-			//krender.renderTSDFPointCloud();
 
-
-
-		}
 
 		if (cameraRunning)
 		{
@@ -1028,16 +888,6 @@ int main(int, char**)
 		}
 
 
-
-
-
-
-		//krender.drawLightModel();
-		//krender.renderFlow(flow.ptr());
-
-
-		//krender.setComputeWindowPosition(display2DWindow.x, display2DWindow.y, display2DWindow.w, display2DWindow.h);
-		//gfusion.render();
 		glfwSwapBuffers(window);
 
 

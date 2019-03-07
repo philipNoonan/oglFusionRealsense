@@ -21,7 +21,7 @@
 
 #version 430
 
-layout(local_size_x = 8, local_size_y = 8, local_size_z = 8) in; // 
+layout(local_size_x = 4, local_size_y = 4, local_size_z = 4) in; // 
 
 layout(binding = 0) uniform sampler3D textureInitialRGB;
 
@@ -57,22 +57,53 @@ void jfaInitFromDepth()
 {
     ivec2 pix = ivec2(gl_GlobalInvocationID.xy);
 
-    vec3 imSize = vec3(imageSize(im_dtnn_0));
+    ivec3 imSize = ivec3(imageSize(im_dtnn_0));
 
     vec4 vertex = imageLoad(verts, pix);
 
     vec4 vertexInVolume = scaleFactor * (trackMat * vertex) ;
 
-    //if (vertexInVolume.x > 0 && vertexInVolume.x < imSize.x && vertexInVolume.y > 0 && vertexInVolume.y < imSize.y && vertexInVolume.z > 0 && vertexInVolume.z < imSize.z)
-    //{
+    if (vertexInVolume.x > 0 && vertexInVolume.x < imSize.x && vertexInVolume.y > 0 && vertexInVolume.y < imSize.y && vertexInVolume.z > 0 && vertexInVolume.z < imSize.y)
+    {
+
+
         imageStore(im_dtnn_0, ivec3(vertexInVolume.xyz), vec4(vertexInVolume.xyz, 1.0f));
-    //}
 
 
+    }
 
 
 }
 
+
+//shared vec4 orthoProjectedData[128];
+
+//subroutine(launchSubroutine)
+//void jfsProjectVolume()
+//{
+//    ivec3 pix = ivec3(gl_GlobalInvocationID.xyz);
+
+
+//    vec4 dataToWrite = imageLoad(im_dtnn_0, pix);
+//    float oriDistance = distance(dataToWrite.xyz, vec3(pix));
+
+//    //orthoProjectedData[pix.z] = dataToWrite;
+
+//    for (int z = 0; z < 128; z++)
+//    {
+//        vec4 dataFromOtherSlices = imageLoad(im_dtnn_0, ivec3(pix.xy, z));
+//        if (distance(dataFromOtherSlices, vec3(pix)) < oriDistance)
+//        {
+//            dataToWrite = dataFromOtherSlices;
+//        }
+//        imageStore(im_dtnn_1, ivec3(pix.xy, z), dataToWrite);
+
+
+//    }
+
+
+
+//}
 
 subroutine(launchSubroutine)
 void jumpFloodAlgorithmInit()
@@ -97,8 +128,20 @@ void jumpFloodAlgorithmInit()
     imageStore(im_dtnn_0, pix, outPos);
 
 
-}     
+}
 
+subroutine(launchSubroutine)
+void jfaUpscale()
+{
+    ivec3 pix = ivec3(gl_GlobalInvocationID.xyz);
+
+    vec4 lowResData = imageLoad(im_dtnn_0, pix/2);
+
+    imageStore(im_dtnn_1, pix, vec4(lowResData.xyz * 2.0f, 1.0));
+
+
+
+}
 
 void DTNN(const in vec3 off)
 {
@@ -114,6 +157,17 @@ void DTNN(const in vec3 off)
             dtnn = dtnn_cur;
         }
     }
+}
+
+
+shared vec4 dataRows[128][3];
+
+subroutine(launchSubroutine)
+void jfsFastUpdate()
+{
+    // the idea here is that each pixel is essentially swept though the image and uses many repeat memory reads of the same pixel, this can be slow, esspecialy on large step sizes where texture caches are poorly utilised
+    // if we first sweep through 3 rows per y axis can we load all rows into a shared memory array.
+    // after barrier(), each local invocation then outputs the standard jfa from the shared memory arrays
 }
 
 subroutine(launchSubroutine)

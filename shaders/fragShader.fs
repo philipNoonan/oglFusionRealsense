@@ -204,8 +204,8 @@ vec4 fromVolume()
     vec3 texSize = vec3(textureSize(currentTextureVolume, 0));
 	float distCol = distance(vec3(TexCoord.xy, slice), tData.xyz / texSize.x);
 	//return vec4(tData.xyz*100.0, 1.0f);
-
-	return vec4(distCol.xxx * 2.0, 1.0f);
+	float ssDist = smoothstep(0.0f, 0.5f, distCol);
+	return vec4(ssDist.xxx, 1.0f);
 	//return vec4(1.0, 0.0, 0.0, 1.0);
 }
 

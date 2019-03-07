@@ -14,6 +14,11 @@ void gFusion::queryDeviceLimits()
 	glGetIntegerv(GL_MAX_COMPUTE_WORK_GROUP_INVOCATIONS, &sizeCWGI);
 	std::cout << "GL_MAX_COMPUTE_WORK_GROUP_INVOCATIONS is " << sizeCWGI << " invocations." << std::endl;
 
+	GLint sizeShared;
+	glGetIntegerv(GL_MAX_COMPUTE_SHARED_MEMORY_SIZE, &sizeShared);
+	std::cout << "GL_MAX_COMPUTE_SHARED_MEMORY_SIZE is " << sizeShared << " bytes." << std::endl;
+
+
 	GLint size3D;
 	glGetIntegerv(GL_MAX_3D_TEXTURE_SIZE, &size3D);
 	std::cout << "GL_MAX_3D_TEXTURE_SIZE is " << size3D << " texels." << std::endl;

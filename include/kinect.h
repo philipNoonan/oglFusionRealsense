@@ -36,7 +36,9 @@
 
 #include <chrono>
 #include <time.h>
-
+#include <ctime>   // localtime
+#include <sstream> // stringstream
+#include <iomanip> 
 
 
 //const std::string currentDateTime();
@@ -52,6 +54,16 @@
 //	strftime(buf, sizeof(buf), "%Y-%m-%d.%X", &tstruct);
 //	return buf;
 //}
+
+std::string return_current_time_and_date()
+{
+	auto now = std::chrono::system_clock::now();
+	auto in_time_t = std::chrono::system_clock::to_time_t(now);
+
+	std::stringstream ss;
+	ss << std::put_time(std::localtime(&in_time_t), "%Y-%m-%d_%X");
+	return ss.str();
+}
 
 const std::string epochTime() {
 	//DWORD ms = GetTickCount();
@@ -145,7 +157,7 @@ bool showFlowFlag = false;
 bool showEdgesFlag = false;
 bool showNormalFlag = true;
 bool showVolumeFlag = false;
-bool showTrackFlag = false;
+bool showTrackFlag = true;
 
 float irBrightness = 1.0;
 float irLow = 0.0f;
@@ -182,6 +194,8 @@ bool calibratingFlag = false;
 // FUSION STUFF
 bool trackDepthToPoint = true;
 bool trackDepthToVolume = false;
+bool performFlood = false;
+
 int counter = 0;
 bool reset = true;
 bool integratingFlag = true;

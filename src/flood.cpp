@@ -30,6 +30,8 @@ void gFlood::setLocations()
 	m_jfaInitFromDepthID = glGetSubroutineIndex(jumpFloodProg.getHandle(), GL_COMPUTE_SHADER, "jfaInitFromDepth");
 
 	m_jfaUpdateID = glGetSubroutineIndex(jumpFloodProg.getHandle(), GL_COMPUTE_SHADER, "jumpFloodAlgorithmUpdate");
+	m_jfaUpscaleID = glGetSubroutineIndex(jumpFloodProg.getHandle(), GL_COMPUTE_SHADER, "jfaUpscale");
+
 	m_getColorID = glGetSubroutineIndex(jumpFloodProg.getHandle(), GL_COMPUTE_SHADER, "getColorFromRGB");
 
 	m_jumpID = glGetUniformLocation(jumpFloodProg.getHandle(), "jump");
@@ -68,7 +70,6 @@ GLuint gFlood::createTexture(GLuint ID, GLenum target, int levels, int w, int h,
 	glTexParameteri(target, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
 	glTexParameteri(target, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE); 
 	glTexParameteri(target, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-	glTexParameteri(target, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
 
 	// https://stackoverflow.com/questions/15405869/is-gltexstorage2d-imperative-when-auto-generating-mipmaps
 	//glTexImage2D(target, 0, internalformat, w, h, 0, format, type, 0); // cretes mutable storage that requires glTexImage2D
@@ -84,6 +85,7 @@ GLuint gFlood::createTexture(GLuint ID, GLenum target, int levels, int w, int h,
 	}  
 	else if (target == GL_TEXTURE_3D || d > 0) 
 	{
+		glTexParameteri(target, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
 		glTexStorage3D(target, levels, internalformat, w, h, d);  
 	} 
 	return texid;      
@@ -105,10 +107,10 @@ void gFlood::allocateTextures()
 
 	// JFA stuff
 	//std::vector<float> zeroVals(m_texture_width * m_texture_height * 2, 0);
-	m_texture_initial = createTexture(m_texture_initial, GL_TEXTURE_3D, 1, m_volSize, m_volSize, m_volSize, GL_RGBA32F);
+	m_texture_initial = createTexture(m_texture_initial, GL_TEXTURE_3D, 2, m_volSize, m_volSize, m_volSize, GL_RGBA32F);
 
-	m_texture_jfa_0 = createTexture(m_texture_jfa_0, GL_TEXTURE_3D, 1, m_volSize, m_volSize, m_volSize, GL_RGBA32F);
-	m_texture_jfa_1 = createTexture(m_texture_jfa_1, GL_TEXTURE_3D, 1, m_volSize, m_volSize, m_volSize, GL_RGBA32F);
+	m_texture_jfa_0 = createTexture(m_texture_jfa_0, GL_TEXTURE_3D, 2, m_volSize, m_volSize, m_volSize, GL_RGBA32F);
+	m_texture_jfa_1 = createTexture(m_texture_jfa_1, GL_TEXTURE_3D, 2, m_volSize, m_volSize, m_volSize, GL_RGBA32F);
 
 	//glBindTexture(GL_TEXTURE_2D, m_texture_initial);
 	//glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, m_texture_width, m_texture_height, GL_RG, GL_FLOAT, zeroVals.data());
@@ -118,6 +120,7 @@ void gFlood::allocateTextures()
 	m_zeroValues.resize(m_volSize * m_volSize * m_volSize * 4, 32768.0f);
 	glBindTexture(GL_TEXTURE_3D, m_texture_initial);
 	glTexSubImage3D(GL_TEXTURE_3D, 0,0, 0,0 , m_volSize, m_volSize, m_volSize, GL_RGBA, GL_FLOAT, m_zeroValues.data());
+	glGenerateMipmap(GL_TEXTURE_3D);
 
 }   
 
@@ -237,23 +240,42 @@ void gFlood::setFloodInitialFromDepth()
 
 	wipeFlood();
 
-	int compWidth = divup(840, 8); // image2D dimensions, set this as variable
-	int compHeight = divup(484, 8);
+	int compWidth = divup(840, 4); // image2D dimensions, set this as variable
+	int compHeight = divup(484, 4);
+
 
 	jumpFloodProg.use();
 	glUniformMatrix4fv(m_trackID, 1, GL_FALSE, glm::value_ptr(m_pose));
 
-	glUniform1f(m_scaleFactorID, m_volSize / m_volDim);
+	glUniform1f(m_scaleFactorID, (m_volSize / 2.0) / m_volDim);
 	
 
 
 	glUniformSubroutinesuiv(GL_COMPUTE_SHADER, 1, &m_jfaInitFromDepthID);
 
-	glBindImageTexture(0, m_texture_jfa_0, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA32F);
+	glBindImageTexture(0, m_texture_jfa_1, 1, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA32F);
 	glBindImageTexture(3, m_textureVertices, 0, GL_FALSE, 0, GL_READ_ONLY, GL_RGBA32F);
 
 	glDispatchCompute(compWidth, compHeight, 1);
 	glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
+
+
+	// 1 + JFA
+	compWidth = divup(m_volSize / 2, 4);
+	compHeight = divup(m_volSize / 2, 4);
+	int compDepth = divup(m_volSize / 2, 4);
+
+	glUniform1f(m_jumpID, 1);
+	glUniformSubroutinesuiv(GL_COMPUTE_SHADER, 1, &m_jfaUpdateID);
+
+	glBindImageTexture(0, m_texture_jfa_1, 1, GL_FALSE, 0, GL_READ_ONLY, GL_RGBA32F);
+	glBindImageTexture(1, m_texture_jfa_0, 1, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA32F);
+
+	glDispatchCompute(compWidth, compHeight, compDepth);
+
+	glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
+
+
 
 }
 
@@ -265,17 +287,18 @@ void gFlood::wipeFlood()
 	//glTexSubImage3D(GL_TEXTURE_3D, 0, 0, 0, 0, 128, 128, 128, GL_RGBA, GL_FLOAT, zeroValues.data());
 	//glGenerateMipmap(GL_TEXTURE_2D);
 	//glClearTexImage(m_texture_jfa_0, 0, GL_RGBA, GL_FLOAT, m_zeroValues.data());
-	glCopyImageSubData(m_texture_initial, GL_TEXTURE_3D, 0, 0, 0, 0,
-		m_texture_jfa_0, GL_TEXTURE_3D, 0, 0, 0, 0,
-		m_volSize, m_volSize, m_volSize);
+	glCopyImageSubData(m_texture_initial, GL_TEXTURE_3D, 0, 0, 0, 0, m_texture_jfa_0, GL_TEXTURE_3D, 0, 0, 0, 0, m_volSize, m_volSize, m_volSize);
+
+	glCopyImageSubData(m_texture_initial, GL_TEXTURE_3D, 1, 0, 0, 0, m_texture_jfa_0, GL_TEXTURE_3D, 1, 0, 0, 0, m_volSize / 2, m_volSize / 2, m_volSize / 2);
 
 	//glBindTexture(GL_TEXTURE_3D, m_texture_jfa_1);
 	//glTexSubImage3D(GL_TEXTURE_3D, 0, 0, 0, 0, 128, 128, 128, GL_RGBA, GL_FLOAT, zeroValues.data());
 	//glGenerateMipmap(GL_TEXTURE_2D);
 	//glClearTexImage(m_texture_jfa_1, 0, GL_RGBA, GL_FLOAT, m_zeroValues.data());
-	glCopyImageSubData(m_texture_initial, GL_TEXTURE_3D, 0, 0, 0, 0,
-		m_texture_jfa_1, GL_TEXTURE_3D, 0, 0, 0, 0,
-		m_volSize, m_volSize, m_volSize);
+	glCopyImageSubData(m_texture_initial, GL_TEXTURE_3D, 0, 0, 0, 0, m_texture_jfa_1, GL_TEXTURE_3D, 0, 0, 0, 0, m_volSize, m_volSize, m_volSize);
+
+	glCopyImageSubData(m_texture_initial, GL_TEXTURE_3D, 1, 0, 0, 0, m_texture_jfa_1, GL_TEXTURE_3D, 1, 0, 0, 0, m_volSize / 2, m_volSize / 2, m_volSize / 2);
+
 
 }    
 
@@ -291,34 +314,11 @@ void gFlood::jumpFloodCalc()
 
 	glBeginQuery(GL_TIME_ELAPSED, timeQuery[0]);
 
-	int compWidth = divup(m_volSize, 8);
-	int compHeight = divup(m_volSize, 8);
-	int compDepth = divup(m_volSize, 8);
+	setFloodInitialFromDepth();
 
-
-	//edgeDetectProg.use();
-	//glActiveTexture(GL_TEXTURE0);
-	//glBindTexture(GL_TEXTURE_2D, m_texture_initial_RGB);
-	//glUniformSubroutinesuiv(GL_COMPUTE_SHADER, 1, &m_applyFilterID);
-	//glBindImageTexture(0, m_texture_initial, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_R8);
-	//glUniform1f(m_edgeThresholdID, m_edgeThreshold);
-
-	//glDispatchCompute(compWidth, compWidth, 1);
-	//glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
-
-
-	//std::vector<int8_t> edgeData(m_texture_width * m_texture_height, 3);
-	//cv::Mat colEdge = cv::Mat(m_texture_height, m_texture_width, CV_8UC1, edgeData.data());
-
-
-	//glActiveTexture(GL_TEXTURE0);
-	//glBindTexture(GL_TEXTURE_2D, m_texture_initial);
-	//glGetTexImage(GL_TEXTURE_2D, 0, GL_RED, GL_BYTE, colEdge.data);
-	//glBindTexture(GL_TEXTURE_2D, 0);
-	//glActiveTexture(0);
-
-	//cv::imshow("edges", colEdge);
-	//cv::waitKey(1);
+	int compWidth = divup(m_volSize / 2, 4);
+	int compHeight = divup(m_volSize / 2, 4);
+	int compDepth = divup(m_volSize / 2, 4);
 
 	bool useRandPoints = false;
 	jumpFloodProg.use();
@@ -335,51 +335,33 @@ void gFlood::jumpFloodCalc()
 	}
 
 
-
-
-
-
-
-
-
-
-
-
-	//std::vector<float>::iterator it;
-
-	//it = std::find(vecdata.begin(), vecdata.end(), 0);
-	//if (it != vecdata.end())
-	//	std::cout << "Element found in myvector: " << *it << '\n';
-	//else
-	//	std::cout << "Element not found in myvector\n";
-
-
-
-
-	//int compWidth = divup(m_texture_width, 32);
-	//int compHeight = divup(m_texture_height, 32);
-
-	int iterCount = 0;
-	float maxDim = std::max(m_texture_width, m_texture_height);
+	//int iterCount = 0;
+	//float maxDim = std::max(m_texture_width, m_texture_height);
+	
 	//int log2ceil = std::ceil(std::log(maxDim) / std::log(2));
 	//int passes = log2ceil - 1;
 	// using 11 levels that will enable an image up to 4096x4096
-	for (int level = 0; level < 11; level++)
+	
+	//float stepLength = std::pow(std::log(m_volSize) - 1,2);
+	
+	int numLevels = std::log2(m_volSize / 2);
+
+	for (int level = 0; level < numLevels; level++)
 	{
-		int stepWidth = int(std::pow(11.0 - level, 2) + 0.5);
+		int stepWidth = int(m_volSize / 2) >> (level + 1);
 
 		glUniform1f(m_jumpID, (float)stepWidth);
 		glUniformSubroutinesuiv(GL_COMPUTE_SHADER, 1, &m_jfaUpdateID);
 
 		if (level % 2 == 0)
 		{
-			glBindImageTexture(0, m_texture_jfa_0, 0, GL_FALSE, 0, GL_READ_ONLY, GL_RGBA32F);
-			glBindImageTexture(1, m_texture_jfa_1, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA32F);
+			glBindImageTexture(0, m_texture_jfa_0, 1, GL_FALSE, 0, GL_READ_ONLY, GL_RGBA32F);
+			glBindImageTexture(1, m_texture_jfa_1, 1, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA32F);
 		}
 		else
 		{
-			glBindImageTexture(0, m_texture_jfa_1, 0, GL_FALSE, 0, GL_READ_ONLY, GL_RGBA32F);
-			glBindImageTexture(1, m_texture_jfa_0, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA32F);
+			glBindImageTexture(0, m_texture_jfa_1, 1, GL_FALSE, 0, GL_READ_ONLY, GL_RGBA32F);
+			glBindImageTexture(1, m_texture_jfa_0, 1, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA32F);
 		}
 
 
@@ -389,6 +371,34 @@ void gFlood::jumpFloodCalc()
 		glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
 	}
 
+
+	// 1 + JFA half reso variant https://ieeexplore.ieee.org/stamp/stamp.jsp?tp=&arnumber=4276119&tag=1
+
+	compWidth = divup(m_volSize, 4);
+	compHeight = divup(m_volSize, 4);
+	compDepth = divup(m_volSize, 4);
+
+	// UPSCALE
+	glUniform1f(m_jumpID, 1.0f);
+	glUniformSubroutinesuiv(GL_COMPUTE_SHADER, 1, &m_jfaUpscaleID);
+	glBindImageTexture(0, m_texture_jfa_0, 1, GL_FALSE, 0, GL_READ_ONLY, GL_RGBA32F);
+	glBindImageTexture(1, m_texture_jfa_0, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA32F);
+	glDispatchCompute(compWidth, compHeight, compDepth);
+	glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
+
+
+	// FINAL FLOOD STEP LENGTH 1.0
+
+
+	glUniform1f(m_jumpID, 1.0f);
+	glUniformSubroutinesuiv(GL_COMPUTE_SHADER, 1, &m_jfaUpdateID);
+	glBindImageTexture(0, m_texture_jfa_0, 0, GL_FALSE, 0, GL_READ_ONLY, GL_RGBA32F);
+	glBindImageTexture(1, m_texture_jfa_1, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA32F);
+	glDispatchCompute(compWidth, compHeight, compDepth);
+	glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
+
+
+
 	glEndQuery(GL_TIME_ELAPSED);
 	GLuint available = 0;
 	while (!available) {
@@ -397,7 +407,7 @@ void gFlood::jumpFloodCalc()
 	// elapsed time in nanoseconds
 	GLuint64 elapsed;
 	glGetQueryObjectui64vEXT(timeQuery[0], GL_QUERY_RESULT, &elapsed);
-	std::cout << elapsed / 1000000.0 << std::endl;
+	//std::cout << elapsed / 1000000.0 << std::endl;
 
 	//std::vector<float> vecdata(m_texture_width * m_texture_height * 2);
 	//cv::Mat col = cv::Mat(m_texture_height, m_texture_width, CV_32FC2, vecdata.data());

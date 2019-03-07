@@ -271,6 +271,7 @@ GLuint gDisOptFlow::createTexture(GLenum target, int levels, int w, int h, int d
 	}  
 	else if (target == GL_TEXTURE_3D || d > 0) 
 	{
+		glTexParameteri(target, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
 		glTexStorage3D(target, levels, internalformat, w, h, d);  
 	} 
 	return texid;      
