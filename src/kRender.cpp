@@ -519,7 +519,10 @@ void kRender::bindTexturesForRendering()
 	{
 		glActiveTexture(GL_TEXTURE5);
 		//glBindTexture(GL_TEXTURE_3D, m_textureVolume);
-		glBindTexture(GL_TEXTURE_3D, m_textureFlood);
+				glBindTexture(GL_TEXTURE_3D, m_textureFlood);
+
+		//glActiveTexture(GL_TEXTURE6);
+		//glBindTexture(GL_TEXTURE_3D, m_textureFlood);
 
 	}
 

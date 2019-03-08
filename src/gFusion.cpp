@@ -1481,6 +1481,8 @@ void gFusion::raycast()
 	glBindImageTexture(1, m_textureReferenceVertex, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA32F);
 	glBindImageTexture(2, m_textureReferenceNormal, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA32F);
 
+
+
 	//glBindImageTexture(3, m_textureTestImage, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA32F);
 
 	
@@ -1491,6 +1493,10 @@ void gFusion::raycast()
 	// bind the volume texture for 3D sampling
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_3D, m_textureVolume);
+
+	glActiveTexture(GL_TEXTURE1);
+	glBindTexture(GL_TEXTURE_3D, m_textureFloodSDF);
+
 
 	/*glActiveTexture(GL_TEXTURE1);
 	glBindTexture(GL_TEXTURE_3D, m_textureVolumeColor);

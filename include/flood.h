@@ -51,7 +51,10 @@ public:
 	{
 		return m_texture_jfa_1;
 
-//		return m_texture_output_RGBA;
+	}
+	GLuint getFloodSDFTexture()
+	{
+		return m_texture_output_SDF;
 	}
 	GLuint getFloodInitialTexture()
 	{
@@ -124,6 +127,7 @@ private:
 	GLuint m_texture_jfa_1;
 	GLuint m_texture_initial_RGB;
 	GLuint m_texture_output_RGBA;
+	GLuint m_texture_output_SDF;
 
 	GLuint m_textureVertices;
 

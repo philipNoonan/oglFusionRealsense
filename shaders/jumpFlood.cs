@@ -27,7 +27,7 @@ layout(binding = 0) uniform sampler3D textureInitialRGB;
 
 layout(binding = 0, rgba32f) uniform image3D im_dtnn_0;
 layout(binding = 1, rgba32f) uniform image3D im_dtnn_1;
-layout(binding = 2, rgba8) uniform image2D outImage;
+layout(binding = 2, r32i) uniform iimage3D outImage;
 
 layout(binding = 3, rgba32f) uniform image2D verts;
 
@@ -61,7 +61,8 @@ void jfaInitFromDepth()
 
     vec4 vertex = imageLoad(verts, pix);
 
-    vec4 vertexInVolume = scaleFactor * (trackMat * vertex) ;
+    //vec4 vertexInVolume = scaleFactor * (trackMat * vertex) ;
+    vec4 vertexInVolume = scaleFactor * vertex;
 
     if (vertexInVolume.x > 0 && vertexInVolume.x < imSize.x && vertexInVolume.y > 0 && vertexInVolume.y < imSize.y && vertexInVolume.z > 0 && vertexInVolume.z < imSize.y)
     {
@@ -147,7 +148,7 @@ void DTNN(const in vec3 off)
 {
     vec3 dtnn_cur = vec3(imageLoad(im_dtnn_0, ivec3(off)).xyz);
     // THIS WAS A PAIN AND IS PROBABLY A HACK FIX. DTNN_CURR WOULD RETURN ZERO VALUES AND MESS EVERYTHING UP LEADING TO A 0,0 POINT PERSISTING
-    if (dtnn_cur != vec3(0) && off != vec3(0))
+    if (dtnn_cur != vec3(0))
     {
         vec3 ddxy = dtnn_cur - pix;
         float dcur = LENGTH_SQ(ddxy);
@@ -159,8 +160,6 @@ void DTNN(const in vec3 off)
     }
 }
 
-
-shared vec4 dataRows[128][3];
 
 subroutine(launchSubroutine)
 void jfsFastUpdate()
@@ -181,19 +180,19 @@ void jumpFloodAlgorithmUpdate()
     dmin = LENGTH_SQ(ddxy);
 
     // z - 1 plane
-    DTNN(pix + vec3(-jump, jump, -jump));     DTNN(pix + vec3(0, jump, -jump));     DTNN(pix + vec3(jump, jump, -jump));
-    DTNN(pix + vec3(-jump, 0, -jump));        DTNN(pix + vec3(0, 0, -jump));        DTNN(pix + vec3(jump, 0, -jump));
+    DTNN(pix + vec3(-jump, jump,  -jump));    DTNN(pix + vec3(0, jump, -jump));     DTNN(pix + vec3(jump, jump, -jump));
+    DTNN(pix + vec3(-jump, 0,     -jump));    DTNN(pix + vec3(0, 0, -jump));        DTNN(pix + vec3(jump, 0, -jump));
     DTNN(pix + vec3(-jump, -jump, -jump));    DTNN(pix + vec3(0, -jump, -jump));    DTNN(pix + vec3(jump, -jump, -jump));
 
     // in plane
-    DTNN(pix + vec3(-jump, jump, jump));     DTNN(pix + vec3(0, jump, jump));     DTNN(pix + vec3(jump, jump, jump));
-    DTNN(pix + vec3(-jump, 0, jump));                                       DTNN(pix + vec3(jump, 0, jump));
-    DTNN(pix + vec3(-jump, -jump, jump));    DTNN(pix + vec3(0, -jump, jump));    DTNN(pix + vec3(jump, -jump, jump));
+    DTNN(pix + vec3(-jump, jump,  0));    DTNN(pix + vec3(0, jump, 0));     DTNN(pix + vec3(jump, jump, 0));
+    DTNN(pix + vec3(-jump, 0,     0));                                         DTNN(pix + vec3(jump, 0, 0));
+    DTNN(pix + vec3(-jump, -jump, 0));    DTNN(pix + vec3(0, -jump, 0));    DTNN(pix + vec3(jump, -jump, 0));
 
     // z + 1 plane
-    DTNN(pix + vec3(-jump, jump, jump));    DTNN(pix + vec3(0, jump, jump));      DTNN(pix + vec3(jump, jump, jump));
-    DTNN(pix + vec3(-jump, 0, jump));       DTNN(pix + vec3(0, 0, jump));         DTNN(pix + vec3(jump, 0, jump));
-    DTNN(pix + vec3(-jump, -jump, jump));   DTNN(pix + vec3(0, -jump, jump));     DTNN(pix + vec3(jump, -jump, jump));
+    DTNN(pix + vec3(-jump, jump,  jump));    DTNN(pix + vec3(0, jump,  jump));      DTNN(pix + vec3(jump, jump, jump));
+    DTNN(pix + vec3(-jump, 0,     jump));    DTNN(pix + vec3(0, 0,     jump));         DTNN(pix + vec3(jump, 0, jump));
+    DTNN(pix + vec3(-jump, -jump, jump));    DTNN(pix + vec3(0, -jump, jump));     DTNN(pix + vec3(jump, -jump, jump));
 
 
 
@@ -224,6 +223,22 @@ void getColorFromRGB()
 
     //imageStore(outImage, ivec2(pix), vec4(distCol.xxx / 100, 1.0));
 
+    pix = vec3(gl_GlobalInvocationID.xyz);
+    vec4 tData = imageLoad(im_dtnn_1, ivec3(pix));
+    //ivec4 tData = imageLoad(volumeData, ivec3(TexCoord.x * 128.0f, TexCoord.y * 128.0f, slice));
+
+    //// FOR TSDF VOLUME
+    //return vec4(1.0f * float(tData.x) * 0.00003051944088f, 1.0f * float(tData.x) * -0.00003051944088f, 0.0, 1.0f);
+
+    //// FOR SDF VOLUME
+    //vec3 texSize = vec3(textureSize(currentTextureVolume, 0));
+    float distCol = distance(vec3(pix), tData.xyz);
+    if (pix.z > tData.z)
+    {
+        distCol *= -1.0f;
+    }
+    //return vec4(tData.xyz*100.0, 1.0f);
+    imageStore(outImage, ivec3(pix), ivec4(distCol.xxx, 1));
 }
 
 void main()

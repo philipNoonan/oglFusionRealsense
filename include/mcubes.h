@@ -165,6 +165,7 @@ private:
 	float m_isoLevel = 1500.0f;
 
 
+	GLuint timeQuery[1];
 
 
 

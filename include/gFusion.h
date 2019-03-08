@@ -244,9 +244,9 @@ public:
 	}
 	GLuint getVerts()
 	{
-		return m_textureVertex;
+		//return m_textureVertex;
 
-		//return m_textureReferenceVertex;
+		return m_textureReferenceVertex;
 
 	}
 	GLuint getNorms()
@@ -275,6 +275,10 @@ public:
 	{
 		return m_totalVerts;
 
+	}
+	void setFloodSDF(GLuint floodTex)
+	{
+		m_textureFloodSDF = floodTex;
 	}
 
 
@@ -423,6 +427,7 @@ private:
 	GLuint m_textureDifferenceVertex;
 	GLuint m_textureTestImage;
 	GLuint m_textureTrackImage;
+	GLuint m_textureFloodSDF;
 
 	//GLuint m_textureEdgeTable;
 	//GLuint m_textureTriTex;

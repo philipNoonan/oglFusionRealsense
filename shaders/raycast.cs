@@ -2,7 +2,8 @@
 
 layout(local_size_x = 32, local_size_y = 32) in;
 
-layout(binding= 0) uniform isampler3D volumeDataTexture;
+layout(binding = 0) uniform isampler3D volumeDataTexture;
+layout(binding = 1) uniform sampler3D volumeFloodSDF;
 //layout(binding= 1) uniform sampler3D volumeColorTexture;
 //layout(binding= 2) uniform sampler2D currentTextureColor;
      

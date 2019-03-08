@@ -114,12 +114,7 @@ void gFloodInit()
 {
 	gflood.compileAndLinkShader();
 	gflood.setLocations();
-	gflood.setVolumeConfig(gconfig.volumeSize.x, gconfig.volumeDimensions.x);
 
-	gflood.allocateTextures();
-
-	krender.setFloodTexture(gflood.getFloodOutputTexture());
-	gflood.setVertices(gfusion.getVerts());
 
 }
 
@@ -371,7 +366,23 @@ void setUI()
 
 		if (ImGui::Button("P2P")) trackDepthToPoint ^= 1; ImGui::SameLine(); ImGui::Checkbox("", &trackDepthToPoint); ImGui::SameLine();
 		if (ImGui::Button("P2V")) trackDepthToVolume ^= 1; ImGui::SameLine(); ImGui::Checkbox("", &trackDepthToVolume);
-		if (ImGui::Button("Flood")) performFlood ^= 1; ImGui::SameLine(); ImGui::Checkbox("", &performFlood);
+		if (ImGui::Button("Flood"))
+		{
+			performFlood ^= 1;
+			if (performFlood)
+			{
+				gflood.setVolumeConfig(gconfig.volumeSize.x, gconfig.volumeDimensions.x);
+
+				gflood.allocateTextures();
+
+				krender.setFloodTexture(gflood.getFloodOutputTexture());
+				//krender.setFloodTexture(gflood.getFloodSDFTexture());
+
+				gflood.setVertices(gfusion.getVerts());
+			}
+		}
+
+		ImGui::SameLine(); ImGui::Checkbox("", &performFlood);
 
 
 		if (ImGui::Button("Reset Volume"))
@@ -404,12 +415,18 @@ void setUI()
 
 			gfusion.Reset(initPose, deleteFlag);
 			reset = true;
-			gfusion.raycast();
+			if (trackDepthToPoint)
+			{
+				gfusion.raycast();
+			}
 
 			counter = 0;
+			if (performFlood)
+			{
+				gflood.setVolumeConfig(gconfig.volumeSize.x, gconfig.volumeDimensions.x);
+				gflood.allocateTextures();
+			}
 
-			gflood.setVolumeConfig(gconfig.volumeSize.x, gconfig.volumeDimensions.x);
-			gflood.allocateTextures();
 
 		}
 
@@ -433,7 +450,10 @@ void setUI()
 
 			mcubes.setConfig(mcconfig);
 
-			mcubes.setVolumeTexture(gfusion.getVolume());
+			//mcubes.setVolumeTexture(gfusion.getVolume());
+			mcubes.setVolumeTexture(gflood.getFloodSDFTexture());
+
+
 			mcubes.init();
 
 			mcubes.setIsolevel(0);
@@ -713,6 +733,9 @@ int main(int, char**)
 			gfusion.vertexToNormal();
 			if (performFlood)
 			{
+				GLenum theError;
+				theError = glGetError();
+
 				gflood.setPose(gfusion.getPose());
 				gflood.jumpFloodCalc();
 			}

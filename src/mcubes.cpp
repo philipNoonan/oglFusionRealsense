@@ -72,6 +72,9 @@ void MCubes::setLocations()
 	m_activeVoxelsID = glGetUniformLocation(marchingCubesProg.getHandle(), "activeVoxels");
 	m_maxVertsID = glGetUniformLocation(marchingCubesProg.getHandle(), "maxVerts");
 	m_voxelSizeID = glGetUniformLocation(marchingCubesProg.getHandle(), "voxelSize");
+
+	glGenQueries(1, timeQuery);
+
 }
 
 
@@ -206,6 +209,7 @@ GLuint MCubes::prefixSum(GLuint inputBuffer, GLuint outputBuffer)
 void MCubes::histoPyramids()
 {
 
+	glBeginQuery(GL_TIME_ELAPSED, timeQuery[0]);
 
 
 	histoPyramidsProg.use();
@@ -385,7 +389,15 @@ void MCubes::histoPyramids()
 	//	outFile << point[0] << " " << point[1] << " " << point[2] << std::endl;
 	//}
 
-
+	glEndQuery(GL_TIME_ELAPSED);
+	GLuint available = 0;
+	while (!available) {
+		glGetQueryObjectuiv(timeQuery[0], GL_QUERY_RESULT_AVAILABLE, &available);
+	}
+	// elapsed time in nanoseconds
+	GLuint64 elapsed;
+	glGetQueryObjectui64vEXT(timeQuery[0], GL_QUERY_RESULT, &elapsed);
+	std::cout << "hp time : " << elapsed / 1000000.0 << std::endl;
 
 }
 void MCubes::exportPointCloud() 
