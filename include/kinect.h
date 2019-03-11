@@ -158,6 +158,7 @@ bool showEdgesFlag = false;
 bool showNormalFlag = true;
 bool showVolumeFlag = false;
 bool showTrackFlag = true;
+bool showSDFVolume = false;
 
 float irBrightness = 1.0;
 float irLow = 0.0f;

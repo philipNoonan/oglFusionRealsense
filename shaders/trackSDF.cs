@@ -111,84 +111,84 @@ int vsGrad(uvec3 pos)
 
 
 
-vec3 getGradient(vec4 hit)
-{
-    vec3 scaled_pos = vec3((hit.x * volSize.x / volDim.x) - 0.5f, (hit.y * volSize.y / volDim.y) - 0.5f, (hit.z * volSize.z / volDim.z) - 0.5f);
-    ivec3 baseVal = ivec3(floor(scaled_pos));
-    vec3 factor = fract(scaled_pos);
-    ivec3 lower_lower = max(baseVal - ivec3(1), ivec3(0));
-    ivec3 lower_upper = max(baseVal, ivec3(0));
-    ivec3 upper_lower = min(baseVal + ivec3(1), ivec3(volSize) - ivec3(1));
-    ivec3 upper_upper = min(baseVal + ivec3(2), ivec3(volSize) - ivec3(1));
-    ivec3 lower = lower_upper;
-    ivec3 upper = upper_lower;
+//vec3 getGradient(vec4 hit)
+//{
+//    vec3 scaled_pos = vec3((hit.x * volSize.x / volDim.x) - 0.5f, (hit.y * volSize.y / volDim.y) - 0.5f, (hit.z * volSize.z / volDim.z) - 0.5f);
+//    ivec3 baseVal = ivec3(floor(scaled_pos));
+//    vec3 factor = fract(scaled_pos);
+//    ivec3 lower_lower = max(baseVal - ivec3(1), ivec3(0));
+//    ivec3 lower_upper = max(baseVal, ivec3(0));
+//    ivec3 upper_lower = min(baseVal + ivec3(1), ivec3(volSize) - ivec3(1));
+//    ivec3 upper_upper = min(baseVal + ivec3(2), ivec3(volSize) - ivec3(1));
+//    ivec3 lower = lower_upper;
+//    ivec3 upper = upper_lower;
 
-    vec3 gradient;
+//    vec3 gradient;
 
-    gradient.x =
-              (((vs(uvec3(upper_lower.x, lower.y, lower.z)) - vs(uvec3(lower_lower.x, lower.y, lower.z))) * (1.0 - factor.x)
-            + (vs(uvec3(upper_upper.x, lower.y, lower.z)) - vs(uvec3(lower_upper.x, lower.y, lower.z))) * factor.x) * (1.0 - factor.y)
-            + ((vs(uvec3(upper_lower.x, upper.y, lower.z)) - vs(uvec3(lower_lower.x, upper.y, lower.z))) * (1.0 - factor.x)
-            + (vs(uvec3(upper_upper.x, upper.y, lower.z)) - vs(uvec3(lower_upper.x, upper.y, lower.z))) * factor.x) * factor.y) * (1.0 - factor.z)
-            + (((vs(uvec3(upper_lower.x, lower.y, upper.z)) - vs(uvec3(lower_lower.x, lower.y, upper.z))) * (1.0 - factor.x)
-            + (vs(uvec3(upper_upper.x, lower.y, upper.z)) - vs(uvec3(lower_upper.x, lower.y, upper.z))) * factor.x) * (1.0 - factor.y)
-            + ((vs(uvec3(upper_lower.x, upper.y, upper.z)) - vs(uvec3(lower_lower.x, upper.y, upper.z))) * (1.0 - factor.x)
-            + (vs(uvec3(upper_upper.x, upper.y, upper.z)) - vs(uvec3(lower_upper.x, upper.y, upper.z))) * factor.x) * factor.y) * factor.z;
+//    gradient.x =
+//              (((vs(uvec3(upper_lower.x, lower.y, lower.z)) - vs(uvec3(lower_lower.x, lower.y, lower.z))) * (1.0 - factor.x)
+//            + (vs(uvec3(upper_upper.x, lower.y, lower.z)) - vs(uvec3(lower_upper.x, lower.y, lower.z))) * factor.x) * (1.0 - factor.y)
+//            + ((vs(uvec3(upper_lower.x, upper.y, lower.z)) - vs(uvec3(lower_lower.x, upper.y, lower.z))) * (1.0 - factor.x)
+//            + (vs(uvec3(upper_upper.x, upper.y, lower.z)) - vs(uvec3(lower_upper.x, upper.y, lower.z))) * factor.x) * factor.y) * (1.0 - factor.z)
+//            + (((vs(uvec3(upper_lower.x, lower.y, upper.z)) - vs(uvec3(lower_lower.x, lower.y, upper.z))) * (1.0 - factor.x)
+//            + (vs(uvec3(upper_upper.x, lower.y, upper.z)) - vs(uvec3(lower_upper.x, lower.y, upper.z))) * factor.x) * (1.0 - factor.y)
+//            + ((vs(uvec3(upper_lower.x, upper.y, upper.z)) - vs(uvec3(lower_lower.x, upper.y, upper.z))) * (1.0 - factor.x)
+//            + (vs(uvec3(upper_upper.x, upper.y, upper.z)) - vs(uvec3(lower_upper.x, upper.y, upper.z))) * factor.x) * factor.y) * factor.z;
 
-    gradient.y =
-          (((vs(uvec3(lower.x, upper_lower.y, lower.z)) - vs(uvec3(lower.x, lower_lower.y, lower.z))) * (1.0 - factor.x)
-        + (vs(uvec3(upper.x, upper_lower.y, lower.z)) - vs(uvec3(upper.x, lower_lower.y, lower.z))) * factor.x) * (1.0 - factor.y)
-        + ((vs(uvec3(lower.x, upper_upper.y, lower.z)) - vs(uvec3(lower.x, lower_upper.y, lower.z))) * (1.0 - factor.x)
-        + (vs(uvec3(upper.x, upper_upper.y, lower.z)) - vs(uvec3(upper.x, lower_upper.y, lower.z))) * factor.x) * factor.y) * (1.0 - factor.z)
-        + (((vs(uvec3(lower.x, upper_lower.y, upper.z)) - vs(uvec3(lower.x, lower_lower.y, upper.z))) * (1.0 - factor.x)
-        + (vs(uvec3(upper.x, upper_lower.y, upper.z)) - vs(uvec3(upper.x, lower_lower.y, upper.z))) * factor.x) * (1.0 - factor.y)
-        + ((vs(uvec3(lower.x, upper_upper.y, upper.z)) - vs(uvec3(lower.x, lower_upper.y, upper.z))) * (1.0 - factor.x)
-        + (vs(uvec3(upper.x, upper_upper.y, upper.z)) - vs(uvec3(upper.x, lower_upper.y, upper.z))) * factor.x) * factor.y) * factor.z;
+//    gradient.y =
+//          (((vs(uvec3(lower.x, upper_lower.y, lower.z)) - vs(uvec3(lower.x, lower_lower.y, lower.z))) * (1.0 - factor.x)
+//        + (vs(uvec3(upper.x, upper_lower.y, lower.z)) - vs(uvec3(upper.x, lower_lower.y, lower.z))) * factor.x) * (1.0 - factor.y)
+//        + ((vs(uvec3(lower.x, upper_upper.y, lower.z)) - vs(uvec3(lower.x, lower_upper.y, lower.z))) * (1.0 - factor.x)
+//        + (vs(uvec3(upper.x, upper_upper.y, lower.z)) - vs(uvec3(upper.x, lower_upper.y, lower.z))) * factor.x) * factor.y) * (1.0 - factor.z)
+//        + (((vs(uvec3(lower.x, upper_lower.y, upper.z)) - vs(uvec3(lower.x, lower_lower.y, upper.z))) * (1.0 - factor.x)
+//        + (vs(uvec3(upper.x, upper_lower.y, upper.z)) - vs(uvec3(upper.x, lower_lower.y, upper.z))) * factor.x) * (1.0 - factor.y)
+//        + ((vs(uvec3(lower.x, upper_upper.y, upper.z)) - vs(uvec3(lower.x, lower_upper.y, upper.z))) * (1.0 - factor.x)
+//        + (vs(uvec3(upper.x, upper_upper.y, upper.z)) - vs(uvec3(upper.x, lower_upper.y, upper.z))) * factor.x) * factor.y) * factor.z;
 
-    gradient.z =
-          (((vs(uvec3(lower.x, lower.y, upper_lower.z)) - vs(uvec3(lower.x, lower.y, lower_lower.z))) * (1.0 - factor.x)
-        + (vs(uvec3(upper.x, lower.y, upper_lower.z)) - vs(uvec3(upper.x, lower.y, lower_lower.z))) * factor.x) * (1.0 - factor.y)
-        + ((vs(uvec3(lower.x, upper.y, upper_lower.z)) - vs(uvec3(lower.x, upper.y, lower_lower.z))) * (1.0 - factor.x)
-        + (vs(uvec3(upper.x, upper.y, upper_lower.z)) - vs(uvec3(upper.x, upper.y, lower_lower.z))) * factor.x) * factor.y) * (1.0 - factor.z)
-        + (((vs(uvec3(lower.x, lower.y, upper_upper.z)) - vs(uvec3(lower.x, lower.y, lower_upper.z))) * (1.0 - factor.x)
-        + (vs(uvec3(upper.x, lower.y, upper_upper.z)) - vs(uvec3(upper.x, lower.y, lower_upper.z))) * factor.x) * (1.0 - factor.y)
-        + ((vs(uvec3(lower.x, upper.y, upper_upper.z)) - vs(uvec3(lower.x, upper.y, lower_upper.z))) * (1.0 - factor.x)
-        + (vs(uvec3(upper.x, upper.y, upper_upper.z)) - vs(uvec3(upper.x, upper.y, lower_upper.z))) * factor.x) * factor.y) * factor.z;
+//    gradient.z =
+//          (((vs(uvec3(lower.x, lower.y, upper_lower.z)) - vs(uvec3(lower.x, lower.y, lower_lower.z))) * (1.0 - factor.x)
+//        + (vs(uvec3(upper.x, lower.y, upper_lower.z)) - vs(uvec3(upper.x, lower.y, lower_lower.z))) * factor.x) * (1.0 - factor.y)
+//        + ((vs(uvec3(lower.x, upper.y, upper_lower.z)) - vs(uvec3(lower.x, upper.y, lower_lower.z))) * (1.0 - factor.x)
+//        + (vs(uvec3(upper.x, upper.y, upper_lower.z)) - vs(uvec3(upper.x, upper.y, lower_lower.z))) * factor.x) * factor.y) * (1.0 - factor.z)
+//        + (((vs(uvec3(lower.x, lower.y, upper_upper.z)) - vs(uvec3(lower.x, lower.y, lower_upper.z))) * (1.0 - factor.x)
+//        + (vs(uvec3(upper.x, lower.y, upper_upper.z)) - vs(uvec3(upper.x, lower.y, lower_upper.z))) * factor.x) * (1.0 - factor.y)
+//        + ((vs(uvec3(lower.x, upper.y, upper_upper.z)) - vs(uvec3(lower.x, upper.y, lower_upper.z))) * (1.0 - factor.x)
+//        + (vs(uvec3(upper.x, upper.y, upper_upper.z)) - vs(uvec3(upper.x, upper.y, lower_upper.z))) * factor.x) * factor.y) * factor.z;
 
-    return gradient * vec3(volDim.x / volSize.x, volDim.y / volSize.y, volDim.z / volSize.z) * (0.5f * 0.00003051944088f);
-
-
-}
+//    return gradient * vec3(volDim.x / volSize.x, volDim.y / volSize.y, volDim.z / volSize.z) * (0.5f * 0.00003051944088f);
 
 
+//}
 
-float interpVol(vec3 pos, inout bool interpolated)
-{
-    // scaled pos is in voxel index space
-    //vec3 scaled_pos = vec3((pos.x * volSize.x / volDim.x) - 0.5f, (pos.y * volSize.y / volDim.y) - 0.5f, (pos.z * volSize.z / volDim.z) - 0.5f);
-    ivec3 base = ivec3(floor(pos));
-    vec3 factor = fract(pos);
-    ivec3 lower = max(base, ivec3(0));
-    ivec3 upper = min(base + ivec3(1), ivec3(volSize) - ivec3(1));
-    ivec4 tData = imageLoad(volumeData, ivec3(base));
-    //ivec4 tData = texture(volumeDataTexture, base);
-    if (tData.y > 0)
-    {
-        interpolated = true;
-    }
-    else
-    {
-        interpolated = false;
-    }
 
-    //return float(tData.x);
-    return (
-          ((vs(uvec3(lower.x, lower.y, lower.z)) * (1 - factor.x) + vs(uvec3(upper.x, lower.y, lower.z)) * factor.x) * (1 - factor.y)
-         + (vs(uvec3(lower.x, upper.y, lower.z)) * (1 - factor.x) + vs(uvec3(upper.x, upper.y, lower.z)) * factor.x) * factor.y) * (1 - factor.z)
-        + ((vs(uvec3(lower.x, lower.y, upper.z)) * (1 - factor.x) + vs(uvec3(upper.x, lower.y, upper.z)) * factor.x) * (1 - factor.y)
-         + (vs(uvec3(lower.x, upper.y, upper.z)) * (1 - factor.x) + vs(uvec3(upper.x, upper.y, upper.z)) * factor.x) * factor.y) * factor.z
-        ) * 0.00003051944088f;
-}
+
+//float interpVol(vec3 pos, inout bool interpolated)
+//{
+//    // scaled pos is in voxel index space
+//    //vec3 scaled_pos = vec3((pos.x * volSize.x / volDim.x) - 0.5f, (pos.y * volSize.y / volDim.y) - 0.5f, (pos.z * volSize.z / volDim.z) - 0.5f);
+//    ivec3 base = ivec3(floor(pos));
+//    vec3 factor = fract(pos);
+//    ivec3 lower = max(base, ivec3(0));
+//    ivec3 upper = min(base + ivec3(1), ivec3(volSize) - ivec3(1));
+//    ivec4 tData = imageLoad(volumeData, ivec3(base));
+//    //ivec4 tData = texture(volumeDataTexture, base);
+//    if (tData.y > 0)
+//    {
+//        interpolated = true;
+//    }
+//    else
+//    {
+//        interpolated = false;
+//    }
+
+//    //return float(tData.x);
+//    return (
+//          ((vs(uvec3(lower.x, lower.y, lower.z)) * (1 - factor.x) + vs(uvec3(upper.x, lower.y, lower.z)) * factor.x) * (1 - factor.y)
+//         + (vs(uvec3(lower.x, upper.y, lower.z)) * (1 - factor.x) + vs(uvec3(upper.x, upper.y, lower.z)) * factor.x) * factor.y) * (1 - factor.z)
+//        + ((vs(uvec3(lower.x, lower.y, upper.z)) * (1 - factor.x) + vs(uvec3(upper.x, lower.y, upper.z)) * factor.x) * (1 - factor.y)
+//         + (vs(uvec3(lower.x, upper.y, upper.z)) * (1 - factor.x) + vs(uvec3(upper.x, upper.y, upper.z)) * factor.x) * factor.y) * factor.z
+//        ) * 0.00003051944088f;
+//}
 
 float SDF(vec3 location)
 {
@@ -203,27 +203,27 @@ float SDF(vec3 location)
     int J = int(j);
     int K = int(k);
 
-    vec3 locationInVolumeTexture = vec3(location / volSize.x);
-    //float N0 = imageLoad(volumeData, ivec3(I,           J,          K)).x * 0.00003051944088f;
-    //float N1 = imageLoad(volumeData, ivec3(I,           J + 1.0,    K)).x * 0.00003051944088f;
-    //float N2 = imageLoad(volumeData, ivec3(I + 1.0,     J,          K)).x * 0.00003051944088f;
-    //float N3 = imageLoad(volumeData, ivec3(I + 1.0,     J + 1.0,    K)).x * 0.00003051944088f;
+    //vec3 locationInVolumeTexture = vec3(location / volSize.x);
+    float N0 = imageLoad(volumeData, ivec3(I, J, K)).x * 0.00003051944088f;
+    float N1 = imageLoad(volumeData, ivec3(I, J + 1.0, K)).x * 0.00003051944088f;
+    float N2 = imageLoad(volumeData, ivec3(I + 1.0, J, K)).x * 0.00003051944088f;
+    float N3 = imageLoad(volumeData, ivec3(I + 1.0, J + 1.0, K)).x * 0.00003051944088f;
 
-    //float N4 = imageLoad(volumeData, ivec3(I,           J,          K + 1)).x * 0.00003051944088f;
-    //float N5 = imageLoad(volumeData, ivec3(I,           J + 1.0,    K + 1)).x * 0.00003051944088f;
-    //float N6 = imageLoad(volumeData, ivec3(I + 1.0,     J,          K + 1)).x * 0.00003051944088f;
-    //float N7 = imageLoad(volumeData, ivec3(I + 1.0,     J + 1.0,    K + 1)).x * 0.00003051944088f;
+    float N4 = imageLoad(volumeData, ivec3(I, J, K + 1)).x * 0.00003051944088f;
+    float N5 = imageLoad(volumeData, ivec3(I, J + 1.0, K + 1)).x * 0.00003051944088f;
+    float N6 = imageLoad(volumeData, ivec3(I + 1.0, J, K + 1)).x * 0.00003051944088f;
+    float N7 = imageLoad(volumeData, ivec3(I + 1.0, J + 1.0, K + 1)).x * 0.00003051944088f;
 
-    //float a0, a1, b0, b1;
+    float a0, a1, b0, b1;
 
-    //a0 = N0 * (1.0 - z) + N4 * z;
-    //a1 = N1 * (1.0 - z) + N5 * z;
-    //b0 = N2 * (1.0 - z) + N6 * z;
-    //b1 = N3 * (1.0 - z) + N7 * z;
+    a0 = N0 * (1.0 - z) + N4 * z;
+    a1 = N1 * (1.0 - z) + N5 * z;
+    b0 = N2 * (1.0 - z) + N6 * z;
+    b1 = N3 * (1.0 - z) + N7 * z;
 
-    //return (a0 * (1.0 - y) + a1 * y) * (1.0 - x) + (b0 * (1.0 - y) + b1 * y) * x;
-    return textureLod(volumeDataTexture, locationInVolumeTexture, 0).x * 0.000030517f;
-    return imageLoad(volumeData, ivec3(I, J, K)).x * 0.000030517f;
+    return (a0 * (1.0 - y) + a1 * y) * (1.0 - x) + (b0 * (1.0 - y) + b1 * y) * x;
+    //return textureLod(volumeDataTexture, locationInVolumeTexture, 0).x * 0.000030517f;
+    //return imageLoad(volumeData, ivec3(I, J, K)).x * 0.000030517f;
 }
 
 
@@ -301,111 +301,111 @@ float[6] getJ(vec3 dsdf, float[3][6] dxdxi)
 }
 
 
-void getPartialDerivative(vec3 cameraPoint, vec3 pos, inout bool isInterpolated, inout float SDF_derivative[6], inout float sdf_val)
-{
-    vec3 current_world_point;
-    vec3 plus_h_world_point;
-    vec3 minus_h_world_point;
-    vec3 plus_h_camera_point;
-    vec3 minus_h_camera_point;
-    vec3 plus_h_voxel_point;
-    vec3 minus_h_voxel_point;
-    float plus_h_sdf_value;
-    float minus_h_sdf_value;
+//void getPartialDerivative(vec3 cameraPoint, vec3 pos, inout bool isInterpolated, inout float SDF_derivative[6], inout float sdf_val)
+//{
+//    vec3 current_world_point;
+//    vec3 plus_h_world_point;
+//    vec3 minus_h_world_point;
+//    vec3 plus_h_camera_point;
+//    vec3 minus_h_camera_point;
+//    vec3 plus_h_voxel_point;
+//    vec3 minus_h_voxel_point;
+//    float plus_h_sdf_value;
+//    float minus_h_sdf_value;
 
-    vec3 current_voxel_point = vec3(((pos.x - 0.f) * volSize.x / volDim.x) - 0.5f, ((pos.y- 0.f) * volSize.y / volDim.y) - 0.5f, ((pos.z - 0.f) * volSize.z / volDim.z) - 0.5f);
+//    vec3 current_voxel_point = vec3(((pos.x - 0.f) * volSize.x / volDim.x) - 0.5f, ((pos.y- 0.f) * volSize.y / volDim.y) - 0.5f, ((pos.z - 0.f) * volSize.z / volDim.z) - 0.5f);
 
-    sdf_val = interpDistance(current_voxel_point, isInterpolated);
-    if (!isInterpolated)
-        return;
+//    sdf_val = interpDistance(current_voxel_point, isInterpolated);
+//    if (!isInterpolated)
+//        return;
 
-    if (current_voxel_point.x < 0 || current_voxel_point.y < 0 || current_voxel_point.z < 0)
-        return;
-    if (current_voxel_point.x > volSize.x || current_voxel_point.y > volSize.y || current_voxel_point.z > volSize.z)
-        return;
-
-
+//    if (current_voxel_point.x < 0 || current_voxel_point.y < 0 || current_voxel_point.z < 0)
+//        return;
+//    if (current_voxel_point.x > volSize.x || current_voxel_point.y > volSize.y || current_voxel_point.z > volSize.z)
+//        return;
 
 
-    //tx derivative
-    plus_h_voxel_point = current_voxel_point;
-    plus_h_voxel_point.x += 1.0f;
-    minus_h_voxel_point = current_voxel_point;
-    minus_h_voxel_point.x -= 1.0f;
-    plus_h_sdf_value = interpDistance(plus_h_voxel_point, isInterpolated);
-    if (!isInterpolated)
-        return;
-    minus_h_sdf_value = interpDistance(minus_h_voxel_point, isInterpolated);
-    if (!isInterpolated)
-        return;
-    SDF_derivative[0] = (plus_h_sdf_value - minus_h_sdf_value) /  (2.0f / (volSize.x / volDim.x));
 
-    //ty derivative
-    plus_h_voxel_point = current_voxel_point;
-    plus_h_voxel_point.y += 1.0f;
-    minus_h_voxel_point = current_voxel_point;
-    minus_h_voxel_point.y -= 1.0f;
-    plus_h_sdf_value = interpDistance(plus_h_voxel_point, isInterpolated);
-    if (!isInterpolated)
-        return;
-    minus_h_sdf_value = interpDistance(minus_h_voxel_point, isInterpolated);
-    if (!isInterpolated)
-        return;
-    SDF_derivative[1] = (plus_h_sdf_value - minus_h_sdf_value) / (2.0f / (volSize.x / volDim.x));
 
-    //tz derivative
-    plus_h_voxel_point = current_voxel_point;
-    plus_h_voxel_point.z += 1.0f;
-    minus_h_voxel_point = current_voxel_point;
-    minus_h_voxel_point.z -= 1.0f;
-    plus_h_sdf_value = interpDistance(plus_h_voxel_point, isInterpolated);
-    if (!isInterpolated)
-        return;
-    minus_h_sdf_value = interpDistance(minus_h_voxel_point, isInterpolated);
-    if (!isInterpolated)
-        return;
-    SDF_derivative[2] = (plus_h_sdf_value - minus_h_sdf_value) / (2.0f / (volSize.x / volDim.x));
+//    //tx derivative
+//    plus_h_voxel_point = current_voxel_point;
+//    plus_h_voxel_point.x += 1.0f;
+//    minus_h_voxel_point = current_voxel_point;
+//    minus_h_voxel_point.x -= 1.0f;
+//    plus_h_sdf_value = interpDistance(plus_h_voxel_point, isInterpolated);
+//    if (!isInterpolated)
+//        return;
+//    minus_h_sdf_value = interpDistance(minus_h_voxel_point, isInterpolated);
+//    if (!isInterpolated)
+//        return;
+//    SDF_derivative[0] = (plus_h_sdf_value - minus_h_sdf_value) /  (2.0f / (volSize.x / volDim.x));
 
-    //wx derivative
-    plus_h_world_point = (r1p * cameraPoint) + vec3(Ttrack[3][0], Ttrack[3][1], Ttrack[3][2]);
-    minus_h_world_point = (r1m * cameraPoint) + vec3(Ttrack[3][0], Ttrack[3][1], Ttrack[3][2]);
-    plus_h_voxel_point = vec3((plus_h_world_point.x * volSize.x / volDim.x) - 0.5f, (plus_h_world_point.y * volSize.y / volDim.y) - 0.5f, (plus_h_world_point.z * volSize.z / volDim.z) - 0.5f);
-    minus_h_voxel_point = vec3((minus_h_world_point.x * volSize.x / volDim.x) - 0.5f, (minus_h_world_point.y * volSize.y / volDim.y) - 0.5f, (minus_h_world_point.z * volSize.z / volDim.z) - 0.5f);
-    plus_h_sdf_value = interpDistance(plus_h_voxel_point, isInterpolated);
-    if (!isInterpolated)
-        return;
-    minus_h_sdf_value = interpDistance(minus_h_voxel_point, isInterpolated);
-    if (!isInterpolated)
-        return;
-    SDF_derivative[3] = (plus_h_sdf_value - minus_h_sdf_value) /  (2.0f / (volSize.x / volDim.x)); // 0.01 = w_h?
+//    //ty derivative
+//    plus_h_voxel_point = current_voxel_point;
+//    plus_h_voxel_point.y += 1.0f;
+//    minus_h_voxel_point = current_voxel_point;
+//    minus_h_voxel_point.y -= 1.0f;
+//    plus_h_sdf_value = interpDistance(plus_h_voxel_point, isInterpolated);
+//    if (!isInterpolated)
+//        return;
+//    minus_h_sdf_value = interpDistance(minus_h_voxel_point, isInterpolated);
+//    if (!isInterpolated)
+//        return;
+//    SDF_derivative[1] = (plus_h_sdf_value - minus_h_sdf_value) / (2.0f / (volSize.x / volDim.x));
 
-    //wy derivative
-    plus_h_world_point = (r2p * cameraPoint) + vec3(Ttrack[3][0], Ttrack[3][1], Ttrack[3][2]);
-    minus_h_world_point = (r2m * cameraPoint) + vec3(Ttrack[3][0], Ttrack[3][1], Ttrack[3][2]);
-    plus_h_voxel_point = vec3((plus_h_world_point.x * volSize.x / volDim.x) - 0.5f, (plus_h_world_point.y * volSize.y / volDim.y) - 0.5f, (plus_h_world_point.z * volSize.z / volDim.z) - 0.5f);
-    minus_h_voxel_point = vec3((minus_h_world_point.x * volSize.x / volDim.x) - 0.5f, (minus_h_world_point.y * volSize.y / volDim.y) - 0.5f, (minus_h_world_point.z * volSize.z / volDim.z) - 0.5f);
-    plus_h_sdf_value = interpDistance(plus_h_voxel_point, isInterpolated);
-    if (!isInterpolated)
-        return;
-    minus_h_sdf_value = interpDistance(minus_h_voxel_point, isInterpolated);
-    if (!isInterpolated)
-        return;
-    SDF_derivative[4] = (plus_h_sdf_value - minus_h_sdf_value) /  (2.0f / (volSize.x / volDim.x)); // 0.01 = w_h?
+//    //tz derivative
+//    plus_h_voxel_point = current_voxel_point;
+//    plus_h_voxel_point.z += 1.0f;
+//    minus_h_voxel_point = current_voxel_point;
+//    minus_h_voxel_point.z -= 1.0f;
+//    plus_h_sdf_value = interpDistance(plus_h_voxel_point, isInterpolated);
+//    if (!isInterpolated)
+//        return;
+//    minus_h_sdf_value = interpDistance(minus_h_voxel_point, isInterpolated);
+//    if (!isInterpolated)
+//        return;
+//    SDF_derivative[2] = (plus_h_sdf_value - minus_h_sdf_value) / (2.0f / (volSize.x / volDim.x));
 
-    //wz derivative
-    plus_h_world_point = (r3p * cameraPoint) + vec3(Ttrack[3][0], Ttrack[3][1], Ttrack[3][2]);
-    minus_h_world_point = (r3m * cameraPoint) + vec3(Ttrack[3][0], Ttrack[3][1], Ttrack[3][2]);
-    plus_h_voxel_point = vec3((plus_h_world_point.x * volSize.x / volDim.x) - 0.5f, (plus_h_world_point.y * volSize.y / volDim.y) - 0.5f, (plus_h_world_point.z * volSize.z / volDim.z) - 0.5f);
-    minus_h_voxel_point = vec3((minus_h_world_point.x * volSize.x / volDim.x) - 0.5f, (minus_h_world_point.y * volSize.y / volDim.y) - 0.5f, (minus_h_world_point.z * volSize.z / volDim.z) - 0.5f);
-    plus_h_sdf_value = interpDistance(plus_h_voxel_point, isInterpolated);
-    if (!isInterpolated)
-        return;
-    minus_h_sdf_value = interpDistance(minus_h_voxel_point, isInterpolated);
-    if (!isInterpolated)
-        return;
-    SDF_derivative[5] = (plus_h_sdf_value - minus_h_sdf_value) / (2.0f / (volSize.x / volDim.x)); // 0.01 = w_h?
+//    //wx derivative
+//    plus_h_world_point = (r1p * cameraPoint) + vec3(Ttrack[3][0], Ttrack[3][1], Ttrack[3][2]);
+//    minus_h_world_point = (r1m * cameraPoint) + vec3(Ttrack[3][0], Ttrack[3][1], Ttrack[3][2]);
+//    plus_h_voxel_point = vec3((plus_h_world_point.x * volSize.x / volDim.x) - 0.5f, (plus_h_world_point.y * volSize.y / volDim.y) - 0.5f, (plus_h_world_point.z * volSize.z / volDim.z) - 0.5f);
+//    minus_h_voxel_point = vec3((minus_h_world_point.x * volSize.x / volDim.x) - 0.5f, (minus_h_world_point.y * volSize.y / volDim.y) - 0.5f, (minus_h_world_point.z * volSize.z / volDim.z) - 0.5f);
+//    plus_h_sdf_value = interpDistance(plus_h_voxel_point, isInterpolated);
+//    if (!isInterpolated)
+//        return;
+//    minus_h_sdf_value = interpDistance(minus_h_voxel_point, isInterpolated);
+//    if (!isInterpolated)
+//        return;
+//    SDF_derivative[3] = (plus_h_sdf_value - minus_h_sdf_value) /  (2.0f / (volSize.x / volDim.x)); // 0.01 = w_h?
 
-}
+//    //wy derivative
+//    plus_h_world_point = (r2p * cameraPoint) + vec3(Ttrack[3][0], Ttrack[3][1], Ttrack[3][2]);
+//    minus_h_world_point = (r2m * cameraPoint) + vec3(Ttrack[3][0], Ttrack[3][1], Ttrack[3][2]);
+//    plus_h_voxel_point = vec3((plus_h_world_point.x * volSize.x / volDim.x) - 0.5f, (plus_h_world_point.y * volSize.y / volDim.y) - 0.5f, (plus_h_world_point.z * volSize.z / volDim.z) - 0.5f);
+//    minus_h_voxel_point = vec3((minus_h_world_point.x * volSize.x / volDim.x) - 0.5f, (minus_h_world_point.y * volSize.y / volDim.y) - 0.5f, (minus_h_world_point.z * volSize.z / volDim.z) - 0.5f);
+//    plus_h_sdf_value = interpDistance(plus_h_voxel_point, isInterpolated);
+//    if (!isInterpolated)
+//        return;
+//    minus_h_sdf_value = interpDistance(minus_h_voxel_point, isInterpolated);
+//    if (!isInterpolated)
+//        return;
+//    SDF_derivative[4] = (plus_h_sdf_value - minus_h_sdf_value) /  (2.0f / (volSize.x / volDim.x)); // 0.01 = w_h?
+
+//    //wz derivative
+//    plus_h_world_point = (r3p * cameraPoint) + vec3(Ttrack[3][0], Ttrack[3][1], Ttrack[3][2]);
+//    minus_h_world_point = (r3m * cameraPoint) + vec3(Ttrack[3][0], Ttrack[3][1], Ttrack[3][2]);
+//    plus_h_voxel_point = vec3((plus_h_world_point.x * volSize.x / volDim.x) - 0.5f, (plus_h_world_point.y * volSize.y / volDim.y) - 0.5f, (plus_h_world_point.z * volSize.z / volDim.z) - 0.5f);
+//    minus_h_voxel_point = vec3((minus_h_world_point.x * volSize.x / volDim.x) - 0.5f, (minus_h_world_point.y * volSize.y / volDim.y) - 0.5f, (minus_h_world_point.z * volSize.z / volDim.z) - 0.5f);
+//    plus_h_sdf_value = interpDistance(plus_h_voxel_point, isInterpolated);
+//    if (!isInterpolated)
+//        return;
+//    minus_h_sdf_value = interpDistance(minus_h_voxel_point, isInterpolated);
+//    if (!isInterpolated)
+//        return;
+//    SDF_derivative[5] = (plus_h_sdf_value - minus_h_sdf_value) / (2.0f / (volSize.x / volDim.x)); // 0.01 = w_h?
+
+//}
 
 void main()
 {

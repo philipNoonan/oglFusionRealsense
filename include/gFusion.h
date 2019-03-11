@@ -58,7 +58,7 @@ struct gFusionConfig
 		volumeSize = glm::vec3(256);
 		volumeDimensions = glm::vec3(1.0f);
 		//cameraParameters = glm::vec4(256.0f, 212.0f, );
-		mu = 0.05f;
+		mu = 0.5f;
 		maxWeight = 100.0f;
 		nearPlane = 0.1f;
 		farPlane = 3.0f;
@@ -68,7 +68,7 @@ struct gFusionConfig
 		iterations.push_back(4);
 		iterations.push_back(6);
 		track_threshold = 0.5f;
-		depthFrameSize = glm::vec2(640, 480);
+		depthFrameSize = glm::vec2(848, 480);
 	}
 
 	float stepSize()

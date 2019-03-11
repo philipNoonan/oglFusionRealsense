@@ -69,7 +69,7 @@ void main()
             //vec3 projectedPos = opMul(view, projectedVertex);
 
 
-            vec2 projPixel = vec2(projectedPos.x / projectedPos.z + 0.5f, projectedPos.y / projectedPos.z + 0.5f);
+            vec2 projPixel = vec2(projectedPos.x / projectedPos.z, projectedPos.y / projectedPos.z);
 
 
 

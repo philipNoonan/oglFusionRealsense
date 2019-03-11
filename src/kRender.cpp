@@ -227,6 +227,7 @@ void kRender::setLocations()
 	m_fromRayVertID = glGetSubroutineIndex(renderProg.getHandle(), GL_FRAGMENT_SHADER, "fromRayVert");
 	m_fromPointsID = glGetSubroutineIndex(renderProg.getHandle(), GL_FRAGMENT_SHADER, "fromPoints");
 	m_fromVolumeID = glGetSubroutineIndex(renderProg.getHandle(), GL_FRAGMENT_SHADER, "fromVolume");
+	m_fromVolumeSDFID = glGetSubroutineIndex(renderProg.getHandle(), GL_FRAGMENT_SHADER, "fromVolumeSDF");
 	m_fromTrackID = glGetSubroutineIndex(renderProg.getHandle(), GL_FRAGMENT_SHADER, "fromTrack");
 	m_fromFlowID = glGetSubroutineIndex(renderProg.getHandle(), GL_FRAGMENT_SHADER, "fromFlow");
 
@@ -450,7 +451,7 @@ void kRender::setWindowLayout()
 //}
 
 
-void kRender::setRenderingOptions(bool showDepthFlag, bool showBigDepthFlag, bool showInfraFlag, bool showColorFlag, bool showLightFlag, bool showPointFlag, bool showFlowFlag, bool showEdgesFlag, bool showNormalFlag, bool showVolumeSDFFlag, bool showTrackFlag)
+void kRender::setRenderingOptions(bool showDepthFlag, bool showBigDepthFlag, bool showInfraFlag, bool showColorFlag, bool showLightFlag, bool showPointFlag, bool showFlowFlag, bool showEdgesFlag, bool showNormalFlag, bool showVolumeFlag, bool showTrackFlag, bool showSDFlag)
 {
 	m_showDepthFlag = showDepthFlag;
 	m_showBigDepthFlag = showBigDepthFlag;
@@ -461,8 +462,9 @@ void kRender::setRenderingOptions(bool showDepthFlag, bool showBigDepthFlag, boo
 	m_showFlowFlag = showFlowFlag; 
 	m_showEdgesFlag = showEdgesFlag;
 	m_showNormalFlag = showNormalFlag;
-	m_showVolumeSDFFlag = showVolumeSDFFlag; 
+	m_showVolumeFlag = showVolumeFlag; 
 	m_showTrackFlag = showTrackFlag;
+	m_showVolumeSDFFlag = showSDFlag;
 }
 
 void kRender::setTextures(GLuint depthTex, GLuint colorTex, GLuint vertexTex, GLuint normalTex, GLuint volumeTex, GLuint trackTex)
@@ -515,14 +517,17 @@ void kRender::bindTexturesForRendering()
 	}
 
 
-	if (m_showVolumeSDFFlag)
+	if (m_showVolumeFlag)
 	{
 		glActiveTexture(GL_TEXTURE5);
-		//glBindTexture(GL_TEXTURE_3D, m_textureVolume);
-				glBindTexture(GL_TEXTURE_3D, m_textureFlood);
+		glBindTexture(GL_TEXTURE_3D, m_textureVolume);
+	}
 
-		//glActiveTexture(GL_TEXTURE6);
-		//glBindTexture(GL_TEXTURE_3D, m_textureFlood);
+	if (m_showVolumeSDFFlag)
+	{
+
+		glActiveTexture(GL_TEXTURE6);
+		glBindTexture(GL_TEXTURE_3D, m_textureFlood);
 
 	}
 
@@ -875,8 +880,8 @@ void kRender::setViewMatrix(float xRot, float yRot, float zRot, float xTran, flo
 	r0 = glm::eulerAngleXYZ(glm::radians(xRot), glm::radians(yRot), glm::radians(zRot));
 
 
-	m_view = t1 * r0 * t0;
-	//m_view = glm::translate(m_view, glm::vec3(0.0f, 0.0f, 0.0f));
+m_view = t1 * r0 * t0;
+//m_view = glm::translate(m_view, glm::vec3(0.0f, 0.0f, 0.0f));
 
 }
 
@@ -925,8 +930,8 @@ void kRender::renderLiveVideoWindow(bool useInfrared)
 		glUniform2fv(m_imSizeID, 1, glm::value_ptr(imageSize));
 		glUniform2fv(m_depthRangeID, 1, glm::value_ptr(depthRange));
 
-		
-		glUniform1f(m_depthScaleID, 100.0f /  1000000.0f); // 1000 == each depth unit == 1 mm
+
+		glUniform1f(m_depthScaleID, 100.0f / 1000000.0f); // 1000 == each depth unit == 1 mm
 
 		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 	}
@@ -962,6 +967,29 @@ void kRender::renderLiveVideoWindow(bool useInfrared)
 		glBindVertexArray(m_VAO);
 		MVP = m_projection * m_view * m_model_volume;
 		glUniformSubroutinesuiv(GL_VERTEX_SHADER, 1, &m_fromStandardTextureID);
+		glUniformSubroutinesuiv(GL_FRAGMENT_SHADER, 1, &m_fromVolumeSDFID);
+		glUniform1f(m_sliceID, m_volumeSDFRenderSlice);
+
+		//glUniformMatrix4fv(m_ProjectionID, 1, GL_FALSE, glm::value_ptr(m_projection));
+		glUniformMatrix4fv(m_MvpID, 1, GL_FALSE, glm::value_ptr(MVP));
+		glUniform2fv(m_imSizeID, 1, glm::value_ptr(imageSize));
+
+		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+	}
+
+	if (m_showVolumeFlag)
+	{
+		// chnage verts for size of texture
+		setViewport(m_display3DPos.x, m_display3DPos.y, m_display3DSize.x, m_display3DSize.y);
+
+		//updateVerts(m_volume_size.x, m_volume_size.y);
+		glm::vec2 imageSize(m_volume_size.x, m_volume_size.y);
+
+		//glBindImageTexture(5, m_textureVolume, 0, GL_FALSE, 0, GL_READ_ONLY, GL_RG16I);
+
+		glBindVertexArray(m_VAO);
+		MVP = m_projection * m_view * m_model_volume;
+		glUniformSubroutinesuiv(GL_VERTEX_SHADER, 1, &m_fromStandardTextureID);
 		glUniformSubroutinesuiv(GL_FRAGMENT_SHADER, 1, &m_fromVolumeID);
 		glUniform1f(m_sliceID, m_volumeSDFRenderSlice);
 
@@ -970,6 +998,7 @@ void kRender::renderLiveVideoWindow(bool useInfrared)
 		glUniform2fv(m_imSizeID, 1, glm::value_ptr(imageSize));
 
 		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+	
 	}
 
 	//if (m_showFloodFlag)

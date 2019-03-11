@@ -200,7 +200,7 @@ public:
 	void setupComputeFBO();
 
 	// The correcter way 
-	void setRenderingOptions(bool showDepthFlag, bool showBigDepthFlag, bool showInfraFlag, bool showColorFlag, bool showLightFlag, bool showPointFlag, bool showFlowFlag, bool showEdgesFlag, bool showNormalFlag, bool showVolumeSDFFlag, bool showTrackFlag);
+	void setRenderingOptions(bool showDepthFlag, bool showBigDepthFlag, bool showInfraFlag, bool showColorFlag, bool showLightFlag, bool showPointFlag, bool showFlowFlag, bool showEdgesFlag, bool showNormalFlag, bool showVolumeSDFFlag, bool showTrackFlag, bool showSFFlag);
 	void setBuffersForRendering(float * depthArray, float * bigDepthArray, float * colorArray, float * infraArray, unsigned char * flowPtr);
 	void setDepthImageRenderPosition(float vertFov);
 	void setNormalImageRenderPosition();
@@ -340,6 +340,7 @@ private:
 	GLuint m_fromRayVertID;
 	GLuint m_fromPointsID;
 	GLuint m_fromVolumeID;
+	GLuint m_fromVolumeSDFID;
 	GLuint m_fromTrackID;
 	GLuint m_fromFlowID;
 
@@ -491,6 +492,7 @@ private:
 	bool m_showEdgesFlag = false;
 	bool m_showVolumeSDFFlag = false;
 	bool m_showTrackFlag = false;
+	bool m_showVolumeFlag = false;
 
 
 	const GLint tcOffsetColumns = 5;

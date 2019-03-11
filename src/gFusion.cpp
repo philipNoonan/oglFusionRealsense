@@ -1037,12 +1037,12 @@ bool gFusion::TrackSDF() {
 			Eigen::Matrix<double, 6, 6, Eigen::RowMajor> dC_icp = C_icp.cast<double>();
 			Eigen::Matrix<double, 6, 1> db_icp = b_icp.cast<double>();
 
-			double scaling = 1 / dC_icp.maxCoeff();
+			double scaling = 1.0 / dC_icp.maxCoeff();
 
 			dC_icp *= scaling;
 			db_icp *= scaling;
 
-			dC_icp = dC_icp + (double(iteration) * 1.0)*Eigen::MatrixXd::Identity(6, 6);
+			dC_icp = dC_icp + (double(iteration))*Eigen::MatrixXd::Identity(6, 6);
 
 			//Eigen::JacobiSVD<Eigen::MatrixXd> svd(dC_icp, Eigen::ComputeFullU | Eigen::ComputeFullV);
 			//result = svd.solve(db_icp); // TODO CHECK THIS WORKS, SHOULD WE MAKE A BACK SUB SOLVER?
@@ -1231,15 +1231,17 @@ void gFusion::trackSDF(int layer, Eigen::Matrix4f camToWorld)
 	glGetQueryObjectui64vEXT(query[5], GL_QUERY_RESULT, &elapsed);
 	trackSDFTime = elapsed / 1000000.0;
 
+	//if (layer == 0)
+	//{
+	//	cv::Mat testIm(480, 848, CV_32FC4);
+	//	glActiveTexture(GL_TEXTURE0);
+	//	glBindTexture(GL_TEXTURE_2D, m_textureTest);
+	//	glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_FLOAT, testIm.data);
+	//	glBindTexture(GL_TEXTURE_2D, 0);
 
-
-	//glActiveTexture(GL_TEXTURE0);
-	//glBindTexture(GL_TEXTURE_2D, m_textureTest);
-	//glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_FLOAT, testIm.data);
-	//glBindTexture(GL_TEXTURE_2D, 0);
-	//glActiveTexture(0);
-
-	//cv::imshow("testim1", testIm);
+	//	cv::imshow("testim1", testIm);
+	//	cv::waitKey(1);
+	//}
 
 
 
