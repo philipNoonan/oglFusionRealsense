@@ -1042,7 +1042,7 @@ bool gFusion::TrackSDF() {
 			dC_icp *= scaling;
 			db_icp *= scaling;
 
-			dC_icp = dC_icp + (double(iteration) * 0.01)*Eigen::MatrixXd::Identity(6, 6);
+			dC_icp = dC_icp + (double(iteration) * 1.0)*Eigen::MatrixXd::Identity(6, 6);
 
 			//Eigen::JacobiSVD<Eigen::MatrixXd> svd(dC_icp, Eigen::ComputeFullU | Eigen::ComputeFullV);
 			//result = svd.solve(db_icp); // TODO CHECK THIS WORKS, SHOULD WE MAKE A BACK SUB SOLVER?
@@ -1060,9 +1060,9 @@ bool gFusion::TrackSDF() {
 			//std::cout << "AE: " << alignmentEnergy << " snorm : " << Cnorm << " vec " << result.transpose() << std::endl;
 
 			//std::cout << "cnrom :" << Cnorm << std::endl;
-			if (alignmentEnergy != 0 && Cnorm < 1e-3)
+			if (alignmentEnergy != 0 && Cnorm < 1e-4)
 			{
-			//	std::cout << "tracked!!! iteration " << iteration << " level " << level << " AE: " << alignmentEnergy << " snorm : " << Cnorm << " vec " << result.transpose() << std::endl;
+				std::cout << "tracked!!! iteration " << iteration << " level " << level << " AE: " << alignmentEnergy << " snorm : " << Cnorm << " vec " << result.transpose() << std::endl;
 
 				//std::cout << "tracked!!! iteration " << iteration << std::endl;
 				tracked = true;

@@ -203,24 +203,27 @@ float SDF(vec3 location)
     int J = int(j);
     int K = int(k);
 
-    float N0 = imageLoad(volumeData, ivec3(I,           J,          K)).x * 0.00003051944088f;
-    float N1 = imageLoad(volumeData, ivec3(I,           J + 1.0,    K)).x * 0.00003051944088f;
-    float N2 = imageLoad(volumeData, ivec3(I + 1.0,     J,          K)).x * 0.00003051944088f;
-    float N3 = imageLoad(volumeData, ivec3(I + 1.0,     J + 1.0,    K)).x * 0.00003051944088f;
-                                                                    
-    float N4 = imageLoad(volumeData, ivec3(I,           J,          K + 1)).x * 0.00003051944088f;
-    float N5 = imageLoad(volumeData, ivec3(I,           J + 1.0,    K + 1)).x * 0.00003051944088f;
-    float N6 = imageLoad(volumeData, ivec3(I + 1.0,     J,          K + 1)).x * 0.00003051944088f;
-    float N7 = imageLoad(volumeData, ivec3(I + 1.0,     J + 1.0,    K + 1)).x * 0.00003051944088f;
+    vec3 locationInVolumeTexture = vec3(location / volSize.x);
+    //float N0 = imageLoad(volumeData, ivec3(I,           J,          K)).x * 0.00003051944088f;
+    //float N1 = imageLoad(volumeData, ivec3(I,           J + 1.0,    K)).x * 0.00003051944088f;
+    //float N2 = imageLoad(volumeData, ivec3(I + 1.0,     J,          K)).x * 0.00003051944088f;
+    //float N3 = imageLoad(volumeData, ivec3(I + 1.0,     J + 1.0,    K)).x * 0.00003051944088f;
 
-    float a0, a1, b0, b1;
+    //float N4 = imageLoad(volumeData, ivec3(I,           J,          K + 1)).x * 0.00003051944088f;
+    //float N5 = imageLoad(volumeData, ivec3(I,           J + 1.0,    K + 1)).x * 0.00003051944088f;
+    //float N6 = imageLoad(volumeData, ivec3(I + 1.0,     J,          K + 1)).x * 0.00003051944088f;
+    //float N7 = imageLoad(volumeData, ivec3(I + 1.0,     J + 1.0,    K + 1)).x * 0.00003051944088f;
 
-    a0 = N0 * (1.0 - z) + N4 * z;
-    a1 = N1 * (1.0 - z) + N5 * z;
-    b0 = N2 * (1.0 - z) + N6 * z;
-    b1 = N3 * (1.0 - z) + N7 * z;
+    //float a0, a1, b0, b1;
 
-    return (a0 * (1.0 - y) + a1 * y) * (1.0 - x) + (b0 * (1.0 - y) + b1 * y) * x;
+    //a0 = N0 * (1.0 - z) + N4 * z;
+    //a1 = N1 * (1.0 - z) + N5 * z;
+    //b0 = N2 * (1.0 - z) + N6 * z;
+    //b1 = N3 * (1.0 - z) + N7 * z;
+
+    //return (a0 * (1.0 - y) + a1 * y) * (1.0 - x) + (b0 * (1.0 - y) + b1 * y) * x;
+    return textureLod(volumeDataTexture, locationInVolumeTexture, 0).x * 0.000030517f;
+    return imageLoad(volumeData, ivec3(I, J, K)).x * 0.000030517f;
 }
 
 
@@ -409,16 +412,19 @@ void main()
 
     uvec2 pix = gl_GlobalInvocationID.xy;
     //ivec2 inSize = imageSize(inVertex); // mipmapped sizes
+    imageStore(testImage, ivec2(pix), vec4(1.0f));
 
     if (pix.x >= 0 && pix.x < imageSize.x - 1 && pix.y >= 0 && pix.y < imageSize.y)
     {
         setMats();
         //vec4 currentPoint = imageLoad(inVertex, ivec2(pix)); // in camera space
         vec4 cameraPoint = imageLoad(inVertex, ivec2(pix));
+
         vec4 projectedVertex = Ttrack * vec4(cameraPoint.xyz, 1.0f);
 
         //float D = interpVol(projectedVertex.xyz);// get SDF value from 3D volume texture
                                                  // this is 3d point in world space not volume space
+
 
         bool isInterpolated;
         // float sdf_der[6] = { 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f };
@@ -426,11 +432,28 @@ void main()
         //  getPartialDerivative(cameraPoint.xyz, projectedVertex.xyz, isInterpolated, sdf_der, D);
         //  vec3 dSDF_dx = vec3(sdf_der[0], sdf_der[1], sdf_der[2]);
 
-        vec3 cvp = vec3(((projectedVertex.x) * volSize.x / volDim.x), ((projectedVertex.y) * volSize.y / volDim.y), ((projectedVertex.z) * volSize.z / volDim.z));
+        vec3 cvp = (volSize.x / volDim.x) * projectedVertex.xyz;
+
+        if (cvp.x < 0.0f || cvp.x > 127.0f || cvp.y < 0.0f || cvp.y > 127.0f || cvp.z < 0.0f || cvp.z > 127.0f)
+        {
+            imageStore(testImage, ivec2(pix), vec4(0.5f));
+
+            float J0[6] = { 0, 0, 0, 0, 0, 0 };
+            trackOutput[(pix.y * imageSize.x) + pix.x].h = 0;
+            trackOutput[(pix.y * imageSize.x) + pix.x].D = 0;
+            trackOutput[(pix.y * imageSize.x) + pix.x].J = J0;
+            return;
+        }
+
+        //vec3 cvp = vec3(((projectedVertex.x) * volSize.x / volDim.x), ((projectedVertex.y) * volSize.y / volDim.y), ((projectedVertex.z) * volSize.z / volDim.z));
         float D = SDF(cvp);
 
         //float Dup = SDF(cvp + vec3(0,0,1));
         vec3 dSDF_dx = vec3(SDFGradient(cvp, vec3(1, 0, 0)), SDFGradient(cvp, vec3(0, 1, 0)), SDFGradient(cvp, vec3(0, 0, 1)));
+
+
+        imageStore(testImage, ivec2(pix), vec4(D.xxx, 1.0f));
+
 
         //vec3 dSDF_dx = getGradient(projectedVertex);
 
@@ -453,7 +476,7 @@ void main()
                 vec3 nDSDF = normalize(dSDF_dx);
                 //  vec3 dSDF_dx = vec3(testGrad.x, testGrad.y, testGrad.z);
                 //imageStore(testImage, ivec2(pix), vec4(sdf_der[0] * 1.0f, sdf_der[1] * 1.0f, sdf_der[2] * 1.0f, 1.0f));
-                imageStore(testImage, ivec2(pix), vec4(nDSDF.xy, -nDSDF.z, 1.0f));
+                //imageStore(testImage, ivec2(pix), vec4(nDSDF.xy, -nDSDF.z, 1.0f));
 
                 //   // 3 cols 6 rows 
                 float dx_dxi[3][6];
@@ -497,7 +520,7 @@ void main()
             }
             else
             {
-                    imageStore(testImage, ivec2(pix), vec4(0,0,0, 1.0f));
+                    //imageStore(testImage, ivec2(pix), vec4(0,0,0, 1.0f));
 
            // imageStore(testImage, ivec2(pix), vec4(0.0f, 1.0f, 0.0f, 1.0f));
 
@@ -509,7 +532,7 @@ void main()
         }
         else
         {
-               imageStore(testImage, ivec2(pix), vec4(0,0,0, 1.0f));
+              // imageStore(testImage, ivec2(pix), vec4(0,0,0, 1.0f));
 
            // imageStore(testImage, ivec2(pix), vec4(0.0f, 1.0f, 0.0f, 1.0f));
 

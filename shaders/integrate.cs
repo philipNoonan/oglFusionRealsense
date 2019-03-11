@@ -127,7 +127,7 @@ void main()
 
                 if (weightedDistance < 0.2f)
                 {
-                    data.x = clamp(weightedDistance, -0.1f, 0.2f);
+                    data.x = clamp(weightedDistance, -0.2f, 0.2f);
                     // data.x = diff;
                     data.y = min(data.y + 1, maxWeight);
                 }
