@@ -467,7 +467,7 @@ void kRender::setRenderingOptions(bool showDepthFlag, bool showBigDepthFlag, boo
 	m_showVolumeSDFFlag = showSDFlag;
 }
 
-void kRender::setTextures(GLuint depthTex, GLuint colorTex, GLuint vertexTex, GLuint normalTex, GLuint volumeTex, GLuint trackTex)
+void kRender::setTextures(GLuint depthTex, GLuint colorTex, GLuint vertexTex, GLuint normalTex, GLuint volumeTex, GLuint trackTex, GLuint pvpNormTex, GLuint pvdNormTex)
 {
 
 	m_textureDepth = depthTex;
@@ -476,6 +476,8 @@ void kRender::setTextures(GLuint depthTex, GLuint colorTex, GLuint vertexTex, GL
 	m_textureNormal = normalTex;
 	m_textureVolume = volumeTex;
 	m_textureTrack = trackTex;
+	m_texturePVPNormal = pvpNormTex;
+	m_texturePVDNormal = pvdNormTex;
 
 }
 void kRender::setFlowTexture(GLuint flowTex)
@@ -496,9 +498,24 @@ void kRender::bindTexturesForRendering()
 
 	if (m_showNormalFlag)
 	{
-		glActiveTexture(GL_TEXTURE1);
-		glBindTexture(GL_TEXTURE_2D, m_textureNormal);
+		if (m_usePVP)
+		{
+			glActiveTexture(GL_TEXTURE1);
+			glBindTexture(GL_TEXTURE_2D, m_texturePVPNormal);
+		}
+		else if (m_usePVD)
+		{
+			glActiveTexture(GL_TEXTURE1);
+			glBindTexture(GL_TEXTURE_2D, m_texturePVDNormal);
+		}
+		else
+		{
+			glActiveTexture(GL_TEXTURE1);
+			glBindTexture(GL_TEXTURE_2D, m_textureNormal);
+		}
+
 	}
+	
 
 	if (m_showTrackFlag)
 	{

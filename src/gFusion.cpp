@@ -402,7 +402,7 @@ void gFusion::allocateBuffers()
 
 
 
-	size_t reductionSDFSize = configuration.depthFrameSize.y * configuration.depthFrameSize.x * (sizeof(GLfloat) * 8); // this is the size of one reduction element 1 float + 1 float + 6 float
+	size_t reductionSDFSize = configuration.depthFrameSize.y * configuration.depthFrameSize.x * (sizeof(GLint) + sizeof(GLfloat) * 8); // this is the size of one reduction element 1 int + 1 float + 1 float + 6 float
 	glGenBuffers(1, &m_bufferSDFReduction);
 	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 12, m_bufferSDFReduction);
 	glBufferData(GL_SHADER_STORAGE_BUFFER, reductionSDFSize, NULL, GL_STATIC_DRAW);
@@ -1062,7 +1062,7 @@ bool gFusion::TrackSDF() {
 			//std::cout << "cnrom :" << Cnorm << std::endl;
 			if (alignmentEnergy != 0 && Cnorm < 1e-4)
 			{
-				std::cout << "tracked!!! iteration " << iteration << " level " << level << " AE: " << alignmentEnergy << " snorm : " << Cnorm << " vec " << result.transpose() << std::endl;
+				//std::cout << "tracked!!! iteration " << iteration << " level " << level << " AE: " << alignmentEnergy << " snorm : " << Cnorm << " vec " << result.transpose() << std::endl;
 
 				//std::cout << "tracked!!! iteration " << iteration << std::endl;
 				tracked = true;
@@ -1203,8 +1203,8 @@ void gFusion::trackSDF(int layer, Eigen::Matrix4f camToWorld)
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_3D, m_textureVolume);
 
-	glBindImageTexture(0, m_textureVolume, 0, GL_FALSE, 0, GL_READ_WRITE, GL_RG16I);
-	glBindImageTexture(1, m_textureVertex, layer, GL_FALSE, 0, GL_READ_WRITE, GL_RGBA32F);
+	glBindImageTexture(0, m_textureVolume, 0, GL_FALSE, 0, GL_READ_ONLY, GL_RG16I);
+	glBindImageTexture(1, m_textureVertex, layer, GL_FALSE, 0, GL_READ_ONLY, GL_RGBA32F);
 	glBindImageTexture(2, m_textureTest, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA32F);
 
 	// set uniforms
@@ -1479,7 +1479,7 @@ void gFusion::raycast()
 	glUniform3fv(m_volSizeID_r, 1, glm::value_ptr(configuration.volumeSize));
 
 	//bind image textures
-	glBindImageTexture(0, m_textureVolume, 0, GL_FALSE, 0, GL_READ_WRITE, GL_RG16I);
+	glBindImageTexture(0, m_textureVolume, 0, GL_FALSE, 0, GL_READ_ONLY, GL_RG16I);
 	glBindImageTexture(1, m_textureReferenceVertex, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA32F);
 	glBindImageTexture(2, m_textureReferenceNormal, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA32F);
 

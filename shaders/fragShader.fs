@@ -219,7 +219,7 @@ vec4 fromVolume()
 	
 	//// FOR TSDF VOLUME
     vec4 tData = texture(currentTextureVolume, vec3(TexCoord, slice) );
-	return vec4(1.0f * float(tData.x) * 0.00003051944088f, 1.0f * float(tData.x) * -0.00003051944088f, 0.0, 1.0f);
+	return vec4(1.0f * float(tData.x) * 0.0003051944088f, 1.0f * float(tData.x) * -0.0003051944088f, 0.0, 1.0f);
 	//return vec4(1.0f,0.5f,0.1f,1.0f);
 
 	//// FOR SDF VOLUME PRE COLORED

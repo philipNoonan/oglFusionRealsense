@@ -116,7 +116,7 @@ void main()
 
             float diff = (depth.x - cameraX.z) * sqrt(1 + pow(pos.x / pos.z, 2) + pow(pos.y / pos.z, 2));
             //if (abs(diff) < 0.1f)
-            if (diff > -mu)
+            if (diff < 0.05f)
             {
                 //if ((diff) < 0.1)
                 //{
@@ -125,9 +125,9 @@ void main()
                 //float weightedDistance = (data.y * data.x + sdf) / (data.y + 1);
                 float weightedDistance = (data.y * data.x + diff) / (data.y + 1);
 
-                if (weightedDistance < 0.2f)
+                if (weightedDistance < 0.05f)
                 {
-                    data.x = clamp(weightedDistance, -0.2f, 0.2f);
+                    data.x = clamp(weightedDistance, -0.01f, 0.05f);
                     // data.x = diff;
                     data.y = min(data.y + 1, maxWeight);
                 }

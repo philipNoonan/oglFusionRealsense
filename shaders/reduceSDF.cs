@@ -7,10 +7,12 @@ uniform ivec2 imageSize;
 
 struct reduSDFType
 {
+    int result;
     float h;
     float D;
     float J[6];
 };
+
 layout(std430, binding = 12) buffer TrackData
 {
     reduSDFType trackOutput [];
@@ -28,6 +30,8 @@ shared float S[112][32];
 void main()
 {
     uint sline = gl_LocalInvocationID.x; // 0 - 111
+   
+
 
     float sums[32];
     // sums[0] reserved
@@ -48,6 +52,17 @@ void main()
             //// GAUSS NEWTON approximation to hessian
             //float T1[6][6] = getT1(row.h, row.J);
             //float T2[6] = getT2(row.h, row.J, row.D);
+
+            if (row.result < 1)
+            {
+                if (row.result == -4)
+                {
+                    sums[28] += 1;
+                    continue;
+
+                }
+
+            }
 
             sums[0] += row.D * row.D;
 

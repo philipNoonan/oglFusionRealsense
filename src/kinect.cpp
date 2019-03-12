@@ -52,9 +52,10 @@ void kRenderInit()
 	krender.setLocations();
 	krender.setVertPositions();
 	krender.allocateBuffers();
-	krender.setTextures(gfusion.getDepthImage(), gdisoptflow.getColorTexture(), gfusion.getVerts(), gfusion.getNorms(), gfusion.getVolume(), gfusion.getTrackImage()); //needs texture uints from gfusion init
+	krender.setTextures(gfusion.getDepthImage(), gdisoptflow.getColorTexture(), gfusion.getVerts(), gfusion.getNorms(), gfusion.getVolume(), gfusion.getTrackImage(), gfusion.getPVPNorms(), gfusion.getPVDNorms()); //needs texture uints from gfusion init
 	krender.anchorMW(std::make_pair<int, int>(1920 - 512 - krender.guiPadding().first, krender.guiPadding().second));
 	//krender.genTexCoordOffsets(1, 1, 1.0f);
+	krender.setFusionType(trackDepthToPoint, trackDepthToVolume);
 }
 
 void gFusionInit()
@@ -450,8 +451,8 @@ void setUI()
 
 			mcubes.setConfig(mcconfig);
 
-			//mcubes.setVolumeTexture(gfusion.getVolume());
-			mcubes.setVolumeTexture(gflood.getFloodSDFTexture());
+			mcubes.setVolumeTexture(gfusion.getVolume());
+			//mcubes.setVolumeTexture(gflood.getFloodSDFTexture());
 
 
 			mcubes.init();
@@ -748,6 +749,7 @@ int main(int, char**)
 			if (trackDepthToPoint)
 			{
 				tracked = gfusion.Track(); // this should return a bool for successful track
+				gfusion.raycast();
 			}
 
 			if (trackDepthToVolume)
@@ -774,7 +776,6 @@ int main(int, char**)
 			counter++;
 
 
-			gfusion.raycast();
 
 			// log tracking data to file
 
@@ -856,6 +857,7 @@ int main(int, char**)
 
 
 		krender.setRenderingOptions(showDepthFlag, showBigDepthFlag, showInfraFlag, showColorFlag, showLightFlag, showPointFlag, showFlowFlag, showEdgesFlag, showNormalFlag, showVolumeFlag, showTrackFlag, showSDFVolume);
+		krender.setFusionType(trackDepthToPoint, trackDepthToVolume);
 
 
 		//ImGui::ShowTestWindow();

@@ -158,7 +158,7 @@ public:
 	void setLocations();
 	void setVertPositions();
 	void allocateBuffers();
-	void setTextures(GLuint depthTex, GLuint colorTex, GLuint vertexTex, GLuint normalTex, GLuint volumeTex, GLuint trackTex);
+	void setTextures(GLuint depthTex, GLuint colorTex, GLuint vertexTex, GLuint normalTex, GLuint volumeTex, GLuint trackTex, GLuint pvpNormTex, GLuint pvdNormTex);
 	void setFlowTexture(GLuint flowTex);
 	void setBuffersFromMarchingCubes(GLuint posBuf, GLuint normBuf, size_t numVerts)
 	{
@@ -300,6 +300,13 @@ public:
 		return m_center_pixY;
 	}
 
+	void setFusionType(bool usePVP, bool usePVD)
+	{
+		m_usePVP = usePVP;
+		m_usePVD = usePVD;
+	}
+
+
 private:
 
 	GLSLProgram renderProg;
@@ -362,6 +369,8 @@ private:
 	GLuint m_textureVolume;
 	GLuint m_textureTrack;
 	GLuint m_textureFlow;
+	GLuint m_texturePVPNormal;
+	GLuint m_texturePVDNormal;
 
 	GLuint m_textureFlood;
 
@@ -493,6 +502,9 @@ private:
 	bool m_showVolumeSDFFlag = false;
 	bool m_showTrackFlag = false;
 	bool m_showVolumeFlag = false;
+
+	bool m_usePVP;
+	bool m_usePVD;
 
 
 	const GLint tcOffsetColumns = 5;

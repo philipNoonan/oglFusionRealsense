@@ -251,9 +251,15 @@ public:
 	}
 	GLuint getNorms()
 	{
-		// return m_textureNormal;
-
+		return m_textureNormal;
+	}
+	GLuint getPVPNorms()
+	{
 		return m_textureReferenceNormal;
+	}
+	GLuint getPVDNorms()
+	{
+		return m_textureTest;
 	}
 	GLuint getVertsMC()
 	{
