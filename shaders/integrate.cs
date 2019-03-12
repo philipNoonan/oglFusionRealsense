@@ -122,12 +122,12 @@ void main()
                 //{
                 float sdf = diff / mu;
                 vec4 data = getSDF(pix);
-                float weightedDistance = (data.y * data.x + sdf) / (data.y + 1);
-                //float weightedDistance = (data.y * data.x + diff) / (data.y + 1);
+                //float weightedDistance = (data.y * data.x + sdf) / (data.y + 1);
+                float weightedDistance = (data.y * data.x + diff) / (data.y + 1);
 
-                if (weightedDistance < 0.4f)
+                if (weightedDistance < 0.2f)
                 {
-                    data.x = clamp(weightedDistance, -0.4f, 0.4f);
+                    data.x = clamp(weightedDistance, -0.2f, 0.2f);
                     // data.x = diff;
                     data.y = min(data.y + 1, maxWeight);
                 }

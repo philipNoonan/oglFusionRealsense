@@ -190,8 +190,18 @@ int vsGrad(uvec3 pos)
 //        ) * 0.00003051944088f;
 //}
 
-float SDF(vec3 location)
+bool invalidGradient(float inputSDF)
 {
+    if (inputSDF <= -0.2f || inputSDF >= 0.2f || isnan(inputSDF))
+    {
+        return true;
+    }
+    return false;
+}
+
+float SDF(vec3 location, inout bool validGradient)
+{
+    validGradient = true;
     float i, j, k;
     float x, y, z;
 
@@ -221,6 +231,18 @@ float SDF(vec3 location)
     b0 = N2 * (1.0 - z) + N6 * z;
     b1 = N3 * (1.0 - z) + N7 * z;
 
+    if (invalidGradient(N0) ||
+        invalidGradient(N1) ||
+        invalidGradient(N2) ||
+        invalidGradient(N3) ||
+        invalidGradient(N4) ||
+        invalidGradient(N5) ||
+        invalidGradient(N6) ||
+        invalidGradient(N7))
+    {
+        validGradient = false;
+    }
+
     return (a0 * (1.0 - y) + a1 * y) * (1.0 - x) + (b0 * (1.0 - y) + b1 * y) * x;
     //return textureLod(volumeDataTexture, locationInVolumeTexture, 0).x * 0.000030517f;
     //return imageLoad(volumeData, ivec3(I, J, K)).x * 0.000030517f;
@@ -229,13 +251,21 @@ float SDF(vec3 location)
 
 float SDFGradient(vec3 location, vec3 location_offset)
 {
-
+    float voxelLength = volDim.x / volSize.x;
     //vec3 location_offset = vec3(0, 0, 0);
     //location_offset(dim) = stepSize;
-
-    float upperVal = SDF(location.xyz + location_offset);
-    float lowerVal = SDF(location.xyz - location_offset);
-    float gradient = (upperVal - lowerVal) / (2.0f * (volDim.x / volSize.x));
+    bool valGrad;
+    float upperVal = SDF(location.xyz + location_offset, valGrad);
+    if (!valGrad)
+    {
+        return 0.0f;
+    }
+    float lowerVal = SDF(location.xyz - location_offset, valGrad);
+    if (!valGrad)
+    {
+        return 0.0f;
+    }
+    float gradient = (upperVal - lowerVal) / (2.0f * voxelLength);
     return gradient;
 
 
@@ -413,6 +443,7 @@ void main()
     uvec2 pix = gl_GlobalInvocationID.xy;
     //ivec2 inSize = imageSize(inVertex); // mipmapped sizes
     imageStore(testImage, ivec2(pix), vec4(1.0f));
+    
 
     if (pix.x >= 0 && pix.x < imageSize.x - 1 && pix.y >= 0 && pix.y < imageSize.y)
     {
@@ -432,9 +463,10 @@ void main()
         //  getPartialDerivative(cameraPoint.xyz, projectedVertex.xyz, isInterpolated, sdf_der, D);
         //  vec3 dSDF_dx = vec3(sdf_der[0], sdf_der[1], sdf_der[2]);
 
+        // cvp is in texel space 0 - 127
         vec3 cvp = (volSize.x / volDim.x) * projectedVertex.xyz;
 
-        if (cvp.x < 0.0f || cvp.x > 127.0f || cvp.y < 0.0f || cvp.y > 127.0f || cvp.z < 0.0f || cvp.z > 127.0f)
+        if (cvp.x < 0.0f || cvp.x > volSize.x || cvp.y < 0.0f || cvp.y > volSize.y || cvp.z < 0.0f || cvp.z > volSize.z)
         {
             imageStore(testImage, ivec2(pix), vec4(0.5f));
 
@@ -446,14 +478,19 @@ void main()
         }
 
         //vec3 cvp = vec3(((projectedVertex.x) * volSize.x / volDim.x), ((projectedVertex.y) * volSize.y / volDim.y), ((projectedVertex.z) * volSize.z / volDim.z));
-        float D = SDF(cvp);
+        bool valSDF = true;
+        float D = SDF(cvp.xyz, valSDF);
 
         //float Dup = SDF(cvp + vec3(0,0,1));
         vec3 dSDF_dx = vec3(SDFGradient(cvp, vec3(1, 0, 0)), SDFGradient(cvp, vec3(0, 1, 0)), SDFGradient(cvp, vec3(0, 0, 1)));
 
 
-        imageStore(testImage, ivec2(pix), vec4(D.xxx, 1.0f));
+        imageStore(testImage, ivec2(pix), vec4(dSDF_dx / 128.0f, 1.0f));
 
+        //if (dSDF_dx.x == 0.0f || dSDF_dx.y == 0.0f || dSDF_dx.z == 0.0f)
+        //{
+        //    imageStore(testImage, ivec2(pix), vec4(0,0,0,1.0f));
+        //}
 
         //vec3 dSDF_dx = getGradient(projectedVertex);
 
@@ -468,7 +505,10 @@ void main()
         //imageStore(testImage, ivec2(pix), vec4(Dup, Dup, Dup, 1.0f));
 
         float absD = abs(D);// get abs depth
-        if (D < 1.0 && D > -1.0)
+
+        imageStore(testImage, ivec2(pix), vec4(absD.xxx,1.0f));
+
+        if (D < 0.2 && D > -0.2)
         {
             //vec3 testGrad = getGradient(projectedVertex);
             if (true)
@@ -503,7 +543,7 @@ void main()
                 //{
                 //    huber = 0.0f;
                 //}
-                float huber = absD < 0.001f ? 1.0f : 0.001f / absD;
+                float huber = absD < 0.01f ? 1.0f : 0.01f / absD;
 
                 //imageStore(testImage, ivec2(pix), vec4(J[0] * 1.f, J[1] * 1.0f, J[2] * 1.0f, 1.0f));
 
