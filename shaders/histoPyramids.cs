@@ -20,7 +20,7 @@ layout(binding = 7) uniform isampler3D volumeRGShortTexture;
 
 // uniforms
 uniform int baseLevel;
-uniform float isoLevel = 1000.0f;
+uniform float isoLevel;
 uniform uint totalSum;
 uniform uint volumeType = 1; // 0 = float, 1 = RG16I
 
@@ -114,7 +114,7 @@ bool classifyCubes()
     ivec3 texSize = textureSize(histoPyramidTexture, 0);
 
 
-    if (pos.x <= 10 || pos.x >= texSize.x - 10 || pos.y <= 10 || pos.y >= texSize.y -10 || pos.z <= 10 || pos.z >= texSize.z - 10)
+    if (pos.x < 0 || pos.x > texSize.x  || pos.y < 0 || pos.y > texSize.y || pos.z < 0 || pos.z > texSize.z)
     {
         return false;
     }
@@ -131,28 +131,30 @@ bool classifyCubes()
     field[6] = getVolumeData(pos + ivec3(cubeOffsets[6].xyz), 0).x;
     field[7] = getVolumeData(pos + ivec3(cubeOffsets[7].xyz), 0).x;
 
-    if (volumeType == 1)
-    {
-        // we are only interested in voxels that are on the +ve -> 0 -> -ve boundary
-        // not the 0 -> -ve boundary behind the front surface
-        // therefore need to have at least one positive value in field[]
-        bool positiveFound = false;
-        for (int i = 0; i < 7; i++)
-        {
-            if (field[i] > 0)
-            {
-                positiveFound = true;
-            }
-        }
+    // this doesnt work with diff rather than sdf as the type of distance in the volume
+    // not sure why...
+    //if (volumeType == 1)
+    //{
+    //    // we are only interested in voxels that are on the +ve -> 0 -> -ve boundary
+    //    // not the 0 -> -ve boundary behind the front surface
+    //    // therefore need to have at least one positive value in field[]
+    //    bool positiveFound = false;
+    //    for (int i = 0; i < 8; i++)
+    //    {
+    //        if (field[i] > 0)
+    //        {
+    //            positiveFound = true;
+    //        }
+    //    }
 
-        if (positiveFound == false)
-        {
-            imageStore(histoPyramidBaseLevel, pos, uvec4(0, 0, 0, 0));
+    //    if (positiveFound == false)
+    //    {
+    //        imageStore(histoPyramidBaseLevel, pos, uvec4(0, 0, 0, 0));
 
 
-            return false;
-        }
-    }
+    //        return false;
+    //    }
+    //}
 
     // https://stackoverflow.com/questions/43769622/bit-manipulation-to-store-multiple-values-in-one-int-c
     uint cubeIndex;

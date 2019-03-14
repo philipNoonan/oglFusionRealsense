@@ -16,7 +16,8 @@
 namespace GLHelper
 {
 	GLuint createTexture(GLuint ID, GLenum target, int levels, int w, int h, int d, GLuint internalformat);
-	
+	glm::mat4 getInverseCameraMatrix(const glm::vec4 & k);
+	glm::mat4 getCameraMatrix(const glm::vec4 & k);
 	
 	inline glm::uint divup(int a, int b) { return (a % b != 0) ? (a / b + 1) : (a / b); }
 	inline glm::uvec3 divup(glm::uvec2 a, glm::uvec3 b) { return glm::uvec3(divup(a.x, b.x), divup(a.y, b.y), 1); }

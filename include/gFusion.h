@@ -35,6 +35,7 @@
 
 #include "glutils.h"
 #include "glslprogram.h"
+#include "glhelper.h"
 
 #define _USE_MATH_DEFINES
 #include <math.h>
@@ -244,9 +245,9 @@ public:
 	}
 	GLuint getVerts()
 	{
-		//return m_textureVertex;
+		return m_textureVertex;
 
-		return m_textureReferenceVertex;
+		//return m_textureReferenceVertex;
 
 	}
 	GLuint getNorms()
@@ -501,26 +502,7 @@ private:
 
 
 
-	glm::mat4 getInverseCameraMatrix(const glm::vec4 & k) { // [col][row]
-		glm::mat4 invK;
-		invK[0][0] = 1.0f / k.x;	invK[1][0] = 0;				invK[2][0] = -k.z / k.x;	invK[3][0] = 0;
-		invK[0][1] = 0;				invK[1][1] = 1.0f / k.y;	invK[2][1] = -k.w / k.y;	invK[3][1] = 0;
-		invK[0][2] = 0;				invK[1][2] = 0;				invK[2][2] = 1;				invK[3][2] = 0;
-		invK[0][3] = 0;				invK[1][3] = 0;				invK[2][3] = 0;				invK[3][3] = 1;
 
-		return invK;
-	}
-
-	glm::mat4 getCameraMatrix(const glm::vec4 & k) {
-		glm::mat4 K;
-
-		K[0][0] = k.x;	K[1][0] = 0;	K[2][0] = k.z;	K[3][0] = 0;
-		K[0][1] = 0;	K[1][1] = k.y;	K[2][1] = k.w;	K[3][1] = 0;
-		K[0][2] = 0;	K[1][2] = 0;	K[2][2] = 1;	K[3][2] = 0;
-		K[0][3] = 0;	K[1][3] = 0;	K[2][3] = 0;	K[3][3] = 1;
-
-		return K;
-	}
 
 	std::vector<float> makeJTJ(std::vector<float> v)
 	{

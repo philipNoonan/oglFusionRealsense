@@ -282,7 +282,7 @@ void MCubes::histoPyramids()
 	//glBindTexture(GL_TEXTURE_3D, m_textureHistoPyramid);
 	//glGetTexImage(GL_TEXTURE_3D, 8, GL_RED_INTEGER, GL_UNSIGNED_INT, sumData8.data());
 	//glBindTexture(GL_TEXTURE_3D, 0);
-	//glActiveTexture(0);
+	//
 
 	//for (auto i : sumData8 )
 	//	std::cout << i <<  " ";
@@ -297,7 +297,7 @@ void MCubes::histoPyramids()
 	glBindTexture(GL_TEXTURE_3D, m_textureHistoPyramid);
 	glGetTexImage(GL_TEXTURE_3D, std::log2(m_mcubeConfiguration.gridSize.x), GL_RED_INTEGER, GL_UNSIGNED_INT, sumData.data());
 	glBindTexture(GL_TEXTURE_3D, 0);
-	glActiveTexture(0);
+	//
 
 	//std::cout << "num of triangles " << sumData[0] << std::endl;
 
@@ -528,104 +528,6 @@ void MCubes::generateMarchingCubes()
 	histoPyramids();
 
 
-	//int threads = 128;
-
-	//// CLASSIFY VOXEL
-	//marchingCubesProg.use();
-	//// BIND TEXTURES
-	//glBindImageTexture(0, m_textureVolume, 0, GL_FALSE, 0, GL_READ_ONLY, GL_R32F);
-	//glBindImageTexture(1, m_textureEdgeTable, 0, GL_FALSE, 0, GL_READ_ONLY, GL_R16UI);
-	//glBindImageTexture(2, m_textureTriTable, 0, GL_FALSE, 0, GL_READ_ONLY, GL_R16UI);
-	//glBindImageTexture(3, m_textureNumVertsTable, 0, GL_FALSE, 0, GL_READ_ONLY, GL_R16UI);
-	//// BIND BUFFERS
-	//glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, m_bufferVoxelVerts);
-	//glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 3, m_bufferVoxelOccupied);
-	//glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 4, m_bufferVoxelOccupiedScan);
-	//// SET UNIFORMS
-	//glUniform3uiv(m_gridSizeID, 1, glm::value_ptr(m_mcubeConfiguration.gridSize));
-	//glUniform3uiv(m_gridSizeShiftID, 1, glm::value_ptr(m_mcubeConfiguration.gridSizeShift));
-	//glUniform3uiv(m_gridSizeMaskID, 1, glm::value_ptr(m_mcubeConfiguration.gridSizeMask));
-	//glUniform1f(m_isoValueID, m_mcubeConfiguration.isoValue);
-	//glUniform1ui(m_numVoxelsID, m_mcubeConfiguration.numVoxels);
-
-	//int xthreads = divup(m_mcubeConfiguration.numVoxels, threads);
-	//int ythreads = 1;
-	//if (xthreads > 65535)
-	//{
-	//	ythreads = xthreads / 32768;
-	//	xthreads = 32768;
-	//}
-	//// LAUNCH SHADER
-	//glUniformSubroutinesuiv(GL_COMPUTE_SHADER, 1, &m_classifyVoxelID);
-	//glDispatchCompute(xthreads, ythreads, 1);
-	//glMemoryBarrier(GL_ALL_BARRIER_BITS);
-
-
-
-
-	//// PREFIX SUM
-	//m_mcubeConfiguration.activeVoxels = prefixSum(m_bufferVoxelOccupied, m_bufferVoxelOccupiedScan);
-	////std::cout << "active voxels " << mcubeConfiguration.activeVoxels << std::endl;
-
-	//// COMPACT VOXELS
-	//marchingCubesProg.use();
-	//// BIND TEXTURES
-	//// BIND BUFFERS
-	//glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 3, m_bufferVoxelOccupied);
-	//glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 4, m_bufferVoxelOccupiedScan);
-	//glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 5, m_bufferCompactedVoxelArray);
-	//// BIND UNIFORMS
-	//glUniform1ui(m_numVoxelsID, m_mcubeConfiguration.numVoxels);
-
-	//xthreads = divup(m_mcubeConfiguration.numVoxels, threads);
-	//ythreads = 1;
-	//if (xthreads > 65535)
-	//{
-	//	ythreads = xthreads / 32768;
-	//	xthreads = 32768;
-	//}
-	//// LAUNCH SHADER
-	//glUniformSubroutinesuiv(GL_COMPUTE_SHADER, 1, &m_compactVoxelsID);
-	//glDispatchCompute(xthreads, ythreads, 1);
-	//glMemoryBarrier(GL_ALL_BARRIER_BITS);
-
-	//// PREFIX SUM
-	//m_totalVerts = prefixSum(m_bufferVoxelVerts, m_bufferVoxelVertsScan);
-	////std::cout << "total verts " << m_totalVerts << std::endl;
-
-	//// GENERATE TRIANGLES
-	//marchingCubesProg.use();
-	//// BIND TEXTURES
-	//glBindImageTexture(0, m_textureVolume, 0, GL_FALSE, 0, GL_READ_ONLY, GL_R32F);
-	//glBindImageTexture(1, m_textureEdgeTable, 0, GL_FALSE, 0, GL_READ_ONLY, GL_R16UI);
-	//glBindImageTexture(2, m_textureTriTable, 0, GL_FALSE, 0, GL_READ_ONLY, GL_R16UI);
-	//glBindImageTexture(3, m_textureNumVertsTable, 0, GL_FALSE, 0, GL_READ_ONLY, GL_R16UI);
-	//// BIND BUFFERS
-	//glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 5, m_bufferCompactedVoxelArray);
-	//glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 6, m_bufferVoxelVertsScan);
-	//glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 7, m_bufferPos);
-	//glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 8, m_bufferNorm);
-	//// BIND UNIFORMS
-	//glUniform3uiv(m_gridSizeID, 1, glm::value_ptr(m_mcubeConfiguration.gridSize));
-	//glUniform3uiv(m_gridSizeShiftID, 1, glm::value_ptr(m_mcubeConfiguration.gridSizeShift));
-	//glUniform3uiv(m_gridSizeMaskID, 1, glm::value_ptr(m_mcubeConfiguration.gridSizeMask));
-	//glUniform1f(m_isoValueID, m_mcubeConfiguration.isoValue);
-	//glUniform1ui(m_numVoxelsID, m_mcubeConfiguration.numVoxels);
-	//glUniform1ui(m_activeVoxelsID, m_mcubeConfiguration.activeVoxels);
-	//glUniform1ui(m_maxVertsID, m_mcubeConfiguration.maxVerts);
-	//glUniform3fv(m_voxelSizeID, 1, glm::value_ptr(m_mcubeConfiguration.voxelSize));
-
-	//xthreads = divup(m_mcubeConfiguration.activeVoxels, threads);
-	//ythreads = 1;
-	//while (xthreads > 65535)
-	//{
-	//	xthreads /= 2;
-	//	ythreads *= 2;
-	//}
-	//// LAUNCH SHADER
-	//glUniformSubroutinesuiv(GL_COMPUTE_SHADER, 1, &m_generateTrianglesID);
-	//glDispatchCompute(xthreads, ythreads, 1);
-	//glMemoryBarrier(GL_ALL_BARRIER_BITS);
 }
 
 
@@ -665,7 +567,7 @@ void MCubes::loadTables()
 	//glBindTexture(GL_TEXTURE_1D, m_textureNumVertsTable);
 	//glGetTexImage(GL_TEXTURE_1D, 0, GL_RED_INTEGER, GL_UNSIGNED_SHORT, outData.data());
 	//glBindTexture(GL_TEXTURE_1D, 0);
-	//glActiveTexture(0);
+	//
 
 	 
 

@@ -27,9 +27,13 @@ layout(binding = 0) uniform sampler3D textureInitialRGB;
 
 layout(binding = 0, rgba32f) uniform image3D im_dtnn_0;
 layout(binding = 1, rgba32f) uniform image3D im_dtnn_1;
+
 layout(binding = 2, r32i) uniform iimage3D outImage;
 
 layout(binding = 3, rgba32f) uniform image2D verts;
+
+layout(binding = 4, r32ui) uniform uimage3D image0;
+layout(binding = 5, r32ui) uniform uimage3D image1;
 
 uniform mat4 trackMat;
 //mat4 track = mat4(1.0f);
@@ -39,6 +43,7 @@ uniform mat4 trackMat;
 #define POS_MAX 0x7FFF // == 32767 == ((1<<15) - 1)
 
 vec3 dtnn = vec3(POS_MAX); // some large number
+
 vec3 pix;
 float dmin = LENGTH_SQ(dtnn);
 uniform float jump;
@@ -57,6 +62,37 @@ void jfaInitFromDepth()
 {
     ivec2 pix = ivec2(gl_GlobalInvocationID.xy);
 
+    //ivec3 imSize = ivec3(imageSize(im_dtnn_0));
+    ivec3 imSize = ivec3(imageSize(image0));
+
+    vec4 vertex = imageLoad(verts, pix);
+
+    vec4 vertexInVolume = scaleFactor * (trackMat * vertex) ;
+    //vec4 vertexInVolume = scaleFactor * vertex;
+
+    if (vertexInVolume.x > 0 && vertexInVolume.x < imSize.x && vertexInVolume.y > 0 && vertexInVolume.y < imSize.y && vertexInVolume.z > 0 && vertexInVolume.z < imSize.y)
+    {
+        //imageStore(im_dtnn_0, ivec3(vertexInVolume.xyz), vec4(vertexInVolume.xyz, 1.0f));
+        uint encodedOriginal = uint(vertexInVolume.x) << 20 | uint(vertexInVolume.y) << 10 | uint(vertexInVolume.z);
+        imageStore(image0, ivec3(vertexInVolume.xyz), ivec4(encodedOriginal));
+    }
+
+    // uint encodedOriginal = uint(vertexInVolume.x) << 20 | uint(vertexInVolume.y) << 10 | uint(vertexInVolume.z);
+
+    // vec3 decodedOriginal = vec3((encodedOriginal & 1072693248) >> 20, (encodedOriginal & 1047552) >> 10, encodedOriginal & 1023);
+
+}
+
+
+// here we have just copied across a predefined meshgrid style volume and to init,
+// we simple do the same as for the standard texture, 
+// but instead of placing the texture coord in the texel, we set the texel to 0
+
+subroutine(launchSubroutine)
+void jfaInitFromDepthInverted()
+{
+    ivec2 pix = ivec2(gl_GlobalInvocationID.xy);
+
     ivec3 imSize = ivec3(imageSize(im_dtnn_0));
 
     vec4 vertex = imageLoad(verts, pix);
@@ -66,12 +102,12 @@ void jfaInitFromDepth()
 
     if (vertexInVolume.x > 0 && vertexInVolume.x < imSize.x && vertexInVolume.y > 0 && vertexInVolume.y < imSize.y && vertexInVolume.z > 0 && vertexInVolume.z < imSize.y)
     {
-
-
-        imageStore(im_dtnn_0, ivec3(vertexInVolume.xyz), vec4(vertexInVolume.xyz, 1.0f));
-
-
+        imageStore(im_dtnn_0, ivec3(vertexInVolume.xyz), vec4(0.0f, 0.0f, 0.0f, 1.0f));
     }
+
+   // uint encodedOriginal = uint(vertexInVolume.x) << 20 | uint(vertexInVolume.y) << 10 | uint(vertexInVolume.z);
+
+   // vec3 decodedOriginal = vec3((encodedOriginal & 1072693248) >> 20, (encodedOriginal & 1047552) >> 10, encodedOriginal & 1023);
 
 
 }
@@ -136,17 +172,25 @@ void jfaUpscale()
 {
     ivec3 pix = ivec3(gl_GlobalInvocationID.xyz);
 
-    vec4 lowResData = imageLoad(im_dtnn_0, pix/2);
+    //vec4 lowResData = imageLoad(im_dtnn_0, pix/2);
 
-    imageStore(im_dtnn_1, pix, vec4(lowResData.xyz * 2.0f, 1.0));
+    //imageStore(im_dtnn_1, pix, vec4(lowResData.xyz * 2.0f, 1.0));
 
+    uint encodedIn = imageLoad(image0, pix/2).x;
+    vec3 decodedIn = vec3((encodedIn & 1072693248) >> 20, (encodedIn & 1047552) >> 10, encodedIn & 1023);
 
+    uint encodedOut = uint(decodedIn.x * 2.0f) << 20 | uint(decodedIn.y * 2.0f) << 10 | uint(decodedIn.z * 2.0f);
 
+    imageStore(image1, pix, uvec4(encodedOut));
 }
 
 void DTNN(const in vec3 off)
 {
-    vec3 dtnn_cur = vec3(imageLoad(im_dtnn_0, ivec3(off)).xyz);
+    //vec3 dtnn_cur = vec3(imageLoad(im_dtnn_0, ivec3(off)).xyz);
+
+    uint encodedIn = imageLoad(image0, ivec3(off)).x;
+    vec3 dtnn_cur = vec3((encodedIn & 1072693248) >> 20, (encodedIn & 1047552) >> 10, encodedIn & 1023);
+
     // THIS WAS A PAIN AND IS PROBABLY A HACK FIX. DTNN_CURR WOULD RETURN ZERO VALUES AND MESS EVERYTHING UP LEADING TO A 0,0 POINT PERSISTING
     if (dtnn_cur != vec3(0))
     {
@@ -159,6 +203,7 @@ void DTNN(const in vec3 off)
         }
     }
 }
+
 
 
 subroutine(launchSubroutine)
@@ -174,7 +219,9 @@ void jumpFloodAlgorithmUpdate()
 {
     pix = vec3(gl_GlobalInvocationID.xyz);
 
-    dtnn = vec3(imageLoad(im_dtnn_0, ivec3(pix)).xyz);
+    //dtnn = vec3(imageLoad(im_dtnn_0, ivec3(pix)).xyz);
+    uint encodedInput = imageLoad(image0, ivec3(pix)).x;
+    dtnn = vec3((encodedInput & 1072693248) >> 20, (encodedInput & 1047552) >> 10, encodedInput & 1023);
 
     vec3 ddxy = dtnn - pix;
     dmin = LENGTH_SQ(ddxy);
@@ -198,7 +245,10 @@ void jumpFloodAlgorithmUpdate()
 
 
 
-    imageStore(im_dtnn_1, ivec3(pix), vec4(dtnn.x, dtnn.y, dtnn.z, 0));
+    //imageStore(im_dtnn_1, ivec3(pix), vec4(dtnn.x, dtnn.y, dtnn.z, 0));
+
+    uint encodedOutput = uint(dtnn.x) << 20 | uint(dtnn.y) << 10 | uint(dtnn.z);
+    imageStore(image1, ivec3(pix), uvec4(encodedOutput));
 
 
     // for pixel pix, get the 8 points at +- k distance away and see if the distance they store is less than the distance pixel pix has

@@ -6,6 +6,7 @@
 
 #include "glutils.h"
 #include "glslprogram.h"
+#include "glhelper.h"
 
 #include <glm/gtc/type_ptr.hpp>
 
@@ -26,9 +27,19 @@ public:
 	void allocateBuffers();
 	void allocateTextures();
 
+	// camera parameters
+	void setCameraParams(glm::vec4 camPams)
+	{
+		m_camPamsDepth = camPams;
+	}
+
 	void setVertices(GLuint vertexTex)
 	{
 		m_textureVertices = vertexTex;
+	}
+	void setNormals(GLuint normalTex)
+	{
+		m_textureNormals = normalTex;
 	}
 
 	void setTextureParameters(int width, int height) { m_texture_width = width;  m_texture_height = height; }
@@ -49,7 +60,9 @@ public:
 
 	GLuint getFloodOutputTexture()
 	{
-		return m_texture_jfa_1;
+		return m_textureImage1;
+
+		//return m_texture_jfa_1;
 
 	}
 	GLuint getFloodSDFTexture()
@@ -111,6 +124,7 @@ private:
 	GLuint m_getColorID;
 
 	GLuint m_trackID;
+	GLuint m_viewID;
 	GLuint m_scaleFactorID;
 
 	//Buffers
@@ -123,6 +137,7 @@ private:
 
 	//JFA
 	GLuint m_texture_initial;
+	GLuint m_texture_initial_encoded;
 	GLuint m_texture_jfa_0;
 	GLuint m_texture_jfa_1;
 	GLuint m_texture_initial_RGB;
@@ -130,12 +145,16 @@ private:
 	GLuint m_texture_output_SDF;
 
 	GLuint m_textureVertices;
+	GLuint m_textureNormals;
 
-
+	GLuint m_textureImage0;
+	GLuint m_textureImage1;
 
 	// parameters
 	int m_texture_width;
 	int m_texture_height;
+
+	glm::vec4 m_camPamsDepth;
 
 	std::vector<float> m_trackedPoints;
 

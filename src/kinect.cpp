@@ -113,6 +113,8 @@ void gDisOptFlowInit()
 
 void gFloodInit()
 {
+	gflood.setCameraParams(glm::vec4(kcamera.fx(), kcamera.fx(), kcamera.ppx(), kcamera.ppy())); // FIX ME
+
 	gflood.compileAndLinkShader();
 	gflood.setLocations();
 
@@ -380,6 +382,8 @@ void setUI()
 				//krender.setFloodTexture(gflood.getFloodSDFTexture());
 
 				gflood.setVertices(gfusion.getVerts());
+				gflood.setNormals(gfusion.getNorms());
+
 			}
 		}
 
@@ -457,7 +461,7 @@ void setUI()
 
 			mcubes.init();
 
-			mcubes.setIsolevel(0);
+			mcubes.setIsolevel(0.0f);
 
 			mcubes.generateMarchingCubes();
 			mcubes.exportMesh();
@@ -481,7 +485,7 @@ void setUI()
 
 		ImGui::PopItemWidth();
 
-		ImGui::SliderFloat("dim", &dimension, 0.005f, 0.5f);
+		ImGui::SliderFloat("dim", &dimension, 0.005f, 5.0f);
 
 		ImGui::SliderFloat("slice", &volSlice, 0, gconfig.volumeSize.z - 1);
 
@@ -605,6 +609,7 @@ void setUpGPU()
 
 int main(int, char**)
 {
+
 	int display_w, display_h;
 	// load openGL window
 	window = krender.loadGLFWWindow();
@@ -700,7 +705,7 @@ int main(int, char**)
 			//glBindTexture(GL_TEXTURE_2D, gdisoptflow.getFlowTexture());
 			//glGetTexImage(GL_TEXTURE_2D, 0, GL_RG, GL_FLOAT, totflow.data);// this is importnant, you are using GL_RED_INTEGETER!!!!
 			//glBindTexture(GL_TEXTURE_2D, 0);
-			//glActiveTexture(0); 
+			// 
 
 			//cv::Mat tofl[2];
 			//cv::split(totflow, tofl);  

@@ -116,7 +116,7 @@ void main()
 
             float diff = (depth.x - cameraX.z) * sqrt(1 + pow(pos.x / pos.z, 2) + pow(pos.y / pos.z, 2));
             //if (abs(diff) < 0.1f)
-            if (diff < 0.05f)
+            if (diff < 0.05f && diff > -0.05f) // change these to uniforms set from host
             {
                 //if ((diff) < 0.1)
                 //{
@@ -127,7 +127,7 @@ void main()
 
                 if (weightedDistance < 0.05f)
                 {
-                    data.x = clamp(weightedDistance, -0.01f, 0.05f);
+                    data.x = clamp(weightedDistance, -0.05f, 0.05f);
                     // data.x = diff;
                     data.y = min(data.y + 1, maxWeight);
                 }

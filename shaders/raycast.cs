@@ -134,7 +134,8 @@ float interpDistance(vec3 pos, inout bool interpolated)
 vec4 raycast(uvec2 pos)
 {
     vec3 origin = vec3(view[3][0], view[3][1], view[3][2]);
-    vec3 direction = rotate(view, vec3(pos.x, pos.y, 1.0f));
+    //vec3 direction = rotate(view, vec3(pos.x, pos.y, 1.0f));
+    vec3 direction = vec3((view * vec4(pos.x, pos.y, 1.0f, 0.0f)).xyz);
 
     // intersect ray with a box
     // http://www.siggraph.org/education/materials/HyperGraph/raytrace/rtinter3.htm

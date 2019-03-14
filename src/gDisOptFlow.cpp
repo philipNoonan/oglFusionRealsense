@@ -133,7 +133,7 @@ void gDisOptFlow::setTexture(unsigned char * imageArray)
 	//glBindTexture(GL_TEXTURE_2D, m_textureI1);
 	//glGetTexImage(GL_TEXTURE_2D, 1, GL_RGBA, GL_UNSIGNED_BYTE, col.data);
 	//glBindTexture(GL_TEXTURE_2D, 0);
-	//glActiveTexture(0);
+	//
 
 	//////theErr = glGetError();
 	////   
@@ -146,7 +146,7 @@ void gDisOptFlow::setTexture(unsigned char * imageArray)
 	//glBindTexture(GL_TEXTURE_2D, m_textureI0);
 	//glGetTexImage(GL_TEXTURE_2D, 1, GL_RGBA, GL_UNSIGNED_BYTE, col0.data);
 	//glBindTexture(GL_TEXTURE_2D, 0);
-	//glActiveTexture(0);
+	//
 
 	//////theErr = glGetError();
 	////   
@@ -160,7 +160,7 @@ void gDisOptFlow::setTexture(unsigned char * imageArray)
 	//glBindTexture(GL_TEXTURE_2D, m_textureI1);
 	//glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_UNSIGNED_BYTE, col.data);
 	//glBindTexture(GL_TEXTURE_2D, 0);
-	//glActiveTexture(0);
+	//
 	 
 	//cv::imshow("colo", col);
 	  
@@ -212,7 +212,7 @@ void gDisOptFlow::setTexture(float * imageArray)
 	//glBindTexture(GL_TEXTURE_2D, m_textureI1);
 	//glGetTexImage(GL_TEXTURE_2D, 1, GL_RGBA, GL_UNSIGNED_BYTE, col.data);
 	//glBindTexture(GL_TEXTURE_2D, 0);
-	//glActiveTexture(0);
+	//
 
 	//////theErr = glGetError();
 	////   
@@ -476,7 +476,7 @@ void gDisOptFlow::computeSobel(int level, bool useInfrared)
 //		glBindTexture(GL_TEXTURE_2D, m_textureI0_grad_x_y);
 //		glGetTexImage(GL_TEXTURE_2D, level, GL_RG, GL_FLOAT, sx.data);// this is importnant, you are using GL_RED_INTEGETER!!!!
 //		glBindTexture(GL_TEXTURE_2D, 0);
-//		glActiveTexture(0);
+//		
 //		 
 //		cv::Mat image00[2]; 
 //		cv::split(sx, image00); 
@@ -542,7 +542,7 @@ void gDisOptFlow::computeSobel(int level, bool useInfrared)
 		//glBindTexture(GL_TEXTURE_2D, m_textureI0_grad_x_y);
 		//glGetTexImage(GL_TEXTURE_2D, level, GL_RG, GL_FLOAT, sx.data);// this is importnant, you are using GL_RED_INTEGETER!!!!
 		//glBindTexture(GL_TEXTURE_2D, 0);
-		//glActiveTexture(0);
+		//;
 	 //
 		//cv::Mat image11[2];
 		//cv::split(sx, image11);
@@ -560,7 +560,7 @@ void gDisOptFlow::computeSobel(int level, bool useInfrared)
 	//	glBindTexture(GL_TEXTURE_2D, m_textureI0_grad_x_y);
 	//	glGetTexImage(GL_TEXTURE_2D, level, GL_RG_INTEGER, GL_SHORT, sx.data);// this is importnant, you are using GL_RED_INTEGETER!!!!
 	//	glBindTexture(GL_TEXTURE_2D, 0);
-	//	glActiveTexture(0);
+	//	;
 
 	//	cv::Mat image112[2];
 	//	cv::split(sx, image112);
@@ -665,7 +665,7 @@ void gDisOptFlow::makePatches(int level)
 	//	glBindTexture(GL_TEXTURE_2D, m_textureI0_prod_xx_yy_xy);
 	//	glGetTexImage(GL_TEXTURE_2D, level, GL_RGBA, GL_FLOAT, sxx.data);
 	//	glBindTexture(GL_TEXTURE_2D, 0); 
-	//	glActiveTexture(0);
+	//	;
 	//	  
 	//	cv::Mat image0[4];     
 	//	cv::split(sxx, image0);  
@@ -680,7 +680,7 @@ void gDisOptFlow::makePatches(int level)
 	//	glBindTexture(GL_TEXTURE_2D, m_textureI0_sum_x_y);
 	//	glGetTexImage(GL_TEXTURE_2D, level, GL_RG, GL_FLOAT, sumxy.data);
 	//	glBindTexture(GL_TEXTURE_2D, 0);
-	//	glActiveTexture(0);
+	//	;
 
 	//	cv::Mat imsumxy[4]; 
 	//	cv::split(sumxy, imsumxy);
@@ -698,7 +698,7 @@ void gDisOptFlow::makePatches(int level)
 	//	 glBindTexture(GL_TEXTURE_2D, m_textureI0_prod_xx_yy_xy);
 	//	 glGetTexImage(GL_TEXTURE_2D, level, GL_RGBA, GL_FLOAT, sxx.data);
 	//	 glBindTexture(GL_TEXTURE_2D, 0);
-	//	 glActiveTexture(0);
+	//	 ;
 
 	//	 cv::Mat image0[4];
 	//	 cv::split(sxx, image0); 
@@ -713,7 +713,7 @@ void gDisOptFlow::makePatches(int level)
 	//	 glBindTexture(GL_TEXTURE_2D, m_textureI0_sum_x_y);
 	//	 glGetTexImage(GL_TEXTURE_2D, level, GL_RG, GL_FLOAT, sumxy.data);
 	//	 glBindTexture(GL_TEXTURE_2D, 0);
-	//	 glActiveTexture(0);
+	//	 ;
 
 	//	 cv::Mat imsumxy[4];
 	//	 cv::split(sumxy, imsumxy);
@@ -800,7 +800,7 @@ bool gDisOptFlow::patchInverseSearch(int level, bool useInfrared)
 		//	glBindTexture(GL_TEXTURE_2D, m_textureS_x_y);
 		//	glGetTexImage(GL_TEXTURE_2D, level + offs, GL_RG, GL_FLOAT, sxx2s.data);
 		//	glBindTexture(GL_TEXTURE_2D, 0);
-		//	glActiveTexture(0);
+		//	;
 
 		//	cv::Mat image1s[2];
 		//	cv::split(sxx2s, image1s);
@@ -882,7 +882,7 @@ bool gDisOptFlow::patchInverseSearch(int level, bool useInfrared)
 	//	glBindTexture(GL_TEXTURE_2D, m_textureU_x_y);
 	//	glGetTexImage(GL_TEXTURE_2D, level, GL_RG, GL_FLOAT, sxx2.data);
 	//	glBindTexture(GL_TEXTURE_2D, 0);
-	//	glActiveTexture(0);
+	//	;
 
 	//	cv::Mat image1[2];
 	//	cv::split(sxx2, image1); 
@@ -923,7 +923,7 @@ bool gDisOptFlow::patchInverseSearch(int level, bool useInfrared)
 		//glBindTexture(GL_TEXTURE_2D, m_textureTest);
 		//glGetTexImage(GL_TEXTURE_2D, level, GL_RED, GL_FLOAT, tes.data);
 		//glBindTexture(GL_TEXTURE_2D, 0);   
-		//glActiveTexture(0); 
+		//; 
 		//        
 		////cv::Mat tesim[4]; 
 		////cv::split(tes, tesim);    
@@ -984,13 +984,13 @@ bool gDisOptFlow::densification(int level)
 //	glBindTexture(GL_TEXTURE_2D, m_textureI0);
 //	glGetTexImage(GL_TEXTURE_2D, level, GL_RGBA, GL_UNSIGNED_BYTE, I0imq.data);
 //	glBindTexture(GL_TEXTURE_2D, 0);
-//	glActiveTexture(0); 
+//	; 
 //
 //	glActiveTexture(GL_TEXTURE0);
 //	glBindTexture(GL_TEXTURE_2D, m_textureI1);
 //	glGetTexImage(GL_TEXTURE_2D, level, GL_RGBA, GL_UNSIGNED_BYTE, I1imq.data);
 //	glBindTexture(GL_TEXTURE_2D, 0);
-//	glActiveTexture(0);  
+//	;  
 //
 //	cv::Mat I0C1;
 //	cv::cvtColor(I0imq, I0C1, CV_BGRA2GRAY);
@@ -1005,7 +1005,7 @@ bool gDisOptFlow::densification(int level)
 //	glBindTexture(GL_TEXTURE_2D, m_textureU_x_y);
 //	glGetTexImage(GL_TEXTURE_2D, level, GL_RG, GL_FLOAT, sxx3.data);
 //	glBindTexture(GL_TEXTURE_2D, 0);
-//	glActiveTexture(0);  
+//	;  
 //	    
 //	//cv::imshow("dens1", sxx3);  
 //	      
@@ -1093,7 +1093,7 @@ void gDisOptFlow::variRef(int level)
 	//	glBindTexture(GL_TEXTURE_2D_ARRAY, m_textureI_mix_diff_warp);
 	//	glGetTexImage(GL_TEXTURE_2D_ARRAY, level, GL_RGBA, GL_UNSIGNED_BYTE, vari_vec.data());// this is importnant, you are using GL_RED_INTEGETER!!!!
 	//	glBindTexture(GL_TEXTURE_2D_ARRAY, 0);
-	//	glActiveTexture(0);
+	//	;
 
 	//	memcpy_s(vari_Mat.data, vari_vec.size() * sizeof(uchar) / 3, vari_vec.data() + vari_vec.size() * 1 / 3, vari_vec.size() * sizeof(uchar) / 3);
 
@@ -1188,7 +1188,7 @@ void gDisOptFlow::variRef(int level)
 		//	glBindTexture(GL_TEXTURE_2D, m_texture_smoothness_weight);
 		//	glGetTexImage(GL_TEXTURE_2D, level, GL_RED, GL_FLOAT, smooth_0.data);
 		//	glBindTexture(GL_TEXTURE_2D, 0);
-		//	glActiveTexture(0);
+		//	;
 
 
 
@@ -1200,7 +1200,7 @@ void gDisOptFlow::variRef(int level)
 		//	glBindTexture(GL_TEXTURE_2D, m_texture_smoothness_terms);
 		//	glGetTexImage(GL_TEXTURE_2D, level, GL_RG, GL_FLOAT, smooth_1.data);
 		//	glBindTexture(GL_TEXTURE_2D, 0);
-		//	glActiveTexture(0);
+		//	
 
 
 		//	cv::Mat image00[2];
@@ -1222,7 +1222,7 @@ void gDisOptFlow::variRef(int level)
 		//	glBindTexture(GL_TEXTURE_2D, m_texture_smoothness_weight);
 		//	glGetTexImage(GL_TEXTURE_2D, level, GL_RED, GL_FLOAT, smooth_0.data);
 		//	glBindTexture(GL_TEXTURE_2D, 0);
-		//	glActiveTexture(0);
+		//	
 
 		//	   
 		//  
@@ -1234,7 +1234,7 @@ void gDisOptFlow::variRef(int level)
 		//	glBindTexture(GL_TEXTURE_2D, m_texture_smoothness_terms); 
 		//	glGetTexImage(GL_TEXTURE_2D, level, GL_RG, GL_FLOAT, smooth_1.data);
 		//	glBindTexture(GL_TEXTURE_2D, 0);
-		//	glActiveTexture(0);
+		//	
 
 
 		//	cv::Mat image00[2];
@@ -1249,7 +1249,7 @@ void gDisOptFlow::variRef(int level)
 		//	//glBindTexture(GL_TEXTURE_2D, m_texture_total_flow);
 		//	//glGetTexImage(GL_TEXTURE_2D, level, GL_RG, GL_FLOAT, totflow.data);// this is importnant, you are using GL_RED_INTEGETER!!!!
 		//	//glBindTexture(GL_TEXTURE_2D, 0);
-		//	//glActiveTexture(0);
+		//	//
 
 		//	//cv::Mat tofl[2];
 		//	//cv::split(totflow, tofl);
@@ -1337,7 +1337,7 @@ void gDisOptFlow::variRef(int level)
 		//	glBindTexture(GL_TEXTURE_2D, m_textureTest);
 		//	glGetTexImage(GL_TEXTURE_2D, level, GL_RED, GL_FLOAT, tes.data);
 		//	glBindTexture(GL_TEXTURE_2D, 0);
-		//	glActiveTexture(0);
+		//	
 
 		//	cv::imshow("test12", tes);
 
@@ -1356,7 +1356,7 @@ void gDisOptFlow::variRef(int level)
 		//	glBindTexture(GL_TEXTURE_2D, m_texture_dup_dvp);
 		//	glGetTexImage(GL_TEXTURE_2D, level, GL_RGBA, GL_FLOAT, deltasuv.data);// this is importnant, you are using GL_RED_INTEGETER!!!!
 		//	glBindTexture(GL_TEXTURE_2D, 0);
-		//	glActiveTexture(0);
+		//	
 		//	 
 		//	cv::Mat imdel[4]; 
 		//	cv::split(deltasuv, imdel); 
@@ -1384,7 +1384,7 @@ void gDisOptFlow::variRef(int level)
 	//	glBindTexture(GL_TEXTURE_2D, m_texture_smoothness_weight);
 	//	glGetTexImage(GL_TEXTURE_2D, level, GL_RED, GL_FLOAT, weight.data);
 	//	glBindTexture(GL_TEXTURE_2D, 0);
-	//	glActiveTexture(0);
+	//	
 	 
 	//	cv::imshow("weight", weight);
 
@@ -1403,7 +1403,7 @@ void gDisOptFlow::variRef(int level)
 		////glBindTexture(GL_TEXTURE_2D, m_texture_dup_dvp);
 		////glGetTexImage(GL_TEXTURE_2D, level, GL_RGBA, GL_FLOAT, deltasuv.data);// this is importnant, you are using GL_RED_INTEGETER!!!!
 		////glBindTexture(GL_TEXTURE_2D, 0);
-		////glActiveTexture(0);
+		////
 
 		////cv::Mat imdel[4];
 		////cv::split(deltasuv, imdel);
@@ -1417,7 +1417,7 @@ void gDisOptFlow::variRef(int level)
 			//glBindTexture(GL_TEXTURE_2D, m_texture_total_flow);
 			//glGetTexImage(GL_TEXTURE_2D, level, GL_RG, GL_FLOAT, totflow.data);// this is importnant, you are using GL_RED_INTEGETER!!!!
 			//glBindTexture(GL_TEXTURE_2D, 0);
-			//glActiveTexture(0); 
+			// 
 
 			//cv::Mat tofl[2];
 			//cv::split(totflow, tofl);  
@@ -1650,13 +1650,13 @@ bool gDisOptFlow::track()
 	////glBindTexture(GL_TEXTURE_2D, m_texture_dup_dvp); // there is a problem with totral flow, the x and y comp are the same!!!!!
 	////glGetTexImage(GL_TEXTURE_2D, 1, GL_RG, GL_FLOAT, totflow.data);// this is importnant, you are using GL_RED_INTEGETER!!!!
 	////glBindTexture(GL_TEXTURE_2D, 0);
-	////glActiveTexture(0);
+	////
 
 	//glActiveTexture(GL_TEXTURE0);
 	//glBindTexture(GL_TEXTURE_2D, m_textureU_x_y); // there is a problem with totral flow, the x and y comp are the same!!!!!
 	//glGetTexImage(GL_TEXTURE_2D, 0, GL_RG, GL_FLOAT, totflow.data);// this is importnant, you are using GL_RED_INTEGETER!!!!
 	//glBindTexture(GL_TEXTURE_2D, 0);
-	//glActiveTexture(0);
+	//
 
 	//float readFlow[2];  
 	//glBindTexture(GL_TEXTURE_2D, m_textureU_x_y);
