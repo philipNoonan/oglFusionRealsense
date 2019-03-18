@@ -80,6 +80,7 @@ void gFusionInit()
 
 	gfusion.setConfig(gconfig);
 	gfusion.setPose(initPose);
+	gfusion.setPoseP2V(initPose);
 
 	gfusion.initTextures();
 	gfusion.initVolume();
@@ -485,7 +486,7 @@ void setUI()
 
 		ImGui::PopItemWidth();
 
-		ImGui::SliderFloat("dim", &dimension, 0.005f, 5.0f);
+		ImGui::SliderFloat("dim", &dimension, 0.005f, 2.0f);
 
 		ImGui::SliderFloat("slice", &volSlice, 0, gconfig.volumeSize.z - 1);
 
@@ -609,6 +610,9 @@ void setUpGPU()
 
 int main(int, char**)
 {
+	
+
+
 
 	int display_w, display_h;
 	// load openGL window
@@ -670,6 +674,7 @@ int main(int, char**)
 
 		if (kcamera.ready())
 		{
+			gfusion.resetTimes();
 			gfusion.setDepthUnit(kcamera.getDepthUnit());
 
 			kcamera.frames(NULL, depthArray, NULL, NULL, NULL);
@@ -747,7 +752,7 @@ int main(int, char**)
 			}
 
 
-			//gfusion.showNormals();
+			gfusion.showNormals();
 
 			bool tracked = false;
 

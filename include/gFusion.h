@@ -12,10 +12,16 @@
 #include <glm/gtx/norm.hpp>
 
 
+//#define USE_OPENCV
+
+#ifdef USE_OPENCV
+
 #include "opencv2/core/utility.hpp"
 #include "opencv2/opencv.hpp"
 #include "opencv2/imgproc/imgproc.hpp"
 #include "opencv2/highgui/highgui.hpp"
+
+#endif
 
 
 #include <Eigen/Core>
@@ -221,6 +227,10 @@ public:
 	{
 		m_pose = pose;
 	}
+	void setPoseP2V(glm::mat4 pose)
+	{
+		std::memcpy(m_pose_eig.data(), glm::value_ptr(pose), 16 * sizeof(float));
+	}
 	// camera parameters
 	void setCameraParams(glm::vec4 camPams, glm::vec4 camPamsColor)
 	{
@@ -299,6 +309,7 @@ public:
 	//void exportMeshPly();
 
 	void printTimes();
+	void resetTimes();
 	void getTimes(float arr[]);
 
 	glm::vec3 getInitialPose(float pixX, float pixY);

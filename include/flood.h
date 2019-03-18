@@ -114,6 +114,7 @@ private:
 	GLuint m_subroutine_edgeDetectID;
 
 	/* uniforms */
+	GLuint m_jfaSetBlankVolumeID;
 	GLuint m_jfaInitID;
 	GLuint m_jfaInitFromDepthID;
 	GLuint m_jfaUpdateID;

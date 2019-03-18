@@ -1,5 +1,7 @@
 #include "gFusion.h"
 
+
+
 gFusion::~gFusion()
 {
 }
@@ -295,6 +297,8 @@ void gFusion::Reset(glm::mat4 pose, bool deleteFlag)
 		resetVolume();
 	}
 
+	resetTimes();
+
 	poseLibrary.resize(0);
 	resetPose(pose);
 }
@@ -336,11 +340,7 @@ void gFusion::resetPose(glm::mat4 pose)
 {
 	m_pose = pose;
 
-	m_pose_eig = Eigen::MatrixXf::Identity(4, 4);
-
-	m_pose_eig(0, 3) = pose[3][0];
-	m_pose_eig(1, 3) = pose[3][1];
-	m_pose_eig(2, 3) = pose[3][2];
+	std::memcpy(m_pose_eig.data(), glm::value_ptr(pose), 16 * sizeof(float));
 
 	m_cumTwist << 0, 0, 0, 0, 0, 0;
 
@@ -447,6 +447,17 @@ void gFusion::allocateBuffers()
 
 
 
+}
+
+void gFusion::resetTimes()
+{
+	raycastTime = 0.0;
+	marchingCubesTime = 0.0;
+	trackTime = 0.0;
+	reduceTime = 0.0;
+	integrateTime = 0.0;
+	trackSDFTime = 0.0;
+	reduceSDFTime = 0.0;
 }
 
 void gFusion::getTimes(float arr[])
@@ -696,7 +707,8 @@ void gFusion::vertexToNormal()
 
 void gFusion::showNormals()
 {
-	/*cv::Mat lvl0 = cv::Mat(480, 848, CV_32FC4);
+#ifdef USE_OPENCV
+	cv::Mat lvl0 = cv::Mat(480, 848, CV_32FC4);
 	cv::Mat lvl1 = cv::Mat(480 / 2, 848 / 2, CV_32FC4);
 	cv::Mat lvl2 = cv::Mat(480 / 4, 848 / 4, CV_32FC4);
 
@@ -735,7 +747,8 @@ void gFusion::showNormals()
 
 	cv::imshow("lvl0", image0[2]);
 	cv::imshow("lvl1", image1[2]);
-	cv::imshow("lvl2", image2[2]);*/
+	cv::imshow("lvl2", image2[2]);
+#endif
 
 }
 

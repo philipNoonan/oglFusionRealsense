@@ -193,8 +193,8 @@ bool calibratingFlag = false;
 // SAVING IMAGES
 
 // FUSION STUFF
-bool trackDepthToPoint = true;
-bool trackDepthToVolume = false;
+bool trackDepthToPoint = false;
+bool trackDepthToVolume = true;
 bool performFlood = false;
 
 int counter = 0;

@@ -19,7 +19,7 @@ void main()
 
     if (pix.x < size.x && pix.y < size.y)
     {
-
+        vec4 center = imageLoad(InputImage, ivec2(pix));
 
         vec4 left = imageLoad(InputImage, ivec2(max(pix.x - 1, 0), pix.y));
         vec4 right = imageLoad(InputImage, ivec2(min(pix.x + 1, size.x - 1), pix.y));
@@ -28,7 +28,12 @@ void main()
 
         //imageStore(OutputImage, ivec2(pix.x, pix.y), vec4(1.0f, 1.0f, 0.5f, 1.0f));
 
-        if (left.z == 0 || right.z == 0 || up.z == 0 || down.z == 0)
+        left = distance(center, left) > center.z * 0.05f ? center : left;
+        right = distance(center, right) > center.z * 0.05f ? center : right;
+        up = distance(center, up) > center.z * 0.05f ? center : up;
+        down = distance(center, down) > center.z * 0.05f ? center : down;
+
+        if (left.z == 0.0f || right.z == 0.0f || up.z == 0.0f || down.z == 0.0f)
         {
             imageStore(OutputImage, ivec2(pix.x, pix.y), vec4(2.0f, 0.0f, 0.0f, 0.0f));
 

@@ -31,6 +31,7 @@
 
 #include "glutils.h"
 #include "glslprogram.h"
+#include "glhelper.h"
 
 #define _USE_MATH_DEFINES
 #include <math.h>
@@ -353,6 +354,9 @@ private:
 
 	GLuint m_ambientID; 
 	GLuint m_lightID;
+
+
+	GLuint m_testTextureFragOut;
 
 	//GLuint m_irLowID;
 	//GLuint m_irHighID;

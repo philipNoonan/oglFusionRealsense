@@ -12,7 +12,7 @@ layout (binding=5) uniform isampler3D currentTextureVolume;
 layout (binding=6) uniform usampler3D currentTextureSDF; 
 
 
-layout(binding = 5, rg16ui) uniform uimage3D volumeData; // texel access
+//layout(binding = 5, rgba32f) uniform image3D volumeData; // texel access
 
 
 in vec2 TexCoord;
@@ -204,7 +204,7 @@ vec4 fromVolumeSDF()
     uint tData = texture(currentTextureSDF, vec3(TexCoord, slice) ).x;
     vec3 texSize = vec3(textureSize(currentTextureSDF, 0));
 
-	vec3 SDF = vec3((tData & 1072693248) >> 20, (tData & 1047552) >> 10, tData & 1023);
+	vec3 SDF = vec3((tData & 4290772992) >> 22, (tData & 4190208) >> 12, (tData & 4092) >> 2);
 
 	float distCol = distance(vec3(TexCoord.xy, slice), SDF.xyz / texSize.x);
 	float ssDist = smoothstep(0.0f, 0.5f, distCol);
@@ -220,7 +220,8 @@ vec4 fromVolumeSDF()
 subroutine(getColor)
 vec4 fromVolume()
 {
-	
+	//imageStore(volumeData, ivec3(0), vec4(69,13,69,13));
+
 	//// FOR TSDF VOLUME
     vec4 tData = texture(currentTextureVolume, vec3(TexCoord, slice) );
 	return vec4(1.0f * float(tData.x) * 0.0003051944088f, 1.0f * float(tData.x) * -0.0003051944088f, 0.0, 1.0f);
@@ -242,3 +243,9 @@ void main()
 	color = getColorSelection();
 
 }
+
+
+
+//uint32_t encodedOriginal = 25 << 22 | 86 << 12 | 35 << 2 | 2;
+
+	//vec4 decodedOriginal = vec4((encodedOriginal & 4290772992) >> 22, (encodedOriginal & 4190208) >> 12, (encodedOriginal & 4092) >> 2, encodedOriginal & 3);

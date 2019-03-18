@@ -240,6 +240,7 @@ void kRender::setLocations()
 	//m_irLowID = glGetUniformLocation(renderProg.getHandle(), "irLow");
 	//m_irHighID = glGetUniformLocation(renderProg.getHandle(), "irHigh");
 
+	//m_testTextureFragOut = GLHelper::createTexture(m_testTextureFragOut, GL_TEXTURE_3D, 1, 50, 50, 50, GL_RGBA32F);
 }
 
 void kRender::updateVerts(float w, float h)
@@ -1002,7 +1003,7 @@ void kRender::renderLiveVideoWindow(bool useInfrared)
 		//updateVerts(m_volume_size.x, m_volume_size.y);
 		glm::vec2 imageSize(m_volume_size.x, m_volume_size.y);
 
-		//glBindImageTexture(5, m_textureVolume, 0, GL_FALSE, 0, GL_READ_ONLY, GL_RG16I);
+		//glBindImageTexture(5, m_testTextureFragOut, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA32F);
 
 		glBindVertexArray(m_VAO);
 		MVP = m_projection * m_view * m_model_volume;
