@@ -94,7 +94,7 @@ void jfaInitFromDepth()
     //float dotAngle = dot(normal.xyz, vectorToNearestPoint);
 
 
-    if (all(greaterThanEqual(vertexInVolume.xyz, vec3(0.0f))) && all(lessThan(vertexInVolume.xyz, vec3(imSize.x))))
+    if (all(greaterThan(vertexInVolume.xyz, vec3(0.0f))) && all(lessThan(vertexInVolume.xyz, vec3(imSize.x))))
     {
         uint encodedOriginal = encodeValues(vertexInVolume.xyz);
 
@@ -117,6 +117,11 @@ void jfaUpscale()
 
 void DTNN(const in vec3 off)
 {
+    //if (any(lessThan(off, vec3(0.0f))))
+    //{
+    //    return;
+    //}
+
     uint encodedIn = imageLoad(image0, ivec3(off)).x;
     vec3 dtnn_cur = decodeValues(encodedIn);
 

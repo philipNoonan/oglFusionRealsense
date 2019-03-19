@@ -221,9 +221,9 @@ void Realsense2Camera::captureLoop()
 
 	if (advanced.is_enabled())
 	{
-		//std::string f = "./resources/nearmode.json";
+		std::string f = "./resources/nearmode.json";
 	    //std::string f = "./resources/standard.json";
-		std::string f = "./resources/nearmode435.json"; 
+		//std::string f = "./resources/nearmode435.json"; 
 		//std::string f = "./resources/standard435.json";
 
 		std::ifstream file(f, std::ifstream::in);

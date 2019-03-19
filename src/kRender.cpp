@@ -315,7 +315,21 @@ void kRender::setVertPositions()
 
 }
 
+void kRender::allocateTextures()
+{
+	int patch_size = 8;
+	int numLevels = (int)(log((2 * m_color_width) / (4.0 * patch_size)) / log(2.0) + 0.5) + 1; ;// 1 + floor(std::log2(std::max(m_color_width, m_color_height)));
+	m_textureColor = GLHelper::createTexture(m_textureColor, GL_TEXTURE_2D, numLevels, m_color_width, m_color_height, 0, GL_RGBA8);
 
+}
+
+void kRender::setColorFrame(unsigned char * imageArray)
+{
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, m_textureColor);
+	glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, m_color_width, m_color_height, GL_RGBA, GL_UNSIGNED_BYTE, imageArray);
+	glGenerateMipmap(GL_TEXTURE_2D);
+}
 
 void kRender::allocateBuffers()
 {
@@ -472,7 +486,7 @@ void kRender::setTextures(GLuint depthTex, GLuint colorTex, GLuint vertexTex, GL
 {
 
 	m_textureDepth = depthTex;
-	m_textureColor = colorTex;
+	//m_textureColor = colorTex;
 	m_textureVertex = vertexTex; 
 	m_textureNormal = normalTex;
 	m_textureVolume = volumeTex;
@@ -835,7 +849,7 @@ void kRender::setFlowImageRenderPosition(int height, int width, float vertFov)
 
 	m_model_flow = glm::scale(glm::mat4(1.0f), scaleVec);
 
-	m_model_flow = glm::translate(m_model_flow, glm::vec3(-m_color_width / 2, -m_color_height / 2, -zDist + 2));
+	m_model_flow = glm::translate(m_model_flow, glm::vec3(-m_color_width / 2, -m_color_height / 2, -zDist + 7));
 
 
 

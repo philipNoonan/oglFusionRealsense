@@ -158,7 +158,9 @@ public:
 	void requestShaderInfo();
 	void setLocations();
 	void setVertPositions();
+	void allocateTextures();
 	void allocateBuffers();
+	void setColorFrame(unsigned char * imageArray);
 	void setTextures(GLuint depthTex, GLuint colorTex, GLuint vertexTex, GLuint normalTex, GLuint volumeTex, GLuint trackTex, GLuint pvpNormTex, GLuint pvdNormTex);
 	void setFlowTexture(GLuint flowTex);
 	void setBuffersFromMarchingCubes(GLuint posBuf, GLuint normBuf, size_t numVerts)
@@ -268,6 +270,11 @@ public:
 	void setFov(float fov)
 	{
 		m_vertFov = fov;
+	}
+
+	GLuint getColorTexture()
+	{
+		return m_textureColor;
 	}
 
 

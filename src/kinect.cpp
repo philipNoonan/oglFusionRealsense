@@ -51,11 +51,15 @@ void kRenderInit()
 	// Set locations
 	krender.setLocations();
 	krender.setVertPositions();
+	krender.allocateTextures();
 	krender.allocateBuffers();
 	krender.setTextures(gfusion.getDepthImage(), gflow.getColorTexture(), gfusion.getVerts(), gfusion.getNorms(), gfusion.getVolume(), gfusion.getTrackImage(), gfusion.getPVPNorms(), gfusion.getPVDNorms()); //needs texture uints from gfusion init
 	krender.anchorMW(std::make_pair<int, int>(1920 - 512 - krender.guiPadding().first, krender.guiPadding().second));
 	//krender.genTexCoordOffsets(1, 1, 1.0f);
 	krender.setFusionType(trackDepthToPoint, trackDepthToVolume);
+
+	gflow.setColorTexture(krender.getColorTexture());
+
 }
 
 void gFusionInit()
@@ -105,6 +109,7 @@ void gDisOptFlowInit()
 	gflow.setTextureParameters(colorWidth, colorHeight);
 	gflow.allocateTextures(false);
 
+	krender.setFlowTexture(gflow.getFlowTexture());
 
 #endif
 
@@ -679,22 +684,18 @@ int main(int, char**)
 
 			kcamera.frames(colorArray, depthArray, NULL, NULL, NULL);
 
+			krender.setColorFrame(colorArray);
+
 			//cv::Mat colFrame(480, 848, CV_8UC4, colorArray);
 			//cv::imshow("c", colFrame);
 			//cv::waitKey(1);
 
-#ifdef USEINFRARED
-			//		gdisoptflow.setTexture(infraredArray);
-#else
-			gflow.setTexture(colorArray, 4);
-#endif
+			if (showFlowFlag)
+			{
+				gflow.setTexture();
 
-
-#ifdef USEINFRARED
-		//	gdisoptflow.calc(true);
-#else
-			gflow.calc(false);
-#endif
+				gflow.calc(false);
+			}
 
 
 
@@ -704,7 +705,7 @@ int main(int, char**)
 
 		//	krender.setTrackedPointsBuffer(gdisoptflow.getTrackedPointsBuffer());
 
-			krender.setFlowTexture(gflow.getFlowTexture());
+			//
 
 			//cv::Mat totflow = cv::Mat(480,848, CV_32FC2);
 

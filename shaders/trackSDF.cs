@@ -245,28 +245,28 @@ float SDF(vec3 location, inout bool validGradient)
     //}
 
     //return (a0 * (1.0 - y) + a1 * y) * (1.0 - x) + (b0 * (1.0 - y) + b1 * y) * x;
-    return textureLod(volumeDataTexture, locationInVolumeTexture, 0).x * 0.000030517f;
+    return float(textureLod(volumeDataTexture, locationInVolumeTexture, 0).x) * 0.000030517f;
     //return imageLoad(volumeData, ivec3(I, J, K)).x * 0.000030517f;
 }
 
 
-float SDFGradient(vec3 location, vec3 location_offset)
+float SDFGradient(vec3 location, vec3 location_offset, int numVoxels)
 {
     float voxelLength = volDim.x / volSize.x;
     //vec3 location_offset = vec3(0, 0, 0);
     //location_offset(dim) = stepSize;
     bool valGrad;
-    float upperVal = SDF(location.xyz + location_offset, valGrad);
+    float upperVal = SDF(vec3(location.xyz + location_offset), valGrad);
     //if (!valGrad)
     //{
     //    return 0.0f;
     //}
-    float lowerVal = SDF(location.xyz - location_offset, valGrad);
+    float lowerVal = SDF(vec3(location.xyz - location_offset), valGrad);
     //if (!valGrad)
     //{
     //    return 0.0f;
     //}
-    float gradient = (upperVal - lowerVal) / (2.0f * voxelLength);
+    float gradient = (upperVal - lowerVal) / (2.0f * voxelLength * float(numVoxels));
     return gradient;
 
 
@@ -483,7 +483,11 @@ void main()
         float D = SDF(cvp.xyz, valSDF);
 
         //float Dup = SDF(cvp + vec3(0,0,1));
-        vec3 dSDF_dx = vec3(SDFGradient(cvp, vec3(1, 0, 0)), SDFGradient(cvp, vec3(0, 1, 0)), SDFGradient(cvp, vec3(0, 0, 1)));
+
+        float voxelLength = volDim.x / volSize.x;
+        int numVox = 5;
+
+        vec3 dSDF_dx = vec3(SDFGradient(cvp, vec3(numVox, 0, 0), numVox), SDFGradient(cvp, vec3(0, numVox, 0), numVox), SDFGradient(cvp, vec3(0, 0, numVox), numVox));
 
         //if (dSDF_dx.x > 1.0f || dSDF_dx.y > 1.0f || dSDF_dx.z > 1.0f)
         if (any(greaterThan(dSDF_dx, vec3(1.0f))))
@@ -495,7 +499,12 @@ void main()
             return;
         }
 
+        //if (all(equal(dSDF_dx, vec3(0.0f))))
+        //{
+        //    trackOutput[(pix.y * imageSize.x) + pix.x].result = -4;
 
+        //    return;
+        //}
         //imageStore(testImage, ivec2(pix), vec4(D*100.0, D*100.0, -D*100.0, 1.0f));
         imageStore(testImage, ivec2(pix), vec4(dSDF_dx, 1.0f));
 

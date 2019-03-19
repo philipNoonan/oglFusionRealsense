@@ -199,27 +199,27 @@ void gFlow::allocateOffscreenRendering()
 
 
 
-void gFlow::setTexture(unsigned char * imageArray, int nChn)
+void gFlow::setTexture()
 {
 	//I1im = cv::Mat(m_texture_height, m_texture_width, CV_8UC4, imageArray);
 
-	if (nChn == 4)
-	{
-		glActiveTexture(GL_TEXTURE1);
-		glBindTexture(GL_TEXTURE_2D, m_textureI1);
-		glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, m_texture_width, m_texture_height, GL_RGBA, GL_UNSIGNED_BYTE, imageArray);
-		glGenerateMipmap(GL_TEXTURE_2D);
-	}
-	else if (nChn == 3)
-	{
-		glActiveTexture(GL_TEXTURE1);
-		glBindTexture(GL_TEXTURE_2D, m_textureI1);
-		glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, m_texture_width, m_texture_height, GL_RGB, GL_UNSIGNED_BYTE, imageArray);
-		glGenerateMipmap(GL_TEXTURE_2D);
-	}
+	//if (nChn == 4)
+	//{
+	//	glActiveTexture(GL_TEXTURE1);
+	//	glBindTexture(GL_TEXTURE_2D, m_textureI1);
+	//	glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, m_texture_width, m_texture_height, GL_RGBA, GL_UNSIGNED_BYTE, imageArray);
+	//	glGenerateMipmap(GL_TEXTURE_2D);
+	//}
+	//else if (nChn == 3)
+	//{
+	//	glActiveTexture(GL_TEXTURE1);
+	//	glBindTexture(GL_TEXTURE_2D, m_textureI1);
+	//	glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, m_texture_width, m_texture_height, GL_RGB, GL_UNSIGNED_BYTE, imageArray);
+	//	glGenerateMipmap(GL_TEXTURE_2D);
+	//}
 
-	//theErr = glGetError(); 
-	glMemoryBarrier(GL_ALL_BARRIER_BITS); 
+	////theErr = glGetError(); 
+	//glMemoryBarrier(GL_ALL_BARRIER_BITS); 
 
 
 
@@ -235,13 +235,11 @@ void gFlow::setTexture(unsigned char * imageArray, int nChn)
 	//glBindTexture(GL_TEXTURE_2D, m_textureI1);
 	//glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_UNSIGNED_BYTE, col1.data);
 	//glBindTexture(GL_TEXTURE_2D, 0);
-	//glActiveTexture(0);
 
 	//glActiveTexture(GL_TEXTURE0);
 	//glBindTexture(GL_TEXTURE_2D, m_textureI1);
 	//glGetTexImage(GL_TEXTURE_2D, 1, GL_RGBA, GL_UNSIGNED_BYTE, col2.data);
 	//glBindTexture(GL_TEXTURE_2D, 0);
-	//glActiveTexture(0);
 
 	//cv::Mat col2p = cv::Mat(m_texture_height / 1, m_texture_width / 1, CV_8UC4);
 	//cv::pyrUp(col2, col2p);
@@ -286,14 +284,13 @@ void gFlow::setTexture(unsigned char * imageArray, int nChn)
 
 	glMemoryBarrier(GL_ALL_BARRIER_BITS);
 
-	//cv::Mat col0 = cv::Mat(m_texture_height / 2, m_texture_width / 2, CV_8UC4);
+	//cv::Mat col0 = cv::Mat(m_texture_height / 1, m_texture_width / 1, CV_8UC4);
 	//// 
 
 	//glActiveTexture(GL_TEXTURE0);
-	//glBindTexture(GL_TEXTURE_2D, m_textureI0);
-	//glGetTexImage(GL_TEXTURE_2D, 1, GL_RGBA, GL_UNSIGNED_BYTE, col0.data);
+	//glBindTexture(GL_TEXTURE_2D, m_textureI1);
+	//glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_UNSIGNED_BYTE, col0.data);
 	//glBindTexture(GL_TEXTURE_2D, 0);
-	//glActiveTexture(0);
 
 	//////theErr = glGetError();
 	////   
@@ -307,7 +304,6 @@ void gFlow::setTexture(unsigned char * imageArray, int nChn)
 	//glBindTexture(GL_TEXTURE_2D, m_textureI1);
 	//glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_UNSIGNED_BYTE, col.data);
 	//glBindTexture(GL_TEXTURE_2D, 0);
-	//glActiveTexture(0);
 	 
 	//cv::imshow("colo", col);
 	  
@@ -359,7 +355,6 @@ void gFlow::setTexture(float * imageArray)
 	//glBindTexture(GL_TEXTURE_2D, m_textureI1);
 	//glGetTexImage(GL_TEXTURE_2D, 1, GL_RGBA, GL_UNSIGNED_BYTE, col.data);
 	//glBindTexture(GL_TEXTURE_2D, 0);
-	//glActiveTexture(0);
 
 	//////theErr = glGetError();
 	////   
@@ -372,7 +367,6 @@ void gFlow::setTexture(float * imageArray)
 	//glBindTexture(GL_TEXTURE_2D, m_textureI0);
 	//glGetTexImage(GL_TEXTURE_2D, 1, GL_RGBA, GL_UNSIGNED_BYTE, col0.data);
 	//glBindTexture(GL_TEXTURE_2D, 0);
-	//glActiveTexture(0);
 
 	//////theErr = glGetError();
 	////   
@@ -386,7 +380,6 @@ void gFlow::setTexture(float * imageArray)
 	//glBindTexture(GL_TEXTURE_2D, m_textureI1);
 	//glGetTexImage(GL_TEXTURE_2D, 0, GL_RED, GL_FLOAT, col.data);
 	//glBindTexture(GL_TEXTURE_2D, 0);
-	//glActiveTexture(0);
 
 	//cv::imshow("colo", col);
 
@@ -509,12 +502,12 @@ void gFlow::allocateTextures(int nChn)
 	if (nChn == 1)
 	{
 		m_textureI0 = createTexture(m_textureI0, GL_TEXTURE_2D, m_numLevels, m_texture_width, m_texture_height, 0, GL_R32F);
-		m_textureI1 = createTexture(m_textureI1, GL_TEXTURE_2D, m_numLevels, m_texture_width, m_texture_height, 0, GL_R32F);
+		//m_textureI1 = createTexture(m_textureI1, GL_TEXTURE_2D, m_numLevels, m_texture_width, m_texture_height, 0, GL_R32F);
 	}
 	else
 	{
 		m_textureI0 = createTexture(m_textureI0, GL_TEXTURE_2D, m_numLevels, m_texture_width, m_texture_height, 0, GL_RGBA8);
-		m_textureI1 = createTexture(m_textureI1, GL_TEXTURE_2D, m_numLevels, m_texture_width, m_texture_height, 0, GL_RGBA8);
+		//m_textureI1 = createTexture(m_textureI1, GL_TEXTURE_2D, m_numLevels, m_texture_width, m_texture_height, 0, GL_RGBA8);
 	}
 	
 	m_textureI0_prod_xx_yy_xy_aux = createTexture(m_textureI0_prod_xx_yy_xy_aux, GL_TEXTURE_2D, m_numLevels, m_texture_width / m_patch_stride, m_texture_height , 0, GL_RGBA32F);
@@ -697,7 +690,6 @@ void gFlow::computeSobel(int level, bool useInfrared)
 	//	glBindTexture(GL_TEXTURE_2D, m_textureI0_grad_x_y);
 	//	glGetTexImage(GL_TEXTURE_2D, level, GL_RG, GL_FLOAT, sx.data);// this is importnant, you are using GL_RED_INTEGETER!!!!
 	//	glBindTexture(GL_TEXTURE_2D, 0);
-	//	glActiveTexture(0);
 	 
 	//	cv::Mat threshsx = sx > 0.01;
 	//	cv::Mat image00[2]; 
@@ -729,7 +721,6 @@ void gFlow::computeSobel(int level, bool useInfrared)
 //		glBindTexture(GL_TEXTURE_2D, m_textureI0_grad_x_y);
 //		glGetTexImage(GL_TEXTURE_2D, level, GL_RG, GL_FLOAT, sx.data);// this is importnant, you are using GL_RED_INTEGETER!!!!
 //		glBindTexture(GL_TEXTURE_2D, 0);
-//		glActiveTexture(0);
 //		 
 //		cv::Mat image00[2]; 
 //		cv::split(sx, image00); 
@@ -795,7 +786,6 @@ void gFlow::computeSobel(int level, bool useInfrared)
 		//glBindTexture(GL_TEXTURE_2D, m_textureI0_grad_x_y);
 		//glGetTexImage(GL_TEXTURE_2D, level, GL_RG, GL_FLOAT, sx.data);// this is importnant, you are using GL_RED_INTEGETER!!!!
 		//glBindTexture(GL_TEXTURE_2D, 0);
-		//glActiveTexture(0);
 	 //
 		//cv::Mat image11[2];
 		//cv::split(sx, image11);
@@ -813,8 +803,6 @@ void gFlow::computeSobel(int level, bool useInfrared)
 	//	glBindTexture(GL_TEXTURE_2D, m_textureI0_grad_x_y);
 	//	glGetTexImage(GL_TEXTURE_2D, level, GL_RG_INTEGER, GL_SHORT, sx.data);// this is importnant, you are using GL_RED_INTEGETER!!!!
 	//	glBindTexture(GL_TEXTURE_2D, 0);
-	//	glActiveTexture(0);
-
 	//	cv::Mat image112[2];
 	//	cv::split(sx, image112);
 
@@ -918,7 +906,6 @@ void gFlow::makePatches(int level)
 	//	glBindTexture(GL_TEXTURE_2D, m_textureI0_prod_xx_yy_xy);
 	//	glGetTexImage(GL_TEXTURE_2D, level, GL_RGBA, GL_FLOAT, sxx.data);
 	//	glBindTexture(GL_TEXTURE_2D, 0); 
-	//	glActiveTexture(0);
 	//	  
 	//	cv::Mat image0[4];     
 	//	cv::split(sxx, image0);  
@@ -933,7 +920,6 @@ void gFlow::makePatches(int level)
 	//	glBindTexture(GL_TEXTURE_2D, m_textureI0_sum_x_y);
 	//	glGetTexImage(GL_TEXTURE_2D, level, GL_RG, GL_FLOAT, sumxy.data);
 	//	glBindTexture(GL_TEXTURE_2D, 0);
-	//	glActiveTexture(0);
 
 	//	cv::Mat imsumxy[4]; 
 	//	cv::split(sumxy, imsumxy);
@@ -951,7 +937,6 @@ void gFlow::makePatches(int level)
 	//	 glBindTexture(GL_TEXTURE_2D, m_textureI0_prod_xx_yy_xy);
 	//	 glGetTexImage(GL_TEXTURE_2D, level, GL_RGBA, GL_FLOAT, sxx.data);
 	//	 glBindTexture(GL_TEXTURE_2D, 0);
-	//	 glActiveTexture(0);
 
 	//	 cv::Mat image0[4];
 	//	 cv::split(sxx, image0); 
@@ -966,7 +951,6 @@ void gFlow::makePatches(int level)
 	//	 glBindTexture(GL_TEXTURE_2D, m_textureI0_sum_x_y);
 	//	 glGetTexImage(GL_TEXTURE_2D, level, GL_RG, GL_FLOAT, sumxy.data);
 	//	 glBindTexture(GL_TEXTURE_2D, 0);
-	//	 glActiveTexture(0);
 
 	//	 cv::Mat imsumxy[4];
 	//	 cv::split(sumxy, imsumxy);
@@ -1153,7 +1137,6 @@ void gFlow::calcStandardDeviation(int level)
 	//glBindTexture(GL_TEXTURE_2D, m_texture_prefixSum);
 	//glGetTexImage(GL_TEXTURE_2D, 0, GL_RG, GL_FLOAT, colVonfir.data);
 	//glBindTexture(GL_TEXTURE_2D, 0);
-	//glActiveTexture(0);
 
 	//cv::Mat imagesfir[2];
 
@@ -1257,7 +1240,6 @@ void gFlow::calcStandardDeviation(int level)
 	//glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_FLOAT, colVon.data);
 
 	//glBindTexture(GL_TEXTURE_2D, 0);
-	////glActiveTexture(0);
 
 	//cv::Mat images[4];
 
@@ -1314,7 +1296,6 @@ void gFlow::calcStandardDeviation(int level)
 	////glBindTexture(GL_TEXTURE_2D, m_texture_prefixSumSecondPass);
 	////glGetTexImage(GL_TEXTURE_2D, 0, GL_RG, GL_FLOAT, colVonsec.data);
 	////glBindTexture(GL_TEXTURE_2D, 0);
-	//////glActiveTexture(0);
 
 	////cv::Mat imagessec[2];
 
@@ -1399,13 +1380,11 @@ void gFlow::variationalRefinement(int level)
 	glBindTexture(GL_TEXTURE_2D, m_textureI0);
 	glGetTexImage(GL_TEXTURE_2D, level, GL_RGBA, GL_UNSIGNED_BYTE, I0imq.data);
 	glBindTexture(GL_TEXTURE_2D, 0);
-	//glActiveTexture(0); 
 
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D, m_textureI1);
 	glGetTexImage(GL_TEXTURE_2D, level, GL_RGBA, GL_UNSIGNED_BYTE, I1imq.data);
 	glBindTexture(GL_TEXTURE_2D, 0);
-	//glActiveTexture(0);  
 
 	cv::Mat I0C1;
 	cv::cvtColor(I0imq, I0C1, cv::COLOR_BGRA2GRAY);
@@ -1420,7 +1399,6 @@ void gFlow::variationalRefinement(int level)
 	glBindTexture(GL_TEXTURE_2D, m_textureU_x_y);
 	glGetTexImage(GL_TEXTURE_2D, level, GL_RG, GL_FLOAT, sxx3.data);
 	glBindTexture(GL_TEXTURE_2D, 0);
-	//glActiveTexture(0);  
 	    
 	//cv::imshow("dens1", sxx3);  
 	      
@@ -1508,7 +1486,6 @@ void gFlow::variRef(int level)
 	//	glBindTexture(GL_TEXTURE_2D_ARRAY, m_textureI_mix_diff_warp);
 	//	glGetTexImage(GL_TEXTURE_2D_ARRAY, level, GL_RGBA, GL_UNSIGNED_BYTE, vari_vec.data());// this is importnant, you are using GL_RED_INTEGETER!!!!
 	//	glBindTexture(GL_TEXTURE_2D_ARRAY, 0);
-	//	glActiveTexture(0);
 
 	//	memcpy_s(vari_Mat.data, vari_vec.size() * sizeof(uchar) / 3, vari_vec.data() + vari_vec.size() * 1 / 3, vari_vec.size() * sizeof(uchar) / 3);
 
@@ -1646,7 +1623,6 @@ void gFlow::variRef(int level)
 		////glBindTexture(GL_TEXTURE_2D, m_texture_dup_dvp);
 		////glGetTexImage(GL_TEXTURE_2D, level, GL_RGBA, GL_FLOAT, deltasuv.data);// this is importnant, you are using GL_RED_INTEGETER!!!!
 		////glBindTexture(GL_TEXTURE_2D, 0);
-		////glActiveTexture(0);
 
 		////cv::Mat imdel[4];
 		////cv::split(deltasuv, imdel);
@@ -1660,7 +1636,6 @@ void gFlow::variRef(int level)
 			//glBindTexture(GL_TEXTURE_2D, m_texture_total_flow);
 			//glGetTexImage(GL_TEXTURE_2D, level, GL_RG, GL_FLOAT, totflow.data);// this is importnant, you are using GL_RED_INTEGETER!!!!
 			//glBindTexture(GL_TEXTURE_2D, 0);
-			//glActiveTexture(0); 
 
 			//cv::Mat tofl[2];
 			//cv::split(totflow, tofl);  
@@ -1788,7 +1763,6 @@ void gFlow::jumpFloodCalc()
 	glBindTexture(GL_TEXTURE_2D, m_texture_jfa_0);
 	glGetTexImage(GL_TEXTURE_2D, 0, GL_RG_INTEGER, GL_INT, prejfaMat.data);
 	glBindTexture(GL_TEXTURE_2D, 0);
-	//glActiveTexture(0);
 	 
 	//cv::imshow("dens1", sxx3);   
 
@@ -1835,7 +1809,6 @@ void gFlow::jumpFloodCalc()
 	glBindTexture(GL_TEXTURE_2D, m_texture_jfa_1);
 	glGetTexImage(GL_TEXTURE_2D, 0, GL_RG_INTEGER, GL_INT, jfaMat.data);
 	glBindTexture(GL_TEXTURE_2D, 0);
-	//glActiveTexture(0);
 
 	//cv::imshow("dens1", sxx3);  
 
@@ -1920,7 +1893,6 @@ bool gFlow::calc(bool useInfrared)
 			glBindTexture(GL_TEXTURE_2D, m_textureTest);
 			glGetTexImage(GL_TEXTURE_2D, level, GL_RED, GL_FLOAT, ssdMat.data);
 			glBindTexture(GL_TEXTURE_2D, 0);
-			glActiveTexture(0);
 
 			cv::namedWindow("ssd", WINDOW_NORMAL);
 			cv::imshow("ssd", ssdMat);
@@ -2161,13 +2133,11 @@ void gFlow::track()
 	////glBindTexture(GL_TEXTURE_2D, m_texture_dup_dvp); // there is a problem with totral flow, the x and y comp are the same!!!!!
 	////glGetTexImage(GL_TEXTURE_2D, 1, GL_RG, GL_FLOAT, totflow.data);// this is importnant, you are using GL_RED_INTEGETER!!!!
 	////glBindTexture(GL_TEXTURE_2D, 0);
-	////glActiveTexture(0);
 
 	//glActiveTexture(GL_TEXTURE0);
 	//glBindTexture(GL_TEXTURE_2D, m_textureU_x_y); // there is a problem with totral flow, the x and y comp are the same!!!!!
 	//glGetTexImage(GL_TEXTURE_2D, 0, GL_RG, GL_FLOAT, totflow.data);// this is importnant, you are using GL_RED_INTEGETER!!!!
 	//glBindTexture(GL_TEXTURE_2D, 0);
-	//glActiveTexture(0);
 
 	//float readFlow[2];  
 	//glBindTexture(GL_TEXTURE_2D, m_textureU_x_y);
@@ -2250,7 +2220,6 @@ void gFlow::buildQuadtree()
 	//glBindTexture(GL_TEXTURE_2D, m_texture_hpQuadtree);
 	//glGetTexImage(GL_TEXTURE_2D, 0, GL_RED, GL_FLOAT, sp_img.data);
 	//glBindTexture(GL_TEXTURE_2D, 0);
-	//glActiveTexture(0);
 	//cv::namedWindow("noise", WINDOW_NORMAL);
 
 	//cv::imshow("noise", sp_img  + 1.0f);
@@ -2292,7 +2261,6 @@ void gFlow::buildQuadtree()
 	glBindTexture(GL_TEXTURE_2D, m_texture_hpQuadtree);
 	glGetTexImage(GL_TEXTURE_2D, m_numberHPLevels, GL_RED, GL_FLOAT, sumData.data());
 	glBindTexture(GL_TEXTURE_2D, 0);
-	//glActiveTexture(0);
 
 	std::cout << "sum " << sumData[0] << std::endl;
 	m_quadlistCount = sumData[0];

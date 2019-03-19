@@ -55,9 +55,12 @@ public:
 		m_cutoff = (uint32_t)cOff;
 	}
 	//void setTexture(GLuint texID) { m_textureI1 = texID; }
-	void setTexture(unsigned char * imageArray, int nChn);
+	void setTexture();
 	void setTexture(float * imageArray);
-
+	void setColorTexture(GLuint colTex)
+	{
+		m_textureI1 = colTex;
+	}
 	void computeSobel(int level, bool useInfrared);
 	void makePatches(int level);
 	//bool precomputeStructureTensor();
