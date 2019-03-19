@@ -525,13 +525,18 @@ void kRender::bindTexturesForRendering()
 
 	}
 
+	if (m_showColorFlag)
+	{
+		glActiveTexture(GL_TEXTURE4);
+		glBindTexture(GL_TEXTURE_2D, m_textureColor);
+	}
+
 	if (m_showFlowFlag)
 	{
 		glActiveTexture(GL_TEXTURE3);
 		glBindTexture(GL_TEXTURE_2D, m_textureFlow);
 
-		glActiveTexture(GL_TEXTURE4);
-		glBindTexture(GL_TEXTURE_2D, m_textureColor);
+
 	}
 
 
@@ -784,25 +789,22 @@ void kRender::setNormalImageRenderPosition()
 
 void kRender::setColorImageRenderPosition(float vertFov)
 {
+
+
 	int w, h;
 	glfwGetFramebufferSize(m_window, &w, &h);
-	//// if setting z dist
-	//float zDist = 8000.0f;
-	//float halfHeightAtDist = zDist * tan(22.5f * M_PI / 180.0f);
-	//float halfWidthAtDistance = halfHeightAtDist * (float)w / (float)h; // notsure why this ratio is used here...
-	//// else if setting size on window
+
 	float zDist;
-	zDist = ((float)m_color_height * 6) / tan(vertFov * M_PI / 180.0f);
+	zDist = ((float)m_depth_height * 6) / tan(vertFov * M_PI / 180.0f);
 	float halfHeightAtDist = (float)h * 4;
 	float halfWidthAtDistance = (float)w * 4;
-	//m_model_color = glm::translate(glm::mat4(1.0f), glm::vec3(-m_color_width / 2.0f, -halfHeightAtDist, -zDist));
+
 	glm::vec3 scaleVec = glm::vec3(6.f, 6.f, 1.0f);
 
 	m_model_color = glm::scale(glm::mat4(1.0f), scaleVec);
-	m_model_color = glm::translate(m_model_color, glm::vec3(-m_color_width / 2.0f, -m_color_height / 2.0f, -zDist));
+	m_model_color = glm::translate(m_model_color, glm::vec3(-m_depth_width / 2.0f, -m_depth_height / 2.0f, -zDist));
 
-	//std::cout << "zDis" << zDist << "w " << w << " h" << h << " ad " << halfWidthAtDistance << std::endl;
-	//m_model_color = glm::translate(glm::mat4(1.0f), glm::vec3(-m_color_width / 2.0f, 0.0f, -2000.0f));
+
 }
 
 void kRender::setInfraImageRenderPosition()
@@ -954,6 +956,26 @@ void kRender::renderLiveVideoWindow(bool useInfrared)
 		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 	}
 
+	if (m_showColorFlag)
+	{
+		setViewport(m_display2DPos.x, m_display2DPos.y, m_display2DSize.x, m_display2DSize.y);
+		glm::vec2 imageSize;
+		imageSize = glm::vec2(m_color_width, m_color_height);
+		MVP = m_projection * m_view * m_model_depth;
+
+		glBindVertexArray(m_VAO);
+
+
+		glUniformSubroutinesuiv(GL_VERTEX_SHADER, 1, &m_fromStandardTextureID);
+		glUniformSubroutinesuiv(GL_FRAGMENT_SHADER, 1, &m_fromColorID);
+		//glUniformMatrix4fv(m_ProjectionID, 1, GL_FALSE, glm::value_ptr(m_projection));
+		glUniformMatrix4fv(m_MvpID, 1, GL_FALSE, glm::value_ptr(MVP));
+		glUniform2fv(m_imSizeID, 1, glm::value_ptr(imageSize));
+
+		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+
+	}
+
 	//// FOR RAYNORM
 	if (m_showNormalFlag)
 	{
@@ -1058,6 +1080,8 @@ void kRender::renderLiveVideoWindow(bool useInfrared)
 
 	}
 
+
+
 	if (m_showFlowFlag)
 	{
 		setViewport(m_display2DPos.x, m_display2DPos.y, m_display2DSize.x, m_display2DSize.y);
@@ -1071,7 +1095,7 @@ void kRender::renderLiveVideoWindow(bool useInfrared)
 		else
 		{
 			imageSize = glm::vec2(m_color_width, m_color_height);
-			MVP = m_projection * m_view * m_model_color;
+			MVP = m_projection * m_view * m_model_depth;
 		}
 		glBindVertexArray(m_VAO);
 
@@ -1085,7 +1109,7 @@ void kRender::renderLiveVideoWindow(bool useInfrared)
 		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 
 		glBindVertexArray(m_VAO);
-		MVP = glm::translate(MVP, glm::vec3(0.0f, 0.0f, 5.0f));
+		//MVP = glm::translate(MVP, glm::vec3(0.0f, 0.0f, 5.0f));
 		glUniformSubroutinesuiv(GL_VERTEX_SHADER, 1, &m_fromStandardTextureID);
 		glUniformSubroutinesuiv(GL_FRAGMENT_SHADER, 1, &m_fromFlowID);
 		//glUniformMatrix4fv(m_ProjectionID, 1, GL_FALSE, glm::value_ptr(m_projection));

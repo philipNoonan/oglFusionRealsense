@@ -209,8 +209,8 @@ private:
 	int m_frame_width;
 	int m_frame_height;
 
-	int m_colorframe_width = 1920;
-	int m_colorframe_height = 1080;
+	int m_colorframe_width = 848;
+	int m_colorframe_height = 480;
 
 	int m_depthRate;
 	int m_depthframe_width = 640;

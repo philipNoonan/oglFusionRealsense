@@ -74,13 +74,12 @@ void Realsense2Camera::start()
 
 
 		//Add desired streams to configuration // 
-		//cfg.enable_stream(RS2_STREAM_COLOR, m_colorframe_width, m_colorframe_height, RS2_FORMAT_BGRA8, 30);
-		cfg.enable_stream(RS2_STREAM_DEPTH, m_depthframe_width, m_depthframe_height, RS2_FORMAT_Z16, m_depthRate);
+		cfg.enable_stream(RS2_STREAM_COLOR, m_colorframe_width, m_colorframe_height, RS2_FORMAT_BGRA8, 60);
+		cfg.enable_stream(RS2_STREAM_DEPTH, m_depthframe_width, m_depthframe_height, RS2_FORMAT_Z16, 60);
 
 
 		// Start streaming with default recommended configuration
 		selection = pipe.start(cfg);
-
 
 
 
@@ -149,7 +148,7 @@ void Realsense2Camera::frames(unsigned char * colorArray, std::vector<uint16_t> 
 
 		if (colorArray != NULL)
 		{
-			memcpy_s(colorArray, m_colorframe_width * m_colorframe_height * 4, m_color_frame, m_colorframe_width * m_colorframe_height * 4);
+			memcpy_s(colorArray, m_colorframe_width * m_colorframe_height * 4, m_color_frame, m_colorframe_height * m_colorframe_width * 4);
 		}
 
 		if (depthArray.data() != NULL)
@@ -247,11 +246,13 @@ void Realsense2Camera::captureLoop()
 
 	}
 
+	rs2_stream align_to = RS2_STREAM_COLOR;
+	rs2::align align(align_to);
 
 	rs2::frame depth;
 	rs2::frame color;
 
-	m_color_frame = new float[m_colorframe_width * m_colorframe_height * 3];
+	m_color_frame = new float[m_colorframe_width * m_colorframe_height * 4];
 	m_depth_frame = new uint16_t[m_depthframe_width * m_depthframe_height];
 
 	//rs2::frame_queue fq_depth;
@@ -268,18 +269,24 @@ void Realsense2Camera::captureLoop()
 
 		data = pipe.wait_for_frames(); // Wait for next set of frames from the camera
 
-		depth = data.get_depth_frame(); // Find and colorize the depth data
-		//color = data.get_color_frame();            // Find the color data
+		auto processed = align.process(data);
+
+		// Trying to get both other and aligned depth frames
+		//rs2::video_frame other_frame = processed.first(align_to);
+		rs2::depth_frame aligned_depth_frame = processed.get_depth_frame();
+
+		//depth = data.get_depth_frame(); // Find and colorize the depth data
+		color = processed.get_color_frame();            // Find the color data
 
 		auto dbg = selection.get_device().as<rs2::debug_protocol>();
 		std::vector<uint8_t> cmd = { 0x14, 0, 0xab, 0xcd, 0x2a, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
 
 												   // Query frame size (width and height)
-		//const int w = color.as<rs2::video_frame>().get_width();
-		//const int h = color.as<rs2::video_frame>().get_height();
+		const int w = color.as<rs2::video_frame>().get_width();
+		const int h = color.as<rs2::video_frame>().get_height();
 
-		const int wD = depth.as<rs2::video_frame>().get_width();
-		const int hD = depth.as<rs2::video_frame>().get_height();
+		const int wD = aligned_depth_frame.as<rs2::video_frame>().get_width();
+		const int hD = aligned_depth_frame.as<rs2::video_frame>().get_height();
 
 		//std::cout <<  "frame ready? : " << m_frames_ready << std::endl;
 
@@ -288,8 +295,8 @@ void Realsense2Camera::captureLoop()
 		//cv::imshow("cv wsrtyindow", colMat);
 		//cv::waitKey(1);
 
-		//memcpy_s(m_color_frame, w * h * 4, color.get_data(), w * h * 4);
-		memcpy_s(m_depth_frame, wD * hD * 2, depth.get_data(), wD * hD * 2);
+		memcpy_s(m_color_frame, w * h * 4, color.get_data(), w * h * 4);
+		memcpy_s(m_depth_frame, wD * hD * 2, aligned_depth_frame.get_data(), wD * hD * 2);
 
 		auto res = dbg.send_and_receive_raw_data(cmd);
 		m_temperature = res[4];

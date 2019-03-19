@@ -28,10 +28,10 @@
 
 #include "flood.h"
 
-//#include "opencv2/core/utility.hpp"
-//#include "opencv2/highgui.hpp"
-//#include "opencv2/imgproc.hpp"
-//#include "opencv2/optflow.hpp"
+#include "opencv2/core/utility.hpp"
+#include "opencv2/highgui.hpp"
+#include "opencv2/imgproc.hpp"
+#include "opencv2/optflow.hpp"
 
 
 #include <chrono>
@@ -121,15 +121,15 @@ float depthMax = 4.0f;
 const int screenWidth = 1920;
 const int screenHeight = 1080;
 
-const int colorWidth = 1920;
-const int colorHeight = 1080;
+const int colorWidth = 848;
+const int colorHeight = 480;
 
 int depthWidth = 640;
 int depthHeight = 480;
 
 float *mainColor[colorWidth * colorHeight];
 
-unsigned char colorArray[4 * colorWidth * colorHeight];
+unsigned char colorArray[4 * 848 * 480];
 
 //float previousColorArray[depthWidth * depthHeight];
 //float bigDepthArray[colorWidth * (colorHeight + 2)]; // 1082 is not a typo
@@ -146,10 +146,10 @@ bool select_depth_points_mode = false;
 //std::vector<cv::Point2f> colorPoints;
 //cv::Mat newColor;
 
-bool showDepthFlag = true;
+bool showDepthFlag = false;
 bool showBigDepthFlag = false;
 bool showInfraFlag = false;
-bool showColorFlag = false;
+bool showColorFlag = true;
 bool showLightFlag = false;
 bool showPointFlag = false;
 

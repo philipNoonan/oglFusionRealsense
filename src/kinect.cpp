@@ -677,14 +677,16 @@ int main(int, char**)
 			gfusion.resetTimes();
 			gfusion.setDepthUnit(kcamera.getDepthUnit());
 
-			kcamera.frames(NULL, depthArray, NULL, NULL, NULL);
+			kcamera.frames(colorArray, depthArray, NULL, NULL, NULL);
 
-
+			//cv::Mat colFrame(480, 848, CV_8UC4, colorArray);
+			//cv::imshow("c", colFrame);
+			//cv::waitKey(1);
 
 #ifdef USEINFRARED
 			//		gdisoptflow.setTexture(infraredArray);
 #else
-			//gdisoptflow.setTexture(colorArray);
+			gdisoptflow.setTexture(colorArray);
 #endif
 
 
