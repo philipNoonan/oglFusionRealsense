@@ -52,7 +52,7 @@ void kRenderInit()
 	krender.setLocations();
 	krender.setVertPositions();
 	krender.allocateBuffers();
-	krender.setTextures(gfusion.getDepthImage(), gdisoptflow.getColorTexture(), gfusion.getVerts(), gfusion.getNorms(), gfusion.getVolume(), gfusion.getTrackImage(), gfusion.getPVPNorms(), gfusion.getPVDNorms()); //needs texture uints from gfusion init
+	krender.setTextures(gfusion.getDepthImage(), gflow.getColorTexture(), gfusion.getVerts(), gfusion.getNorms(), gfusion.getVolume(), gfusion.getTrackImage(), gfusion.getPVPNorms(), gfusion.getPVDNorms()); //needs texture uints from gfusion init
 	krender.anchorMW(std::make_pair<int, int>(1920 - 512 - krender.guiPadding().first, krender.guiPadding().second));
 	//krender.genTexCoordOffsets(1, 1, 1.0f);
 	krender.setFusionType(trackDepthToPoint, trackDepthToVolume);
@@ -94,21 +94,21 @@ void gFusionInit()
 
 void gDisOptFlowInit()
 {
-	gdisoptflow.compileAndLinkShader();
-	gdisoptflow.setLocations();
+	gflow.compileAndLinkShader();
+	gflow.setLocations();
 #ifdef USEINFRARED
 	gdisoptflow.setNumLevels(depthWidth);
 	gdisoptflow.setTextureParameters(depthWidth, depthHeight);
 	gdisoptflow.allocateTextures(true);
 #else
-	gdisoptflow.setNumLevels(colorWidth);
-	gdisoptflow.setTextureParameters(colorWidth, colorHeight);
-	gdisoptflow.allocateTextures(false);
+	gflow.setNumLevels(colorWidth);
+	gflow.setTextureParameters(colorWidth, colorHeight);
+	gflow.allocateTextures(false);
 
 
 #endif
 
-	gdisoptflow.allocateBuffers();
+	gflow.allocateBuffers();
 
 }
 
@@ -269,7 +269,7 @@ void setUI()
 		window_flags |= ImGuiWindowFlags_NoCollapse;
 
 		float arr[] = { 0, 0, 0, 0, 0, 0, 0, 0, 0 };
-		arr[0] = gdisoptflow.getTimeElapsed();
+		arr[0] = gflow.getTimeElapsed();
 		gfusion.getTimes(arr);
 		arr[8] = arr[0] + arr[1] + arr[2] + arr[3] + arr[4] + arr[5] + arr[6] + arr[7];
 
@@ -396,7 +396,7 @@ void setUI()
 			//m_center_pixX
 
 			//glm::mat4 initPose = glm::translate(glm::mat4(1.0f), glm::vec3(gconfig.volumeDimensions.x / 2.0f, gconfig.volumeDimensions.y / 2.0f, 0.0f));
-			gdisoptflow.wipeFlow();
+			gflow.wipeFlow();
 
 			bool deleteFlag = false;
 
@@ -686,14 +686,14 @@ int main(int, char**)
 #ifdef USEINFRARED
 			//		gdisoptflow.setTexture(infraredArray);
 #else
-			gdisoptflow.setTexture(colorArray);
+			gflow.setTexture(colorArray, 4);
 #endif
 
 
 #ifdef USEINFRARED
 		//	gdisoptflow.calc(true);
 #else
-			//gdisoptflow.calc(false);
+			gflow.calc(false);
 #endif
 
 
@@ -704,9 +704,9 @@ int main(int, char**)
 
 		//	krender.setTrackedPointsBuffer(gdisoptflow.getTrackedPointsBuffer());
 
-			//krender.setFlowTexture(gdisoptflow.getFlowTexture());
+			krender.setFlowTexture(gflow.getFlowTexture());
 
-			//cv::Mat totflow = cv::Mat(1080 >> 0, 1920 >> 0, CV_32FC2);
+			//cv::Mat totflow = cv::Mat(480,848, CV_32FC2);
 
 			//glActiveTexture(GL_TEXTURE0);
 			//glBindTexture(GL_TEXTURE_2D, gdisoptflow.getFlowTexture());

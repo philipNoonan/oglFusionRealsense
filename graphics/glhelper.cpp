@@ -65,7 +65,23 @@ namespace GLHelper
 		return K;
 	}
 
-	
+	uint32_t nextPowerOfTwo(uint32_t n)
+	{
+		--n;
+
+		n |= n >> 1;
+		n |= n >> 2;
+		n |= n >> 4;
+		n |= n >> 8;
+		n |= n >> 16;
+
+		return n + 1;
+	}
+
+	uint32_t numberOfLevels(glm::ivec3 dims)
+	{
+		return 1 + floor(std::log2(max3(dims.x, dims.y, dims.z)));
+	}
 	
 
 

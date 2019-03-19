@@ -823,20 +823,21 @@ void kRender::setFlowImageRenderPosition(int height, int width, float vertFov)
 {
 	int w, h;
 	glfwGetFramebufferSize(m_window, &w, &h);
-	//// if setting z dist
-	//float zDist = 8000.0f;
+	//float zDist = 1500.0f;
 	//float halfHeightAtDist = zDist * tan(22.5f * M_PI / 180.0f);
 	//float halfWidthAtDistance = halfHeightAtDist * (float)w / (float)h; // notsure why this ratio is used here...
-	//// else if setting size on window
 	float zDist;
-	zDist = ((float)height * 6) / tan(vertFov * M_PI / 180.0f);
-	float halfHeightAtDist = (float)h * 4;
-	float halfWidthAtDistance = (float)w * 4;
-	//m_model_color = glm::translate(glm::mat4(1.0f), glm::vec3(-m_color_width / 2.0f, -halfHeightAtDist, -zDist));
+	zDist = ((float)m_color_height * 6) / tan(vertFov * M_PI / 180.0f);
+	//float halfHeightAtDist = (float)h * 4;
+	//float halfWidthAtDistance = (float)w * 4;
+
 	glm::vec3 scaleVec = glm::vec3(6.f, 6.f, 1.0f);
 
 	m_model_flow = glm::scale(glm::mat4(1.0f), scaleVec);
-	m_model_flow = glm::translate(m_model_flow, glm::vec3(-width / 2.0f, -height / 2.0f, -zDist));
+
+	m_model_flow = glm::translate(m_model_flow, glm::vec3(-m_color_width / 2, -m_color_height / 2, -zDist + 2));
+
+
 
 	}
 
@@ -961,7 +962,7 @@ void kRender::renderLiveVideoWindow(bool useInfrared)
 		setViewport(m_display2DPos.x, m_display2DPos.y, m_display2DSize.x, m_display2DSize.y);
 		glm::vec2 imageSize;
 		imageSize = glm::vec2(m_color_width, m_color_height);
-		MVP = m_projection * m_view * m_model_depth;
+		MVP = m_projection * m_view * m_model_color;
 
 		glBindVertexArray(m_VAO);
 
@@ -996,16 +997,16 @@ void kRender::renderLiveVideoWindow(bool useInfrared)
 
 	if (m_showVolumeSDFFlag)
 	{
-		// chnage verts for size of texture
+		// change verts for size of texture
 		setViewport(m_display3DPos.x, m_display3DPos.y, m_display3DSize.x, m_display3DSize.y);
 
 		//updateVerts(m_volume_size.x, m_volume_size.y);
-		glm::vec2 imageSize(m_volume_size.x, m_volume_size.y);
+		glm::vec2 imageSize(m_depth_width, m_depth_height);
 
 		//glBindImageTexture(5, m_textureVolume, 0, GL_FALSE, 0, GL_READ_ONLY, GL_RG16I);
 
 		glBindVertexArray(m_VAO);
-		MVP = m_projection * m_view * m_model_volume;
+		MVP = m_projection * m_view * m_model_track;
 		glUniformSubroutinesuiv(GL_VERTEX_SHADER, 1, &m_fromStandardTextureID);
 		glUniformSubroutinesuiv(GL_FRAGMENT_SHADER, 1, &m_fromVolumeSDFID);
 		glUniform1f(m_sliceID, m_volumeSDFRenderSlice);
@@ -1019,16 +1020,16 @@ void kRender::renderLiveVideoWindow(bool useInfrared)
 
 	if (m_showVolumeFlag)
 	{
-		// chnage verts for size of texture
+		// change verts for size of texture
 		setViewport(m_display3DPos.x, m_display3DPos.y, m_display3DSize.x, m_display3DSize.y);
 
 		//updateVerts(m_volume_size.x, m_volume_size.y);
-		glm::vec2 imageSize(m_volume_size.x, m_volume_size.y);
+		glm::vec2 imageSize(m_depth_width, m_depth_height);
 
 		//glBindImageTexture(5, m_testTextureFragOut, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA32F);
 
 		glBindVertexArray(m_VAO);
-		MVP = m_projection * m_view * m_model_volume;
+		MVP = m_projection * m_view * m_model_track;
 		glUniformSubroutinesuiv(GL_VERTEX_SHADER, 1, &m_fromStandardTextureID);
 		glUniformSubroutinesuiv(GL_FRAGMENT_SHADER, 1, &m_fromVolumeID);
 		glUniform1f(m_sliceID, m_volumeSDFRenderSlice);
@@ -1090,23 +1091,15 @@ void kRender::renderLiveVideoWindow(bool useInfrared)
 		if (useInfrared)
 		{
 			imageSize = glm::vec2(m_depth_width, m_depth_height);
-			MVP = m_projection * m_view * m_model_depth;
+			MVP = m_projection * m_view * m_model_flow;
 		}
 		else
 		{
 			imageSize = glm::vec2(m_color_width, m_color_height);
-			MVP = m_projection * m_view * m_model_depth;
+			MVP = m_projection * m_view * m_model_flow;
 		}
 		glBindVertexArray(m_VAO);
 
-
-		glUniformSubroutinesuiv(GL_VERTEX_SHADER, 1, &m_fromStandardTextureID);
-		glUniformSubroutinesuiv(GL_FRAGMENT_SHADER, 1, &m_fromColorID);
-		//glUniformMatrix4fv(m_ProjectionID, 1, GL_FALSE, glm::value_ptr(m_projection));
-		glUniformMatrix4fv(m_MvpID, 1, GL_FALSE, glm::value_ptr(MVP));
-		glUniform2fv(m_imSizeID, 1, glm::value_ptr(imageSize));
-
-		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 
 		glBindVertexArray(m_VAO);
 		//MVP = glm::translate(MVP, glm::vec3(0.0f, 0.0f, 5.0f));

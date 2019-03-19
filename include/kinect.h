@@ -21,12 +21,13 @@
 #include "interface.h"
 //#include "openCVStuff.h"
 #include "gFusion.h"
-#include "gDisOptFlow.h"
+//#include "gDisOptFlow.h"
 #include "mcubes.h"
 
 #include "ImGuiFileDialog.h"
 
 #include "flood.h"
+#include "flow.h"
 
 #include "opencv2/core/utility.hpp"
 #include "opencv2/highgui.hpp"
@@ -102,7 +103,9 @@ anchorPoint controlPoint0;
 gFusion gfusion;
 gFusionConfig gconfig;
 mCubeConfig mcconfig;
-gDisOptFlow gdisoptflow;
+//gDisOptFlow gdisoptflow;
+gFlow gflow;
+
 
 void setUpGPU();
 

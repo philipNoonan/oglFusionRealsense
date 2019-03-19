@@ -13,6 +13,8 @@
 #include <glm/gtx/euler_angles.hpp>
 #include <glm/gtx/transform.hpp>
 
+#include <algorithm>
+
 namespace GLHelper
 {
 	GLuint createTexture(GLuint ID, GLenum target, int levels, int w, int h, int d, GLuint internalformat);
@@ -23,7 +25,14 @@ namespace GLHelper
 	inline glm::uvec3 divup(glm::uvec2 a, glm::uvec3 b) { return glm::uvec3(divup(a.x, b.x), divup(a.y, b.y), 1); }
 	inline glm::uvec3 divup(glm::uvec3 a, glm::uvec3 b) { return glm::uvec3(divup(a.x, b.x), divup(a.y, b.y), divup(a.z, b.z)); }
 
+	template <typename T>
+	T max3(T w, T h, T d) {
+		return std::max(std::max(w, h), d);
+	}
 
+	uint32_t nextPowerOfTwo(uint32_t n);
+
+	uint32_t numberOfLevels(glm::ivec3 dims);
 
 }
 
