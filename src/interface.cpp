@@ -256,7 +256,7 @@ void Realsense2Camera::captureLoop()
 	m_depth_frame = new uint16_t[m_depthframe_width * m_depthframe_height];
 
 	//rs2::frame_queue fq_depth;
-
+	double previousTime = 0.0;
 	while (m_status == CAPTURING)
 	{
 		if (m_valuesChanged)
@@ -278,10 +278,20 @@ void Realsense2Camera::captureLoop()
 		//depth = data.get_depth_frame(); // Find and colorize the depth data
 		color = processed.get_color_frame();            // Find the color data
 
+		//if (color.supports_frame_metadata(RS2_FRAME_METADATA_TIME_OF_ARRIVAL))
+		//{
+		//	double currentTime = color.get_frame_metadata(RS2_FRAME_METADATA_TIME_OF_ARRIVAL);
+		//	double deltaTime = currentTime - previousTime;
+		//	std::cout << deltaTime << std::endl;
+		//	previousTime = currentTime;
+
+		//	//std::cout << color.get_frame_metadata(RS2_FRAME_METADATA_TIME_OF_ARRIVAL) << std::endl;
+		//}
+
 		auto dbg = selection.get_device().as<rs2::debug_protocol>();
 		std::vector<uint8_t> cmd = { 0x14, 0, 0xab, 0xcd, 0x2a, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
 
-												   // Query frame size (width and height)
+		// Query frame size (width and height)
 		const int w = color.as<rs2::video_frame>().get_width();
 		const int h = color.as<rs2::video_frame>().get_height();
 

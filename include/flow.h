@@ -119,6 +119,10 @@ public:
 	{
 		return m_timeElapsed;
 	}
+	void resetTimeElapsed()
+	{
+		m_timeElapsed = 0.0;
+	}
 	void setTrackedPoint(float x, float y)
 	{
 		m_trackedPoint = cv::Point2f(x, y);

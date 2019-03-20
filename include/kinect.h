@@ -199,6 +199,7 @@ bool calibratingFlag = false;
 bool trackDepthToPoint = false;
 bool trackDepthToVolume = true;
 bool performFlood = false;
+bool performFlow = false;
 
 int counter = 0;
 bool reset = true;

@@ -499,13 +499,14 @@ void main()
             return;
         }
 
-        //if (all(equal(dSDF_dx, vec3(0.0f))))
-        //{
-        //    trackOutput[(pix.y * imageSize.x) + pix.x].result = -4;
+        if (all(equal(dSDF_dx, vec3(0.0f))))
+        {
+            trackOutput[(pix.y * imageSize.x) + pix.x].result = -4;
 
-        //    return;
-        //}
-        //imageStore(testImage, ivec2(pix), vec4(D*100.0, D*100.0, -D*100.0, 1.0f));
+            return;
+        }
+        imageStore(testImage, ivec2(pix), vec4(D * 100.0, D * 100.0, -D * 100.0, 1.0f));
+
         imageStore(testImage, ivec2(pix), vec4(dSDF_dx, 1.0f));
 
         //if (dSDF_dx.x == 0.0f || dSDF_dx.y == 0.0f || dSDF_dx.z == 0.0f)

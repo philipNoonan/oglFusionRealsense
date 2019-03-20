@@ -65,7 +65,7 @@ void kRenderInit()
 void gFusionInit()
 {
 	depthArray.resize(depthHeight * depthWidth, 1);
-	gfusion.queryDeviceLimits();
+	//gfusion.queryDeviceLimits();
 	gfusion.compileAndLinkShader();
 	gfusion.setLocations();
 
@@ -391,9 +391,15 @@ void setUI()
 				gflood.setNormals(gfusion.getNorms());
 
 			}
-		}
+		} ImGui::SameLine(); ImGui::Checkbox("", &performFlood); ImGui::SameLine();
+		if (ImGui::Button("Flow"))
+		{
+			performFlow ^= 1;
+			gflow.resetTimeElapsed();
 
-		ImGui::SameLine(); ImGui::Checkbox("", &performFlood);
+		}ImGui::SameLine(); ImGui::Checkbox("", &performFlow);
+
+		//
 
 
 		if (ImGui::Button("Reset Volume"))
@@ -421,6 +427,7 @@ void setUI()
 
 			glm::mat4 initPose = glm::translate(glm::mat4(1.0f), glm::vec3(-iOff.x + gconfig.volumeDimensions.x / 2.0f, -iOff.y + gconfig.volumeDimensions.y / 2.0f, -iOff.z + dimension / 2.0));
 
+			volSlice = gconfig.volumeSize.z / 2.0f;
 
 			krender.setVolumeSize(gconfig.volumeSize);
 
@@ -662,6 +669,7 @@ int main(int, char**)
 	
 	std::stringstream filenameSS;
 	filenameSS << "data/motion/motion_" << return_current_time_and_date() << ".txt";
+	double previousTime = glfwGetTime();
 
 	// Main loop
 	while (!glfwWindowShouldClose(window))
@@ -676,6 +684,10 @@ int main(int, char**)
 
 
 		//gfusion.update(float(glfwGetTime()));
+		double currentTime = glfwGetTime();
+		double deltaTime = currentTime - previousTime;
+		previousTime = currentTime;
+		std::cout << (int)(deltaTime * 1000.0) << std::endl;
 
 		if (kcamera.ready())
 		{
@@ -683,6 +695,8 @@ int main(int, char**)
 			gfusion.setDepthUnit(kcamera.getDepthUnit());
 
 			kcamera.frames(colorArray, depthArray, NULL, NULL, NULL);
+			auto eTime = epochTime();
+
 
 			krender.setColorFrame(colorArray);
 
@@ -690,7 +704,7 @@ int main(int, char**)
 			//cv::imshow("c", colFrame);
 			//cv::waitKey(1);
 
-			if (showFlowFlag)
+			if (performFlow)
 			{
 				gflow.setTexture();
 
@@ -804,7 +818,7 @@ int main(int, char**)
 
 			glm::vec4 transformedPosition = gfusion.getPose() * position;
 
-			out << epochTime() << " " << gfusion.alignmentEnergy() << " " << kcamera.getTemperature();
+			out << eTime << " " << gfusion.alignmentEnergy() << " " << kcamera.getTemperature();
 			out << " " << gfusion.getPose()[0].x << " " << gfusion.getPose()[0].y << " " << gfusion.getPose()[0].z << " " << gfusion.getPose()[0].w << \
 				" " << gfusion.getPose()[1].x << " " << gfusion.getPose()[1].y << " " << gfusion.getPose()[1].z << " " << gfusion.getPose()[1].w << \
 				" " << gfusion.getPose()[2].x << " " << gfusion.getPose()[2].y << " " << gfusion.getPose()[2].z << " " << gfusion.getPose()[2].w << \
@@ -892,13 +906,8 @@ int main(int, char**)
 			//krender.setInfraImageRenderPosition();
 			krender.setColorImageRenderPosition(vertFov);
 
-#ifdef USEINFRARED
-			krender.setFlowImageRenderPosition(depthHeight, depthWidth, vertFov);
-#else
+
 			krender.setFlowImageRenderPosition(colorHeight, colorWidth, vertFov);
-
-#endif
-
 
 			//krender.setPointCloudRenderPosition(zModelPC_offset);
 			//krender.setLightModelRenderPosition();
@@ -908,8 +917,6 @@ int main(int, char**)
 			krender.setViewMatrix(xRot, yRot, zRot, xTran, yTran, zTran);
 			krender.setDepthTextureProjectionMatrix();
 
-
-
 		}
 
 
@@ -918,16 +925,10 @@ int main(int, char**)
 			krender.setDisplayOriSize(display2DWindow.x, display_h - display2DWindow.y - display2DWindow.h, display2DWindow.w, display2DWindow.h);
 			krender.set3DDisplayOriSize(display3DWindow.x, display_h - display3DWindow.y - display3DWindow.h, display3DWindow.w, display3DWindow.h);
 
-#ifdef USEINFRARED
-			krender.Render(true);
-#else
 			krender.Render(false);
-#endif
 		}
 
-
 		glfwSwapBuffers(window);
-
 
 		//std::this_thread::sleep_for(std::chrono::milliseconds(25));
 	}
