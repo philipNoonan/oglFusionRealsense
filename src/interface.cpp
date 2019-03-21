@@ -140,12 +140,15 @@ void Realsense2Camera::frames(unsigned char * colorAray, float * bigDepthArray)
 }
 
 // get all the frames available, pass a null pointer in for each array you dont want back
-void Realsense2Camera::frames(unsigned char * colorArray, std::vector<uint16_t> &depthArray, float * infraredArray, float * bigDepthArray, int * colorDepthMapping)
+bool Realsense2Camera::frames(double &frameTime, unsigned char * colorArray, std::vector<uint16_t> &depthArray, float * infraredArray, float * bigDepthArray, int * colorDepthMapping)
 {
 	//m_mtx.lock();
 
 	//memcpy_S the arrays to the pointers passed in here
+	bool newFrame = false;
 
+	if (frameTime < m_frameArrivalTime)
+	{
 		if (colorArray != NULL)
 		{
 			memcpy_s(colorArray, m_colorframe_width * m_colorframe_height * 4, m_color_frame, m_colorframe_height * m_colorframe_width * 4);
@@ -170,13 +173,19 @@ void Realsense2Camera::frames(unsigned char * colorArray, std::vector<uint16_t> 
 			//memcpy_s(colorDepthMapping, 512 * 424 * 4, m_color_Depth_Map, 512 * 424 * 4);
 		}
 
+		frameTime = m_frameArrivalTime;
 
+		newFrame = true;
+	}
+
+		
+	return newFrame;
 
 
 
 
 	//m_mtx.unlock();
-	m_frames_ready = false;
+	//m_frames_ready = false;
 }
 
 
@@ -266,7 +275,6 @@ void Realsense2Camera::captureLoop()
 		}
 
 		//fq_depth.enqueue(std::move(depth));
-
 		data = pipe.wait_for_frames(); // Wait for next set of frames from the camera
 
 		auto processed = align.process(data);
@@ -287,6 +295,13 @@ void Realsense2Camera::captureLoop()
 
 		//	//std::cout << color.get_frame_metadata(RS2_FRAME_METADATA_TIME_OF_ARRIVAL) << std::endl;
 		//}
+
+		if (aligned_depth_frame.supports_frame_metadata(RS2_FRAME_METADATA_TIME_OF_ARRIVAL))
+		{
+			m_frameArrivalTime = aligned_depth_frame.get_frame_metadata(RS2_FRAME_METADATA_TIME_OF_ARRIVAL);
+
+		}
+
 
 		auto dbg = selection.get_device().as<rs2::debug_protocol>();
 		std::vector<uint8_t> cmd = { 0x14, 0, 0xab, 0xcd, 0x2a, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };

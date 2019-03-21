@@ -78,6 +78,17 @@ const std::string epochTime() {
 	return stream.str();
 }
 
+const double epchTime() {
+	//DWORD ms = GetTickCount();
+	//std::ostringstream stream;
+	//stream << ms;
+	//return stream.str();
+	using namespace std::chrono;
+	milliseconds ms = duration_cast<milliseconds>(system_clock::now().time_since_epoch());
+	std::ostringstream stream;
+	return ms.count();
+
+}
 
 GLFWwindow *window;
 

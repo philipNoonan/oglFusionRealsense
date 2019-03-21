@@ -669,7 +669,10 @@ int main(int, char**)
 	
 	std::stringstream filenameSS;
 	filenameSS << "data/motion/motion_" << return_current_time_and_date() << ".txt";
-	double previousTime = glfwGetTime();
+	std::ofstream outputFile(filenameSS.str(), std::ios::out | std::ios::app);
+
+	double previousTime = epchTime();
+	bool frameReady = false;
 
 	// Main loop
 	while (!glfwWindowShouldClose(window))
@@ -684,195 +687,187 @@ int main(int, char**)
 
 
 		//gfusion.update(float(glfwGetTime()));
-		double currentTime = glfwGetTime();
-		double deltaTime = currentTime - previousTime;
-		previousTime = currentTime;
-		std::cout << (int)(deltaTime * 1000.0) << std::endl;
+
 
 		if (kcamera.ready())
 		{
 			gfusion.resetTimes();
 			gfusion.setDepthUnit(kcamera.getDepthUnit());
 
-			kcamera.frames(colorArray, depthArray, NULL, NULL, NULL);
-			auto eTime = epochTime();
-
-
-			krender.setColorFrame(colorArray);
-
-			//cv::Mat colFrame(480, 848, CV_8UC4, colorArray);
-			//cv::imshow("c", colFrame);
-			//cv::waitKey(1);
-
-			if (performFlow)
+			frameReady = kcamera.frames(previousTime, colorArray, depthArray, NULL, NULL, NULL);
+			if (frameReady)
 			{
-				gflow.setTexture();
+				auto eTime = epochTime();
 
-				gflow.calc(false);
+				//double currentTime = epchTime();
+				//double deltaTime = currentTime - previousTime;
+				//previousTime = currentTime;
+				//std::cout << (int)(deltaTime) << std::endl;
+
+				krender.setColorFrame(colorArray);
+
+				//cv::Mat colFrame(480, 848, CV_8UC4, colorArray);
+				//cv::imshow("c", colFrame);
+				//cv::waitKey(1);
+
+				if (performFlow)
+				{
+					gflow.setTexture();
+
+					gflow.calc(false);
+				}
+
+
+
+				//gdisoptflow.track();
+
+			//	gfusion.trackPoints3D(gdisoptflow.getTrackedPointsBuffer());
+
+			//	krender.setTrackedPointsBuffer(gdisoptflow.getTrackedPointsBuffer());
+
+				//
+
+				//cv::Mat totflow = cv::Mat(480,848, CV_32FC2);
+
+				//glActiveTexture(GL_TEXTURE0);
+				//glBindTexture(GL_TEXTURE_2D, gdisoptflow.getFlowTexture());
+				//glGetTexImage(GL_TEXTURE_2D, 0, GL_RG, GL_FLOAT, totflow.data);// this is importnant, you are using GL_RED_INTEGETER!!!!
+				//glBindTexture(GL_TEXTURE_2D, 0);
+				// 
+
+				//cv::Mat tofl[2];
+				//cv::split(totflow, tofl);  
+
+				////cv::imshow("wwee", tofl[0] - tofl[1]);
+				////cv::imshow("dwerwev", tofl[1]); 
+
+				//  
+				//cv::Mat mag, ang; 
+				//cv::Mat hsv_split[3], hsv;
+				//cv::Mat rgb; 
+				//cv::cartToPolar(tofl[0], tofl[1], mag, ang, true);
+				//cv::normalize(mag, mag, 0, 1, cv::NORM_MINMAX);
+				//hsv_split[0] = ang;
+				//hsv_split[1] = mag;
+				//hsv_split[2] = cv::Mat::ones(ang.size(), ang.type()); 
+				//cv::merge(hsv_split, 3, hsv);
+				//cv::cvtColor(hsv, rgb, cv::COLOR_HSV2BGR);
+				//cv::Mat outrgb, outmix;
+				//rgb.convertTo(outrgb, CV_8UC4, 255);
+				//cv::addWeighted(outrgb, 0.7, col, 0.3, 1.0, outmix);
+				//cv::imshow("totflowrgb", outrgb);
+
+
+				//outWriter << outmix;
+
+
+
+				gfusion.depthToVertex(depthArray.data());
+
+				gfusion.vertexToNormal();
+				if (performFlood)
+				{
+					GLenum theError;
+					theError = glGetError();
+
+					gflood.setPose(gfusion.getPose());
+					gflood.jumpFloodCalc();
+				}
+
+
+				gfusion.showNormals();
+
+				bool tracked = false;
+
+				if (trackDepthToPoint)
+				{
+					tracked = gfusion.Track(); // this should return a bool for successful track
+					gfusion.raycast();
+				}
+
+				if (trackDepthToVolume)
+				{
+					tracked = gfusion.TrackSDF();
+				}
+
+
+				//gfusion.testLargeUpload();
+
+				if (tracked && integratingFlag && ((counter % 1) == 0) || reset)
+				{
+					gfusion.integrate();
+					if (counter > 2)
+						reset = false;
+				}
+
+				if (!tracked)
+				{
+					//gfusion.recoverPose();
+				}
+
+
+				counter++;
+
+
+
+				// log tracking data to file
+
+
+
+				//std::string motionTrackingFile = "data/motion/motion-test.txt";
+
+				//iOff = initOffset(krender.getCenterPixX(), krender.getCenterPixY());
+
+				glm::vec4 position = glm::vec4(iOff, 1.0f);
+
+				glm::vec4 transformedPosition = gfusion.getPose() * position;
+
+				double preWriteTime = epchTime();
+
+				outputFile << eTime << " " << gfusion.alignmentEnergy() << " " << kcamera.getTemperature();
+				outputFile << " " << gfusion.getPose()[0].x << " " << gfusion.getPose()[0].y << " " << gfusion.getPose()[0].z << " " << gfusion.getPose()[0].w << \
+					" " << gfusion.getPose()[1].x << " " << gfusion.getPose()[1].y << " " << gfusion.getPose()[1].z << " " << gfusion.getPose()[1].w << \
+					" " << gfusion.getPose()[2].x << " " << gfusion.getPose()[2].y << " " << gfusion.getPose()[2].z << " " << gfusion.getPose()[2].w << \
+					" " << gfusion.getPose()[3].x << " " << gfusion.getPose()[3].y << " " << gfusion.getPose()[3].z << " " << gfusion.getPose()[3].w << std::endl;
+
+				double postWriteTime = epchTime();
+
+				std::cout << "writeTime " << postWriteTime - preWriteTime << std::endl;
+
+				graphPoints.push_back(gfusion.getTransPose());
+
+				if (graphPoints.size() > graphWindow.w)
+				{
+					graphPoints.pop_front();
+				}
+				minmaxX = std::make_pair<float, float>(1000, -1000.f);
+				minmaxY = std::make_pair<float, float>(1000, -1000.f);;
+				minmaxZ = std::make_pair<float, float>(1000, -1000.f);;
+
+				int idx = 0;
+				for (auto i : graphPoints)
+				{
+					if (i[0] < minmaxX.first) minmaxX.first = i[0];
+					if (i[0] > minmaxX.second) minmaxX.second = i[0];
+
+					if (i[1] < minmaxY.first) minmaxY.first = i[1];
+					if (i[1] > minmaxY.second) minmaxY.second = i[1];
+
+					if (i[2] < minmaxZ.first) minmaxZ.first = i[2];
+					if (i[2] > minmaxZ.second) minmaxZ.second = i[2];
+
+					arrayX[idx] = i[0];
+					arrayY[idx] = i[1];
+					arrayZ[idx] = i[2];
+
+					idx++;
+				}
+
 			}
-
-
-
-			//gdisoptflow.track();
-
-		//	gfusion.trackPoints3D(gdisoptflow.getTrackedPointsBuffer());
-
-		//	krender.setTrackedPointsBuffer(gdisoptflow.getTrackedPointsBuffer());
-
-			//
-
-			//cv::Mat totflow = cv::Mat(480,848, CV_32FC2);
-
-			//glActiveTexture(GL_TEXTURE0);
-			//glBindTexture(GL_TEXTURE_2D, gdisoptflow.getFlowTexture());
-			//glGetTexImage(GL_TEXTURE_2D, 0, GL_RG, GL_FLOAT, totflow.data);// this is importnant, you are using GL_RED_INTEGETER!!!!
-			//glBindTexture(GL_TEXTURE_2D, 0);
-			// 
-
-			//cv::Mat tofl[2];
-			//cv::split(totflow, tofl);  
-
-			////cv::imshow("wwee", tofl[0] - tofl[1]);
-			////cv::imshow("dwerwev", tofl[1]); 
-
-			//  
-			//cv::Mat mag, ang; 
-			//cv::Mat hsv_split[3], hsv;
-			//cv::Mat rgb; 
-			//cv::cartToPolar(tofl[0], tofl[1], mag, ang, true);
-			//cv::normalize(mag, mag, 0, 1, cv::NORM_MINMAX);
-			//hsv_split[0] = ang;
-			//hsv_split[1] = mag;
-			//hsv_split[2] = cv::Mat::ones(ang.size(), ang.type()); 
-			//cv::merge(hsv_split, 3, hsv);
-			//cv::cvtColor(hsv, rgb, cv::COLOR_HSV2BGR);
-			//cv::Mat outrgb, outmix;
-			//rgb.convertTo(outrgb, CV_8UC4, 255);
-			//cv::addWeighted(outrgb, 0.7, col, 0.3, 1.0, outmix);
-			//cv::imshow("totflowrgb", outrgb);
-
-
-			//outWriter << outmix;
-
-
-
-			gfusion.depthToVertex(depthArray.data());
-
-			gfusion.vertexToNormal();
-			if (performFlood)
-			{
-				GLenum theError;
-				theError = glGetError();
-
-				gflood.setPose(gfusion.getPose());
-				gflood.jumpFloodCalc();
-			}
-
-
-			gfusion.showNormals();
-
-			bool tracked = false;
-
-			if (trackDepthToPoint)
-			{
-				tracked = gfusion.Track(); // this should return a bool for successful track
-				gfusion.raycast();
-			}
-
-			if (trackDepthToVolume)
-			{
-				tracked = gfusion.TrackSDF();
-			}
-
-
-			//gfusion.testLargeUpload();
-
-			if (tracked && integratingFlag && ((counter % 1) == 0) || reset)
-			{
-				gfusion.integrate();
-				if (counter > 2)
-					reset = false;
-			}
-
-			if (!tracked)
-			{
-				//gfusion.recoverPose();
-			}
-
-
-			counter++;
-
-
-
-			// log tracking data to file
-
-
-
-			//std::string motionTrackingFile = "data/motion/motion-test.txt";
-
-
-			std::ofstream out(filenameSS.str(), std::ios::out | std::ios::app);
-			//iOff = initOffset(krender.getCenterPixX(), krender.getCenterPixY());
-
-			glm::vec4 position = glm::vec4(iOff, 1.0f);
-
-			glm::vec4 transformedPosition = gfusion.getPose() * position;
-
-			out << eTime << " " << gfusion.alignmentEnergy() << " " << kcamera.getTemperature();
-			out << " " << gfusion.getPose()[0].x << " " << gfusion.getPose()[0].y << " " << gfusion.getPose()[0].z << " " << gfusion.getPose()[0].w << \
-				" " << gfusion.getPose()[1].x << " " << gfusion.getPose()[1].y << " " << gfusion.getPose()[1].z << " " << gfusion.getPose()[1].w << \
-				" " << gfusion.getPose()[2].x << " " << gfusion.getPose()[2].y << " " << gfusion.getPose()[2].z << " " << gfusion.getPose()[2].w << \
-				" " << gfusion.getPose()[3].x << " " << gfusion.getPose()[3].y << " " << gfusion.getPose()[3].z << " " << gfusion.getPose()[3].w << std::endl;
-			out.close();
-
-
-			graphPoints.push_back(gfusion.getTransPose());
-
-			if (graphPoints.size() > graphWindow.w)
-			{
-				graphPoints.pop_front();
-			}
-			minmaxX = std::make_pair<float, float>(1000, -1000.f);
-			minmaxY = std::make_pair<float, float>(1000, -1000.f);;
-			minmaxZ = std::make_pair<float, float>(1000, -1000.f);;
-
-			int idx = 0;
-			for (auto i : graphPoints)
-			{
-				if (i[0] < minmaxX.first) minmaxX.first = i[0];
-				if (i[0] > minmaxX.second) minmaxX.second = i[0];
-
-				if (i[1] < minmaxY.first) minmaxY.first = i[1];
-				if (i[1] > minmaxY.second) minmaxY.second = i[1];
-
-				if (i[2] < minmaxZ.first) minmaxZ.first = i[2];
-				if (i[2] > minmaxZ.second) minmaxZ.second = i[2];
-
-				arrayX[idx] = i[0];
-				arrayY[idx] = i[1];
-				arrayZ[idx] = i[2];
-
-				idx++;
-			}
-
-			//gfusion.intensityProjection();
-			//gfusion.marchingCubes();
-
-
-			//gfusion.exportSurfaceAsStlBinary();
-
-			//krender.setBuffersFromMarchingCubes(gfusion.getVertsMC(), gfusion.getNormsMC(), gfusion.getNumVerts());
-
-			//gfusion.showDifference();
-
-			newFrame = true; // make this a return bool on the kcamera.frames()
-
 
 		}
-		else
-		{
-			newFrame = false;
-		}
+
+
 
 		bool show_test_window = true;
 
@@ -895,29 +890,29 @@ int main(int, char**)
 		ImGui_ImplGlfwGL3_RenderDrawData(ImGui::GetDrawData());
 
 
-		if (newFrame)
-		{
-			
-			//krender.setBuffersForRendering(depthArray, bigDepthArray, infraredArray, colorArray, flow.ptr());
-			krender.setDepthImageRenderPosition(vertFov);
-			krender.setRayNormImageRenderPosition(vertFov);
-			krender.setTrackImageRenderPosition(vertFov);
-
-			//krender.setInfraImageRenderPosition();
-			krender.setColorImageRenderPosition(vertFov);
 
 
-			krender.setFlowImageRenderPosition(colorHeight, colorWidth, vertFov);
 
-			//krender.setPointCloudRenderPosition(zModelPC_offset);
-			//krender.setLightModelRenderPosition();
-			krender.setVolumeSDFRenderPosition(volSlice);
+		//krender.setBuffersForRendering(depthArray, bigDepthArray, infraredArray, colorArray, flow.ptr());
+		krender.setDepthImageRenderPosition(vertFov);
+		krender.setRayNormImageRenderPosition(vertFov);
+		krender.setTrackImageRenderPosition(vertFov);
 
-			krender.setMarchingCubesRenderPosition(zModelPC_offset);
-			krender.setViewMatrix(xRot, yRot, zRot, xTran, yTran, zTran);
-			krender.setDepthTextureProjectionMatrix();
+		//krender.setInfraImageRenderPosition();
+		krender.setColorImageRenderPosition(vertFov);
 
-		}
+
+		krender.setFlowImageRenderPosition(colorHeight, colorWidth, vertFov);
+
+		//krender.setPointCloudRenderPosition(zModelPC_offset);
+		//krender.setLightModelRenderPosition();
+		krender.setVolumeSDFRenderPosition(volSlice);
+
+		krender.setMarchingCubesRenderPosition(zModelPC_offset);
+		krender.setViewMatrix(xRot, yRot, zRot, xTran, yTran, zTran);
+		krender.setDepthTextureProjectionMatrix();
+
+
 
 
 		if (cameraRunning)
@@ -936,6 +931,9 @@ int main(int, char**)
 	
 
 	// Cleanup
+	// close file writer
+	outputFile.close();
+
 	ImGui_ImplGlfwGL3_Shutdown();
 	ImGui::DestroyContext();
 	kcamera.stop();

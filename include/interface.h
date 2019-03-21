@@ -97,7 +97,7 @@ public:
 
 	void frames(unsigned char * colorArray, float * bigDepthArray);
 
-	void frames(unsigned char * colorArray, std::vector<uint16_t> &depthArray, float * infraredArray, float * bigDepthArray, int * colorDepthMapping);
+	bool frames(double &frameTime, unsigned char * colorArray, std::vector<uint16_t> &depthArray, float * infraredArray, float * bigDepthArray, int * colorDepthMapping);
 
 	//void frames(cv::Mat &color, cv::Mat &depth, cv::Mat &infra, float & fullColor);
 
@@ -205,6 +205,8 @@ private:
 
 	float *m_rawColor;
 	float *m_rawBigDepth;
+
+	double m_frameArrivalTime = 0;
 
 	int m_frame_width;
 	int m_frame_height;
