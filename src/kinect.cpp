@@ -55,10 +55,11 @@ void kRenderInit()
 	krender.allocateBuffers();
 	krender.setTextures(gfusion.getDepthImage(), gflow.getColorTexture(), gfusion.getVerts(), gfusion.getNorms(), gfusion.getVolume(), gfusion.getTrackImage(), gfusion.getPVPNorms(), gfusion.getPVDNorms()); //needs texture uints from gfusion init
 	krender.anchorMW(std::make_pair<int, int>(1920 - 512 - krender.guiPadding().first, krender.guiPadding().second));
-	//krender.genTexCoordOffsets(1, 1, 1.0f);
+
 	krender.setFusionType(trackDepthToPoint, trackDepthToVolume);
 
 	gflow.setColorTexture(krender.getColorTexture());
+	krender.setDepthMinMax(depthMin, depthMax);
 
 }
 
@@ -93,6 +94,11 @@ void gFusionInit()
 
 	gfusion.setUsingDepthFloat(false);
 	gfusion.setDepthUnit(kcamera.getDepthUnit());
+
+
+
+	volSlice = gconfig.volumeSize.z / 2.0f;
+
 
 }
 
@@ -137,6 +143,100 @@ void mCubeInit()
 	//mcconfig.maxVerts = std::min(mcconfig.gridSize.x * mcconfig.gridSize.y * 128, uint32_t(128 * 128 * 128));
 
 	//gfusion.setMcConfig(mcconfig);
+
+}
+
+void resetVolume()
+{
+	//glm::mat4 initPose = glm::translate(glm::mat4(1.0f), glm::vec3(gconfig.volumeDimensions.x / 2.0f, gconfig.volumeDimensions.y / 2.0f, 0.0f));
+	gflow.wipeFlow();
+
+	bool deleteFlag = false;
+
+	if (glm::vec3(std::stoi(sizes[sizeX]), std::stoi(sizes[sizeY]), std::stoi(sizes[sizeZ])) != gconfig.volumeSize)
+	{
+		deleteFlag = true;
+	}
+
+	gconfig.volumeSize = glm::vec3(std::stoi(sizes[sizeX]), std::stoi(sizes[sizeY]), std::stoi(sizes[sizeZ]));
+	gconfig.volumeDimensions = glm::vec3(dimension);
+
+	gfusion.setConfig(gconfig);
+
+	iOff = initOffset(mousePos.x - controlPoint0.x, controlPoint0.y - mousePos.y);
+
+	//std::cout << "lalala " << mousePos.x - controlPoint0.x << " " << controlPoint0.y - mousePos.y<< std::endl;
+
+	glm::mat4 initPose = glm::translate(glm::mat4(1.0f), glm::vec3(-iOff.x + gconfig.volumeDimensions.x / 2.0f, -iOff.y + gconfig.volumeDimensions.y / 2.0f, -iOff.z + dimension / 2.0));
+
+	volSlice = gconfig.volumeSize.z / 2.0f;
+
+	krender.setVolumeSize(gconfig.volumeSize);
+
+	gfusion.Reset(initPose, deleteFlag);
+	reset = true;
+	if (trackDepthToPoint)
+	{
+		gfusion.raycast();
+	}
+
+	counter = 0;
+	if (performFlood)
+	{
+		gflood.setVolumeConfig(gconfig.volumeSize.x, gconfig.volumeDimensions.x);
+		gflood.allocateTextures();
+	}
+}
+
+void saveSTL()
+{
+	mcconfig.gridSize = glm::uvec3(gconfig.volumeSize.x, gconfig.volumeSize.y, gconfig.volumeSize.z);
+	mcubes.setConfig(mcconfig);
+	mcubes.setVolumeTexture(gfusion.getVolume());
+	//mcubes.setVolumeTexture(gflood.getFloodSDFTexture());
+	mcubes.init();
+	mcubes.setIsolevel(0.0f);
+	mcubes.generateMarchingCubes();
+	mcubes.exportMesh();
+}
+
+void startRealsense()
+{
+
+
+	int prevERate = eRate;
+	int prevERes = eRes;
+
+	if (cameraRunning) eRate = prevERate;
+	if (eRate == 90) eRes = 0;
+
+	if (cameraRunning) eRes = prevERes;
+	if (eRes == 1) eRate = 30;
+
+
+	if (cameraRunning == false)
+	{
+		cameraRunning = true;
+		kcamera.setPreset(eRate, eRes);
+		if (eRes == 0)
+		{
+			depthWidth = 848;
+			depthHeight = 480;
+		}
+		else if (eRes == 1)
+		{
+			depthWidth = 1280;
+			depthHeight = 720;
+		}
+
+		kcamera.start();
+
+		setUpGPU();
+
+
+
+	}
+
 
 }
 
@@ -259,6 +359,7 @@ void setUI()
 		window_flags |= ImGuiWindowFlags_NoCollapse;
 
 		ImGui::Begin("Video Sources", &display3DWindow.visible, window_flags);
+		//ImGui::ShowDemoWindow();
 
 		ImGui::End();
 	}
@@ -279,62 +380,56 @@ void setUI()
 		arr[8] = arr[0] + arr[1] + arr[2] + arr[3] + arr[4] + arr[5] + arr[6] + arr[7];
 
 		ImGui::Begin("Menu", &navigationWindow.visible, window_flags);
+		//ImGui::Text("Timing");
+		//ImGui::Separator();
+
+
 		ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", arr[8], 1000.0f / arr[8]);
 
 		//ImGui::PushItemWidth(-krender.guiPadding().first);
 		//ImGui::SetWindowPos(ImVec2(display_w - (display_w / 4) - krender.guiPadding().first, ((krender.guiPadding().second) + (0))));
-		ImGui::Text("Help menu - press 'H' to hide");
+		ImGui::PushItemWidth(-1);
+		ImGui::PlotHistogram("", arr, IM_ARRAYSIZE(arr), 0, NULL, 0.0f, 33.0f, ImVec2(0, 80));
+		ImGui::PopItemWidth();
 
-		static int eRate = 90;
-		static int eRes = 0;
-
-		int prevERate = eRate;
-		int prevERes = eRes;
-
-
-		ImGui::RadioButton("30 Hz", &eRate, 30); ImGui::SameLine();
-		ImGui::RadioButton("90 Hz", &eRate, 90); ImGui::SameLine();
-		if (cameraRunning) eRate = prevERate;
-		if (eRate == 90) eRes = 0;
-
-		
-		ImGui::RadioButton("848x480", &eRes, 0); ImGui::SameLine();
-		ImGui::RadioButton("1280x720", &eRes, 1); ImGui::SameLine();
-		
-		if (cameraRunning) eRes = prevERes;
-		if (eRes == 1) eRate = 30;
-
-
+		ImGui::PushStyleColor(ImGuiCol_Button, (ImVec4)ImColor::HSV(0.33f, 1.0f, 0.5f));
+		ImGui::PushStyleColor(ImGuiCol_ButtonHovered, (ImVec4)ImColor::HSV(0.33f, 0.7f, 0.2f));
+		ImGui::PushStyleColor(ImGuiCol_ButtonActive, (ImVec4)ImColor::HSV(0.33f, 0.8f, 0.3f));
 		if (ImGui::Button("Start Realsense"))
 		{
-			if (cameraRunning == false)
+			startRealsense();
+		}
+		ImGui::PopStyleColor(3);
+
+		ImGui::Separator();
+		if (ImGui::CollapsingHeader("Camera"))
+		{
+			
+
+
+			ImGui::RadioButton("30 Hz", &eRate, 30); ImGui::SameLine();
+			ImGui::RadioButton("90 Hz", &eRate, 90); ImGui::SameLine();
+
+			ImGui::RadioButton("848x480", &eRes, 0); ImGui::SameLine();
+			ImGui::RadioButton("1280x720", &eRes, 1);
+
+			int prevShift = dispShift;
+			ImGui::Text("Disparity");
+			ImGui::PushItemWidth(-1);
+			ImGui::SliderInt("Disparity", &dispShift, 0, 300);
+			if (prevShift != dispShift)
 			{
-				cameraRunning = true;
-				kcamera.setPreset(eRate, eRes);
-				if (eRes == 0)
-				{
-					depthWidth = 848;
-					depthHeight = 480;
-				}
-				else if (eRes == 1)
-				{
-					depthWidth = 1280;
-					depthHeight = 720;
-				}
-
-				kcamera.start();
-
-				setUpGPU();
-
+				kcamera.setDepthControlGroupValues(0, 0, 0, 0, (uint32_t)dispShift); // TODO make this work with depth min and depth max
 			}
+			ImGui::PopItemWidth();
+
 
 		}
 
-		
-		
+
 		static bool openFileDialog = false;
 
-		if (ImGui::Button("Open File Dialog"))
+		/*if (ImGui::Button("Open File Dialog"))
 		{
 			openFileDialog = true;
 		}
@@ -369,224 +464,160 @@ void setUI()
 		if (filePathName.size() > 0) ImGui::Text("Choosed File Path Name : %s", filePathName.c_str());
 		if (path.size() > 0) ImGui::Text("Choosed Path Name : %s", path.c_str());
 		if (fileName.size() > 0) ImGui::Text("Choosed File Name : %s", fileName.c_str());
-		if (filter.size() > 0) ImGui::Text("Choosed Filter : %s", filter.c_str());
+		if (filter.size() > 0) ImGui::Text("Choosed Filter : %s", filter.c_str());*/
+
+
+
 		ImGui::Separator();
-		ImGui::Text("Fusion Options");
-
-		if (ImGui::Button("P2P")) trackDepthToPoint ^= 1; ImGui::SameLine(); ImGui::Checkbox("", &trackDepthToPoint); ImGui::SameLine();
-		if (ImGui::Button("P2V")) trackDepthToVolume ^= 1; ImGui::SameLine(); ImGui::Checkbox("", &trackDepthToVolume);
-		if (ImGui::Button("Flood"))
+		if (ImGui::CollapsingHeader("Fusion"))
 		{
-			performFlood ^= 1;
-			if (performFlood)
+			ImGui::Text("Mode");
+
+			if (ImGui::Button("P2P")) trackDepthToPoint ^= 1; ImGui::SameLine(); ImGui::Checkbox("", &trackDepthToPoint); ImGui::SameLine();
+			if (ImGui::Button("P2V")) trackDepthToVolume ^= 1; ImGui::SameLine(); ImGui::Checkbox("", &trackDepthToVolume);
+
+			ImGui::Text("Resolution");
+			ImGui::PushItemWidth(-1);
+			float avail_width = ImGui::CalcItemWidth();
+			float label_width = ImGui::CalcTextSize(" X ").x;
+			ImGui::PopItemWidth();
+			ImGui::PushItemWidth((avail_width / 3) - label_width);
+			ImGui::Combo("X  ", &sizeX, sizes, IM_ARRAYSIZE(sizes)); ImGui::SameLine(0.0f, 0.0f);
+			ImGui::Combo("Y  ", &sizeX, sizes, IM_ARRAYSIZE(sizes)); ImGui::SameLine(0.0f, 0.0f);
+			ImGui::Combo("Z  ", &sizeX, sizes, IM_ARRAYSIZE(sizes));
+			sizeY = sizeX;
+			sizeZ = sizeX;
+			ImGui::PopItemWidth();
+
+			ImGui::Text("Length");
+			ImGui::PushItemWidth(-1);
+			ImGui::SliderFloat("Length", &dimension, 0.005f, 2.0f);
+			ImGui::PopItemWidth();
+
+			ImGui::Text("Volume Options");
+
+			ImGui::PushStyleColor(ImGuiCol_Button, (ImVec4)ImColor::HSV(0.0f, 1.0f, 1.0f));
+			ImGui::PushStyleColor(ImGuiCol_ButtonHovered, (ImVec4)ImColor::HSV(0.0f, 0.7f, 0.7f));
+			ImGui::PushStyleColor(ImGuiCol_ButtonActive, (ImVec4)ImColor::HSV(0.0f, 0.8f, 0.8f));
+
+			if (ImGui::Button("Reset Volume"))
 			{
-				gflood.setVolumeConfig(gconfig.volumeSize.x, gconfig.volumeDimensions.x);
-
-				gflood.allocateTextures();
-
-				krender.setFloodTexture(gflood.getFloodOutputTexture());
-				//krender.setFloodTexture(gflood.getFloodSDFTexture());
-
-				gflood.setVertices(gfusion.getVerts());
-				gflood.setNormals(gfusion.getNorms());
-
+				resetVolume();
 			}
-		} ImGui::SameLine(); ImGui::Checkbox("", &performFlood); ImGui::SameLine();
-		if (ImGui::Button("Flow"))
+			ImGui::PopStyleColor(3);
+
+
+			if (ImGui::Button("Integrate")) integratingFlag ^= 1; ImGui::SameLine();
+			ImGui::Checkbox("", &integratingFlag);
+			krender.setSelectInitPose(integratingFlag);
+
+			if (ImGui::Button("save stl"))
+			{
+				saveSTL();
+			}
+		}
+		ImGui::Separator();
+		if (ImGui::CollapsingHeader("Image"))
 		{
-			performFlow ^= 1;
-			gflow.resetTimeElapsed();
+			ImGui::Text("Image Processing");
 
-		}ImGui::SameLine(); ImGui::Checkbox("", &performFlow);
-
-		//
-
-
-		if (ImGui::Button("Reset Volume"))
-		{	// update config
-			//m_center_pixX
-
-			//glm::mat4 initPose = glm::translate(glm::mat4(1.0f), glm::vec3(gconfig.volumeDimensions.x / 2.0f, gconfig.volumeDimensions.y / 2.0f, 0.0f));
-			gflow.wipeFlow();
-
-			bool deleteFlag = false;
-
-			if (glm::vec3(std::stoi(sizes[sizeX]), std::stoi(sizes[sizeY]), std::stoi(sizes[sizeZ])) != gconfig.volumeSize)
+			if (ImGui::Button("Flood"))
 			{
-				deleteFlag = true;
-			}
+				performFlood ^= 1;
+				if (performFlood)
+				{
+					gflood.setVolumeConfig(gconfig.volumeSize.x, gconfig.volumeDimensions.x);
 
-			gconfig.volumeSize = glm::vec3(std::stoi(sizes[sizeX]), std::stoi(sizes[sizeY]), std::stoi(sizes[sizeZ]));
-			gconfig.volumeDimensions = glm::vec3(dimension);
-			
-			gfusion.setConfig(gconfig);
+					gflood.allocateTextures();
 
-			iOff = initOffset(mousePos.x - controlPoint0.x, controlPoint0.y - mousePos.y);
+					krender.setFloodTexture(gflood.getFloodOutputTexture());
+					//krender.setFloodTexture(gflood.getFloodSDFTexture());
 
-			//std::cout << "lalala " << mousePos.x - controlPoint0.x << " " << controlPoint0.y - mousePos.y<< std::endl;
+					gflood.setVertices(gfusion.getVerts());
+					gflood.setNormals(gfusion.getNorms());
 
-			glm::mat4 initPose = glm::translate(glm::mat4(1.0f), glm::vec3(-iOff.x + gconfig.volumeDimensions.x / 2.0f, -iOff.y + gconfig.volumeDimensions.y / 2.0f, -iOff.z + dimension / 2.0));
-
-			volSlice = gconfig.volumeSize.z / 2.0f;
-
-			krender.setVolumeSize(gconfig.volumeSize);
-
-			gfusion.Reset(initPose, deleteFlag);
-			reset = true;
-			if (trackDepthToPoint)
+				}
+			} ImGui::SameLine(); ImGui::Checkbox("", &performFlood); ImGui::SameLine();
+			if (ImGui::Button("Flow"))
 			{
-				gfusion.raycast();
-			}
+				performFlow ^= 1;
+				gflow.resetTimeElapsed();
 
-			counter = 0;
-			if (performFlood)
-			{
-				gflood.setVolumeConfig(gconfig.volumeSize.x, gconfig.volumeDimensions.x);
-				gflood.allocateTextures();
-			}
+			}ImGui::SameLine(); ImGui::Checkbox("", &performFlow);
 
+			//
 
 		}
 
-		if (ImGui::Button("Integrate")) integratingFlag ^= 1; ImGui::SameLine();
-		ImGui::Checkbox("", &integratingFlag);
-		krender.setSelectInitPose(integratingFlag);
-
-		if (ImGui::Button("ROI")) selectInitialPoseFlag ^= 1; ImGui::SameLine();
-		ImGui::Checkbox("", &selectInitialPoseFlag);
 
 
-		//if (ImGui::Button("DO SUM")) gfusion.testPrefixSum();
-		if (ImGui::Button("save stl"))
+
+
+
+
+
+		ImGui::Separator();
+		if (ImGui::CollapsingHeader("Display"))
 		{
-			//gfusion.marchingCubes();
-			//gfusion.exportSurfaceAsStlBinary();
+			ImGui::Text("View Options");
 
-			mcconfig.gridSize = glm::uvec3(gconfig.volumeSize.x, gconfig.volumeSize.y, gconfig.volumeSize.z);
-			//mcconfig.numVoxels = mcconfig.gridSize.x * mcconfig.gridSize.y * mcconfig.gridSize.z;
-			//mcconfig.maxVerts = std::min(mcconfig.gridSize.x * mcconfig.gridSize.y * 128, uint32_t(128 * 128 * 128));
+			if (ImGui::Button("Depth")) showDepthFlag ^= 1; ImGui::SameLine();	ImGui::Checkbox("", &showDepthFlag); 
+			ImGui::SameLine(); 
+			if (ImGui::Button("Color")) showColorFlag ^= 1; ImGui::SameLine(); ImGui::Checkbox("", &showColorFlag);
 
-			mcubes.setConfig(mcconfig);
-
-			mcubes.setVolumeTexture(gfusion.getVolume());
-			//mcubes.setVolumeTexture(gflood.getFloodSDFTexture());
+			if (ImGui::Button("Flood##show")) showSDFVolume ^= 1; ImGui::SameLine(); ImGui::Checkbox("", &showSDFVolume);
+			ImGui::SameLine(); 
+			if (ImGui::Button("Flow##show")) showFlowFlag ^= 1; ImGui::SameLine(); ImGui::Checkbox("", &showFlowFlag);
 
 
-			mcubes.init();
+			if (ImGui::Button("Model")) showNormalFlag ^= 1; ImGui::SameLine(); ImGui::Checkbox("", &showNormalFlag);
 
-			mcubes.setIsolevel(0.0f);
+			ImGui::SameLine(); 
+			if (ImGui::Button("Volume")) showVolumeFlag ^= 1; ImGui::SameLine(); ImGui::Checkbox("", &showVolumeFlag);
 
-			mcubes.generateMarchingCubes();
-			mcubes.exportMesh();
+			if (ImGui::Button("Track")) showTrackFlag ^= 1; ImGui::SameLine(); ImGui::Checkbox("", &showTrackFlag);
+
+			ImGui::Text("slice");
+			ImGui::PushItemWidth(-1);
+			ImGui::SliderFloat("slice", &volSlice, 0, gconfig.volumeSize.z - 1);
+			ImGui::PopItemWidth();
 
 		}
 
-		ImGui::PlotHistogram("Timing", arr, IM_ARRAYSIZE(arr), 0, NULL, 0.0f, 33.0f, ImVec2(0, 80));
-
-
-		ImGui::PushItemWidth(-1);
-		float avail_width = ImGui::CalcItemWidth();
-		float label_width = ImGui::CalcTextSize(" X ").x;
-		ImGui::PopItemWidth();
-		ImGui::PushItemWidth((avail_width / 3) - label_width);
-		ImGui::Combo("X  ", &sizeX, sizes, IM_ARRAYSIZE(sizes)); ImGui::SameLine(0.0f, 0.0f);
-		ImGui::Combo("Y  ", &sizeX, sizes, IM_ARRAYSIZE(sizes)); ImGui::SameLine(0.0f, 0.0f);
-		ImGui::Combo("Z  ", &sizeX, sizes, IM_ARRAYSIZE(sizes));
-
-		sizeY = sizeX;
-		sizeZ = sizeX;
-
-		ImGui::PopItemWidth();
-
-		ImGui::SliderFloat("dim", &dimension, 0.005f, 2.0f);
-
-		ImGui::SliderFloat("slice", &volSlice, 0, gconfig.volumeSize.z - 1);
-
 		ImGui::Separator();
-		ImGui::Text("View Options");
-
-		ImGui::Separator();
-		ImGui::Text("Realsense Options");
-		int prevShift = dispShift;
-		ImGui::SliderInt("disparity shift", &dispShift, 0, 300);
-		if (prevShift != dispShift)
+		if (ImGui::CollapsingHeader("Misc"))
 		{
-			kcamera.setDepthControlGroupValues(0, 0, 0, 0, (uint32_t)dispShift); // TODO make this work with depth min and depth max
-		}
+
+			ImGui::SliderFloat("vFOV", &vertFov, 1.0f, 90.0f);
+			krender.setFov(vertFov);
 
 
-		if (ImGui::Button("Show Depth")) showDepthFlag ^= 1; ImGui::SameLine();	ImGui::Checkbox("", &showDepthFlag); ImGui::SameLine(); if (ImGui::Button("Show Big Depth")) showBigDepthFlag ^= 1; ImGui::SameLine(); ImGui::Checkbox("", &showBigDepthFlag);
-		if (ImGui::Button("Show Infra")) showInfraFlag ^= 1; ImGui::SameLine(); ImGui::Checkbox("", &showInfraFlag); ImGui::SameLine(); if (ImGui::Button("Show Flow")) showFlowFlag ^= 1; ImGui::SameLine(); ImGui::Checkbox("", &showFlowFlag);
-		if (ImGui::Button("Show Color")) showColorFlag ^= 1; ImGui::SameLine(); ImGui::Checkbox("", &showColorFlag); ImGui::SameLine(); if (ImGui::Button("Show Edges")) showEdgesFlag ^= 1; ImGui::SameLine(); ImGui::Checkbox("", &showEdgesFlag);
-		if (ImGui::Button("Show Light")) showLightFlag ^= 1; ImGui::SameLine(); ImGui::Checkbox("", &showLightFlag); ImGui::SameLine(); if (ImGui::Button("Show RayNorm")) showNormalFlag ^= 1; ImGui::SameLine(); ImGui::Checkbox("", &showNormalFlag);
-		if (ImGui::Button("Show Point")) showPointFlag ^= 1; ImGui::SameLine(); ImGui::Checkbox("", &showPointFlag); ImGui::SameLine(); if (ImGui::Button("Show Volume")) showVolumeFlag ^= 1; ImGui::SameLine(); ImGui::Checkbox("", &showVolumeFlag);
-		if (ImGui::Button("Show Track")) showTrackFlag ^= 1; ImGui::SameLine(); ImGui::Checkbox("", &showTrackFlag); ImGui::SameLine(); if (ImGui::Button("Show SDF")) showSDFVolume ^= 1; ImGui::SameLine(); ImGui::Checkbox("", &showSDFVolume);
-
-		ImGui::Separator();
-		ImGui::Text("Other Options");
-
-		if (ImGui::Button("Select color points")) select_color_points_mode ^= 1; ImGui::SameLine();
-		//if (ImGui::Button("Reset")) OCVStuff.resetColorPoints();
-
-		if (ImGui::Button("Select depth points")) select_depth_points_mode ^= 1; ImGui::SameLine();
-		//if (ImGui::Button("Reset Depth")) krender.resetRegistrationMatrix();
-
-		//if (ImGui::Button("Export PLY")) krender.setExportPly(true);
-		//if (ImGui::Button("Export PLY")) krender.exportPointCloud();
-		//if (ImGui::Button("Save Color")) OCVStuff.saveImage(0); // saving color image (flag == 0)
+			ImGui::SliderFloat("xRot", &xRot, 0.0f, 90.0f);
+			ImGui::SliderFloat("yRot", &yRot, 0.0f, 90.0f);
+			ImGui::SliderFloat("zRot", &zRot, 0.0f, 90.0f);
 
 
-		ImGui::Separator();
-		ImGui::Text("View Transforms");
-		ImGui::SliderFloat("vFOV", &vertFov, 1.0f, 90.0f);
-		krender.setFov(vertFov);
 
 
-		ImGui::SliderFloat("xRot", &xRot, 0.0f, 90.0f);
-		ImGui::SliderFloat("yRot", &yRot, 0.0f, 90.0f);
-		ImGui::SliderFloat("zRot", &zRot, 0.0f, 90.0f);
+			ImGui::Separator();
+			ImGui::Text("Infrared Adj.");
 
-		ImGui::SliderFloat("xTran", &xTran, -2000.0f, 2000.0f);
-		ImGui::SliderFloat("yTran", &yTran, -2000.0f, 2000.0f);
-		ImGui::SliderFloat("zTran", &zTran, 0.0f, 4000.0f);
+			//cv::imshow("irg", infraGrey);
 
-		ImGui::SliderFloat("model z", &zModelPC_offset, -4000.0f, 4000.0f);
-		if (ImGui::Button("Reset Sliders")) resetSliders();
-
-		ImGui::Separator();
-		ImGui::Text("Infrared Adj.");
-
-		//cv::imshow("irg", infraGrey);
-
-		//if (ImGui::Button("Save Infra")) OCVStuff.saveImage(1);  // saving infra image (flag == 1)
-		ImGui::SliderFloat("depthMin", &depthMin, 0.0f, 10.0f);
-		/*if (irLow > (irHigh - 255.0f))
-		{
-		irHigh = irLow + 255.0f;
-		}*/
-		ImGui::SliderFloat("depthMax", &depthMax, 0.0f, 10.0f);
-		//if (irHigh < (irLow + 255.0f))
-		//{
-		//	irLow = irHigh - 255.0f;
-		//}
-		krender.setDepthMinMax(depthMin, depthMax);
-
-		ImGui::SliderFloat("irLow", &irLow, 0.0f, 65536.0f - 255.0f);
-		if (irLow > (irHigh - 255.0f))
-		{
+			//if (ImGui::Button("Save Infra")) OCVStuff.saveImage(1);  // saving infra image (flag == 1)
+			ImGui::SliderFloat("depthMin", &depthMin, 0.0f, 10.0f);
+			/*if (irLow > (irHigh - 255.0f))
+			{
 			irHigh = irLow + 255.0f;
-		}
-		ImGui::SliderFloat("irHigh", &irHigh, 255.0f, 65536.0f);
-		if (irHigh < (irLow + 255.0f))
-		{
-			irLow = irHigh - 255.0f;
-		}
-		krender.setIrBrightness(irLow, irHigh);
+			}*/
+			ImGui::SliderFloat("depthMax", &depthMax, 0.0f, 10.0f);
+			//if (irHigh < (irLow + 255.0f))
+			//{
+			//	irLow = irHigh - 255.0f;
+			//}
+			krender.setDepthMinMax(depthMin, depthMax);
 
-		ImGui::Separator();
-		ImGui::Text("Calibration Misc.");
-		if (ImGui::Button("Calibrate")) calibratingFlag ^= 1; ImGui::SameLine();
-		ImGui::Checkbox("", &calibratingFlag);
+		}
 
 
 		ImGui::End();
@@ -599,8 +630,8 @@ void setUI()
 		ImVec2 mPos = ImGui::GetMousePos();
 		mousePos.x = mPos.x;
 		mousePos.y = mPos.y;
-		std::cout << "from imgui " << mousePos.x << " " << mousePos.y << std::endl;
-		std::cout << "lalala " << mousePos.x - controlPoint0.x << " " << controlPoint0.y - mousePos.y << std::endl;
+		//std::cout << "from imgui " << mousePos.x << " " << mousePos.y << std::endl;
+		//std::cout << "lalala " << mousePos.x - controlPoint0.x << " " << controlPoint0.y - mousePos.y << std::endl;
 		iOff = initOffset(mousePos.x - controlPoint0.x, controlPoint0.y - mousePos.y);
 
 	}
@@ -619,6 +650,8 @@ void setUpGPU()
 	gFloodInit();
 
 }
+
+
 
 int main(int, char**)
 {
@@ -642,6 +675,7 @@ int main(int, char**)
 
 	setUIStyle();
 	setImguiWindows();
+
 
 	//cv::Ptr<cv::DenseOpticalFlow> algorithm = cv::optflow::createOptFlow_DIS(cv::optflow::DISOpticalFlow::PRESET_MEDIUM);
 	
@@ -672,12 +706,12 @@ int main(int, char**)
 	std::ofstream outputFile(filenameSS.str(), std::ios::out | std::ios::app);
 
 	double previousTime = epchTime();
+
 	bool frameReady = false;
 
 	// Main loop
 	while (!glfwWindowShouldClose(window))
 	{
-
 		glfwGetFramebufferSize(window, &display_w, &display_h);
 
 		//// Rendering
@@ -686,192 +720,109 @@ int main(int, char**)
 		glClear(GL_COLOR_BUFFER_BIT);
 
 
-		//gfusion.update(float(glfwGetTime()));
-
-
-		if (kcamera.ready())
+		frameReady = kcamera.frames(previousTime, colorArray, depthArray, NULL, NULL, NULL);
+		if (frameReady)
 		{
+
 			gfusion.resetTimes();
 			gfusion.setDepthUnit(kcamera.getDepthUnit());
 
-			frameReady = kcamera.frames(previousTime, colorArray, depthArray, NULL, NULL, NULL);
-			if (frameReady)
+			auto eTime = epochTime();
+
+			//double currentTime = epchTime();
+			//double deltaTime = currentTime - previousTime;
+			//previousTime = currentTime;
+			//std::cout << (int)(deltaTime) << std::endl;
+
+			krender.setColorFrame(colorArray);
+
+			if (performFlow)
 			{
-				auto eTime = epochTime();
+				gflow.setTexture();
 
-				//double currentTime = epchTime();
-				//double deltaTime = currentTime - previousTime;
-				//previousTime = currentTime;
-				//std::cout << (int)(deltaTime) << std::endl;
+				gflow.calc(false);
+			}		   
 
-				krender.setColorFrame(colorArray);
+			gfusion.depthToVertex(depthArray.data());
 
-				//cv::Mat colFrame(480, 848, CV_8UC4, colorArray);
-				//cv::imshow("c", colFrame);
-				//cv::waitKey(1);
+			gfusion.vertexToNormal();
+			if (performFlood)
+			{
+				gflood.setPose(gfusion.getPose());
+				gflood.jumpFloodCalc();
+			}
 
-				if (performFlow)
-				{
-					gflow.setTexture();
+			bool tracked = false;
 
-					gflow.calc(false);
-				}
+			if (trackDepthToPoint)
+			{
+				tracked = gfusion.Track(); 
+				gfusion.raycast();
+			}
 
-
-
-				//gdisoptflow.track();
-
-			//	gfusion.trackPoints3D(gdisoptflow.getTrackedPointsBuffer());
-
-			//	krender.setTrackedPointsBuffer(gdisoptflow.getTrackedPointsBuffer());
-
-				//
-
-				//cv::Mat totflow = cv::Mat(480,848, CV_32FC2);
-
-				//glActiveTexture(GL_TEXTURE0);
-				//glBindTexture(GL_TEXTURE_2D, gdisoptflow.getFlowTexture());
-				//glGetTexImage(GL_TEXTURE_2D, 0, GL_RG, GL_FLOAT, totflow.data);// this is importnant, you are using GL_RED_INTEGETER!!!!
-				//glBindTexture(GL_TEXTURE_2D, 0);
-				// 
-
-				//cv::Mat tofl[2];
-				//cv::split(totflow, tofl);  
-
-				////cv::imshow("wwee", tofl[0] - tofl[1]);
-				////cv::imshow("dwerwev", tofl[1]); 
-
-				//  
-				//cv::Mat mag, ang; 
-				//cv::Mat hsv_split[3], hsv;
-				//cv::Mat rgb; 
-				//cv::cartToPolar(tofl[0], tofl[1], mag, ang, true);
-				//cv::normalize(mag, mag, 0, 1, cv::NORM_MINMAX);
-				//hsv_split[0] = ang;
-				//hsv_split[1] = mag;
-				//hsv_split[2] = cv::Mat::ones(ang.size(), ang.type()); 
-				//cv::merge(hsv_split, 3, hsv);
-				//cv::cvtColor(hsv, rgb, cv::COLOR_HSV2BGR);
-				//cv::Mat outrgb, outmix;
-				//rgb.convertTo(outrgb, CV_8UC4, 255);
-				//cv::addWeighted(outrgb, 0.7, col, 0.3, 1.0, outmix);
-				//cv::imshow("totflowrgb", outrgb);
+			if (trackDepthToVolume)
+			{
+				tracked = gfusion.TrackSDF();
+			}
 
 
-				//outWriter << outmix;
+			if (tracked && integratingFlag && ((counter % 1) == 0) || reset)
+			{
+				gfusion.integrate();
+				if (counter > 2)
+					reset = false;
+			}
 
+			if (!tracked)
+			{
+				//gfusion.recoverPose();
+			}
 
-
-				gfusion.depthToVertex(depthArray.data());
-
-				gfusion.vertexToNormal();
-				if (performFlood)
-				{
-					GLenum theError;
-					theError = glGetError();
-
-					gflood.setPose(gfusion.getPose());
-					gflood.jumpFloodCalc();
-				}
-
-
-				gfusion.showNormals();
-
-				bool tracked = false;
-
-				if (trackDepthToPoint)
-				{
-					tracked = gfusion.Track(); // this should return a bool for successful track
-					gfusion.raycast();
-				}
-
-				if (trackDepthToVolume)
-				{
-					tracked = gfusion.TrackSDF();
-				}
-
-
-				//gfusion.testLargeUpload();
-
-				if (tracked && integratingFlag && ((counter % 1) == 0) || reset)
-				{
-					gfusion.integrate();
-					if (counter > 2)
-						reset = false;
-				}
-
-				if (!tracked)
-				{
-					//gfusion.recoverPose();
-				}
-
-
+			if (counter <= 2)
+			{
 				counter++;
+			}
 
+			outputFile << eTime << " " << gfusion.alignmentEnergy() << " " << kcamera.getTemperature();
+			outputFile << " " << gfusion.getPose()[0].x << " " << gfusion.getPose()[0].y << " " << gfusion.getPose()[0].z << " " << gfusion.getPose()[0].w << \
+				" " << gfusion.getPose()[1].x << " " << gfusion.getPose()[1].y << " " << gfusion.getPose()[1].z << " " << gfusion.getPose()[1].w << \
+				" " << gfusion.getPose()[2].x << " " << gfusion.getPose()[2].y << " " << gfusion.getPose()[2].z << " " << gfusion.getPose()[2].w << \
+				" " << gfusion.getPose()[3].x << " " << gfusion.getPose()[3].y << " " << gfusion.getPose()[3].z << " " << gfusion.getPose()[3].w << std::endl;
 
+			graphPoints.push_back(gfusion.getTransPose());
 
-				// log tracking data to file
+			if (graphPoints.size() > graphWindow.w)
+			{
+				graphPoints.pop_front();
+			}
 
+			minmaxX = std::make_pair<float, float>(1000, -1000.f);
+			minmaxY = std::make_pair<float, float>(1000, -1000.f);;
+			minmaxZ = std::make_pair<float, float>(1000, -1000.f);;
 
+			int idx = 0;
+			for (auto i : graphPoints)
+			{
+				if (i[0] < minmaxX.first) minmaxX.first = i[0];
+				if (i[0] > minmaxX.second) minmaxX.second = i[0];
 
-				//std::string motionTrackingFile = "data/motion/motion-test.txt";
+				if (i[1] < minmaxY.first) minmaxY.first = i[1];
+				if (i[1] > minmaxY.second) minmaxY.second = i[1];
 
-				//iOff = initOffset(krender.getCenterPixX(), krender.getCenterPixY());
+				if (i[2] < minmaxZ.first) minmaxZ.first = i[2];
+				if (i[2] > minmaxZ.second) minmaxZ.second = i[2];
 
-				glm::vec4 position = glm::vec4(iOff, 1.0f);
+				arrayX[idx] = i[0];
+				arrayY[idx] = i[1];
+				arrayZ[idx] = i[2];
 
-				glm::vec4 transformedPosition = gfusion.getPose() * position;
-
-				double preWriteTime = epchTime();
-
-				outputFile << eTime << " " << gfusion.alignmentEnergy() << " " << kcamera.getTemperature();
-				outputFile << " " << gfusion.getPose()[0].x << " " << gfusion.getPose()[0].y << " " << gfusion.getPose()[0].z << " " << gfusion.getPose()[0].w << \
-					" " << gfusion.getPose()[1].x << " " << gfusion.getPose()[1].y << " " << gfusion.getPose()[1].z << " " << gfusion.getPose()[1].w << \
-					" " << gfusion.getPose()[2].x << " " << gfusion.getPose()[2].y << " " << gfusion.getPose()[2].z << " " << gfusion.getPose()[2].w << \
-					" " << gfusion.getPose()[3].x << " " << gfusion.getPose()[3].y << " " << gfusion.getPose()[3].z << " " << gfusion.getPose()[3].w << std::endl;
-
-				double postWriteTime = epchTime();
-
-				std::cout << "writeTime " << postWriteTime - preWriteTime << std::endl;
-
-				graphPoints.push_back(gfusion.getTransPose());
-
-				if (graphPoints.size() > graphWindow.w)
-				{
-					graphPoints.pop_front();
-				}
-				minmaxX = std::make_pair<float, float>(1000, -1000.f);
-				minmaxY = std::make_pair<float, float>(1000, -1000.f);;
-				minmaxZ = std::make_pair<float, float>(1000, -1000.f);;
-
-				int idx = 0;
-				for (auto i : graphPoints)
-				{
-					if (i[0] < minmaxX.first) minmaxX.first = i[0];
-					if (i[0] > minmaxX.second) minmaxX.second = i[0];
-
-					if (i[1] < minmaxY.first) minmaxY.first = i[1];
-					if (i[1] > minmaxY.second) minmaxY.second = i[1];
-
-					if (i[2] < minmaxZ.first) minmaxZ.first = i[2];
-					if (i[2] > minmaxZ.second) minmaxZ.second = i[2];
-
-					arrayX[idx] = i[0];
-					arrayY[idx] = i[1];
-					arrayZ[idx] = i[2];
-
-					idx++;
-				}
-
+				idx++;
 			}
 
 		}
 
+		
 
-
-		bool show_test_window = true;
-
-		//gfusion.printTimes();
 		glfwPollEvents();
 		ImGui_ImplGlfwGL3_NewFrame();
 
@@ -882,7 +833,6 @@ int main(int, char**)
 		krender.setFusionType(trackDepthToPoint, trackDepthToVolume);
 
 
-		//ImGui::ShowTestWindow();
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 		glEnable(GL_DEPTH_TEST);
 
@@ -893,7 +843,6 @@ int main(int, char**)
 
 
 
-		//krender.setBuffersForRendering(depthArray, bigDepthArray, infraredArray, colorArray, flow.ptr());
 		krender.setDepthImageRenderPosition(vertFov);
 		krender.setRayNormImageRenderPosition(vertFov);
 		krender.setTrackImageRenderPosition(vertFov);
@@ -901,11 +850,8 @@ int main(int, char**)
 		//krender.setInfraImageRenderPosition();
 		krender.setColorImageRenderPosition(vertFov);
 
-
 		krender.setFlowImageRenderPosition(colorHeight, colorWidth, vertFov);
 
-		//krender.setPointCloudRenderPosition(zModelPC_offset);
-		//krender.setLightModelRenderPosition();
 		krender.setVolumeSDFRenderPosition(volSlice);
 
 		krender.setMarchingCubesRenderPosition(zModelPC_offset);
@@ -925,7 +871,6 @@ int main(int, char**)
 
 		glfwSwapBuffers(window);
 
-		//std::this_thread::sleep_for(std::chrono::milliseconds(25));
 	}
 
 	

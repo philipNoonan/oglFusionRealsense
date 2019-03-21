@@ -302,6 +302,13 @@ void Realsense2Camera::captureLoop()
 
 		}
 
+		//if (color.supports_frame_metadata(RS2_FRAME_METADATA_FRAME_TIMESTAMP))
+		//{
+		//	double currentTime = color.get_frame_metadata(RS2_FRAME_METADATA_FRAME_TIMESTAMP);
+		//	double deltaTime = currentTime - previousTime;
+		//	std::cout << deltaTime << std::endl;
+		//	previousTime = currentTime;
+		//}
 
 		auto dbg = selection.get_device().as<rs2::debug_protocol>();
 		std::vector<uint8_t> cmd = { 0x14, 0, 0xab, 0xcd, 0x2a, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };

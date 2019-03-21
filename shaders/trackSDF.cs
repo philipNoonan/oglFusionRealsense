@@ -6,8 +6,11 @@ layout(binding = 0) uniform isampler3D volumeDataTexture; // interp access
 
 layout(binding = 0, rg16i) uniform iimage3D volumeData; // texel access
 layout(binding = 1, rgba32f) uniform image2D inVertex;
+layout(binding = 2, rgba32f) uniform image2D inNormal;
 
-layout(binding = 2, rgba32f) uniform image2D testImage;
+layout(binding = 3, rgba32f) uniform image2D testImage;
+layout(binding = 4, rgba32f) uniform image2D trackImage;
+
 struct reduSDFType
 {
     int result;
@@ -48,7 +51,7 @@ void setMats()
     mat3 Rotdiff;
     Rotdiff[0][0] = 1.0f; Rotdiff[1][0] = 0.0f; Rotdiff[2][0] = 0.0f;
     Rotdiff[0][1] = 0.0f; Rotdiff[1][1] = 1.0f; Rotdiff[2][1] = -w_h;
-    Rotdiff[0][2] = 0.0f; Rotdiff[1][2] = w_h;  Rotdiff[2][2] = 1.0f;
+    Rotdiff[0][2] = 0.0f; Rotdiff[1][2] = w_h; Rotdiff[2][2] = 1.0f;
 
     r1p = Rotdiff * rot;
 
@@ -111,85 +114,6 @@ int vsGrad(uvec3 pos)
 
 
 
-
-//vec3 getGradient(vec4 hit)
-//{
-//    vec3 scaled_pos = vec3((hit.x * volSize.x / volDim.x) - 0.5f, (hit.y * volSize.y / volDim.y) - 0.5f, (hit.z * volSize.z / volDim.z) - 0.5f);
-//    ivec3 baseVal = ivec3(floor(scaled_pos));
-//    vec3 factor = fract(scaled_pos);
-//    ivec3 lower_lower = max(baseVal - ivec3(1), ivec3(0));
-//    ivec3 lower_upper = max(baseVal, ivec3(0));
-//    ivec3 upper_lower = min(baseVal + ivec3(1), ivec3(volSize) - ivec3(1));
-//    ivec3 upper_upper = min(baseVal + ivec3(2), ivec3(volSize) - ivec3(1));
-//    ivec3 lower = lower_upper;
-//    ivec3 upper = upper_lower;
-
-//    vec3 gradient;
-
-//    gradient.x =
-//              (((vs(uvec3(upper_lower.x, lower.y, lower.z)) - vs(uvec3(lower_lower.x, lower.y, lower.z))) * (1.0 - factor.x)
-//            + (vs(uvec3(upper_upper.x, lower.y, lower.z)) - vs(uvec3(lower_upper.x, lower.y, lower.z))) * factor.x) * (1.0 - factor.y)
-//            + ((vs(uvec3(upper_lower.x, upper.y, lower.z)) - vs(uvec3(lower_lower.x, upper.y, lower.z))) * (1.0 - factor.x)
-//            + (vs(uvec3(upper_upper.x, upper.y, lower.z)) - vs(uvec3(lower_upper.x, upper.y, lower.z))) * factor.x) * factor.y) * (1.0 - factor.z)
-//            + (((vs(uvec3(upper_lower.x, lower.y, upper.z)) - vs(uvec3(lower_lower.x, lower.y, upper.z))) * (1.0 - factor.x)
-//            + (vs(uvec3(upper_upper.x, lower.y, upper.z)) - vs(uvec3(lower_upper.x, lower.y, upper.z))) * factor.x) * (1.0 - factor.y)
-//            + ((vs(uvec3(upper_lower.x, upper.y, upper.z)) - vs(uvec3(lower_lower.x, upper.y, upper.z))) * (1.0 - factor.x)
-//            + (vs(uvec3(upper_upper.x, upper.y, upper.z)) - vs(uvec3(lower_upper.x, upper.y, upper.z))) * factor.x) * factor.y) * factor.z;
-
-//    gradient.y =
-//          (((vs(uvec3(lower.x, upper_lower.y, lower.z)) - vs(uvec3(lower.x, lower_lower.y, lower.z))) * (1.0 - factor.x)
-//        + (vs(uvec3(upper.x, upper_lower.y, lower.z)) - vs(uvec3(upper.x, lower_lower.y, lower.z))) * factor.x) * (1.0 - factor.y)
-//        + ((vs(uvec3(lower.x, upper_upper.y, lower.z)) - vs(uvec3(lower.x, lower_upper.y, lower.z))) * (1.0 - factor.x)
-//        + (vs(uvec3(upper.x, upper_upper.y, lower.z)) - vs(uvec3(upper.x, lower_upper.y, lower.z))) * factor.x) * factor.y) * (1.0 - factor.z)
-//        + (((vs(uvec3(lower.x, upper_lower.y, upper.z)) - vs(uvec3(lower.x, lower_lower.y, upper.z))) * (1.0 - factor.x)
-//        + (vs(uvec3(upper.x, upper_lower.y, upper.z)) - vs(uvec3(upper.x, lower_lower.y, upper.z))) * factor.x) * (1.0 - factor.y)
-//        + ((vs(uvec3(lower.x, upper_upper.y, upper.z)) - vs(uvec3(lower.x, lower_upper.y, upper.z))) * (1.0 - factor.x)
-//        + (vs(uvec3(upper.x, upper_upper.y, upper.z)) - vs(uvec3(upper.x, lower_upper.y, upper.z))) * factor.x) * factor.y) * factor.z;
-
-//    gradient.z =
-//          (((vs(uvec3(lower.x, lower.y, upper_lower.z)) - vs(uvec3(lower.x, lower.y, lower_lower.z))) * (1.0 - factor.x)
-//        + (vs(uvec3(upper.x, lower.y, upper_lower.z)) - vs(uvec3(upper.x, lower.y, lower_lower.z))) * factor.x) * (1.0 - factor.y)
-//        + ((vs(uvec3(lower.x, upper.y, upper_lower.z)) - vs(uvec3(lower.x, upper.y, lower_lower.z))) * (1.0 - factor.x)
-//        + (vs(uvec3(upper.x, upper.y, upper_lower.z)) - vs(uvec3(upper.x, upper.y, lower_lower.z))) * factor.x) * factor.y) * (1.0 - factor.z)
-//        + (((vs(uvec3(lower.x, lower.y, upper_upper.z)) - vs(uvec3(lower.x, lower.y, lower_upper.z))) * (1.0 - factor.x)
-//        + (vs(uvec3(upper.x, lower.y, upper_upper.z)) - vs(uvec3(upper.x, lower.y, lower_upper.z))) * factor.x) * (1.0 - factor.y)
-//        + ((vs(uvec3(lower.x, upper.y, upper_upper.z)) - vs(uvec3(lower.x, upper.y, lower_upper.z))) * (1.0 - factor.x)
-//        + (vs(uvec3(upper.x, upper.y, upper_upper.z)) - vs(uvec3(upper.x, upper.y, lower_upper.z))) * factor.x) * factor.y) * factor.z;
-
-//    return gradient * vec3(volDim.x / volSize.x, volDim.y / volSize.y, volDim.z / volSize.z) * (0.5f * 0.00003051944088f);
-
-
-//}
-
-
-
-//float interpVol(vec3 pos, inout bool interpolated)
-//{
-//    // scaled pos is in voxel index space
-//    //vec3 scaled_pos = vec3((pos.x * volSize.x / volDim.x) - 0.5f, (pos.y * volSize.y / volDim.y) - 0.5f, (pos.z * volSize.z / volDim.z) - 0.5f);
-//    ivec3 base = ivec3(floor(pos));
-//    vec3 factor = fract(pos);
-//    ivec3 lower = max(base, ivec3(0));
-//    ivec3 upper = min(base + ivec3(1), ivec3(volSize) - ivec3(1));
-//    ivec4 tData = imageLoad(volumeData, ivec3(base));
-//    //ivec4 tData = texture(volumeDataTexture, base);
-//    if (tData.y > 0)
-//    {
-//        interpolated = true;
-//    }
-//    else
-//    {
-//        interpolated = false;
-//    }
-
-//    //return float(tData.x);
-//    return (
-//          ((vs(uvec3(lower.x, lower.y, lower.z)) * (1 - factor.x) + vs(uvec3(upper.x, lower.y, lower.z)) * factor.x) * (1 - factor.y)
-//         + (vs(uvec3(lower.x, upper.y, lower.z)) * (1 - factor.x) + vs(uvec3(upper.x, upper.y, lower.z)) * factor.x) * factor.y) * (1 - factor.z)
-//        + ((vs(uvec3(lower.x, lower.y, upper.z)) * (1 - factor.x) + vs(uvec3(upper.x, lower.y, upper.z)) * factor.x) * (1 - factor.y)
-//         + (vs(uvec3(lower.x, upper.y, upper.z)) * (1 - factor.x) + vs(uvec3(upper.x, upper.y, upper.z)) * factor.x) * factor.y) * factor.z
-//        ) * 0.00003051944088f;
-//}
 
 bool invalidGradient(float inputSDF)
 {
@@ -301,18 +225,18 @@ float interpDistance(vec3 pos, inout bool interpolated)
                 volume = abs(current_voxel.x - i) + abs(current_voxel.y - j) + abs(current_voxel.z - k);
 
                 ivec4 data = imageLoad(volumeData, current_voxel);
-                    if (data.y > 0)
-                    {
+                if (data.y > 0)
+                {
                     interpolated = true;
-                        if (volume < 0.00001)
-                        {
-                            return float (data.x * 0.00003051944088f);
-                        }
-                        w = 1.0f / volume;
-                        w_sum += float(w);
-                        sum_d += float(w) * float(data.x * 0.00003051944088f);
+                    if (volume < 0.00001)
+                    {
+                        return float(data.x * 0.00003051944088f);
                     }
-                
+                    w = 1.0f / volume;
+                    w_sum += float(w);
+                    sum_d += float(w) * float(data.x * 0.00003051944088f);
+                }
+
             }
         }
     }
@@ -332,215 +256,104 @@ float[6] getJ(vec3 dsdf, float[3][6] dxdxi)
 }
 
 
-//void getPartialDerivative(vec3 cameraPoint, vec3 pos, inout bool isInterpolated, inout float SDF_derivative[6], inout float sdf_val)
-//{
-//    vec3 current_world_point;
-//    vec3 plus_h_world_point;
-//    vec3 minus_h_world_point;
-//    vec3 plus_h_camera_point;
-//    vec3 minus_h_camera_point;
-//    vec3 plus_h_voxel_point;
-//    vec3 minus_h_voxel_point;
-//    float plus_h_sdf_value;
-//    float minus_h_sdf_value;
-
-//    vec3 current_voxel_point = vec3(((pos.x - 0.f) * volSize.x / volDim.x) - 0.5f, ((pos.y- 0.f) * volSize.y / volDim.y) - 0.5f, ((pos.z - 0.f) * volSize.z / volDim.z) - 0.5f);
-
-//    sdf_val = interpDistance(current_voxel_point, isInterpolated);
-//    if (!isInterpolated)
-//        return;
-
-//    if (current_voxel_point.x < 0 || current_voxel_point.y < 0 || current_voxel_point.z < 0)
-//        return;
-//    if (current_voxel_point.x > volSize.x || current_voxel_point.y > volSize.y || current_voxel_point.z > volSize.z)
-//        return;
-
-
-
-
-//    //tx derivative
-//    plus_h_voxel_point = current_voxel_point;
-//    plus_h_voxel_point.x += 1.0f;
-//    minus_h_voxel_point = current_voxel_point;
-//    minus_h_voxel_point.x -= 1.0f;
-//    plus_h_sdf_value = interpDistance(plus_h_voxel_point, isInterpolated);
-//    if (!isInterpolated)
-//        return;
-//    minus_h_sdf_value = interpDistance(minus_h_voxel_point, isInterpolated);
-//    if (!isInterpolated)
-//        return;
-//    SDF_derivative[0] = (plus_h_sdf_value - minus_h_sdf_value) /  (2.0f / (volSize.x / volDim.x));
-
-//    //ty derivative
-//    plus_h_voxel_point = current_voxel_point;
-//    plus_h_voxel_point.y += 1.0f;
-//    minus_h_voxel_point = current_voxel_point;
-//    minus_h_voxel_point.y -= 1.0f;
-//    plus_h_sdf_value = interpDistance(plus_h_voxel_point, isInterpolated);
-//    if (!isInterpolated)
-//        return;
-//    minus_h_sdf_value = interpDistance(minus_h_voxel_point, isInterpolated);
-//    if (!isInterpolated)
-//        return;
-//    SDF_derivative[1] = (plus_h_sdf_value - minus_h_sdf_value) / (2.0f / (volSize.x / volDim.x));
-
-//    //tz derivative
-//    plus_h_voxel_point = current_voxel_point;
-//    plus_h_voxel_point.z += 1.0f;
-//    minus_h_voxel_point = current_voxel_point;
-//    minus_h_voxel_point.z -= 1.0f;
-//    plus_h_sdf_value = interpDistance(plus_h_voxel_point, isInterpolated);
-//    if (!isInterpolated)
-//        return;
-//    minus_h_sdf_value = interpDistance(minus_h_voxel_point, isInterpolated);
-//    if (!isInterpolated)
-//        return;
-//    SDF_derivative[2] = (plus_h_sdf_value - minus_h_sdf_value) / (2.0f / (volSize.x / volDim.x));
-
-//    //wx derivative
-//    plus_h_world_point = (r1p * cameraPoint) + vec3(Ttrack[3][0], Ttrack[3][1], Ttrack[3][2]);
-//    minus_h_world_point = (r1m * cameraPoint) + vec3(Ttrack[3][0], Ttrack[3][1], Ttrack[3][2]);
-//    plus_h_voxel_point = vec3((plus_h_world_point.x * volSize.x / volDim.x) - 0.5f, (plus_h_world_point.y * volSize.y / volDim.y) - 0.5f, (plus_h_world_point.z * volSize.z / volDim.z) - 0.5f);
-//    minus_h_voxel_point = vec3((minus_h_world_point.x * volSize.x / volDim.x) - 0.5f, (minus_h_world_point.y * volSize.y / volDim.y) - 0.5f, (minus_h_world_point.z * volSize.z / volDim.z) - 0.5f);
-//    plus_h_sdf_value = interpDistance(plus_h_voxel_point, isInterpolated);
-//    if (!isInterpolated)
-//        return;
-//    minus_h_sdf_value = interpDistance(minus_h_voxel_point, isInterpolated);
-//    if (!isInterpolated)
-//        return;
-//    SDF_derivative[3] = (plus_h_sdf_value - minus_h_sdf_value) /  (2.0f / (volSize.x / volDim.x)); // 0.01 = w_h?
-
-//    //wy derivative
-//    plus_h_world_point = (r2p * cameraPoint) + vec3(Ttrack[3][0], Ttrack[3][1], Ttrack[3][2]);
-//    minus_h_world_point = (r2m * cameraPoint) + vec3(Ttrack[3][0], Ttrack[3][1], Ttrack[3][2]);
-//    plus_h_voxel_point = vec3((plus_h_world_point.x * volSize.x / volDim.x) - 0.5f, (plus_h_world_point.y * volSize.y / volDim.y) - 0.5f, (plus_h_world_point.z * volSize.z / volDim.z) - 0.5f);
-//    minus_h_voxel_point = vec3((minus_h_world_point.x * volSize.x / volDim.x) - 0.5f, (minus_h_world_point.y * volSize.y / volDim.y) - 0.5f, (minus_h_world_point.z * volSize.z / volDim.z) - 0.5f);
-//    plus_h_sdf_value = interpDistance(plus_h_voxel_point, isInterpolated);
-//    if (!isInterpolated)
-//        return;
-//    minus_h_sdf_value = interpDistance(minus_h_voxel_point, isInterpolated);
-//    if (!isInterpolated)
-//        return;
-//    SDF_derivative[4] = (plus_h_sdf_value - minus_h_sdf_value) /  (2.0f / (volSize.x / volDim.x)); // 0.01 = w_h?
-
-//    //wz derivative
-//    plus_h_world_point = (r3p * cameraPoint) + vec3(Ttrack[3][0], Ttrack[3][1], Ttrack[3][2]);
-//    minus_h_world_point = (r3m * cameraPoint) + vec3(Ttrack[3][0], Ttrack[3][1], Ttrack[3][2]);
-//    plus_h_voxel_point = vec3((plus_h_world_point.x * volSize.x / volDim.x) - 0.5f, (plus_h_world_point.y * volSize.y / volDim.y) - 0.5f, (plus_h_world_point.z * volSize.z / volDim.z) - 0.5f);
-//    minus_h_voxel_point = vec3((minus_h_world_point.x * volSize.x / volDim.x) - 0.5f, (minus_h_world_point.y * volSize.y / volDim.y) - 0.5f, (minus_h_world_point.z * volSize.z / volDim.z) - 0.5f);
-//    plus_h_sdf_value = interpDistance(plus_h_voxel_point, isInterpolated);
-//    if (!isInterpolated)
-//        return;
-//    minus_h_sdf_value = interpDistance(minus_h_voxel_point, isInterpolated);
-//    if (!isInterpolated)
-//        return;
-//    SDF_derivative[5] = (plus_h_sdf_value - minus_h_sdf_value) / (2.0f / (volSize.x / volDim.x)); // 0.01 = w_h?
-
-//}
-
 void main()
 {
 
     uvec2 pix = gl_GlobalInvocationID.xy;
     //ivec2 inSize = imageSize(inVertex); // mipmapped sizes
     imageStore(testImage, ivec2(pix), vec4(0.0f));
+    imageStore(trackImage, ivec2(pix), vec4(0.0f));
 
 
     //if (pix.x >= 0 && pix.x < imageSize.x - 1 && pix.y >= 0 && pix.y < imageSize.y)
     if (all(greaterThanEqual(pix, uvec2(0))) && all(lessThan(pix, uvec2(imageSize))))
     {
-        setMats();
-        //vec4 currentPoint = imageLoad(inVertex, ivec2(pix)); // in camera space
-        vec4 cameraPoint = imageLoad(inVertex, ivec2(pix));
+        vec4 normals = imageLoad(inNormal, ivec2(pix));
 
-        vec4 projectedVertex = Ttrack * vec4(cameraPoint.xyz, 1.0f);
-
-        //float D = interpVol(projectedVertex.xyz);// get SDF value from 3D volume texture
-                                                 // this is 3d point in world space not volume space
-
-
-        bool isInterpolated;
-        // float sdf_der[6] = { 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f };
-        //  float D;
-        //  getPartialDerivative(cameraPoint.xyz, projectedVertex.xyz, isInterpolated, sdf_der, D);
-        //  vec3 dSDF_dx = vec3(sdf_der[0], sdf_der[1], sdf_der[2]);
-
-        // cvp is in texel space 0 - 127
-        vec3 cvp = (volSize.x / volDim.x) * projectedVertex.xyz;
-
-        //if (cvp.x < 0.0f || cvp.x > volSize.x || cvp.y < 0.0f || cvp.y > volSize.y || cvp.z < 0.0f || cvp.z > volSize.z)
-        if (any(lessThan(cvp, vec3(0.0f))) || any(greaterThan(cvp, volSize)))
+        if (normals.x == 2)
         {
-            //imageStore(testImage, ivec2(pix), vec4(0.5f));
+            trackOutput[(pix.y * imageSize.x) + pix.x].result = -4; // does this matter since we are in a low mipmap not full size???
+            imageStore(trackImage, ivec2(pix), vec4(0, 0, 0, 0));
 
-            trackOutput[(pix.y * imageSize.x) + pix.x].result = -4;
-
-            return;
         }
-
-        //vec3 cvp = vec3(((projectedVertex.x) * volSize.x / volDim.x), ((projectedVertex.y) * volSize.y / volDim.y), ((projectedVertex.z) * volSize.z / volDim.z));
-        bool valSDF = true;
-        float D = SDF(cvp.xyz, valSDF);
-
-        //float Dup = SDF(cvp + vec3(0,0,1));
-
-        float voxelLength = volDim.x / volSize.x;
-        int numVox = 5;
-
-        vec3 dSDF_dx = vec3(SDFGradient(cvp, vec3(numVox, 0, 0), numVox), SDFGradient(cvp, vec3(0, numVox, 0), numVox), SDFGradient(cvp, vec3(0, 0, numVox), numVox));
-
-        //if (dSDF_dx.x > 1.0f || dSDF_dx.y > 1.0f || dSDF_dx.z > 1.0f)
-        if (any(greaterThan(dSDF_dx, vec3(1.0f))))
+        else
         {
-            //imageStore(testImage, ivec2(pix), vec4(0.5f));
+            setMats();
 
-            trackOutput[(pix.y * imageSize.x) + pix.x].result = -4;
+            vec4 cameraPoint = imageLoad(inVertex, ivec2(pix));
 
-            return;
-        }
+            vec4 projectedVertex = Ttrack * vec4(cameraPoint.xyz, 1.0f);
 
-        if (all(equal(dSDF_dx, vec3(0.0f))))
-        {
-            trackOutput[(pix.y * imageSize.x) + pix.x].result = -4;
+            bool isInterpolated;
+            // float sdf_der[6] = { 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f };
+            //  float D;
+            //  getPartialDerivative(cameraPoint.xyz, projectedVertex.xyz, isInterpolated, sdf_der, D);
+            //  vec3 dSDF_dx = vec3(sdf_der[0], sdf_der[1], sdf_der[2]);
 
-            return;
-        }
-        imageStore(testImage, ivec2(pix), vec4(D * 100.0, D * 100.0, -D * 100.0, 1.0f));
+            // cvp is in texel space 0 - 127
+            vec3 cvp = (volSize.x / volDim.x) * projectedVertex.xyz;
 
-        imageStore(testImage, ivec2(pix), vec4(dSDF_dx, 1.0f));
+            //if (cvp.x < 0.0f || cvp.x > volSize.x || cvp.y < 0.0f || cvp.y > volSize.y || cvp.z < 0.0f || cvp.z > volSize.z)
+            if (any(lessThan(cvp, vec3(0.0f))) || any(greaterThan(cvp, volSize)))
+            {
+                //imageStore(testImage, ivec2(pix), vec4(0.5f));
 
-        //if (dSDF_dx.x == 0.0f || dSDF_dx.y == 0.0f || dSDF_dx.z == 0.0f)
-        //{
-        //    imageStore(testImage, ivec2(pix), vec4(0,0,0,1.0f));
-        //}
+                trackOutput[(pix.y * imageSize.x) + pix.x].result = -4;
 
-        //vec3 dSDF_dx = getGradient(projectedVertex);
+                return;
+            }
 
-        //imageStore(testImage, ivec2(pix), vec4(tvec1.x - dSDF_dx[0] * 1.0, tvec1.y - dSDF_dx[1] * 1.0, tvec1.z - dSDF_dx[2] * 1.0, 1.0f));
+            //vec3 cvp = vec3(((projectedVertex.x) * volSize.x / volDim.x), ((projectedVertex.y) * volSize.y / volDim.y), ((projectedVertex.z) * volSize.z / volDim.z));
+            bool valSDF = true;
+            float D = SDF(cvp.xyz, valSDF);
 
+            //float Dup = SDF(cvp + vec3(0,0,1));
 
-        //ivec4 tempVal = texture(volumeDataTexture, vec3(cvp.x / 128.0f, cvp.y / 128.0f, cvp.z / 128.0f));
-        //D = tempVal.x * 0.00003051944088f;
-        //imageStore(testImage, ivec2(pix), vec4(sdf_der[3] * 0.1f, sdf_der[4] * 0.1f, sdf_der[5] * 0.1f, 1.0f));
-        //imageStore(testImage, ivec2(pix), vec4(sdf_der[0] * 1.0f, sdf_der[1] * 1.0f, sdf_der[2] * 1.0f, 1.0f));
-        //imageStore(testImage, ivec2(pix), vec4(cameraPoint.z * 1.0f, cameraPoint.z * 1.0f, cameraPoint.z * 1.0f, 1.0f));
-        //imageStore(testImage, ivec2(pix), vec4(Dup, Dup, Dup, 1.0f));
+            float voxelLength = volDim.x / volSize.x;
+            int numVox = 5;
 
-        float absD = abs(D);// get abs depth
+            vec3 dSDF_dx = vec3(SDFGradient(cvp, vec3(numVox, 0, 0), numVox), SDFGradient(cvp, vec3(0, numVox, 0), numVox), SDFGradient(cvp, vec3(0, 0, numVox), numVox));
 
-        //imageStore(testImage, ivec2(pix), vec4(absD.xxx,1.0f));
+            //if (dSDF_dx.x > 1.0f || dSDF_dx.y > 1.0f || dSDF_dx.z > 1.0f)
+            //if (any(greaterThan(dSDF_dx, vec3(1.0f))))
+            //{
+            //    //imageStore(testImage, ivec2(pix), vec4(0.5f));
+            //    imageStore(trackImage, ivec2(pix), vec4(1.0f, 1.0f, 0, 1.0f));
 
-        if (D < 0.05 && D > -0.05)
-        {
-            //vec3 testGrad = getGradient(projectedVertex);
-            if (true)
+            //    trackOutput[(pix.y * imageSize.x) + pix.x].result = -4;
+
+            //    return;
+            //}
+
+            vec3 rotatedNormal = vec3(Ttrack * vec4(normals.xyz, 0.0f)).xyz;
+
+            if (dot(dSDF_dx, rotatedNormal) < 0.8)
+            {
+                imageStore(trackImage, ivec2(pix), vec4(1.0f, 1.0f, 0, 1.0f));
+
+                trackOutput[(pix.y * imageSize.x) + pix.x].result = -4;
+
+                return;
+            }
+
+            if (all(equal(dSDF_dx, vec3(0.0f))))
+            {
+                trackOutput[(pix.y * imageSize.x) + pix.x].result = -4;
+
+                return;
+            }
+
+            imageStore(testImage, ivec2(pix), vec4(dSDF_dx, 1.0f));
+
+            float absD = abs(D);// get abs depth
+
+            //imageStore(testImage, ivec2(pix), vec4(absD.xxx,1.0f));
+
+            if (D < 0.05 && D > -0.05)
             {
                 vec3 nDSDF = normalize(dSDF_dx);
-                //  vec3 dSDF_dx = vec3(testGrad.x, testGrad.y, testGrad.z);
-                //imageStore(testImage, ivec2(pix), vec4(sdf_der[0] * 1.0f, sdf_der[1] * 1.0f, sdf_der[2] * 1.0f, 1.0f));
-                //imageStore(testImage, ivec2(pix), vec4(nDSDF.xy, -nDSDF.z, 1.0f));
 
-                //   // 3 cols 6 rows 
+                // 3 cols 6 rows 
                 float dx_dxi[3][6];
 
                 dx_dxi[0][0] = 0;                   dx_dxi[1][0] = -projectedVertex.z;  dx_dxi[2][0] = projectedVertex.y;    
@@ -552,71 +365,34 @@ void main()
 
                 float J[6] = getJ(dSDF_dx, dx_dxi);
 
-                //float huber = 1.0f;
-                //if (absD<0.0005)
-                //{
-                //    huber = 1.0f;
-                //}
-                //else if (absD > 0.0005 && absD <= 0.01 )
-                //{
-                //    huber = 0.0005/absD;
-                //}
-                //else
-                //{
-                //    huber = 0.0f;
-                //}
-                float huber = absD < 0.001f ? 1.0f : 0.001f / absD;
+float huber = absD < 0.001f ? 1.0f : 0.001f / absD;
 
-//imageStore(testImage, ivec2(pix), vec4(J[0] * 1.f, J[1] * 1.0f, J[2] * 1.0f, 1.0f));
-
-
-//trackOutput[(pix.y * imageSize.x) + pix.x].h = 1;
-//trackOutput[(pix.y * imageSize.x) + pix.x].D = D;
-//trackOutput[(pix.y * imageSize.x) + pix.x].J = sdf_der;
-                trackOutput[(pix.y * imageSize.x) + pix.x].result = 1;
+trackOutput[(pix.y * imageSize.x) + pix.x].result = 1;
 
                 trackOutput[(pix.y * imageSize.x) + pix.x].h = huber;
                 trackOutput[(pix.y * imageSize.x) + pix.x].D = D;
                 trackOutput[(pix.y * imageSize.x) + pix.x].J = J;
 
-            
+                imageStore(trackImage, ivec2(pix), vec4(0.5f, 0.5f, 0.5f, 1.0f));
+
+               
             }
             else
             {
-                    //imageStore(testImage, ivec2(pix), vec4(0,0,0, 1.0f));
+                  // imageStore(testImage, ivec2(pix), vec4(0,0,0, 1.0f));
 
-           // imageStore(testImage, ivec2(pix), vec4(0.0f, 1.0f, 0.0f, 1.0f));
+               // imageStore(testImage, ivec2(pix), vec4(0.0f, 1.0f, 0.0f, 1.0f));
+                imageStore(trackImage, ivec2(pix), vec4(0, 0, 1.0f, 1.0f));
 
                 float J0[6] = { 0, 0, 0, 0, 0, 0 };
-                trackOutput[(pix.y * imageSize.x) + pix.x].result = -4;
+trackOutput[(pix.y * imageSize.x) + pix.x].result = -4;
 
                 trackOutput[(pix.y * imageSize.x) + pix.x].h = 0;
                 trackOutput[(pix.y * imageSize.x) + pix.x].D = 0;
                 trackOutput[(pix.y * imageSize.x) + pix.x].J = J0;
             }
-        }
-        else
-        {
-              // imageStore(testImage, ivec2(pix), vec4(0,0,0, 1.0f));
-
-           // imageStore(testImage, ivec2(pix), vec4(0.0f, 1.0f, 0.0f, 1.0f));
-
-                float J0[6] = { 0, 0, 0, 0, 0, 0 };
-                trackOutput[(pix.y * imageSize.x) + pix.x].result = -4;
-
-                trackOutput[(pix.y * imageSize.x) + pix.x].h = 0;
-                trackOutput[(pix.y * imageSize.x) + pix.x].D = 0;
-                trackOutput[(pix.y * imageSize.x) + pix.x].J = J0;
-        }
-       
-    
-           
+        } 
     }
-
-
-
-
-
 }
 
 

@@ -86,24 +86,24 @@ void gFusion::setLocations()
 	m_imageTypeID = glGetUniformLocation(depthToVertProg.getHandle(), "imageType");
 	m_depthScaleID = glGetUniformLocation(depthToVertProg.getHandle(), "depthScale");
 
-	std::cout << "invK " << m_invkID << std::endl;
-	std::cout << "camPams " << m_camPamsID << std::endl;
-	std::cout << "imageType " << m_imageTypeID << std::endl;
-	std::cout << "depthScale " << m_depthScaleID << std::endl;
+	//std::cout << "invK " << m_invkID << std::endl;
+	//std::cout << "camPams " << m_camPamsID << std::endl;
+	//std::cout << "imageType " << m_imageTypeID << std::endl;
+	//std::cout << "depthScale " << m_depthScaleID << std::endl;
 
 	m_viewID_t = glGetUniformLocation(trackProg.getHandle(), "view");
 	m_TtrackID = glGetUniformLocation(trackProg.getHandle(), "Ttrack");
 	m_distThresh_t = glGetUniformLocation(trackProg.getHandle(), "dist_threshold");
 	m_normThresh_t = glGetUniformLocation(trackProg.getHandle(), "normal_threshold");
 
-	std::cout << "view " << m_viewID_t << std::endl;
-	std::cout << "Ttrack " << m_TtrackID << std::endl;
-	std::cout << "dist_threshold " << m_distThresh_t << std::endl;
-	std::cout << "normal_threshold " << m_normThresh_t << std::endl;
+	//std::cout << "view " << m_viewID_t << std::endl;
+	//std::cout << "Ttrack " << m_TtrackID << std::endl;
+	//std::cout << "dist_threshold " << m_distThresh_t << std::endl;
+	//std::cout << "normal_threshold " << m_normThresh_t << std::endl;
 
 	m_imageSizeID = glGetUniformLocation(reduceProg.getHandle(), "imageSize");
 
-	std::cout << "imageSize " << m_imageSizeID << std::endl;
+	//std::cout << "imageSize " << m_imageSizeID << std::endl;
 
 
 	m_invTrackID = glGetUniformLocation(integrateProg.getHandle(), "invTrack");
@@ -1233,7 +1233,10 @@ void gFusion::trackSDF(int layer, Eigen::Matrix4f camToWorld)
 	// bind images
 	glBindImageTexture(0, m_textureVolume, 0, GL_FALSE, 0, GL_READ_ONLY, GL_RG16I);
 	glBindImageTexture(1, m_textureVertex, layer, GL_FALSE, 0, GL_READ_ONLY, GL_RGBA32F);
-	glBindImageTexture(2, m_textureTest, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA32F);
+	glBindImageTexture(2, m_textureNormal, layer, GL_FALSE, 0, GL_READ_ONLY, GL_RGBA32F);
+
+	glBindImageTexture(3, m_textureTest, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA32F);
+	glBindImageTexture(4, m_textureTrackImage, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA32F);
 
 	// bind buffers
 	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 12, m_bufferSDFReduction);

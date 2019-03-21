@@ -90,6 +90,9 @@ const double epchTime() {
 
 }
 
+inline void writeTrackDataToFile();
+
+
 GLFWwindow *window;
 
 kRender krender;
@@ -128,7 +131,11 @@ void setUpGPU();
 int dispShift = 0;
 
 float depthMin = 0.0f;
-float depthMax = 4.0f;
+float depthMax = 1.5f;
+
+static int eRate = 90;
+static int eRes = 0;
+
 /////////////////////////
 // KINECT STUFF
 
@@ -235,7 +242,7 @@ glm::vec3 initOffset(int pixX, int pixY)
 	//std::cout << "depth width " << depthWidth << " px " << pointX << " py " << pointY << " size " << depthArray.size() << " valu " << pointY * depthWidth + pointX << std::endl;
 	float z = float(depthArray[pointY * depthWidth + pointX]) * kcamera.getDepthUnit() / 1000000.0f;
 	//kcamera.fx(), kcamera.fx(), kcamera.ppx(), kcamera.ppy()
-	std::cout << z << std::endl;
+	//std::cout << z << std::endl;
 
 	float x = (pointX - kcamera.ppx()) * (1.0f / kcamera.fx()) * z;
 	float y = (pointY - kcamera.ppy()) * (1.0f / kcamera.fx()) * z;
