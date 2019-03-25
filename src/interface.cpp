@@ -75,7 +75,7 @@ void Realsense2Camera::start()
 
 		//Add desired streams to configuration // 
 		cfg.enable_stream(RS2_STREAM_COLOR, m_colorframe_width, m_colorframe_height, RS2_FORMAT_BGRA8, 60);
-		cfg.enable_stream(RS2_STREAM_DEPTH, m_depthframe_width, m_depthframe_height, RS2_FORMAT_Z16, 60);
+		cfg.enable_stream(RS2_STREAM_DEPTH, m_depthframe_width, m_depthframe_height, RS2_FORMAT_Z16, 90);
 
 
 		// Start streaming with default recommended configuration
@@ -265,7 +265,7 @@ void Realsense2Camera::captureLoop()
 	m_depth_frame = new uint16_t[m_depthframe_width * m_depthframe_height];
 
 	//rs2::frame_queue fq_depth;
-	double previousTime = 0.0;
+	uint64_t previousTime = 0;
 	while (m_status == CAPTURING)
 	{
 		if (m_valuesChanged)
@@ -299,7 +299,10 @@ void Realsense2Camera::captureLoop()
 		if (aligned_depth_frame.supports_frame_metadata(RS2_FRAME_METADATA_TIME_OF_ARRIVAL))
 		{
 			m_frameArrivalTime = aligned_depth_frame.get_frame_metadata(RS2_FRAME_METADATA_TIME_OF_ARRIVAL);
-
+			uint64_t currentTime = aligned_depth_frame.get_frame_metadata(RS2_FRAME_METADATA_TIME_OF_ARRIVAL);
+			uint64_t deltaTime = currentTime - previousTime;
+			std::cout << deltaTime << std::endl;
+			previousTime = currentTime;
 		}
 
 		//if (color.supports_frame_metadata(RS2_FRAME_METADATA_FRAME_TIMESTAMP))
