@@ -140,7 +140,7 @@ void Realsense2Camera::frames(unsigned char * colorAray, float * bigDepthArray)
 }
 
 // get all the frames available, pass a null pointer in for each array you dont want back
-bool Realsense2Camera::frames(double &frameTime, unsigned char * colorArray, std::vector<uint16_t> &depthArray, float * infraredArray, float * bigDepthArray, int * colorDepthMapping)
+bool Realsense2Camera::frames(uint64_t &frameTime, unsigned char * colorArray, std::vector<uint16_t> &depthArray, float * infraredArray, float * bigDepthArray, int * colorDepthMapping)
 {
 	//m_mtx.lock();
 

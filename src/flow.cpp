@@ -2262,7 +2262,7 @@ void gFlow::buildQuadtree()
 	glGetTexImage(GL_TEXTURE_2D, m_numberHPLevels, GL_RED, GL_FLOAT, sumData.data());
 	glBindTexture(GL_TEXTURE_2D, 0);
 
-	std::cout << "sum " << sumData[0] << std::endl;
+	//std::cout << "sum " << sumData[0] << std::endl;
 	m_quadlistCount = sumData[0];
 
 	// read the top value from the mipmap level

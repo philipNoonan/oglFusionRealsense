@@ -383,8 +383,19 @@ void setUI()
 		//ImGui::Text("Timing");
 		//ImGui::Separator();
 
-
-		ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", arr[8], 1000.0f / arr[8]);
+		ImGui::Text("Framerate %.3f ms/frame (%.1f FPS)", arr[8], 1000.0f / arr[8]);
+		if (ImGui::BeginPopupContextItem("item context menu"))
+		{
+			ImGui::Text("Jump Flooding %.3f ms/frame", arr[0]);
+			ImGui::Text("Raycasting %.3f ms/frame", arr[1]);
+			ImGui::Text("TBC %.3f ms/frame", arr[2]);
+			ImGui::Text("Track P2P %.3f ms/frame", arr[3]);
+			ImGui::Text("TBC %.3f ms/frame", arr[4]);
+			ImGui::Text("Integration %.3f ms/frame", arr[5]);
+			ImGui::Text("Track P2V %.3f ms/frame", arr[6]);
+			ImGui::Text("TBC %.3f ms/frame", arr[7]);
+			ImGui::EndPopup();
+		}
 
 		//ImGui::PushItemWidth(-krender.guiPadding().first);
 		//ImGui::SetWindowPos(ImVec2(display_w - (display_w / 4) - krender.guiPadding().first, ((krender.guiPadding().second) + (0))));
@@ -395,6 +406,19 @@ void setUI()
 		ImGui::PushStyleColor(ImGuiCol_Button, (ImVec4)ImColor::HSV(0.33f, 1.0f, 0.5f));
 		ImGui::PushStyleColor(ImGuiCol_ButtonHovered, (ImVec4)ImColor::HSV(0.33f, 0.7f, 0.2f));
 		ImGui::PushStyleColor(ImGuiCol_ButtonActive, (ImVec4)ImColor::HSV(0.33f, 0.8f, 0.3f));
+		if (ImGui::BeginPopupContextItem("plot context menu"))
+		{
+			ImGui::Text("Jump Flooding %.3f ms/frame", arr[0]);
+			ImGui::Text("Raycasting %.3f ms/frame", arr[1]);
+			ImGui::Text("TBC %.3f ms/frame", arr[2]);
+			ImGui::Text("Track P2P %.3f ms/frame", arr[3]);
+			ImGui::Text("TBC %.3f ms/frame", arr[4]);
+			ImGui::Text("Integration %.3f ms/frame", arr[5]);
+			ImGui::Text("Track P2V %.3f ms/frame", arr[6]);
+			ImGui::Text("TBC %.3f ms/frame", arr[7]);
+			ImGui::EndPopup();
+		}
+
 		if (ImGui::Button("Start Realsense"))
 		{
 			startRealsense();
@@ -705,7 +729,7 @@ int main(int, char**)
 	filenameSS << "data/motion/motion_" << return_current_time_and_date() << ".txt";
 	std::ofstream outputFile(filenameSS.str(), std::ios::out | std::ios::app);
 
-	double previousTime = epchTime();
+	uint64_t previousTime = 0;// ();
 
 	bool frameReady = false;
 
@@ -727,7 +751,7 @@ int main(int, char**)
 			gfusion.resetTimes();
 			gfusion.setDepthUnit(kcamera.getDepthUnit());
 
-			auto eTime = epochTime();
+			//auto eTime = epochTime();
 
 			//double currentTime = epchTime();
 			//double deltaTime = currentTime - previousTime;
@@ -783,7 +807,7 @@ int main(int, char**)
 				counter++;
 			}
 
-			outputFile << eTime << " " << gfusion.alignmentEnergy() << " " << kcamera.getTemperature();
+			outputFile << std::to_string(previousTime) << " " << gfusion.alignmentEnergy() << " " << kcamera.getTemperature();
 			outputFile << " " << gfusion.getPose()[0].x << " " << gfusion.getPose()[0].y << " " << gfusion.getPose()[0].z << " " << gfusion.getPose()[0].w << \
 				" " << gfusion.getPose()[1].x << " " << gfusion.getPose()[1].y << " " << gfusion.getPose()[1].z << " " << gfusion.getPose()[1].w << \
 				" " << gfusion.getPose()[2].x << " " << gfusion.getPose()[2].y << " " << gfusion.getPose()[2].z << " " << gfusion.getPose()[2].w << \

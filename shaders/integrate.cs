@@ -8,15 +8,19 @@ layout(binding = 2, r16ui) uniform uimage2D depthImageShort;
 
 layout(binding = 3, rgba32f) uniform image2D depthVertexImage;
 
+uniform float dMax;
+uniform float dMin;
+
 uniform mat4 invTrack;
 uniform mat4 Kmat; 
-uniform float mu; 
+//uniform float mu; 
 uniform float maxWeight;
 uniform vec3 volDim; // vol dim real world span of the volume in meters
 uniform vec3 volSize; // voxel grid size of the volume 
     // volDim.x / volSize.x = sizeOfVoxel
 uniform int imageType;
 uniform float depthScale;
+
 
 
 
@@ -61,134 +65,148 @@ void setSDF(uvec3 _pix, vec4 _data)
 
 void main()
 {
-    ivec2 depthSize;
-    if (imageType == 0)
-    {
-        depthSize = ivec2(imageSize(depthImageShort).xy);
-    }
-    else
-    {
-        depthSize = ivec2(imageSize(depthImage).xy);
-    }
-    uvec3 pix = gl_GlobalInvocationID.xyz;
 
-   // imageStore(volumeData, ivec3(pix.x, pix.y, 1), ivec4(123));
-
-    vec3 pos = vec3(invTrack * vec4(getVolumePosition(pix), 1.0f)).xyz;
-    //vec3 pos = opMul(invTrack, getVolumePosition(pix));
-
-    vec3 cameraX = vec3(Kmat * vec4(pos, 1.0f)).xyz;
-    //vec3 cameraX = opMul(Kmat, pos);
-
-    vec3 delta = vec3(invTrack * vec4(0.0f, 0.0f, volDim.z / volSize.z, 0.0f)).xyz;
-    //vec3 delta = rotate(invTrack, vec3(0.0f, 0.0f, volDim.z / volSize.z));
-
-    vec3 cameraDelta = vec3(Kmat * vec4(delta, 0.0f)).xyz;
-    //vec3 cameraDelta = rotate(Kmat, delta);
-
-    bool useOld = true;
-    if (useOld)
-    {
-        for (pix.z = 0; pix.z < volSize.z; ++pix.z, pos += delta, cameraX += cameraDelta)
+    //if (true)
+    //{
+        ivec2 depthSize;
+        if (imageType == 0)
         {
-            if (pos.z < 0.0001f)
-                continue;
+            depthSize = ivec2(imageSize(depthImageShort).xy);
+        }
+        else
+        {
+            depthSize = ivec2(imageSize(depthImage).xy);
+        }
+        uvec3 pix = gl_GlobalInvocationID.xyz;
 
-            vec2 pixel = vec2(cameraX.x / cameraX.z, cameraX.y / cameraX.z);
+    //imageStore(volumeData, ivec3(pix), ivec4(dMaxi * 100, dMini * 100, 0, 0));
 
-            if (pixel.x < 0 || pixel.x > depthSize.x - 1 || pixel.y < 0 || pixel.y > depthSize.y - 1)
-                continue;
 
-            uvec2 px = uvec2(pixel.x, pixel.y);
+    // imageStore(volumeData, ivec3(pix.x, pix.y, 1), ivec4(123));
 
-            float depth;
-            if (imageType == 0)
+    float deemax = invTrack[3][3];
+    float deemin = invTrack[2][3];
+    mat4 itrack = invTrack;
+    itrack[3][3] = 1.0f;
+    itrack[2][3] = 0.0f;
+
+    vec3 pos = vec3(itrack * vec4(getVolumePosition(pix), 1.0f)).xyz;
+        //vec3 pos = opMul(invTrack, getVolumePosition(pix));
+
+        vec3 cameraX = vec3(Kmat * vec4(pos, 1.0f)).xyz;
+        //vec3 cameraX = opMul(Kmat, pos);
+
+        vec3 delta = vec3(itrack * vec4(0.0f, 0.0f, volDim.z / volSize.z, 0.0f)).xyz;
+        //vec3 delta = rotate(invTrack, vec3(0.0f, 0.0f, volDim.z / volSize.z));
+
+        vec3 cameraDelta = vec3(Kmat * vec4(delta, 0.0f)).xyz;
+        //vec3 cameraDelta = rotate(Kmat, delta);
+
+
+        //bool useOld = true;
+        //if (useOld)
+        //{
+            for (pix.z = 0; pix.z < volSize.z; ++pix.z, pos += delta, cameraX += cameraDelta)
             {
-                depth = float(imageLoad(depthImageShort, ivec2(px)).x) * depthScale;
-            }
-            else if (imageType == 1)
-            {
-                depth = imageLoad(depthImage, ivec2(px)).x / 1000.0f; // chnage me to whatever float type images have scales, if they do
-            }
+                if (pos.z < 0.0001f)
+                    continue;
 
-            if (depth.x == 0)
-                continue;
+                vec2 pixel = vec2(cameraX.x / cameraX.z, cameraX.y / cameraX.z);
 
-            float diff = (depth.x - cameraX.z) * sqrt(1 + pow(pos.x / pos.z, 2) + pow(pos.y / pos.z, 2));
-            //if (abs(diff) < 0.1f)
-            if (diff < 0.05f && diff > -0.05f) // change these to uniforms set from host
-            {
-                //if ((diff) < 0.1)
-                //{
-                float sdf = diff / mu;
-                vec4 data = getSDF(pix);
-                //float weightedDistance = (data.y * data.x + sdf) / (data.y + 1);
-                float weightedDistance = (data.y * data.x + diff) / (data.y + 1);
+                if (pixel.x < 0 || pixel.x > depthSize.x - 1 || pixel.y < 0 || pixel.y > depthSize.y - 1)
+                    continue;
 
-                if (weightedDistance < 0.05f)
+                uvec2 px = uvec2(pixel.x, pixel.y);
+
+                float depth;
+                if (imageType == 0)
                 {
-                    data.x = clamp(weightedDistance, -0.05f, 0.05f);
-                    // data.x = diff;
-                    data.y = min(data.y + 1, maxWeight);
+                    depth = float(imageLoad(depthImageShort, ivec2(px)).x) * depthScale;
                 }
-                else
+                else if (imageType == 1)
                 {
-                    data.x = 0;
-                    data.y = 0;
+                    depth = imageLoad(depthImage, ivec2(px)).x / 1000.0f; // chnage me to whatever float type images have scales, if they do
                 }
 
-                setSDF(pix, data);
+                if (depth.x == 0)
+                    continue;
+
+                float diff = (depth.x - cameraX.z) * sqrt(1 + pow(pos.x / pos.z, 2) + pow(pos.y / pos.z, 2));
+        //if (abs(diff) < 0.1f)
+        if (diff < deemax && diff > deemin)
+        {
+            //if ((diff) < 0.1)
+            //{
+            //float sdf = diff / mu;
+            vec4 data = getSDF(pix);
+            //float weightedDistance = (data.y * data.x + sdf) / (data.y + 1);
+            float weightedDistance = (data.y * data.x + diff) / (data.y + 1);
+
+            if (weightedDistance < 0.1f)
+            {
+                data.x = clamp(weightedDistance, -0.04f, 0.1f);
+                // data.x = diff;
+                data.y = min(data.y + 1, (maxWeight));
             }
             else
             {
-                vec4 data;// = vs(pix);
-
                 data.x = 0;
-
                 data.y = 0;
-
-                setSDF(pix, data);
             }
+
+            imageStore(volumeData, ivec3(pix), ivec4(int(data.x * 32766.0f), int(data.y), data.zw));
+
+            //setSDF(pix, data);
         }
-
-
-
-    }
-    else // new method where we dont sweep through the whole texture only a few voxels either side of the array
-    {
-        // the input depth image z value should be projected into 3d then tranlated to volume space
-        // from cameraX and camera delta, traverse the ray from +SDF to -SDF
-        // at each delta position, update the SDF from the current depth
-
-        mat4 track = inverse(invTrack);
-
-        vec4 depth = imageLoad(depthVertexImage, ivec2(pix.xy));
-
-        vec4 depthInVolumeSpace = track * vec4(depth.xyz, 1.0f);
-
-
-
-        float voxelLength = volDim.x / volSize.x;
-
-        for (float z = -voxelLength * 5.0; z < voxelLength * 5.0; z+= voxelLength / 10.0)
+        else
         {
-            vec3 volPos = vec3(depthInVolumeSpace.xy, depthInVolumeSpace.z + z);
-
-            vec4 previousSDF = getSDF(uvec3(volPos * volSize / volDim));
-            float weightedDistance = (previousSDF.y * previousSDF.x + z / mu) / (previousSDF.y + 1);
-
-            vec4 newSDF = vec4(clamp(weightedDistance, -voxelLength * 5.0, voxelLength * 5.0),
-                               min(previousSDF.y + 1.0f, maxWeight), 
-                               0.0f,
-                               0.0f);
-
-            setSDF(uvec3(volPos * volSize / volDim), newSDF);
+            vec4 data;// = vs(pix);
+            data.x = 0;
+            data.y = 0;
+            setSDF(pix, data);
         }
-
-
-
-
     }
+
+
+
+        //}
+        //else // new method where we dont sweep through the whole texture only a few voxels either side of the array
+        //{
+        //    // the input depth image z value should be projected into 3d then tranlated to volume space
+        //    // from cameraX and camera delta, traverse the ray from +SDF to -SDF
+        //    // at each delta position, update the SDF from the current depth
+
+        //    mat4 track = inverse(invTrack);
+
+        //    vec4 depth = imageLoad(depthVertexImage, ivec2(pix.xy));
+
+        //    vec4 depthInVolumeSpace = track * vec4(depth.xyz, 1.0f);
+
+
+
+        //    float voxelLength = volDim.x / volSize.x;
+
+        //    for (float z = -voxelLength * 5.0; z < voxelLength * 5.0; z += voxelLength / 10.0)
+        //    {
+        //        vec3 volPos = vec3(depthInVolumeSpace.xy, depthInVolumeSpace.z + z);
+
+        //        vec4 previousSDF = getSDF(uvec3(volPos * volSize / volDim));
+        //        float weightedDistance = (previousSDF.y * previousSDF.x + z / mu) / (previousSDF.y + 1);
+
+        //        vec4 newSDF = vec4(clamp(weightedDistance, -voxelLength * 5.0, voxelLength * 5.0),
+        //                           min(previousSDF.y + 1.0f, maxWeight),
+        //                           0.0f,
+        //                           0.0f);
+
+        //        setSDF(uvec3(volPos * volSize / volDim), newSDF);
+        //    }
+
+
+
+
+        //}
+
+   // }
 
 
 

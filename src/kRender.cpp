@@ -104,7 +104,7 @@ void kRender::MouseButtonCallback(GLFWwindow* window, int button, int action, in
 
 	if (m_depthPixelPoints2D.size() > 0 && action == GLFW_PRESS)
 	{
-		std::cout << m_depthPixelPoints2D.size();
+		//std::cout << m_depthPixelPoints2D.size();
 		for (auto i : m_depthPixelPoints2D)
 		{
 			//std::cout << " x: " << i.first << " y: " << i.second << std::endl;
@@ -112,7 +112,7 @@ void kRender::MouseButtonCallback(GLFWwindow* window, int button, int action, in
 	}
 	else if (m_depthPixelPoints2D.size() == 0 && action == GLFW_PRESS)
 	{
-		std::cout << "no entries yet, left click points on depth image" << std::endl;
+		//std::cout << "no entries yet, left click points on depth image" << std::endl;
 	}
 	//std::cout << "mouse button pressed: " << button << " " << action << " x: " <<  m_mouse_pos_x << " y: " << m_mouse_pos_y << std::endl;
 
@@ -137,7 +137,7 @@ void kRender::KeyboardCallback(GLFWwindow* window, int key, int scancode, int ac
 	if (key == GLFW_KEY_DOWN && action == GLFW_PRESS)
 		m_registration_matrix[3][2] += 5.0f;
 
-	std::cout << "manual x " << m_registration_matrix[3][0] << " manual y " << m_registration_matrix[3][1] << " manual z " << m_registration_matrix[3][2] << std::endl;
+	//std::cout << "manual x " << m_registration_matrix[3][0] << " manual y " << m_registration_matrix[3][1] << " manual z " << m_registration_matrix[3][2] << std::endl;
 }
 
 void kRender::SetCallbackFunctions()

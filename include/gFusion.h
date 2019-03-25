@@ -59,6 +59,8 @@ struct gFusionConfig
 	std::vector<int> iterations;
 	float track_threshold;
 	glm::vec2 depthFrameSize;
+	float dMax;
+	float dMin;
 
 	gFusionConfig() 
 	{
@@ -76,6 +78,8 @@ struct gFusionConfig
 		iterations.push_back(6);
 		track_threshold = 0.5f;
 		depthFrameSize = glm::vec2(848, 480);
+		dMax = 0.1f;
+		dMin = -0.04f;
 	}
 
 	float stepSize()
@@ -362,6 +366,9 @@ private:
 	GLuint m_TtrackID;
 	GLuint m_distThresh_t;
 	GLuint m_normThresh_t;
+	GLuint m_dMaxID_t;
+	GLuint m_dMinID_t;
+	
 	// reduce
 	GLuint m_imageSizeID;
 	// integrate
@@ -373,6 +380,12 @@ private:
 	GLuint m_volSizeID;
 	GLuint m_imageTypeID_i;
 	GLuint m_depthScaleID_i;
+	GLuint m_dMaxID_i;
+	GLuint m_dMinID_i;
+	// INTEGRTATE UB
+	unsigned int m_ub_integrateID;
+	GLuint m_ub_integrate;
+
 	// raycast
 	GLuint m_viewID_r;
 	GLuint m_nearPlaneID;

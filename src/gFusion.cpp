@@ -114,6 +114,8 @@ void gFusion::setLocations()
 	m_volSizeID = glGetUniformLocation(integrateProg.getHandle(), "volSize");
 	m_imageTypeID_i = glGetUniformLocation(integrateProg.getHandle(), "imageType");
 	m_depthScaleID_i = glGetUniformLocation(integrateProg.getHandle(), "depthScale");
+	m_dMaxID_i = glGetUniformLocation(integrateProg.getHandle(), "dMax");
+	m_dMinID_i = glGetUniformLocation(integrateProg.getHandle(), "dMin");
 
 	//std::cout << "invTrack " << m_invTrackID << std::endl;
 	//std::cout << "Kmat " << m_KID << std::endl;
@@ -169,6 +171,8 @@ void gFusion::setLocations()
 	m_volSizeID_t = glGetUniformLocation(trackSDFProg.getHandle(), "volSize");
 	m_cID = glGetUniformLocation(trackSDFProg.getHandle(), "c");
 	m_epsID = glGetUniformLocation(trackSDFProg.getHandle(), "eps");
+	m_dMaxID_t = glGetUniformLocation(trackSDFProg.getHandle(), "dMax");
+	m_dMinID_t = glGetUniformLocation(trackSDFProg.getHandle(), "dMin");
 	m_imageSizeID_t_sdf = glGetUniformLocation(trackSDFProg.getHandle(), "imageSize");
 	// REDUCE SDF
 	m_imageSizeID_sdf = glGetUniformLocation(reduceSDFProg.getHandle(), "imageSize");
@@ -1247,6 +1251,9 @@ void gFusion::trackSDF(int layer, Eigen::Matrix4f camToWorld)
 	glUniformMatrix4fv(m_TtrackID_t, 1, GL_FALSE, camToWorld.data());
 	glUniform2iv(m_imageSizeID_t_sdf, 1, glm::value_ptr(imageSize));
 
+	glUniform1f(m_dMaxID_t, configuration.dMax);
+	glUniform1f(m_dMinID_t, configuration.dMin);
+
 	glUniform1f(m_cID, 0.02f * 0.1f);
 	glUniform1f(m_epsID, 10e-9);
 	glUniform3fv(m_volDimID_t, 1, glm::value_ptr(configuration.volumeDimensions));
@@ -1424,11 +1431,20 @@ void gFusion::integrate()
 	glm::mat4 integratePose = glm::inverse(m_pose);
 	glm::mat4 K = GLHelper::getCameraMatrix(m_camPamsDepth); // make sure im set
 
+	integratePose[3][3] = configuration.dMax;
+	integratePose[2][3] = configuration.dMin;
+
 	// bind uniforms
 	glUniformMatrix4fv(m_invTrackID, 1, GL_FALSE, glm::value_ptr(integratePose));
 	glUniformMatrix4fv(m_KID, 1, GL_FALSE, glm::value_ptr(K));
 	glUniform1f(m_muID, configuration.mu);
+
+
+	glUniform1f(m_dMaxID_i, configuration.dMax);
+	glUniform1f(m_dMinID_i, configuration.dMin);
+
 	glUniform1f(m_maxWeightID, configuration.maxWeight);
+
 	glUniform3fv(m_volDimID, 1, glm::value_ptr(configuration.volumeDimensions));
 	glUniform3fv(m_volSizeID, 1, glm::value_ptr(configuration.volumeSize));
 	//bind image textures
@@ -1822,7 +1838,7 @@ bool gFusion::recoverPose()
 {
 	bool foundPose = false;
 	int currentLibrarySize = poseLibrary.size();
-	std::cout << currentLibrarySize << std::endl;
+	std::cout << "lib size : " << currentLibrarySize << std::endl;
 	if (currentLibrarySize == 0)
 	{
 		std::cout << "You should not have arrived here" << std::endl;
