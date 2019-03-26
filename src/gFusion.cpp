@@ -627,6 +627,70 @@ void gFusion::depthToVertex(float * depthArray)
 
 }
 
+void gFusion::depthToVertex(std::vector<rs2::frame_queue> depthQ, int devNumber)
+{
+	int compWidth;
+	int compHeight;
+
+	rs2::frame depthFrame;
+
+	if (depthQ[devNumber].poll_for_frame(&depthFrame))
+	{
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, m_textureDepth);
+		glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, configuration.depthFrameSize.x, configuration.depthFrameSize.y, GL_RED, GL_UNSIGNED_SHORT, depthFrame.get_data());
+		glGenerateMipmap(GL_TEXTURE_2D);
+
+
+	}
+
+	//std::vector<uint16_t> testvec(480 * 848 / 2, 10);
+
+
+	//glActiveTexture(GL_TEXTURE0);
+	//glBindTexture(GL_TEXTURE_2D, m_textureDepth);
+	//glGetTexImage(GL_TEXTURE_2D, 1, GL_RED, GL_UNSIGNED_SHORT, testvec.data());
+	//glBindTexture(GL_TEXTURE_2D, 0);
+	//
+
+	//cv::Mat lvl1d = cv::Mat(480 / 2, 848 / 2, CV_16SC1, testvec.data()); 
+	//cv::Mat converted;
+	//lvl1d.convertTo(converted, CV_32FC1);
+	//cv::imshow("lvl1!d", (converted * 100.0 / 1000000.0 - 0.1) / (0.2 - 0.1));
+
+
+
+	depthToVertProg.use();
+
+	for (int i = 0; i < 3; i++) // here 3 is the number of mipmap levels
+	{
+		compWidth = divup((int)configuration.depthFrameSize.x >> i, 32);
+		compHeight = divup((int)configuration.depthFrameSize.y >> i, 32);
+
+
+		glm::mat4 invK = GLHelper::getInverseCameraMatrix(m_camPamsDepth / float(1 << i));
+		glBindImageTexture(1, m_textureDepth, i, GL_FALSE, 0, GL_READ_ONLY, GL_R16UI);
+		glBindImageTexture(2, m_textureVertex, i, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA32F);
+		glUniformMatrix4fv(m_invkID, 1, GL_FALSE, glm::value_ptr(invK));
+		//glUniform4fv(m_camPamsID, 1, glm::value_ptr(m_camPamsDepth));
+		glUniform1i(m_imageTypeID, 0); // 0 == type short
+		glUniform1f(m_depthScaleID, m_depthUnit / 1000000.0f); // 1000 == each depth unit == 1 mm
+
+		glDispatchCompute(compWidth, compHeight, 1);
+		glMemoryBarrier(GL_ALL_BARRIER_BITS);
+	}
+
+	//std::vector<float> testvec(480 * 848, 10);
+
+
+	//glActiveTexture(GL_TEXTURE0);
+	//glBindTexture(GL_TEXTURE_2D, m_textureVertex);
+	//glGetTexImage(GL_TEXTURE_2D, 2, GL_RGBA, GL_FLOAT, testvec.data());
+	//glBindTexture(GL_TEXTURE_2D, 0);
+	//
+
+}
+
 void gFusion::depthToVertex(uint16_t * depthArray)
 {
 	int compWidth;

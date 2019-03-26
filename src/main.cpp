@@ -1,4 +1,4 @@
-#include "kinect.h"
+#include "main.h"
 
 //#define USEINFRARED
 //#define USEWEBCAM
@@ -46,7 +46,14 @@ void kRenderInit()
 {
 	krender.SetCallbackFunctions();
 	krender.compileAndLinkShader();
-	krender.setCameraParams(glm::vec4(kcamera.fx(), kcamera.fx(), kcamera.ppx(), kcamera.ppy()), glm::vec4(kcamera.fx_col(), kcamera.fx_col(), kcamera.ppx_col(), kcamera.ppy_col())); // FIX ME
+	krender.setCameraParams(glm::vec4(cameraInterface.getDepthIntrinsics(0).fx,
+									  cameraInterface.getDepthIntrinsics(0).fy, 
+								      cameraInterface.getDepthIntrinsics(0).cx, 
+									  cameraInterface.getDepthIntrinsics(0).cy), 
+						    glm::vec4(cameraInterface.getColorIntrinsics(0).fx, 
+									  cameraInterface.getColorIntrinsics(0).fy,
+									  cameraInterface.getColorIntrinsics(0).cx,
+								      cameraInterface.getColorIntrinsics(0).fx));
 
 	// Set locations
 	krender.setLocations();
@@ -66,6 +73,7 @@ void kRenderInit()
 void gFusionInit()
 {
 	depthArray.resize(depthHeight * depthWidth, 1);
+	colorArray.resize(colorHeight * colorWidth, 0);
 	//gfusion.queryDeviceLimits();
 	gfusion.compileAndLinkShader();
 	gfusion.setLocations();
@@ -79,7 +87,14 @@ void gFusionInit()
 	gconfig.iterations[1] = 4;
 	gconfig.iterations[2] = 6;
 	
-	gfusion.setCameraParams(glm::vec4(kcamera.fx(), kcamera.fx(), kcamera.ppx(), kcamera.ppy()), glm::vec4(kcamera.fx_col(), kcamera.fx_col(), kcamera.ppx_col(), kcamera.ppy_col())); // FIX ME
+	gfusion.setCameraParams(glm::vec4(cameraInterface.getDepthIntrinsics(0).fx,
+									  cameraInterface.getDepthIntrinsics(0).fy,
+									  cameraInterface.getDepthIntrinsics(0).cx,
+									  cameraInterface.getDepthIntrinsics(0).cy),
+							glm::vec4(cameraInterface.getColorIntrinsics(0).fx,
+									  cameraInterface.getColorIntrinsics(0).fy,
+									  cameraInterface.getColorIntrinsics(0).cx,
+									  cameraInterface.getColorIntrinsics(0).fx));
 
 	glm::mat4 initPose = glm::translate(glm::mat4(1.0f), glm::vec3(gconfig.volumeDimensions.x / 2.0f, gconfig.volumeDimensions.y / 2.0f, 0.0f));
 
@@ -93,7 +108,7 @@ void gFusionInit()
 
 
 	gfusion.setUsingDepthFloat(false);
-	gfusion.setDepthUnit(kcamera.getDepthUnit());
+	gfusion.setDepthUnit(cameraInterface.getDepthUnit(0));
 
 
 
@@ -125,7 +140,10 @@ void gDisOptFlowInit()
 
 void gFloodInit()
 {
-	gflood.setCameraParams(glm::vec4(kcamera.fx(), kcamera.fx(), kcamera.ppx(), kcamera.ppy())); // FIX ME
+	gflood.setCameraParams(glm::vec4(cameraInterface.getDepthIntrinsics(0).fx,
+									 cameraInterface.getDepthIntrinsics(0).fy,
+									 cameraInterface.getDepthIntrinsics(0).cx,
+									 cameraInterface.getDepthIntrinsics(0).cy));
 
 	gflood.compileAndLinkShader();
 	gflood.setLocations();
@@ -217,7 +235,11 @@ void startRealsense()
 	if (cameraRunning == false)
 	{
 		cameraRunning = true;
-		kcamera.setPreset(eRate, eRes);
+		//kcamera.setPreset(eRate, eRes);
+		cameraInterface.searchForCameras();
+		cameraInterface.setDepthProperties(cameraDevice, 848, 480, 30);
+		cameraInterface.setColorProperties(cameraDevice, 848, 480, 30);
+
 		if (eRes == 0)
 		{
 			depthWidth = 848;
@@ -229,7 +251,8 @@ void startRealsense()
 			depthHeight = 720;
 		}
 
-		kcamera.start();
+		//kcamera.start();
+		cameraInterface.startDevice(cameraDevice);
 
 		setUpGPU();
 
@@ -443,7 +466,7 @@ void setUI()
 			ImGui::SliderInt("Disparity", &dispShift, 0, 300);
 			if (prevShift != dispShift)
 			{
-				kcamera.setDepthControlGroupValues(0, 0, 0, 0, (uint32_t)dispShift); // TODO make this work with depth min and depth max
+				//////////////////////////kcamera.setDepthControlGroupValues(0, 0, 0, 0, (uint32_t)dispShift); // TODO make this work with depth min and depth max
 			}
 			ImGui::PopItemWidth();
 
@@ -744,12 +767,17 @@ int main(int, char**)
 		glClear(GL_COLOR_BUFFER_BIT);
 
 
-		frameReady = kcamera.frames(previousTime, colorArray, depthArray, NULL, NULL, NULL);
+		//frameReady = kcamera.frames(previousTime, colorArray, depthArray, NULL, NULL, NULL);
+		frameReady = cameraInterface.collateFrames();
+		//cameraInterface.getDepthFrame(cameraDevice, depthArray);
+		//cameraInterface.getColorFrame(cameraDevice, colorArray);
+
+
 		if (frameReady)
 		{
 
 			gfusion.resetTimes();
-			gfusion.setDepthUnit(kcamera.getDepthUnit());
+			//gfusion.setDepthUnit(cameraInterface.getDepthUnit(cameraDevice));
 
 			//auto eTime = epochTime();
 
@@ -758,7 +786,7 @@ int main(int, char**)
 			//previousTime = currentTime;
 			//std::cout << (int)(deltaTime) << std::endl;
 
-			krender.setColorFrame(colorArray);
+			//krender.setColorFrame(colorArray);
 
 			if (performFlow)
 			{
@@ -767,7 +795,7 @@ int main(int, char**)
 				gflow.calc(false);
 			}		   
 
-			gfusion.depthToVertex(depthArray.data());
+			gfusion.depthToVertex(cameraInterface.getDepthQueues(), cameraDevice);
 
 			gfusion.vertexToNormal();
 			if (performFlood)
@@ -807,7 +835,7 @@ int main(int, char**)
 				counter++;
 			}
 
-			outputFile << std::to_string(previousTime) << " " << gfusion.alignmentEnergy() << " " << kcamera.getTemperature();
+			//outputFile << std::to_string(previousTime) << " " << gfusion.alignmentEnergy() << " " << kcamera.getTemperature();
 			outputFile << " " << gfusion.getPose()[0].x << " " << gfusion.getPose()[0].y << " " << gfusion.getPose()[0].z << " " << gfusion.getPose()[0].w << \
 				" " << gfusion.getPose()[1].x << " " << gfusion.getPose()[1].y << " " << gfusion.getPose()[1].z << " " << gfusion.getPose()[1].w << \
 				" " << gfusion.getPose()[2].x << " " << gfusion.getPose()[2].y << " " << gfusion.getPose()[2].z << " " << gfusion.getPose()[2].w << \
@@ -905,7 +933,8 @@ int main(int, char**)
 
 	ImGui_ImplGlfwGL3_Shutdown();
 	ImGui::DestroyContext();
-	kcamera.stop();
+	//kcamera.stop();
+	cameraInterface.stopDevice(cameraDevice);
 	glfwTerminate();
 
 	//krender.cleanUp();

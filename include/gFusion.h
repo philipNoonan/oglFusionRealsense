@@ -11,8 +11,10 @@
 #include <glm/gtx/transform.hpp>
 #include <glm/gtx/norm.hpp>
 
+#include <librealsense2/rs.hpp> // Include RealSense Cross Platform API
 
-//#define USE_OPENCV
+
+#define USE_OPENCV
 
 #ifdef USE_OPENCV
 
@@ -187,6 +189,7 @@ public:
 	void allocateBuffers();
 	// depth functions
 	void depthToVertex();
+	void depthToVertex(std::vector<rs2::frame_queue> depthQ, int devNumber);
 	void depthToVertex(float * depthArray);
 	void depthToVertex(uint16_t * depthArray);
 

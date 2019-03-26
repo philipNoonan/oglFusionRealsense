@@ -15,6 +15,7 @@
 #include <fstream>
 
 
+
 #include "kRender.h"
 #include "renderHelpers.h"
 
@@ -97,7 +98,12 @@ GLFWwindow *window;
 
 kRender krender;
 
-Realsense2Camera kcamera;
+//Realsense2Camera kcamera;
+Interface cameraInterface;
+int cameraDevice = 0;
+
+
+
 static bool cameraRunning = false;
 
 
@@ -150,11 +156,12 @@ int depthHeight = 480;
 
 float *mainColor[colorWidth * colorHeight];
 
-unsigned char colorArray[4 * 848 * 480];
+//unsigned char colorArray[4 * 848 * 480];
 
 //float previousColorArray[depthWidth * depthHeight];
 //float bigDepthArray[colorWidth * (colorHeight + 2)]; // 1082 is not a typo
-													 //float color[512 * 424];
+							
+std::vector<uint16_t> colorArray;//float color[512 * 424];
 std::vector<uint16_t> depthArray;
 //float infraredArray[depthWidth * depthHeight];
 //int colorDepthMap[depthWidth * depthHeight];
@@ -240,12 +247,12 @@ glm::vec3 initOffset(int pixX, int pixY)
 	int pointY = depthHeight - float(pixY) * (float(depthHeight) / float(display2DWindow.h));
 	//std::cout << std::endl;
 	//std::cout << "depth width " << depthWidth << " px " << pointX << " py " << pointY << " size " << depthArray.size() << " valu " << pointY * depthWidth + pointX << std::endl;
-	float z = float(depthArray[pointY * depthWidth + pointX]) * kcamera.getDepthUnit() / 1000000.0f;
+	float z = float(depthArray[pointY * depthWidth + pointX]) * (float)cameraInterface.getDepthUnit(0) / 1000000.0f;
 	//kcamera.fx(), kcamera.fx(), kcamera.ppx(), kcamera.ppy()
 	//std::cout << z << std::endl;
 
-	float x = (pointX - kcamera.ppx()) * (1.0f / kcamera.fx()) * z;
-	float y = (pointY - kcamera.ppy()) * (1.0f / kcamera.fx()) * z;
+	float x = (pointX - cameraInterface.getDepthIntrinsics(0).cx) * (1.0f / cameraInterface.getDepthIntrinsics(0).fx) * z;
+	float y = (pointY - cameraInterface.getDepthIntrinsics(0).cy) * (1.0f / cameraInterface.getDepthIntrinsics(0).fy) * z;
 
 	//std::cout << "HAVE I BEEN SET CORRECTLY FROM DEPTH UNITS CFROM SENSOR??? x " << x << " y " << y << " z " << z << std::endl;
 

@@ -160,7 +160,7 @@ public:
 	void setVertPositions();
 	void allocateTextures();
 	void allocateBuffers();
-	void setColorFrame(unsigned char * imageArray);
+	void setColorFrame(std::vector<uint16_t> imageArray);
 	void setTextures(GLuint depthTex, GLuint colorTex, GLuint vertexTex, GLuint normalTex, GLuint volumeTex, GLuint trackTex, GLuint pvpNormTex, GLuint pvdNormTex);
 	void setFlowTexture(GLuint flowTex);
 	void setBuffersFromMarchingCubes(GLuint posBuf, GLuint normBuf, size_t numVerts)

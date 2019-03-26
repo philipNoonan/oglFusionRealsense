@@ -323,11 +323,11 @@ void kRender::allocateTextures()
 
 }
 
-void kRender::setColorFrame(unsigned char * imageArray)
+void kRender::setColorFrame(std::vector<uint16_t> imageArray)
 {
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D, m_textureColor);
-	glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, m_color_width, m_color_height, GL_RGBA, GL_UNSIGNED_BYTE, imageArray);
+	glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, m_color_width, m_color_height, GL_RGBA, GL_UNSIGNED_BYTE, imageArray.data());
 	glGenerateMipmap(GL_TEXTURE_2D);
 }
 
