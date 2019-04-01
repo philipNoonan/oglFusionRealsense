@@ -14,6 +14,8 @@
 #include <librealsense2/rs.hpp> // Include RealSense Cross Platform API
 #include <librealsense2/rs_advanced_mode.hpp>
 
+#include "frameGrabber.h"
+
 class Realsense2Camera
 {
 
@@ -26,7 +28,7 @@ public:
 		STOPPED
 	};
 
-	Realsense2Camera() 
+	Realsense2Camera()
 	{
 		m_status = STOPPED;
 	};
@@ -40,6 +42,7 @@ public:
 	};
 
 	void setDev(rs2::device dev);
+	void setStreams();
 	void setDepthProperties(int width, int height, int rate);
 	void setColorProperties(int width, int height, int rate);
 	bool start();
@@ -50,6 +53,17 @@ public:
 	rs2_intrinsics getColorIntrinsics();
 	uint32_t getDepthUnit();
 	void capture();
+	void colorThread(rs2::sensor& sens);
+	void capturingColor(rs2::frame &f)
+	{
+		m_colorQueue.enqueue(f);
+	}
+
+	void depthThread(rs2::sensor& sens);
+	void capturingDepth(rs2::frame &f)
+	{
+		m_depthQueue.enqueue(f);
+	}
 
 private:
 
@@ -59,7 +73,6 @@ private:
 	int m_depthWidth;
 	int m_depthRate;
 
-	float m_depthUnit;
 
 	int m_colorHeight;
 	int m_colorWidth;
@@ -68,9 +81,10 @@ private:
 	std::string m_configFilename;
 	bool m_valuesChanged = false;
 	uint64_t m_frameArrivalTime = 0;
-	int m_temperature = 0;
+	int m_temperature;
 
 	STDepthTableControl m_ctrl_curr{};
+	uint32_t m_depthUnit;
 
 	rs2::device m_dev;
 	rs2::pipeline_profile m_selection;
@@ -85,8 +99,20 @@ private:
 	rs2::frame_queue m_depthQueue;
 	rs2::frame_queue m_colorQueue;
 
+	rs2::sensor m_depthSensor;
+	rs2::sensor m_colorSensor;
+
+	int m_depthStreamChoice = 71; //435I
+	//int m_depthStreamChoice = 211; // 415
+	int m_colorStreamChoice = 61; //435I
+
+	std::vector<rs2::sensor> m_sensors;
 
 
+	std::vector<rs2::stream_profile> m_stream_profiles_depthIR;
+	std::vector<rs2::stream_profile> m_stream_profiles_color;
+
+	//std::vector<FrameGrabber> m_grabbers;
 
 };
 

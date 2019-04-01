@@ -640,8 +640,6 @@ void gFusion::depthToVertex(std::vector<rs2::frame_queue> depthQ, int devNumber)
 		glBindTexture(GL_TEXTURE_2D, m_textureDepth);
 		glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, configuration.depthFrameSize.x, configuration.depthFrameSize.y, GL_RED, GL_UNSIGNED_SHORT, depthFrame.get_data());
 		glGenerateMipmap(GL_TEXTURE_2D);
-
-
 	}
 
 	//std::vector<uint16_t> testvec(480 * 848 / 2, 10);
@@ -658,7 +656,7 @@ void gFusion::depthToVertex(std::vector<rs2::frame_queue> depthQ, int devNumber)
 	//lvl1d.convertTo(converted, CV_32FC1);
 	//cv::imshow("lvl1!d", (converted * 100.0 / 1000000.0 - 0.1) / (0.2 - 0.1));
 
-
+	//std::cout << m_camPamsDepth[0] << " " << m_camPamsDepth[1]  << " " << m_camPamsDepth[2] << " " << m_camPamsDepth[3] << std::endl;
 
 	depthToVertProg.use();
 

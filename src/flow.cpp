@@ -506,7 +506,7 @@ void gFlow::allocateTextures(int nChn)
 	}
 	else
 	{
-		m_textureI0 = createTexture(m_textureI0, GL_TEXTURE_2D, m_numLevels, m_texture_width, m_texture_height, 0, GL_RGBA8);
+		m_textureI0 = createTexture(m_textureI0, GL_TEXTURE_2D, m_numLevels, m_texture_width, m_texture_height, 0, GL_RGB8);
 		//m_textureI1 = createTexture(m_textureI1, GL_TEXTURE_2D, m_numLevels, m_texture_width, m_texture_height, 0, GL_RGBA8);
 	}
 	
@@ -649,20 +649,20 @@ void gFlow::computeSobel(int level, bool useInfrared)
 	glUniform1i(m_level_cov_ID, level);
 
 	
-	if (useInfrared)
-	{
+	//if (useInfrared)
+	//{
 		//glBindImageTexture(0, m_textureI0, level, GL_FALSE, 0, GL_READ_ONLY, GL_R32F);
 		glActiveTexture(GL_TEXTURE0);
 		glBindTexture(GL_TEXTURE_2D, m_textureI0);
-		glUniform1i(m_imageType_cov_ID, 4); // image type 0 = color rgba8ui 
-	}
-	else
-	{
-		glActiveTexture(GL_TEXTURE0);
-		glBindTexture(GL_TEXTURE_2D, m_textureI0);
-		glBindImageTexture(0, m_textureI0, level, GL_FALSE, 0, GL_READ_ONLY, GL_RGBA8);
-		glUniform1i(m_imageType_cov_ID, 0); // image type 0 = color rgba8ui 
-	}
+		glUniform1i(m_imageType_cov_ID, 5); // image type 0 = color rgba8ui 
+	//}
+	//else
+	//{
+	//	glActiveTexture(GL_TEXTURE0);
+	//	glBindTexture(GL_TEXTURE_2D, m_textureI0);
+	//	glBindImageTexture(0, m_textureI0, level, GL_FALSE, 0, GL_READ_ONLY, GL_RGBA8);
+	//	glUniform1i(m_imageType_cov_ID, 0); // image type 0 = color rgba8ui 
+	//}
 
 
 

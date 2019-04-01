@@ -42,6 +42,7 @@ include(BasicConfig)
 
 
 find_package(OpenCV REQUIRED)
+find_package(aruco REQUIRED)
 find_package(OpenGL REQUIRED)
 find_package(GLEW REQUIRED)
 find_package(glfw3 REQUIRED)
@@ -49,6 +50,7 @@ find_package(glm REQUIRED)
 find_package(imgui REQUIRED)
 find_package(eigen3 REQUIRED)
 find_package(realsense2 REQUIRED)
+
 # header only
 find_path (DIRENT_INCLUDE_DIR dirent.h)
 
@@ -146,4 +148,5 @@ target_link_libraries(${PROJECT_NAME} imgui::imgui)
 target_link_libraries(${PROJECT_NAME} Eigen3::Eigen)
 target_link_libraries(${PROJECT_NAME} realsense2::realsense-file realsense2::realsense2)
 target_link_libraries(${PROJECT_NAME} ${OpenCV_LIBS})
+target_link_libraries(${PROJECT_NAME} ${aruco_LIBS})
 

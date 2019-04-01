@@ -245,18 +245,18 @@ void kRender::setLocations()
 
 void kRender::updateVerts(float w, float h)
 {
-	std::vector<float> vertices = {
-		// Positions		// Texture coords
-		w / 2.0f, h / 2.0f, 0.0f, 1.0f, 1.0f, // top right
-		w / 2.0f, -h / 2.0f, 0.0f, 1.0f, 0.0f, // bottom right
-		-w / 2.0f, -h / 2.0f, 0.0f, 0.0f, 0.0f, // bottom left
-		-w / 2.0f, h / 2.0f, 0.0f, 0.0f, 1.0f  // Top left
-	};
+std::vector<float> vertices = {
+	// Positions		// Texture coords
+	w / 2.0f, h / 2.0f, 0.0f, 1.0f, 1.0f, // top right
+	w / 2.0f, -h / 2.0f, 0.0f, 1.0f, 0.0f, // bottom right
+	-w / 2.0f, -h / 2.0f, 0.0f, 0.0f, 0.0f, // bottom left
+	-w / 2.0f, h / 2.0f, 0.0f, 0.0f, 1.0f  // Top left
+};
 
-	m_standard_verts = vertices;
+m_standard_verts = vertices;
 
-	glBindBuffer(GL_ARRAY_BUFFER, m_VBO_Standard);
-	glBufferSubData(GL_ARRAY_BUFFER, 0, m_standard_verts.size() * sizeof(float), m_standard_verts.data());
+glBindBuffer(GL_ARRAY_BUFFER, m_VBO_Standard);
+glBufferSubData(GL_ARRAY_BUFFER, 0, m_standard_verts.size() * sizeof(float), m_standard_verts.data());
 
 }
 
@@ -319,7 +319,7 @@ void kRender::allocateTextures()
 {
 	int patch_size = 8;
 	int numLevels = (int)(log((2 * m_color_width) / (4.0 * patch_size)) / log(2.0) + 0.5) + 1; ;// 1 + floor(std::log2(std::max(m_color_width, m_color_height)));
-	m_textureColor = GLHelper::createTexture(m_textureColor, GL_TEXTURE_2D, numLevels, m_color_width, m_color_height, 0, GL_RGBA8);
+	m_textureColor = GLHelper::createTexture(m_textureColor, GL_TEXTURE_2D, numLevels, m_color_width, m_color_height, 0, GL_RGB8);
 
 }
 
@@ -329,6 +329,29 @@ void kRender::setColorFrame(std::vector<uint16_t> imageArray)
 	glBindTexture(GL_TEXTURE_2D, m_textureColor);
 	glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, m_color_width, m_color_height, GL_RGBA, GL_UNSIGNED_BYTE, imageArray.data());
 	glGenerateMipmap(GL_TEXTURE_2D);
+}
+
+void kRender::setColorFrame(std::vector<rs2::frame_queue> colorQ, int devNumber, cv::Mat &colorMat)
+{
+	rs2::frame colorFrame;
+
+	if (colorQ[devNumber].poll_for_frame(&colorFrame))
+	{
+
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, m_textureColor);
+		glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, m_color_width, m_color_height, GL_RGB, GL_UNSIGNED_BYTE, colorFrame.get_data());
+		glGenerateMipmap(GL_TEXTURE_2D);
+
+		if (colorFrame != NULL)
+		{
+			colorMat = cv::Mat(m_color_height, m_color_width, CV_8UC3, (void*)colorFrame.get_data());
+		}
+
+	}
+
+
+	
 }
 
 void kRender::allocateBuffers()

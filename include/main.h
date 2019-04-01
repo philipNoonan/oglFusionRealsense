@@ -35,6 +35,7 @@
 #include "opencv2/imgproc.hpp"
 #include "opencv2/optflow.hpp"
 
+#include "markerTracking.h"
 
 #include <chrono>
 #include <time.h>
@@ -247,12 +248,29 @@ glm::vec3 initOffset(int pixX, int pixY)
 	int pointY = depthHeight - float(pixY) * (float(depthHeight) / float(display2DWindow.h));
 	//std::cout << std::endl;
 	//std::cout << "depth width " << depthWidth << " px " << pointX << " py " << pointY << " size " << depthArray.size() << " valu " << pointY * depthWidth + pointX << std::endl;
-	float z = float(depthArray[pointY * depthWidth + pointX]) * (float)cameraInterface.getDepthUnit(0) / 1000000.0f;
+	//float z = float(depthArray[pointY * depthWidth + pointX]) * (float)cameraInterface.getDepthUnit(cameraDevice) / 1000000.0f;
+
+
+	rs2::frame depthFrame;
+	float z = 0.0f;
+
+
+	depthFrame = cameraInterface.getDepthQueues()[cameraDevice].wait_for_frame();
+
+
+	const uint16_t* p_depth_frame = reinterpret_cast<const uint16_t*>(depthFrame.get_data());
+	//float z = float(depthArray[pointY * depthWidth + pointX]) * (float)cameraInterface.getDepthUnit(cameraDevice) / 1000000.0f;
+	int depth_pixel_index = (pointY * depthWidth + pointX);
+	z = p_depth_frame[depth_pixel_index] * (float)cameraInterface.getDepthUnit(cameraDevice) / 1000000.0f;
+	//std::cout << z << std::endl;
+
+
+
 	//kcamera.fx(), kcamera.fx(), kcamera.ppx(), kcamera.ppy()
 	//std::cout << z << std::endl;
 
-	float x = (pointX - cameraInterface.getDepthIntrinsics(0).cx) * (1.0f / cameraInterface.getDepthIntrinsics(0).fx) * z;
-	float y = (pointY - cameraInterface.getDepthIntrinsics(0).cy) * (1.0f / cameraInterface.getDepthIntrinsics(0).fy) * z;
+	float x = (pointX - cameraInterface.getDepthIntrinsics(cameraDevice).cx) * (1.0f / cameraInterface.getDepthIntrinsics(cameraDevice).fx) * z;
+	float y = (pointY - cameraInterface.getDepthIntrinsics(cameraDevice).cy) * (1.0f / cameraInterface.getDepthIntrinsics(cameraDevice).fy) * z;
 
 	//std::cout << "HAVE I BEEN SET CORRECTLY FROM DEPTH UNITS CFROM SENSOR??? x " << x << " y " << y << " z " << z << std::endl;
 
@@ -289,3 +307,8 @@ float mouseX = 0;
 float mouseY = 0;
 
 glm::vec2 mousePos = glm::vec2(0,0);
+
+
+
+/// MARKER TRACKING
+MarkerTracker mTracker;

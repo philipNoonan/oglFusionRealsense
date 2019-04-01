@@ -46,14 +46,14 @@ void kRenderInit()
 {
 	krender.SetCallbackFunctions();
 	krender.compileAndLinkShader();
-	krender.setCameraParams(glm::vec4(cameraInterface.getDepthIntrinsics(0).fx,
-									  cameraInterface.getDepthIntrinsics(0).fy, 
-								      cameraInterface.getDepthIntrinsics(0).cx, 
-									  cameraInterface.getDepthIntrinsics(0).cy), 
-						    glm::vec4(cameraInterface.getColorIntrinsics(0).fx, 
-									  cameraInterface.getColorIntrinsics(0).fy,
-									  cameraInterface.getColorIntrinsics(0).cx,
-								      cameraInterface.getColorIntrinsics(0).fx));
+	krender.setCameraParams(glm::vec4(cameraInterface.getDepthIntrinsics(cameraDevice).fx,
+									  cameraInterface.getDepthIntrinsics(cameraDevice).fy, 
+								      cameraInterface.getDepthIntrinsics(cameraDevice).cx, 
+									  cameraInterface.getDepthIntrinsics(cameraDevice).cy), 
+						    glm::vec4(cameraInterface.getColorIntrinsics(cameraDevice).fx, 
+									  cameraInterface.getColorIntrinsics(cameraDevice).fy,
+									  cameraInterface.getColorIntrinsics(cameraDevice).cx,
+								      cameraInterface.getColorIntrinsics(cameraDevice).fx));
 
 	// Set locations
 	krender.setLocations();
@@ -87,14 +87,14 @@ void gFusionInit()
 	gconfig.iterations[1] = 4;
 	gconfig.iterations[2] = 6;
 	
-	gfusion.setCameraParams(glm::vec4(cameraInterface.getDepthIntrinsics(0).fx,
-									  cameraInterface.getDepthIntrinsics(0).fy,
-									  cameraInterface.getDepthIntrinsics(0).cx,
-									  cameraInterface.getDepthIntrinsics(0).cy),
-							glm::vec4(cameraInterface.getColorIntrinsics(0).fx,
-									  cameraInterface.getColorIntrinsics(0).fy,
-									  cameraInterface.getColorIntrinsics(0).cx,
-									  cameraInterface.getColorIntrinsics(0).fx));
+	gfusion.setCameraParams(glm::vec4(cameraInterface.getDepthIntrinsics(cameraDevice).fx,
+									  cameraInterface.getDepthIntrinsics(cameraDevice).fy,
+									  cameraInterface.getDepthIntrinsics(cameraDevice).cx,
+									  cameraInterface.getDepthIntrinsics(cameraDevice).cy),
+							glm::vec4(cameraInterface.getColorIntrinsics(cameraDevice).fx,
+									  cameraInterface.getColorIntrinsics(cameraDevice).fy,
+									  cameraInterface.getColorIntrinsics(cameraDevice).cx,
+									  cameraInterface.getColorIntrinsics(cameraDevice).fx));
 
 	glm::mat4 initPose = glm::translate(glm::mat4(1.0f), glm::vec3(gconfig.volumeDimensions.x / 2.0f, gconfig.volumeDimensions.y / 2.0f, 0.0f));
 
@@ -108,7 +108,7 @@ void gFusionInit()
 
 
 	gfusion.setUsingDepthFloat(false);
-	gfusion.setDepthUnit(cameraInterface.getDepthUnit(0));
+	gfusion.setDepthUnit((float)cameraInterface.getDepthUnit(cameraDevice));
 
 
 
@@ -140,10 +140,10 @@ void gDisOptFlowInit()
 
 void gFloodInit()
 {
-	gflood.setCameraParams(glm::vec4(cameraInterface.getDepthIntrinsics(0).fx,
-									 cameraInterface.getDepthIntrinsics(0).fy,
-									 cameraInterface.getDepthIntrinsics(0).cx,
-									 cameraInterface.getDepthIntrinsics(0).cy));
+	gflood.setCameraParams(glm::vec4(cameraInterface.getDepthIntrinsics(cameraDevice).fx,
+									 cameraInterface.getDepthIntrinsics(cameraDevice).fy,
+									 cameraInterface.getDepthIntrinsics(cameraDevice).cx,
+									 cameraInterface.getDepthIntrinsics(cameraDevice).cy));
 
 	gflood.compileAndLinkShader();
 	gflood.setLocations();
@@ -237,8 +237,20 @@ void startRealsense()
 		cameraRunning = true;
 		//kcamera.setPreset(eRate, eRes);
 		cameraInterface.searchForCameras();
-		cameraInterface.setDepthProperties(cameraDevice, 848, 480, 30);
-		cameraInterface.setColorProperties(cameraDevice, 848, 480, 30);
+
+
+			cameraInterface.setDepthProperties(0, 848, 480, 30);
+			cameraInterface.setColorProperties(0, 848, 480, 30);
+
+			cameraInterface.startDevice(0);
+
+			cameraInterface.setDepthProperties(1, 848, 480, 30);
+			cameraInterface.setColorProperties(1, 848, 480, 30);
+
+			cameraInterface.startDevice(1);
+
+		
+
 
 		if (eRes == 0)
 		{
@@ -252,7 +264,7 @@ void startRealsense()
 		}
 
 		//kcamera.start();
-		cameraInterface.startDevice(cameraDevice);
+
 
 		setUpGPU();
 
@@ -447,6 +459,16 @@ void setUI()
 			startRealsense();
 		}
 		ImGui::PopStyleColor(3);
+		ImGui::SameLine();
+		if (ImGui::Button("Camera 0"))
+		{
+			cameraDevice = 0;
+		}
+		ImGui::SameLine();
+		if (ImGui::Button("Camera 1"))
+		{
+			cameraDevice = 1;
+		}
 
 		ImGui::Separator();
 		if (ImGui::CollapsingHeader("Camera"))
@@ -455,7 +477,7 @@ void setUI()
 
 
 			ImGui::RadioButton("30 Hz", &eRate, 30); ImGui::SameLine();
-			ImGui::RadioButton("90 Hz", &eRate, 90); ImGui::SameLine();
+			ImGui::RadioButton("90 Hz", &eRate, 30); ImGui::SameLine();
 
 			ImGui::RadioButton("848x480", &eRes, 0); ImGui::SameLine();
 			ImGui::RadioButton("1280x720", &eRes, 1);
@@ -756,6 +778,8 @@ int main(int, char**)
 
 	bool frameReady = false;
 
+	cv::Mat colMat;
+
 	// Main loop
 	while (!glfwWindowShouldClose(window))
 	{
@@ -767,26 +791,47 @@ int main(int, char**)
 		glClear(GL_COLOR_BUFFER_BIT);
 
 
-		//frameReady = kcamera.frames(previousTime, colorArray, depthArray, NULL, NULL, NULL);
 		frameReady = cameraInterface.collateFrames();
-		//cameraInterface.getDepthFrame(cameraDevice, depthArray);
-		//cameraInterface.getColorFrame(cameraDevice, colorArray);
 
+		//std::this_thread::sleep_for(std::chrono::milliseconds(30));
 
 		if (frameReady)
 		{
+			gfusion.setCameraParams(glm::vec4(cameraInterface.getDepthIntrinsics(cameraDevice).fx,
+				cameraInterface.getDepthIntrinsics(cameraDevice).fy,
+				cameraInterface.getDepthIntrinsics(cameraDevice).cx,
+				cameraInterface.getDepthIntrinsics(cameraDevice).cy),
+				glm::vec4(cameraInterface.getColorIntrinsics(cameraDevice).fx,
+					cameraInterface.getColorIntrinsics(cameraDevice).fy,
+					cameraInterface.getColorIntrinsics(cameraDevice).cx,
+					cameraInterface.getColorIntrinsics(cameraDevice).cy));
 
 			gfusion.resetTimes();
-			//gfusion.setDepthUnit(cameraInterface.getDepthUnit(cameraDevice));
+			gfusion.setDepthUnit((float)cameraInterface.getDepthUnit(cameraDevice));
 
-			//auto eTime = epochTime();
+			mTracker.setCamPams(cameraInterface.getColorIntrinsics(cameraDevice).fx,
+				cameraInterface.getColorIntrinsics(cameraDevice).fy,
+				cameraInterface.getColorIntrinsics(cameraDevice).cx,
+				cameraInterface.getColorIntrinsics(cameraDevice).cy);
 
-			//double currentTime = epchTime();
-			//double deltaTime = currentTime - previousTime;
-			//previousTime = currentTime;
-			//std::cout << (int)(deltaTime) << std::endl;
+			//auto eTime = epchTime();
 
-			//krender.setColorFrame(colorArray);
+
+
+			krender.setColorFrame(cameraInterface.getColorQueues(), cameraDevice, colMat);
+
+			if (!colMat.empty())
+			{
+				//cv::imshow("!", colMat);
+				//cv::waitKey(1);
+				mTracker.detect(colMat);
+
+			}
+
+			double currentTime = epchTime();
+		double deltaTime = currentTime - previousTime;
+previousTime = currentTime;
+std::cout << (int)(deltaTime) << std::endl;
 
 			if (performFlow)
 			{

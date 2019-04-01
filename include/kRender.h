@@ -11,13 +11,16 @@
 #include <glm/gtx/euler_angles.hpp>
 #include <glm/gtx/transform.hpp>
 
+
+#include <librealsense2/rs.hpp> // Include RealSense Cross Platform API
+
 //#include "shader.hpp"
 
 
-//#include "opencv2/core/utility.hpp"
-//#include "opencv2/opencv.hpp"
-//#include "opencv2/imgproc/imgproc.hpp"
-//#include "opencv2/highgui/highgui.hpp"
+#include "opencv2/core/utility.hpp"
+#include "opencv2/opencv.hpp"
+#include "opencv2/imgproc/imgproc.hpp"
+#include "opencv2/highgui/highgui.hpp"
 
 
 
@@ -161,6 +164,7 @@ public:
 	void allocateTextures();
 	void allocateBuffers();
 	void setColorFrame(std::vector<uint16_t> imageArray);
+	void setColorFrame(std::vector<rs2::frame_queue> colorQ, int devNumber, cv::Mat &colorMat);
 	void setTextures(GLuint depthTex, GLuint colorTex, GLuint vertexTex, GLuint normalTex, GLuint volumeTex, GLuint trackTex, GLuint pvpNormTex, GLuint pvdNormTex);
 	void setFlowTexture(GLuint flowTex);
 	void setBuffersFromMarchingCubes(GLuint posBuf, GLuint normBuf, size_t numVerts)

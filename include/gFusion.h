@@ -180,6 +180,12 @@ public:
 
 
 	}
+	void setClickedPoint(int x, int y)
+	{
+		m_clickedPoint = true;
+		m_pointX = x;
+		m_pointY = y;
+	}
 	// buffers setup
 	void initVolume();
 	// reset functions
@@ -658,4 +664,7 @@ private:
 	bool m_usingFloatDepth;
 	float m_depthUnit;
 
+	bool m_clickedPoint = false;
+	int m_pointX = 0;
+	int m_pointY = 0;
 };

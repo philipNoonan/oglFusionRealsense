@@ -4,7 +4,7 @@ layout(local_size_x = 32, local_size_y = 32) in;
 
 uniform float EdgeThreshold = 0.1;
 
-uniform int imageType = 0;
+uniform int imageType;
 uniform int level;
 
 subroutine void launchSubroutine();
@@ -74,7 +74,7 @@ void getGradients()
  //   float sy = (3.0 * localData[p.x - 1][p.y + 1] + 10.0 * localData[p.x][p.y + 1] + 3.0 * localData[p.x + 1][p.y + 1]) - (3.0 * localData[p.x - 1][p.y - 1] + 10.0 * localData[p.x][p.y - 1] + 3.0 * localData[p.x + 1][p.y - 1]);
 
 
-    if (imageType == 0 || imageType == 4)
+    if (imageType == 0 || imageType == 4 || imageType == 5)
     {
         imageStore(outputGradientXY, ivec2(gl_GlobalInvocationID.xy), vec4((sx), sy, 0, 0));
 
@@ -173,6 +173,11 @@ void loadImage(ivec2 pos, ivec2 localDataLoc)
         //                                     (imageLoad(InputImgUI, ivec2(pos.x - 1, pos.y)).x) * 0.123317f + (imageLoad(InputImgUI, ivec2(pos.x, pos.y)).x) * 0.195346f + (imageLoad(InputImgUI, ivec2(pos.x + 1, pos.y)).x) * 0.123317f +
         //                                     (imageLoad(InputImgUI, ivec2(pos.x - 1, pos.y + 1)).x) * 0.077847f + (imageLoad(InputImgUI, ivec2(pos.x, pos.y + 1)).x) * 0.123317f + (imageLoad(InputImgUI, ivec2(pos.x + 1, pos.y + 1)).x) * 0.077847f;
 
+
+    }
+    else if (imageType == 5) // rgb8 tex
+    {
+        localData[localDataLoc.x][localDataLoc.y] = luminance(texelFetch(tex_I0, pos, level).xyz);
 
     }
 

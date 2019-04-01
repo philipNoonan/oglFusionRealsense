@@ -14,6 +14,15 @@ void Realsense2Camera::setDev(rs2::device dev)
 	m_configFilename = "./resources/nearmode" + tokens[2] + ".json";
 }
 
+static std::string get_sensor_name(const rs2::sensor& sensor)
+{
+	// Sensors support additional information, such as a human readable name
+	if (sensor.supports(RS2_CAMERA_INFO_NAME))
+		return sensor.get_info(RS2_CAMERA_INFO_NAME);
+	else
+		return "Unknown Sensor";
+}
+
 void Realsense2Camera::setDepthProperties(int width, int height, int rate)
 {
 	m_depthWidth = width;
@@ -28,24 +37,140 @@ void Realsense2Camera::setColorProperties(int width, int height, int rate)
 	m_colorRate = rate;
 }
 
+void Realsense2Camera::setStreams()
+{
+	m_sensors = m_dev.query_sensors();
+
+	int index = 0;
+	for (rs2::sensor sensor : m_sensors)
+	{
+		std::cout << "  " << index++ << " : " << get_sensor_name(sensor) << std::endl;
+	}
+
+	// for 4xx
+	// 0 : stereo
+	// 1 : rgb
+	// 2 : motion (if available)
+
+	m_stream_profiles_depthIR = m_sensors[0].get_stream_profiles();
+	m_stream_profiles_color = m_sensors[1].get_stream_profiles();
+
+	std::map<std::pair<rs2_stream, int>, int> unique_streams;
+	for (auto&& sp : m_stream_profiles_depthIR)
+	{
+		unique_streams[std::make_pair(sp.stream_type(), sp.stream_index())]++;
+	}
+	std::cout << "Sensor consists of " << unique_streams.size() << " streams: " << std::endl;
+	for (size_t i = 0; i < unique_streams.size(); i++)
+	{
+		auto it = unique_streams.begin();
+		std::advance(it, i);
+		std::cout << "  - " << it->first.first << " #" << it->first.second << std::endl;
+	}
+
+
+	std::map<std::pair<rs2_stream, int>, int> unique_streams_color;
+	for (auto&& sp : m_stream_profiles_color)
+	{
+		unique_streams_color[std::make_pair(sp.stream_type(), sp.stream_index())]++;
+	}
+	std::cout << "Sensor consists of " << unique_streams_color.size() << " streams: " << std::endl;
+	for (size_t i = 0; i < unique_streams_color.size(); i++)
+	{
+		auto it = unique_streams_color.begin();
+		std::advance(it, i);
+		std::cout << "  - " << it->first.first << " #" << it->first.second << std::endl;
+	}
+
+	//////Next, we go over all the stream profiles and print the details of each one
+	std::cout << "Sensor provides the following stream profiles:" << std::endl;
+	int profile_num = 0;
+	for (rs2::stream_profile stream_profile : m_stream_profiles_depthIR)
+	{
+		rs2_stream stream_data_type = stream_profile.stream_type();
+		int stream_index = stream_profile.stream_index();
+		std::string stream_name = stream_profile.stream_name();
+		int unique_stream_id = stream_profile.unique_id(); // The unique identifier can be used for comparing two streams
+		std::cout << std::setw(3) << profile_num << ": " << stream_data_type << " #" << stream_index;
+		if (stream_profile.is<rs2::video_stream_profile>()) //"Is" will test if the type tested is of the type given
+		{
+			rs2::video_stream_profile video_stream_profile = stream_profile.as<rs2::video_stream_profile>();
+			std::cout << " (Video Stream: " << video_stream_profile.format() << " " <<
+				video_stream_profile.width() << "x" << video_stream_profile.height() << "@ " << video_stream_profile.fps() << "Hz)";
+		}
+		std::cout << std::endl;
+		profile_num++;
+	}
+}
 bool Realsense2Camera::start()
 {
-	if (m_status == STOPPED)
-	{
-		rs2::config cfg;
+	//if (m_status == STOPPED)
+	//{
+//
+		
 
-		std::string serial_number(m_dev.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER));
+		std::string sn = "########";
+		if (m_dev.supports(RS2_CAMERA_INFO_SERIAL_NUMBER))
+			sn = std::string("#") + m_dev.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER);
 
-		cfg.enable_device(serial_number);
+		std::string colorSN = "color" + sn;
+		std::string depthSN = "depth" + sn;
 
-		cfg.enable_stream(RS2_STREAM_COLOR, m_colorWidth, m_colorHeight, RS2_FORMAT_Y16, m_colorRate);
-		cfg.enable_stream(RS2_STREAM_DEPTH, m_depthWidth, m_depthHeight, RS2_FORMAT_Z16, m_colorRate);
+		//sensors[1].open(stream_profiles_color[62]); //848 480 60fps Y16
+		m_sensors[1].open(m_stream_profiles_color[m_colorStreamChoice]); //848 480 60fps rgb8
+		std::thread colThread = std::thread(&Realsense2Camera::colorThread, this, m_sensors[1]);
+		colThread.join();
 
-		m_selection = m_pipe.start(cfg);
+		//sensors[1].start([&](rs2::frame f) {this->capturingColor(f); });
+		//colorGrabber.wait();
 
-		m_status = CAPTURING;
-	}
+
+		m_sensors[0].open(m_stream_profiles_depthIR[m_depthStreamChoice]); // depth 848*480@90
+		std::thread depThread = std::thread(&Realsense2Camera::depthThread, this, m_sensors[0]);
+		depThread.join();
+		//depthThread(m_sensors[0]);
+
+		//FrameGrabber depthGrabber(depthSN);
+		//m_sensors[0].start([&](rs2::frame f) {depthGrabber(f); });
+		//depthGrabber.wait();
+
+		//std::this_thread::sleep_for(std::chrono::seconds(10));
+
+
+		//helper::frame_viewer display(oss.str());
+		//sensor.start([&](rs2::frame f) { display(f); });
+
+		//sensors[0].start(&m_depth);
+
+
+
+		//rs2::config cfg;
+
+		//std::string serial_number(m_dev.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER));
+
+		//cfg.enable_device(serial_number);
+		//cfg.enable_device(serial_number);
+
+		//cfg.enable_stream(RS2_STREAM_COLOR, m_colorWidth, m_colorHeight, RS2_FORMAT_RGB8, m_colorRate);
+		//cfg.enable_stream(RS2_STREAM_DEPTH, m_depthWidth, m_depthHeight, RS2_FORMAT_Z16, m_depthRate);
+
+		//m_selection = m_pipe.start(cfg);
+
+		//m_status = CAPTURING;
+	//}
 	return false;
+}
+
+void Realsense2Camera::depthThread(rs2::sensor& sens)
+{
+	std::cout << "in dep thread" << std::endl;
+	sens.start([&](rs2::frame f) {this->capturingDepth(f); });
+}
+void Realsense2Camera::colorThread(rs2::sensor &sens)
+{
+	std::cout << "in col thread" << std::endl;
+
+	sens.start([&](rs2::frame f) {this->capturingColor(f); });
 }
 
 bool Realsense2Camera::stop()
@@ -59,6 +184,8 @@ bool Realsense2Camera::stop()
 
 	return false;
 }
+
+
 
 Realsense2Camera::Status Realsense2Camera::getStatus()
 {
@@ -87,10 +214,18 @@ void Realsense2Camera::capture()
 		m_ctrl_curr.disparityShift = 0;
 
 		advanced.set_depth_table(m_ctrl_curr);
-
 	}
 
 	uint64_t previousTime = 0;
+
+	//rs2_stream align_to = RS2_STREAM_COLOR;
+	//rs2::align align(align_to);
+
+	//m_depthQueue = rs2::frame_queue(5);
+	//m_colorQueue = rs2::frame_queue(5);
+
+
+
 	while (m_status == CAPTURING)
 	{
 		if (m_valuesChanged)
@@ -98,7 +233,6 @@ void Realsense2Camera::capture()
 			advanced.set_depth_table(m_ctrl_curr);
 			m_valuesChanged = false;
 		}
-
 
 		bool frameArrived = m_pipe.try_wait_for_frames(&m_data); // Wait for next set of frames from the camera
 
@@ -112,17 +246,18 @@ void Realsense2Camera::capture()
 			
 			rs2::frame depth = m_data.get_depth_frame(); // Find and colorize the depth data
 			rs2::frame color = m_data.get_color_frame();            // Find the color data
+			//if (depth.supports_frame_metadata(RS2_FRAME_METADATA_FRAME_TIMESTAMP))
 
 			
-			if (depth.supports_frame_metadata(RS2_FRAME_METADATA_FRAME_TIMESTAMP))
+			if (depth.supports_frame_metadata(RS2_FRAME_METADATA_TIME_OF_ARRIVAL))
 			{
-				m_frameArrivalTime = depth.get_frame_metadata(RS2_FRAME_METADATA_FRAME_TIMESTAMP);
-				uint64_t currentTime = depth.get_frame_metadata(RS2_FRAME_METADATA_FRAME_TIMESTAMP);
+				m_frameArrivalTime = depth.get_frame_metadata(RS2_FRAME_METADATA_TIME_OF_ARRIVAL);
+				uint64_t currentTime = depth.get_frame_metadata(RS2_FRAME_METADATA_TIME_OF_ARRIVAL);
 				uint64_t deltaTime = currentTime - previousTime;
-				if (deltaTime > (1e6f / (float)m_depthRate) * 1.5f) // if greater than 1.5 frame duration in microseconds
-				{
+				//if (deltaTime > (1e6f / (float)m_depthRate) * 1.5f) // if greater than 1.5 frame duration in microseconds
+				//{
 					std::cout << deltaTime << std::endl;
-				}
+				//}
 				previousTime = currentTime;
 			}
 
@@ -131,11 +266,11 @@ void Realsense2Camera::capture()
 			std::vector<uint8_t> cmd = { 0x14, 0, 0xab, 0xcd, 0x2a, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
 
 			// Query frame size (width and height)
-			const int w = color.as<rs2::video_frame>().get_width();
+			/*const int w = color.as<rs2::video_frame>().get_width();
 			const int h = color.as<rs2::video_frame>().get_height();
 
 			const int wD = depth.as<rs2::video_frame>().get_width();
-			const int hD = depth.as<rs2::video_frame>().get_height();
+			const int hD = depth.as<rs2::video_frame>().get_height();*/
 
 			m_depthQueue.enqueue(depth);
 			m_colorQueue.enqueue(color);
@@ -182,19 +317,30 @@ bool Realsense2Camera::getFrames(rs2::frame_queue &depthQ, rs2::frame_queue &col
 
 rs2_intrinsics Realsense2Camera::getDepthIntrinsics()
 {
-	auto depth_stream = m_selection.get_stream(RS2_STREAM_DEPTH).as<rs2::video_stream_profile>();
-	return depth_stream.get_intrinsics();
+	auto video_stream = m_stream_profiles_depthIR[m_depthStreamChoice].as<rs2::video_stream_profile>();
+	return video_stream.get_intrinsics();
 
+	//If the stream is indeed a video stream, we can now simply call get_intrinsics()
+	//if (rs2::depth_sensor dpt_sensor = m_depthSensor.as<rs2::depth_sensor>())
+	//{
+	//	auto depthScale = dpt_sensor.get_depth_scale();
+	//}
+	//auto depth_stream = m_selection.get_stream(RS2_STREAM_DEPTH).as<rs2::video_stream_profile>();
+	//return depth_stream.get_intrinsics();
 }
 
 rs2_intrinsics Realsense2Camera::getColorIntrinsics()
 {
-	auto color_stream = m_selection.get_stream(RS2_STREAM_COLOR).as<rs2::video_stream_profile>();
-	return color_stream.get_intrinsics();
+	auto video_stream = m_stream_profiles_color[m_colorStreamChoice].as<rs2::video_stream_profile>();
+	return video_stream.get_intrinsics();
 
+	//auto color_stream = m_selection.get_stream(RS2_STREAM_COLOR).as<rs2::video_stream_profile>();
+	//return color_stream.get_intrinsics();
 }
 
 uint32_t Realsense2Camera::getDepthUnit()
 {
-	return m_ctrl_curr.depthUnits;
+	float depthScale = m_sensors[0].as<rs2::depth_sensor>().get_depth_scale();
+	return (uint32_t)(depthScale * 100000.0f);
+	//return m_ctrl_curr.depthUnits;
 }

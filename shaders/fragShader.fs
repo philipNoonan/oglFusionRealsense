@@ -48,7 +48,7 @@ subroutine(getColor)
 vec4 fromColor()
 {
 	vec4 tColor = textureLod(currentTextureColor, vec2(TexCoord),0);
-	return tColor.zyxw;
+	return tColor.xyzw;
 }
 
 
@@ -116,51 +116,7 @@ vec4 fromFlow()
 {
 	int length = 50;
 	vec4 tFlow = textureLod(currentTextureFlow, TexCoord, 0);
-/*	 
-	if (ncols == 0)
-	makecolorwheel();
 
-	vec4 outcol = vec4(1);
-	float rad = sqrt(tFlow.x * tFlow.x + tFlow.y * tFlow.y);
-    float a = atan(-tFlow.y, -tFlow.x) / PI;
-    float fk = (a + 1.0) / 2.0 * (ncols-1);
-    int k0 = int(fk);
-    int k1 = (k0 + 1) % ncols;
-    float f = fk - k0;
-    //f = 0; // uncomment to see original color wheel
-    for (int b = 0; b < 3; b++) 
-	{
-		float col0 = colorwheel[k0][b] / 255.0;
-		float col1 = colorwheel[k1][b] / 255.0;
-		float col = (1 - f) * col0 + f * col1;
-		if (rad <= 1)
-			col = 1 - rad * (1 - col); // increase saturation with radius
-		else
-			col *= .75; // out of range
-		
-		outcol[2 - b] = col;
-    }
-
-	return vec4(outcol.xyz, 0.5);
-
-
-
-
-//	vec4 tDep = texture(currentTextureDepth, vec2(TexCoord.x + (tFlow.x / 1920.0f), TexCoord.y + (tFlow.y / 1080.0f)));
-vec4 color = vec4(0);
-	for (int i = 0; i < length; i++)
-	{
-		color += texture(currentTextureFlow, TexCoord + tFlow.xy * float(i) / 1000.0f, 0);
-		color += texture(currentTextureFlow, TexCoord - tFlow.xy * float(i) / 1000.0f, 0);
-
-	}
-
-	return color / 50.0f; 
-	// cart to polar
-	// sqrt(x^2 + y^2) = magnitude
-	// atan (y / x) = angle from x axis
-
-*/ 
 
 
 	float mag = sqrt(tFlow.x * tFlow.x + tFlow.y * tFlow.y);
