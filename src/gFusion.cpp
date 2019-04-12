@@ -82,7 +82,12 @@ void gFusion::compileAndLinkShader()
 void gFusion::setLocations()
 {
 	m_invkID = glGetUniformLocation(depthToVertProg.getHandle(), "invK");
-	m_camPamsID = glGetUniformLocation(depthToVertProg.getHandle(), "camPams");
+	m_colorKID = glGetUniformLocation(depthToVertProg.getHandle(), "colorK");
+
+	m_extrinsicsID = glGetUniformLocation(depthToVertProg.getHandle(), "depthToColor");
+	m_camPamsDepthID = glGetUniformLocation(depthToVertProg.getHandle(), "camPamsDepth");
+	m_camPamsColorID = glGetUniformLocation(depthToVertProg.getHandle(), "camPamsColor");
+
 	m_imageTypeID = glGetUniformLocation(depthToVertProg.getHandle(), "imageType");
 	m_depthScaleID = glGetUniformLocation(depthToVertProg.getHandle(), "depthScale");
 
@@ -615,7 +620,7 @@ void gFusion::depthToVertex(float * depthArray)
 		glBindImageTexture(0, m_textureDepth, i, GL_FALSE, 0, GL_READ_WRITE, GL_R32F);
 		glBindImageTexture(2, m_textureVertex, i, GL_FALSE, 0, GL_READ_WRITE, GL_RGBA32F);
 		glUniformMatrix4fv(m_invkID, 1, GL_FALSE, glm::value_ptr(invK));
-		glUniform4fv(m_camPamsID, 1, glm::value_ptr(m_camPamsDepth));
+		glUniform4fv(m_camPamsDepthID, 1, glm::value_ptr(m_camPamsDepth));
 		glUniform1i(m_imageTypeID, 1); // 1 == type float
 		glUniform1f(m_depthScaleID, 1000); // 1000 == each depth unit == 1 mm
 
@@ -667,10 +672,21 @@ void gFusion::depthToVertex(std::vector<rs2::frame_queue> depthQ, int devNumber)
 
 
 		glm::mat4 invK = GLHelper::getInverseCameraMatrix(m_camPamsDepth / float(1 << i));
+		glm::mat4 colorK = GLHelper::getCameraMatrix(m_camPamsColor / float(1 << i));
+		
 		glBindImageTexture(1, m_textureDepth, i, GL_FALSE, 0, GL_READ_ONLY, GL_R16UI);
 		glBindImageTexture(2, m_textureVertex, i, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA32F);
 		glUniformMatrix4fv(m_invkID, 1, GL_FALSE, glm::value_ptr(invK));
-		//glUniform4fv(m_camPamsID, 1, glm::value_ptr(m_camPamsDepth));
+		glUniformMatrix4fv(m_colorKID, 1, GL_FALSE, glm::value_ptr(colorK));
+
+		glUniformMatrix4fv(m_extrinsicsID, 1, GL_FALSE, glm::value_ptr(m_extrinsics[devNumber]));
+
+		glm::vec4 adjCamPamsDepth = (m_camPamsDepth / float(1 << i));
+		glm::vec4 adjCamPamsColor = (m_camPamsColor / float(1 << i));
+
+		glUniform4fv(m_camPamsDepthID, 1, glm::value_ptr(adjCamPamsDepth));
+		glUniform4fv(m_camPamsColorID, 1, glm::value_ptr(adjCamPamsColor));
+
 		glUniform1i(m_imageTypeID, 0); // 0 == type short
 		glUniform1f(m_depthScaleID, m_depthUnit / 1000000.0f); // 1000 == each depth unit == 1 mm
 

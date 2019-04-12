@@ -2,13 +2,14 @@
 
 
 
-rs2::device_list Interface::getDeviceList()
+rs2::device_list Realsense2Interface::getDeviceList()
 {
 	return m_devices;
 }
 
-void Interface::searchForCameras()
+int Realsense2Interface::searchForCameras()
 {
+	int numberOfRealsense = 0;
 	rs2::context ctx;
 	m_devices = ctx.query_devices();
 
@@ -45,36 +46,47 @@ void Interface::searchForCameras()
 
 		m_depthQueues.resize(index);
 		m_colorQueues.resize(index);
-
+		numberOfRealsense = index;
 
 	}
 
+	return numberOfRealsense;
+
 }
 
-void Interface::setDepthProperties(int devNumber, int w, int h, int r)
+void Realsense2Interface::setDepthProperties(int devNumber, int w, int h, int r)
 {
 	m_depthProps[devNumber].width = w;
 	m_depthProps[devNumber].height = h;
 	m_depthProps[devNumber].rate = r;
 }
 
-void Interface::setColorProperties(int devNumber, int w, int h, int r)
+void Realsense2Interface::setColorProperties(int devNumber, int w, int h, int r)
 {
 	m_colorProps[devNumber].width = w;
 	m_colorProps[devNumber].height = h;
 	m_colorProps[devNumber].rate = r;
 }
 
+void Realsense2Interface::getDepthProperties(int devNumber, int &w, int &h, int &r)
+{
+	m_cameras[devNumber].getDepthProperties(w, h, r);
+}
+
+void Realsense2Interface::getColorProperties(int devNumber, int &w, int &h, int &r)
+{
+	m_cameras[devNumber].getColorProperties(w, h, r);
+}
 
 
-
-void Interface::startDevice(int devNumber)
+void Realsense2Interface::startDevice(int devNumber, int depthProfile, int colorProfile)
 {
 	//Realsense2Camera camera;
 	m_cameras[devNumber].setDev(m_devices[devNumber]);
 	m_cameras[devNumber].setStreams();
-	m_cameras[devNumber].setDepthProperties(m_depthProps[devNumber].width, m_depthProps[devNumber].height, m_depthProps[devNumber].rate);
-	m_cameras[devNumber].setColorProperties(m_colorProps[devNumber].width, m_colorProps[devNumber].height, m_colorProps[devNumber].rate);
+	m_cameras[devNumber].setSensorOptions();
+	m_cameras[devNumber].setDepthProperties(depthProfile);
+	m_cameras[devNumber].setColorProperties(colorProfile);
 
 	//m_cameras[devNumber].start();
 
@@ -82,12 +94,12 @@ void Interface::startDevice(int devNumber)
 
 	//std::cout << "  " << devNumber << " : Setting intrinsics" << std::endl;
 	setDepthIntrinsics(devNumber);
-	//setColorIntrinsics(devNumber);
+	setColorIntrinsics(devNumber);
 	//// this need references to the threads
 	//m_threads[devNumber] = std::thread(&Realsense2Camera::capture, &m_cameras[devNumber]);
 }
 
-void Interface::stopDevice(int devNumber)
+void Realsense2Interface::stopDevice(int devNumber)
 {
 	m_cameras[devNumber].stop();
 	if (m_threads[devNumber].joinable())
@@ -96,22 +108,27 @@ void Interface::stopDevice(int devNumber)
 	}
 }
 
-FrameIntrinsics Interface::getDepthIntrinsics(int devnumber)
+FrameIntrinsics Realsense2Interface::getDepthIntrinsics(int devnumber)
 {
 	return m_depthIntrinsics[devnumber];
 }
 
-FrameIntrinsics Interface::getColorIntrinsics(int devnumber)
+FrameIntrinsics Realsense2Interface::getColorIntrinsics(int devnumber)
 {
 	return m_colorIntrinsics[devnumber];
 }
 
-uint32_t Interface::getDepthUnit(int devNumber)
+uint32_t Realsense2Interface::getDepthUnit(int devNumber)
 {
 	return m_cameras[devNumber].getDepthUnit();
 }
 
-void Interface::getColorFrame(int devNumber, std::vector<uint16_t> &colorArray)
+rs2_extrinsics Realsense2Interface::getDepthToColorIntrinsics(int devNumber)
+{
+	return m_cameras[devNumber].getDepthToColorExtrinsics();
+}
+
+void Realsense2Interface::getColorFrame(int devNumber, std::vector<uint16_t> &colorArray)
 {
 	if (colorArray.data() != NULL)
 	{
@@ -119,7 +136,7 @@ void Interface::getColorFrame(int devNumber, std::vector<uint16_t> &colorArray)
 	}
 }
 
-void Interface::getDepthFrame(int devNumber, std::vector<uint16_t> &depthArray)
+void Realsense2Interface::getDepthFrame(int devNumber, std::vector<uint16_t> &depthArray)
 {
 	if (depthArray.data() != NULL)
 	{
@@ -127,22 +144,22 @@ void Interface::getDepthFrame(int devNumber, std::vector<uint16_t> &depthArray)
 	}
 }
 
-std::vector<rs2::frame_queue> Interface::getDepthQueues()
+std::vector<rs2::frame_queue> Realsense2Interface::getDepthQueues()
 {
 	return m_depthQueues;
 }
 
-std::vector<rs2::frame_queue> Interface::getColorQueues()
+std::vector<rs2::frame_queue> Realsense2Interface::getColorQueues()
 {
 	return m_colorQueues;
 }
 
-bool Interface::collateFrames()
+bool Realsense2Interface::collateFrames()
 {
 	bool frameReady = false;
 	for (int i = 0; i < m_cameras.size(); i++)
 	{
-		m_cameras[i].getStatus();
+		//m_cameras[i].getStatus();
 
 		m_cameras[i].getFrames(m_depthQueues[i], m_colorQueues[i]);
 
@@ -164,7 +181,7 @@ bool Interface::collateFrames()
 
 
 
-std::string Interface::getDeviceName(const rs2::device& dev)
+std::string Realsense2Interface::getDeviceName(const rs2::device& dev)
 {
 	// Each device provides some information on itself, such as name:
 	std::string name = "Unknown Device";
@@ -179,7 +196,7 @@ std::string Interface::getDeviceName(const rs2::device& dev)
 	return name + " " + sn;
 }
 
-void Interface::setDepthIntrinsics(int devNumber)
+void Realsense2Interface::setDepthIntrinsics(int devNumber)
 {
 	auto i = m_cameras[devNumber].getDepthIntrinsics();
 
@@ -189,7 +206,7 @@ void Interface::setDepthIntrinsics(int devNumber)
 	m_depthIntrinsics[devNumber].fy = i.fy;
 }
 
-void Interface::setColorIntrinsics(int devNumber)
+void Realsense2Interface::setColorIntrinsics(int devNumber)
 {
 	auto i = m_cameras[devNumber].getColorIntrinsics();
 

@@ -23,18 +23,28 @@ static std::string get_sensor_name(const rs2::sensor& sensor)
 		return "Unknown Sensor";
 }
 
-void Realsense2Camera::setDepthProperties(int width, int height, int rate)
+void Realsense2Camera::setDepthProperties(int choice)
 {
-	m_depthWidth = width;
-	m_depthHeight = height;
-	m_depthRate = rate;
+	m_depthStreamChoice = choice;
 }
 
-void Realsense2Camera::setColorProperties(int width, int height, int rate)
+void Realsense2Camera::setColorProperties(int choice)
 {
-	m_colorWidth = width;
-	m_colorHeight = height;
-	m_colorRate = rate;
+	m_colorStreamChoice = choice;
+}
+
+void Realsense2Camera::getDepthProperties(int &width, int &height, int &rate)
+{
+	width = m_stream_profiles_depthIR[m_depthStreamChoice].as<rs2::video_stream_profile>().width();
+	height = m_stream_profiles_depthIR[m_depthStreamChoice].as<rs2::video_stream_profile>().height();
+	rate = m_stream_profiles_depthIR[m_depthStreamChoice].as<rs2::video_stream_profile>().fps();
+}
+
+void Realsense2Camera::getColorProperties(int &width, int &height, int &rate)
+{
+	width = m_stream_profiles_color[m_colorStreamChoice].as<rs2::video_stream_profile>().width();
+	height = m_stream_profiles_color[m_colorStreamChoice].as<rs2::video_stream_profile>().height();
+	rate = m_stream_profiles_color[m_colorStreamChoice].as<rs2::video_stream_profile>().fps();
 }
 
 void Realsense2Camera::setStreams()
@@ -82,26 +92,60 @@ void Realsense2Camera::setStreams()
 		std::cout << "  - " << it->first.first << " #" << it->first.second << std::endl;
 	}
 
+	////////Next, we go over all the stream profiles and print the details of each one
+	//std::cout << "depth provides the following stream profiles:" << std::endl;
+	//int profile_num = 0;
+	//for (rs2::stream_profile stream_profile : m_stream_profiles_depthIR)
+	//{
+	//	rs2_stream stream_data_type = stream_profile.stream_type();
+	//	int stream_index = stream_profile.stream_index();
+	//	std::string stream_name = stream_profile.stream_name();
+	//	int unique_stream_id = stream_profile.unique_id(); // The unique identifier can be used for comparing two streams
+	//	std::cout << std::setw(3) << profile_num << ": " << stream_data_type << " #" << stream_index;
+	//	if (stream_profile.is<rs2::video_stream_profile>()) //"Is" will test if the type tested is of the type given
+	//	{
+	//		rs2::video_stream_profile video_stream_profile = stream_profile.as<rs2::video_stream_profile>();
+	//		std::cout << " (Video Stream: " << video_stream_profile.format() << " " <<
+	//			video_stream_profile.width() << "x" << video_stream_profile.height() << "@ " << video_stream_profile.fps() << "Hz)";
+	//	}
+	//	std::cout << std::endl;
+	//	profile_num++;
+	//}
+
 	//////Next, we go over all the stream profiles and print the details of each one
-	std::cout << "Sensor provides the following stream profiles:" << std::endl;
-	int profile_num = 0;
-	for (rs2::stream_profile stream_profile : m_stream_profiles_depthIR)
-	{
-		rs2_stream stream_data_type = stream_profile.stream_type();
-		int stream_index = stream_profile.stream_index();
-		std::string stream_name = stream_profile.stream_name();
-		int unique_stream_id = stream_profile.unique_id(); // The unique identifier can be used for comparing two streams
-		std::cout << std::setw(3) << profile_num << ": " << stream_data_type << " #" << stream_index;
-		if (stream_profile.is<rs2::video_stream_profile>()) //"Is" will test if the type tested is of the type given
-		{
-			rs2::video_stream_profile video_stream_profile = stream_profile.as<rs2::video_stream_profile>();
-			std::cout << " (Video Stream: " << video_stream_profile.format() << " " <<
-				video_stream_profile.width() << "x" << video_stream_profile.height() << "@ " << video_stream_profile.fps() << "Hz)";
-		}
-		std::cout << std::endl;
-		profile_num++;
-	}
+	//std::cout << "color provides the following stream profiles:" << std::endl;
+	//int colprofile_num = 0;
+	//for (rs2::stream_profile stream_profile : m_stream_profiles_color)
+	//{
+	//	rs2_stream stream_data_type = stream_profile.stream_type();
+	//	int stream_index = stream_profile.stream_index();
+	//	std::string stream_name = stream_profile.stream_name();
+	//	int unique_stream_id = stream_profile.unique_id(); // The unique identifier can be used for comparing two streams
+	//	std::cout << std::setw(3) << colprofile_num << ": " << stream_data_type << " #" << stream_index;
+	//	if (stream_profile.is<rs2::video_stream_profile>()) //"Is" will test if the type tested is of the type given
+	//	{
+	//		rs2::video_stream_profile video_stream_profile = stream_profile.as<rs2::video_stream_profile>();
+	//		std::cout << " (Video Stream: " << video_stream_profile.format() << " " <<
+	//			video_stream_profile.width() << "x" << video_stream_profile.height() << "@ " << video_stream_profile.fps() << "Hz)";
+	//	}
+	//	std::cout << std::endl;
+	//	colprofile_num++;
+	//}
+
 }
+
+void Realsense2Camera::setSensorOptions()
+{
+	// depth
+	m_sensors[0].set_option(RS2_OPTION_EXPOSURE, 4000);
+	m_sensors[0].set_option(RS2_OPTION_ENABLE_AUTO_EXPOSURE, 0);
+	// rcolor
+	m_sensors[1].set_option(RS2_OPTION_EXPOSURE, 120);
+	m_sensors[1].set_option(RS2_OPTION_ENABLE_AUTO_EXPOSURE, 0);
+}
+
+
+
 bool Realsense2Camera::start()
 {
 	//if (m_status == STOPPED)
@@ -116,7 +160,6 @@ bool Realsense2Camera::start()
 		std::string colorSN = "color" + sn;
 		std::string depthSN = "depth" + sn;
 
-		//sensors[1].open(stream_profiles_color[62]); //848 480 60fps Y16
 		m_sensors[1].open(m_stream_profiles_color[m_colorStreamChoice]); //848 480 60fps rgb8
 		std::thread colThread = std::thread(&Realsense2Camera::colorThread, this, m_sensors[1]);
 		colThread.join();
@@ -311,7 +354,6 @@ bool Realsense2Camera::getFrames(rs2::frame_queue &depthQ, rs2::frame_queue &col
 	depthQ = m_depthQueue;
 	colorQ = m_colorQueue;
 
-
 	return false;
 }
 
@@ -319,7 +361,7 @@ rs2_intrinsics Realsense2Camera::getDepthIntrinsics()
 {
 	auto video_stream = m_stream_profiles_depthIR[m_depthStreamChoice].as<rs2::video_stream_profile>();
 	return video_stream.get_intrinsics();
-
+	
 	//If the stream is indeed a video stream, we can now simply call get_intrinsics()
 	//if (rs2::depth_sensor dpt_sensor = m_depthSensor.as<rs2::depth_sensor>())
 	//{
@@ -341,6 +383,28 @@ rs2_intrinsics Realsense2Camera::getColorIntrinsics()
 uint32_t Realsense2Camera::getDepthUnit()
 {
 	float depthScale = m_sensors[0].as<rs2::depth_sensor>().get_depth_scale();
-	return (uint32_t)(depthScale * 100000.0f);
+	return (uint32_t)(depthScale * 1000000.0f);
 	//return m_ctrl_curr.depthUnits;
+}
+
+rs2_extrinsics Realsense2Camera::getDepthToColorExtrinsics()
+{
+	rs2_extrinsics outExtrin;
+	try 
+	{
+		outExtrin = m_stream_profiles_depthIR[m_depthStreamChoice].get_extrinsics_to(m_stream_profiles_color[m_colorStreamChoice]);
+		//outExtrin = m_stream_profiles_color[m_colorStreamChoice].get_extrinsics_to(m_stream_profiles_depthIR[m_depthStreamChoice]);
+
+		std::cout << "Translation Vector : [" << outExtrin.translation[0] << "," << outExtrin.translation[1] << "," << outExtrin.translation[2] << "]\n";
+		std::cout << "Rotation Matrix    : [" << outExtrin.rotation[0] << "," << outExtrin.rotation[3] << "," << outExtrin.rotation[6] << "]\n";
+		std::cout << "                   : [" << outExtrin.rotation[1] << "," << outExtrin.rotation[4] << "," << outExtrin.rotation[7] << "]\n";
+		std::cout << "                   : [" << outExtrin.rotation[2] << "," << outExtrin.rotation[5] << "," << outExtrin.rotation[8] << "]" << std::endl;
+
+	}
+	catch (const std::exception& e)
+	{
+		std::cerr << "Failed to get extrinsics for the given streams. " << e.what() << std::endl;
+
+	}
+	return outExtrin;
 }

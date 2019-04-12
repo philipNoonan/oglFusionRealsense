@@ -3,7 +3,14 @@
 layout (local_size_x = 32, local_size_y = 32) in;
 
 uniform mat4 invK;
-//uniform vec4 camPams; // camPams.x = fx, camPams.y = fy, camPams.z = cx, camPams.w = cy
+uniform mat4 colorK;
+
+uniform mat4 colorIntrinsics;
+uniform mat4 depthToColor;
+
+uniform vec4 camPamsColor;
+uniform vec4 camPamsDepth;
+    // camPams.x = fx, camPams.y = fy, camPams.z = cx, camPams.w = cy
 uniform int imageType; // 0 = short, 1 = float
 uniform float depthScale; // value to convert whatever unit the depth data comes in to be in units of metres
 
@@ -40,34 +47,96 @@ void main()
     ivec2 size = imageSize(OutputImage);
     //pix.y = pix.y += 2;
 
-    float x;
-    float y;
-    float z;
+   // float x;
+   // float y;
+  //  float z;
 
     if (pix.x < size.x && pix.y < size.y)
     {
         float depth;
         if (imageType == 0)
         {
-            depth = float(imageLoad(InputImageShort, ivec2(pix)).x);
+            depth = depthScale * float(imageLoad(InputImageShort, ivec2(pix)).x);
         }
         else if (imageType == 1)
         {
-            depth = imageLoad(InputImage, ivec2(pix)).x;
+            depth = imageLoad(InputImage, ivec2(pix)).x * depthScale;
         }
+
+        if (depth == 0 || depth < 0)
+        {  // make return write a blank pixel rather than jut exiting here
+            imageStore(OutputImage, ivec2(pix), vec4(0.0f, 0.0f, 0.0f, 0.0f));
+            return;
+        }
+
+        float x = (pix.x - camPamsDepth.x) / camPamsDepth.z;
+        float y = (pix.y - camPamsDepth.y) / camPamsDepth.w;
+
+        vec4 tPos = (depth) * (invK * vec4(pix.x, pix.y, 1.0f, 0.0f));
+
+        //vec3 tPos = depth * rotate(invK, vec3(pix.x, pix.y, 1.0f));
+
+
+        //vec4 pointIn3D = vec4(x * depth, y * depth, depth, 1.0f);
+        
+
+        //vec3 colPixel = mat3(colorK) * tPos.xyz;
+
+
+
+        imageStore(OutputImage, ivec2(pix.xy), vec4(tPos.xyz, 1.0f));
+
+
+
+       // vec4 transformedPointIn3D = depthToColor * pointIn3D;
+
+        //float to_pointX = depthToColor[0][0] * pointIn3D.x + depthToColor[1][0] * pointIn3D.y + depthToColor[2][0] * pointIn3D.z + depthToColor[3][0];
+        //float to_pointY = depthToColor[0][1] * pointIn3D.x + depthToColor[1][1] * pointIn3D.y + depthToColor[2][1] * pointIn3D.z + depthToColor[3][1];
+        //float to_pointZ = depthToColor[0][2] * pointIn3D.x + depthToColor[1][2] * pointIn3D.y + depthToColor[2][2] * pointIn3D.z + depthToColor[3][2];
+
+        //vec4 transformedPointIn3D = vec4(to_pointX, to_pointY, to_pointZ, 1.0f);
+
+
+
+        //float colX = transformedPointIn3D.x / transformedPointIn3D.z;
+        //float colY = transformedPointIn3D.y / transformedPointIn3D.z;
+
+        //vec2 colPixel = vec2(colX * camPamsColor.z + camPamsColor.x, colY * camPamsColor.w + camPamsColor.y);
+
+
+
+//
+       // imageStore(OutputImage, ivec2(colPixel), vec4(transformedPointIn3D.xyz, 1.0));
+
 
         // vec4 color = vec4(texture(currentTextureColor, vec2(pix.x / 1920.0f, pix.y / 1080.0f)));
         //if (depth.x > 0)
         //{
-        vec3 tPos;
-        //tPos.x = (pix.x - camPams.z) * (1.0f / camPams.x) * depth.x / 1000.0f;
-        //tPos.y = (pix.y - camPams.w) * (1.0f / camPams.y) * depth.x / 1000.0f;
-        //tPos.z = depth.x / 1000.0f;
+        //vec4 tPos;
+        //tPos.z = float(depth.x) * depthScale;
+
+        //tPos.x = ((pix.x - camPams.x) / camPams.z) * tPos.z;
+        //tPos.y = ((pix.y - camPams.y) / camPams.w) * tPos.z;
+
         //imageStore(OutputImage, ivec2(pix.x, pix.y), vec4(x, y, z, 0.0f));
         //Position3D[(pix.y * size.x) + pix.x] = vec4(x, y, z, 0.0f);
 
-        tPos = (float(depth) * depthScale) * rotate(invK, vec3(pix.x, pix.y, 1.0f));
-        imageStore(OutputImage, ivec2(pix.x, pix.y), vec4(tPos, 1.001f));
+        //tPos = (float(depth) * depthScale) * rotate(invK, vec3(pix.x, pix.y, 1.0f));
+        // tPos = (depth * depthScale) * (invK * vec4(pix.x, pix.y, 1.0f, 0.0f));
+
+        //
+        //  vec4 regiPos = vec4(tPos.xyz, 1.0f);
+
+        //  vec2 outPixelPos;
+        //  float x = regiPos.x / regiPos.z;
+        // float y = regiPos.y / regiPos.z;
+
+        //outPixelPos.x = (x * camPams.z) + camPams.x;
+        // outPixelPos.y = (y * camPams.w) + camPams.y;
+
+
+
+        //imageStore(OutputImage, ivec2(outPixelPos), regiPos);
         //Position3D[(pix.y * size.x) + pix.x] = vec4(tPos, 0.0f);
 
         //Color3D[(pix.y * size.x) + pix.x] = vec4(color.xyz,0); // FIX ME DONT USE FLOAT £" FOR COLOR USE BYTES!!!

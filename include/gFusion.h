@@ -250,6 +250,20 @@ public:
 		m_camPamsDepth = camPams;
 		m_camPamsColor = camPamsColor;
 	}
+	void setNumberOfCameras(int numCams)
+	{
+		m_extrinsics.resize(numCams);
+	}
+	void setDepthToColorExtrinsics(rs2_extrinsics extrin, int devNumber)
+	{
+		m_extrinsics[devNumber] = glm::mat4(1.0f);
+
+		m_extrinsics[devNumber][0] = glm::vec4(extrin.rotation[0], extrin.rotation[1], extrin.rotation[2], 0.0f);
+		m_extrinsics[devNumber][1] = glm::vec4(extrin.rotation[3], extrin.rotation[4], extrin.rotation[5], 0.0f);
+		m_extrinsics[devNumber][2] = glm::vec4(extrin.rotation[6], extrin.rotation[7], extrin.rotation[8], 0.0f);
+		m_extrinsics[devNumber][3] = glm::vec4(extrin.translation[0], extrin.translation[1], extrin.translation[2], 1.0f);
+
+	}
 	void setConfig(gFusionConfig config)
 	{
 		configuration = config;
@@ -367,7 +381,10 @@ private:
 	// LOCATIONS ID
 	// depthtovert
 	GLuint m_invkID;
-	GLuint m_camPamsID;
+	GLuint m_colorKID;
+	GLuint m_extrinsicsID;
+	GLuint m_camPamsDepthID;
+	GLuint m_camPamsColorID;
 	GLuint m_imageTypeID;
 	GLuint m_depthScaleID;
 	// track
@@ -520,6 +537,8 @@ private:
 	int m_color_height = 1080;
 	int m_color_width = 1920;
 
+	// CAMERA DATA
+	std::vector<glm::mat4> m_extrinsics;
 
 	// TRACKING DATA
 	// glm::vec3 m_volSize = glm::vec3(256,256,256);
@@ -528,6 +547,9 @@ private:
 	glm::vec4 m_camPamsDepth;
 	glm::vec4 m_camPamsColor;
 	glm::mat4 m_pose;
+
+
+
 
 	Eigen::Matrix<float, 4, 4, Eigen::ColMajor> m_pose_eig;// = Eigen::MatrixXf::Identity(4, 4);
 

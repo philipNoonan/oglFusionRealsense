@@ -34,16 +34,19 @@ struct FrameIntrinsics
 	float k1, k2, p1, p2, k3;
 };
 
-class Interface
+class Realsense2Interface
 {
 public:
-	Interface() {};
-	~Interface() {};
-	void searchForCameras();
+	Realsense2Interface() {};
+	~Realsense2Interface() {};
+	int searchForCameras();
 	rs2::device_list getDeviceList();
 	void setDepthProperties(int devNumber, int w, int h, int r);
+	void getDepthProperties(int devNumber, int &w, int &h, int &r);
 	void setColorProperties(int devNumber, int w, int h, int r);
-	void startDevice(int devNumber);
+	void getColorProperties(int devNumber, int &w, int &h, int &r);
+
+	void startDevice(int devNumber, int depthProfile, int colorProfile);
 	void stopDevice(int devNumber);
 	bool collateFrames();
 	std::vector<rs2::frame_queue> getDepthQueues();
@@ -53,12 +56,12 @@ public:
 	FrameIntrinsics getDepthIntrinsics(int devNumber);
 	FrameIntrinsics getColorIntrinsics(int devNumber);
 	uint32_t getDepthUnit(int devNumber);
-
+	rs2_extrinsics getDepthToColorIntrinsics(int devNumber);
 
 private:
 	std::string getDeviceName(const rs2::device &dev);
-	void Interface::setDepthIntrinsics(int devNumber);
-	void Interface::setColorIntrinsics(int devNumber);
+	void setDepthIntrinsics(int devNumber);
+	void setColorIntrinsics(int devNumber);
 
 	rs2::device_list m_devices;
 

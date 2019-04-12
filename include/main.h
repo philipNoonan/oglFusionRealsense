@@ -37,6 +37,7 @@
 
 #include "markerTracking.h"
 
+
 #include <chrono>
 #include <time.h>
 #include <ctime>   // localtime
@@ -100,9 +101,10 @@ GLFWwindow *window;
 kRender krender;
 
 //Realsense2Camera kcamera;
-Interface cameraInterface;
+Realsense2Interface cameraInterface;
 int cameraDevice = 0;
-
+std::vector<int> depthProfiles;
+std::vector<int> colorProfiles;
 
 
 static bool cameraRunning = false;
@@ -149,13 +151,10 @@ static int eRes = 0;
 const int screenWidth = 1920;
 const int screenHeight = 1080;
 
-const int colorWidth = 848;
-const int colorHeight = 480;
+std::vector<glm::ivec2> depthFrameSize;
+std::vector<glm::ivec2> colorFrameSize;
 
-int depthWidth = 640;
-int depthHeight = 480;
 
-float *mainColor[colorWidth * colorHeight];
 
 //unsigned char colorArray[4 * 848 * 480];
 
@@ -175,7 +174,7 @@ bool select_depth_points_mode = false;
 //std::vector<cv::Point2f> colorPoints;
 //cv::Mat newColor;
 
-bool showDepthFlag = false;
+bool showDepthFlag = true;
 bool showBigDepthFlag = false;
 bool showInfraFlag = false;
 bool showColorFlag = true;
@@ -186,8 +185,9 @@ bool showFlowFlag = false;
 bool showEdgesFlag = false;
 bool showNormalFlag = true;
 bool showVolumeFlag = false;
-bool showTrackFlag = true;
+bool showTrackFlag = false;
 bool showSDFVolume = false;
+bool showMarkerFlag = false;
 
 float irBrightness = 1.0;
 float irLow = 0.0f;
@@ -226,6 +226,7 @@ bool trackDepthToPoint = false;
 bool trackDepthToVolume = true;
 bool performFlood = false;
 bool performFlow = false;
+bool performAruco = false;
 
 int counter = 0;
 bool reset = true;
@@ -242,10 +243,10 @@ float volSlice = 0.0f;
 
 glm::vec3 iOff;
 
-glm::vec3 initOffset(int pixX, int pixY)
+glm::vec3 initOffset(int devNumber, int pixX, int pixY)
 {
-	int pointX = float(pixX) * (float(depthWidth) / float(display2DWindow.w));
-	int pointY = depthHeight - float(pixY) * (float(depthHeight) / float(display2DWindow.h));
+	int pointX = float(pixX) * (float(depthFrameSize[devNumber].x) / float(display2DWindow.w));
+	int pointY = depthFrameSize[devNumber].y - float(pixY) * (float(depthFrameSize[devNumber].y) / float(display2DWindow.h));
 	//std::cout << std::endl;
 	//std::cout << "depth width " << depthWidth << " px " << pointX << " py " << pointY << " size " << depthArray.size() << " valu " << pointY * depthWidth + pointX << std::endl;
 	//float z = float(depthArray[pointY * depthWidth + pointX]) * (float)cameraInterface.getDepthUnit(cameraDevice) / 1000000.0f;
@@ -260,7 +261,7 @@ glm::vec3 initOffset(int pixX, int pixY)
 
 	const uint16_t* p_depth_frame = reinterpret_cast<const uint16_t*>(depthFrame.get_data());
 	//float z = float(depthArray[pointY * depthWidth + pointX]) * (float)cameraInterface.getDepthUnit(cameraDevice) / 1000000.0f;
-	int depth_pixel_index = (pointY * depthWidth + pointX);
+	int depth_pixel_index = (pointY * depthFrameSize[devNumber].x + pointX);
 	z = p_depth_frame[depth_pixel_index] * (float)cameraInterface.getDepthUnit(cameraDevice) / 1000000.0f;
 	//std::cout << z << std::endl;
 
@@ -312,3 +313,6 @@ glm::vec2 mousePos = glm::vec2(0,0);
 
 /// MARKER TRACKING
 MarkerTracker mTracker;
+
+// GEM STUFF
+

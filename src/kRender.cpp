@@ -213,12 +213,15 @@ void kRender::setLocations()
 	m_depthScaleID = glGetUniformLocation(renderProg.getHandle(), "depthScale");
 	m_depthRangeID = glGetUniformLocation(renderProg.getHandle(), "depthRange");
 
+	m_renderOptionsID = glGetUniformLocation(renderProg.getHandle(), "renderOptions");
+
 	m_getPositionSubroutineID = glGetSubroutineUniformLocation(renderProg.getHandle(), GL_VERTEX_SHADER, "getPositionSubroutine");
 	m_fromTextureID = glGetSubroutineIndex(renderProg.getHandle(), GL_VERTEX_SHADER, "fromTexture");
 	m_fromPosition4DID = glGetSubroutineIndex(renderProg.getHandle(), GL_VERTEX_SHADER, "fromPosition4D");
 	m_fromPosition2DID = glGetSubroutineIndex(renderProg.getHandle(), GL_VERTEX_SHADER, "fromPosition2D");
 
 	m_fromStandardTextureID = glGetSubroutineIndex(renderProg.getHandle(), GL_VERTEX_SHADER, "fromStandardTexture");
+	m_fromMarkersVerticesID = glGetSubroutineIndex(renderProg.getHandle(), GL_VERTEX_SHADER, "fromMarkersVertices");
 
 	m_colorSelectionRoutineID = glGetSubroutineUniformLocation(renderProg.getHandle(), GL_FRAGMENT_SHADER, "getColorSelection");
 	m_fromDepthID = glGetSubroutineIndex(renderProg.getHandle(), GL_FRAGMENT_SHADER, "fromDepth");
@@ -229,8 +232,8 @@ void kRender::setLocations()
 	m_fromVolumeID = glGetSubroutineIndex(renderProg.getHandle(), GL_FRAGMENT_SHADER, "fromVolume");
 	m_fromVolumeSDFID = glGetSubroutineIndex(renderProg.getHandle(), GL_FRAGMENT_SHADER, "fromVolumeSDF");
 	m_fromTrackID = glGetSubroutineIndex(renderProg.getHandle(), GL_FRAGMENT_SHADER, "fromTrack");
-	m_fromFlowID = glGetSubroutineIndex(renderProg.getHandle(), GL_FRAGMENT_SHADER, "fromFlow");
-
+	m_fromMarkersID = glGetSubroutineIndex(renderProg.getHandle(), GL_FRAGMENT_SHADER, "fromMarkers");
+	m_fromStandardFragmentID = glGetSubroutineIndex(renderProg.getHandle(), GL_FRAGMENT_SHADER, "fromStandardFragment");
 
 
 
@@ -245,18 +248,18 @@ void kRender::setLocations()
 
 void kRender::updateVerts(float w, float h)
 {
-std::vector<float> vertices = {
-	// Positions		// Texture coords
-	w / 2.0f, h / 2.0f, 0.0f, 1.0f, 1.0f, // top right
-	w / 2.0f, -h / 2.0f, 0.0f, 1.0f, 0.0f, // bottom right
-	-w / 2.0f, -h / 2.0f, 0.0f, 0.0f, 0.0f, // bottom left
-	-w / 2.0f, h / 2.0f, 0.0f, 0.0f, 1.0f  // Top left
-};
-
-m_standard_verts = vertices;
-
-glBindBuffer(GL_ARRAY_BUFFER, m_VBO_Standard);
-glBufferSubData(GL_ARRAY_BUFFER, 0, m_standard_verts.size() * sizeof(float), m_standard_verts.data());
+//std::vector<float> vertices = {
+//	// Positions		// Texture coords
+//	w / 2.0f, h / 2.0f, 0.0f, 1.0f, 1.0f, // top right
+//	w / 2.0f, -h / 2.0f, 0.0f, 1.0f, 0.0f, // bottom right
+//	-w / 2.0f, -h / 2.0f, 0.0f, 0.0f, 0.0f, // bottom left
+//	-w / 2.0f, h / 2.0f, 0.0f, 0.0f, 1.0f  // Top left
+//};
+//
+//m_standard_verts = vertices;
+//
+//glBindBuffer(GL_ARRAY_BUFFER, m_VBO_Standard);
+//glBufferSubData(GL_ARRAY_BUFFER, 0, m_standard_verts.size() * sizeof(float), m_standard_verts.data());
 
 }
 
@@ -365,30 +368,30 @@ void kRender::allocateBuffers()
 	glGenBuffers(1, &m_EBO);
 
 	glBindVertexArray(m_VAO);
-	glBindBuffer(GL_ARRAY_BUFFER, m_VBO_Color);
-	glBufferData(GL_ARRAY_BUFFER, m_color_vert.size() * sizeof(float), &m_color_vert[0], GL_STATIC_DRAW);
-	// EBO
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_EBO);
-	glBufferData(GL_ELEMENT_ARRAY_BUFFER, m_indices.size() * sizeof(unsigned int), &m_indices[0], GL_STATIC_DRAW);
-	// Position attribute for Color
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (GLvoid*)0);
-	glEnableVertexAttribArray(0);
-	// TexCoord attribute for Color
-	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (GLvoid*)(3 * sizeof(float)));
-	glEnableVertexAttribArray(1);
+	//glBindBuffer(GL_ARRAY_BUFFER, m_VBO_Color);
+	//glBufferData(GL_ARRAY_BUFFER, m_color_vert.size() * sizeof(float), &m_color_vert[0], GL_STATIC_DRAW);
+	//// EBO
+	//glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_EBO);
+	//glBufferData(GL_ELEMENT_ARRAY_BUFFER, m_indices.size() * sizeof(unsigned int), &m_indices[0], GL_STATIC_DRAW);
+	//// Position attribute for Color
+	//glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (GLvoid*)0);
+	//glEnableVertexAttribArray(0);
+	//// TexCoord attribute for Color
+	//glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (GLvoid*)(3 * sizeof(float)));
+	//glEnableVertexAttribArray(1);
 
-	// now go for depth
-	glBindBuffer(GL_ARRAY_BUFFER, m_VBO_Depth);
-	glBufferData(GL_ARRAY_BUFFER, m_depth_vert.size() * sizeof(float), &m_depth_vert[0], GL_STATIC_DRAW);
-	// EBO
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_EBO);
-	glBufferData(GL_ELEMENT_ARRAY_BUFFER, m_indices.size() * sizeof(unsigned int), &m_indices[0], GL_STATIC_DRAW);
-	// Position attribute for Depth
-	glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (GLvoid*)0);
-	glEnableVertexAttribArray(2);
-	//// TexCoord attribute for Depth
-	glVertexAttribPointer(3, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (GLvoid*)(3 * sizeof(float)));
-	glEnableVertexAttribArray(3);
+	//// now go for depth
+	//glBindBuffer(GL_ARRAY_BUFFER, m_VBO_Depth);
+	//glBufferData(GL_ARRAY_BUFFER, m_depth_vert.size() * sizeof(float), &m_depth_vert[0], GL_STATIC_DRAW);
+	//// EBO
+	//glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_EBO);
+	//glBufferData(GL_ELEMENT_ARRAY_BUFFER, m_indices.size() * sizeof(unsigned int), &m_indices[0], GL_STATIC_DRAW);
+	//// Position attribute for Depth
+	//glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (GLvoid*)0);
+	//glEnableVertexAttribArray(2);
+	////// TexCoord attribute for Depth
+	//glVertexAttribPointer(3, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (GLvoid*)(3 * sizeof(float)));
+	//glEnableVertexAttribArray(3);
 
 	// standard verts
 	glBindBuffer(GL_ARRAY_BUFFER, m_VBO_Standard);
@@ -397,15 +400,14 @@ void kRender::allocateBuffers()
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_EBO);
 	glBufferData(GL_ELEMENT_ARRAY_BUFFER, m_indices.size() * sizeof(unsigned int), &m_indices[0], GL_DYNAMIC_DRAW);
 	// Position attribute for Depth
-	glVertexAttribPointer(4, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (GLvoid*)0);
-	glEnableVertexAttribArray(4);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (GLvoid*)0);
+	glEnableVertexAttribArray(0);
 	//// TexCoord attribute for Depth
-	glVertexAttribPointer(5, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (GLvoid*)(3 * sizeof(float)));
-	glEnableVertexAttribArray(5);
-
-
+	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (GLvoid*)(3 * sizeof(float)));
+	glEnableVertexAttribArray(1);
 
 	glBindVertexArray(0);
+
 
 	//glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 4, m_posBufMC);
 	//glBufferData(GL_SHADER_STORAGE_BUFFER, 128*128*128*4 * sizeof(float), NULL, GL_DYNAMIC_DRAW);
@@ -435,6 +437,50 @@ void kRender::allocateBuffers()
 	//glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 7, m_bufferTrackedPoints);
 	//glBufferData(GL_SHADER_STORAGE_BUFFER, m_trackedPoints.size() * sizeof(float), m_trackedPoints.data(), GL_DYNAMIC_DRAW);
 
+	glGenVertexArrays(1, &m_VAO_Markers);
+	glBindVertexArray(m_VAO_Markers);
+
+	glBindBuffer(GL_ARRAY_BUFFER, m_VBO_Standard);
+	glBufferData(GL_ARRAY_BUFFER, m_standard_verts.size() * sizeof(float), &m_standard_verts[0], GL_DYNAMIC_DRAW);
+	// EBO
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_EBO);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, m_indices.size() * sizeof(unsigned int), &m_indices[0], GL_DYNAMIC_DRAW);
+	// Position attribute for Depth
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (GLvoid*)0);
+	glEnableVertexAttribArray(0);
+	//// TexCoord attribute for Depth
+	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (GLvoid*)(3 * sizeof(float)));
+	glEnableVertexAttribArray(1);
+
+
+		// ALLOCATE buffer for 256 markers, which is probably enough
+	//m_tMat.resize(256, glm::mat4(1.0f));
+	glGenBuffers(1, &m_VBO_Markers);
+	glBindBuffer(GL_ARRAY_BUFFER, m_VBO_Markers);
+	glBufferData(GL_ARRAY_BUFFER, 256 * sizeof(glm::mat4), glm::value_ptr(m_tMat[0]), GL_DYNAMIC_DRAW);
+
+	// We're no longer using a model uniform variable, but instead declare a mat4 as a vertex attribute so we can store an 
+	// instanced array of transformation matrices. However, when we declare a datatype as a vertex attribute that is greater
+	// than a vec4 things work a bit differently. The maximum amount of data allowed as a vertex attribute is equal to a vec4. 
+	// Because a mat4 is basically 4 vec4s, we have to reserve 4 vertex attributes for this specific matrix. Because we 
+	// assigned it a location of 3, the columns of the matrix will have vertex attribute locations of 3, 4, 5 and 6. 
+
+	GLsizei vec4Size = sizeof(glm::vec4);
+	glEnableVertexAttribArray(2);
+	glVertexAttribPointer(2, 4, GL_FLOAT, GL_FALSE, 4 * vec4Size, (void*)0);
+	glEnableVertexAttribArray(3);
+	glVertexAttribPointer(3, 4, GL_FLOAT, GL_FALSE, 4 * vec4Size, (void*)(vec4Size));
+	glEnableVertexAttribArray(4);
+	glVertexAttribPointer(4, 4, GL_FLOAT, GL_FALSE, 4 * vec4Size, (void*)(2 * vec4Size));
+	glEnableVertexAttribArray(5);
+	glVertexAttribPointer(5, 4, GL_FLOAT, GL_FALSE, 4 * vec4Size, (void*)(3 * vec4Size));
+
+	glVertexAttribDivisor(2, 1);
+	glVertexAttribDivisor(3, 1);
+	glVertexAttribDivisor(4, 1);
+	glVertexAttribDivisor(5, 1);
+
+	glBindVertexArray(0);
 
 }
 
@@ -489,7 +535,7 @@ void kRender::setWindowLayout()
 //}
 
 
-void kRender::setRenderingOptions(bool showDepthFlag, bool showBigDepthFlag, bool showInfraFlag, bool showColorFlag, bool showLightFlag, bool showPointFlag, bool showFlowFlag, bool showEdgesFlag, bool showNormalFlag, bool showVolumeFlag, bool showTrackFlag, bool showSDFlag)
+void kRender::setRenderingOptions(bool showDepthFlag, bool showBigDepthFlag, bool showInfraFlag, bool showColorFlag, bool showLightFlag, bool showPointFlag, bool showFlowFlag, bool showEdgesFlag, bool showNormalFlag, bool showVolumeFlag, bool showTrackFlag, bool showSDFlag, bool showMarkerFlag)
 {
 	m_showDepthFlag = showDepthFlag;
 	m_showBigDepthFlag = showBigDepthFlag;
@@ -503,6 +549,10 @@ void kRender::setRenderingOptions(bool showDepthFlag, bool showBigDepthFlag, boo
 	m_showVolumeFlag = showVolumeFlag; 
 	m_showTrackFlag = showTrackFlag;
 	m_showVolumeSDFFlag = showSDFlag;
+	m_showMarkersFlag = showMarkerFlag;
+
+
+					  
 }
 
 void kRender::setTextures(GLuint depthTex, GLuint colorTex, GLuint vertexTex, GLuint normalTex, GLuint volumeTex, GLuint trackTex, GLuint pvpNormTex, GLuint pvdNormTex)
@@ -595,6 +645,15 @@ void kRender::bindTexturesForRendering()
 
 
 
+}
+
+void kRender::setMarkerData(std::vector<glm::mat4> tMat)
+{
+	m_numMarkers = tMat.size();
+	for (int i = 0; i < m_numMarkers; i++)
+	{
+		m_tMat[i] = tMat[i];
+	}
 }
 
 void kRender::bindBuffersForRendering()
@@ -832,14 +891,14 @@ void kRender::setColorImageRenderPosition(float vertFov)
 	glfwGetFramebufferSize(m_window, &w, &h);
 
 	float zDist;
-	zDist = ((float)m_depth_height * 6) / tan(vertFov * M_PI / 180.0f);
+	zDist = ((float)m_color_height * 6) / tan(vertFov * M_PI / 180.0f);
 	float halfHeightAtDist = (float)h * 4;
 	float halfWidthAtDistance = (float)w * 4;
 
 	glm::vec3 scaleVec = glm::vec3(6.f, 6.f, 1.0f);
 
 	m_model_color = glm::scale(glm::mat4(1.0f), scaleVec);
-	m_model_color = glm::translate(m_model_color, glm::vec3(-m_depth_width / 2.0f, -m_depth_height / 2.0f, -zDist));
+	m_model_color = glm::translate(m_model_color, glm::vec3(-m_color_width / 2.0f, -m_color_height / 2.0f, -zDist));
 
 
 }
@@ -856,7 +915,7 @@ void kRender::setInfraImageRenderPosition()
 
 }
 
-void kRender::setFlowImageRenderPosition(int height, int width, float vertFov)
+void kRender::setFlowImageRenderPosition(float vertFov)
 {
 	int w, h;
 	glfwGetFramebufferSize(m_window, &w, &h);
@@ -957,6 +1016,7 @@ void kRender::setDepthTextureProjectionMatrix()
 {
 
 	m_projection = glm::perspective(glm::radians(45.0f), (float)m_depth_width / (float)m_depth_height, 1.0f, 10000.0f); // scaling the texture to the current window size seems to work
+	m_projectionColor = glm::perspective(glm::radians(45.0f), (float)m_color_width / (float)m_color_height, 0.1f, 10000.0f); // scaling the texture to the current window size seems to work
 
 
 }
@@ -972,123 +1032,87 @@ void kRender::renderLiveVideoWindow(bool useInfrared)
 	renderProg.use();
 	glm::mat4 MVP;
 
-	//// FOR DEPTH
-	if (m_showDepthFlag)
+
+
+
+	//// RENDER LEFT WINDOW
+	m_renderOptions = m_showDepthFlag << 0 |
+		0 << 1 | // dont show color here
+		m_showNormalFlag << 2 |
+		m_showTrackFlag << 3;
+
+	setViewport(m_display2DPos.x, m_display2DPos.y, m_display2DSize.x, m_display2DSize.y);
+	glBindVertexArray(m_VAO);
+	//MVP = m_projection * m_view * m_model_depth;
+	glm::vec2 depthRange(m_depthMin, m_depthMax);
+	glUniformSubroutinesuiv(GL_VERTEX_SHADER, 1, &m_fromStandardTextureID);
+	glUniform1ui(m_renderOptionsID, m_renderOptions);
+	glUniform2fv(m_depthRangeID, 1, glm::value_ptr(depthRange));
+	glUniform1f(m_depthScaleID, 100.0f / 1000000.0f); // 1000 == each depth unit == 1 mm
+	glUniformSubroutinesuiv(GL_FRAGMENT_SHADER, 1, &m_fromStandardFragmentID);
+	glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+
+	//// RENDER RIGHT WINDOW
+	m_renderOptions = 0 << 0 | // dont shwo depth here
+		m_showColorFlag << 1 |
+		0 << 2 | // dont show norms
+		0 << 3; // dont show track
+
+	setViewport(m_display3DPos.x, m_display3DPos.y, m_display3DSize.x, m_display3DSize.y);
+	glBindVertexArray(m_VAO);
+	//MVP = m_projection * m_view * m_model_depth;
+	glUniformSubroutinesuiv(GL_VERTEX_SHADER, 1, &m_fromStandardTextureID);
+	glUniform1ui(m_renderOptionsID, m_renderOptions);
+	glUniformSubroutinesuiv(GL_FRAGMENT_SHADER, 1, &m_fromStandardFragmentID);
+	glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+
+	if (m_showMarkersFlag)
 	{
-		setViewport(m_display2DPos.x, m_display2DPos.y, m_display2DSize.x, m_display2DSize.y);
-
-		glBindVertexArray(m_VAO);
-		MVP = m_projection * m_view * m_model_depth;
-		glm::vec2 imageSize(m_depth_width, m_depth_height);
-		glm::vec2 depthRange(m_depthMin, m_depthMax);
-		glUniformSubroutinesuiv(GL_VERTEX_SHADER, 1, &m_fromStandardTextureID);
-		glUniformSubroutinesuiv(GL_FRAGMENT_SHADER, 1, &m_fromDepthID);
-		//glUniformMatrix4fv(m_ProjectionID, 1, GL_FALSE, glm::value_ptr(m_projection));
-		glUniformMatrix4fv(m_MvpID, 1, GL_FALSE, glm::value_ptr(MVP));
-		glUniform2fv(m_imSizeID, 1, glm::value_ptr(imageSize));
-		glUniform2fv(m_depthRangeID, 1, glm::value_ptr(depthRange));
-
-
-		glUniform1f(m_depthScaleID, 100.0f / 1000000.0f); // 1000 == each depth unit == 1 mm
-
-		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
-	}
-
-	if (m_showColorFlag)
-	{
-		setViewport(m_display2DPos.x, m_display2DPos.y, m_display2DSize.x, m_display2DSize.y);
-		glm::vec2 imageSize;
-		imageSize = glm::vec2(m_color_width, m_color_height);
-		MVP = m_projection * m_view * m_model_color;
-
-		glBindVertexArray(m_VAO);
-
-
-		glUniformSubroutinesuiv(GL_VERTEX_SHADER, 1, &m_fromStandardTextureID);
-		glUniformSubroutinesuiv(GL_FRAGMENT_SHADER, 1, &m_fromColorID);
-		//glUniformMatrix4fv(m_ProjectionID, 1, GL_FALSE, glm::value_ptr(m_projection));
-		glUniformMatrix4fv(m_MvpID, 1, GL_FALSE, glm::value_ptr(MVP));
-		glUniform2fv(m_imSizeID, 1, glm::value_ptr(imageSize));
-
-		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
-
-	}
-
-	//// FOR RAYNORM
-	if (m_showNormalFlag)
-	{
-		setViewport(m_display2DPos.x, m_display2DPos.y, m_display2DSize.x, m_display2DSize.y);
-
-		glBindVertexArray(m_VAO);
-		MVP = m_projection * m_view * m_model_raynorm;
-		glm::vec2 imageSize(m_depth_width, m_depth_height);
-
-		glUniformSubroutinesuiv(GL_VERTEX_SHADER, 1, &m_fromStandardTextureID);
-		glUniformSubroutinesuiv(GL_FRAGMENT_SHADER, 1, &m_fromRayNormID);
-		//glUniformMatrix4fv(m_ProjectionID, 1, GL_FALSE, glm::value_ptr(m_projection));
-		glUniformMatrix4fv(m_MvpID, 1, GL_FALSE, glm::value_ptr(MVP));
-		glUniform2fv(m_imSizeID, 1, glm::value_ptr(imageSize));
-
-		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
-	}
-
-	if (m_showVolumeSDFFlag)
-	{
-		// change verts for size of texture
+		glBindVertexArray(m_VAO_Markers);
+		glEnable(GL_PROGRAM_POINT_SIZE);
 		setViewport(m_display3DPos.x, m_display3DPos.y, m_display3DSize.x, m_display3DSize.y);
 
-		//updateVerts(m_volume_size.x, m_volume_size.y);
-		glm::vec2 imageSize(m_depth_width, m_depth_height);
+		glm::vec2 imageSize(1920.0f, 1080.0f);
 
-		//glBindImageTexture(5, m_textureVolume, 0, GL_FALSE, 0, GL_READ_ONLY, GL_RG16I);
+		// bind and upload new mat4's
+		glBindBuffer(GL_ARRAY_BUFFER, m_VBO_Markers);
+		glBufferSubData(GL_ARRAY_BUFFER, 0, m_numMarkers * sizeof(glm::mat4), glm::value_ptr(m_tMat[0]));
 
-		glBindVertexArray(m_VAO);
-		MVP = m_projection * m_view * m_model_track;
-		glUniformSubroutinesuiv(GL_VERTEX_SHADER, 1, &m_fromStandardTextureID);
-		glUniformSubroutinesuiv(GL_FRAGMENT_SHADER, 1, &m_fromVolumeSDFID);
-		glUniform1f(m_sliceID, m_volumeSDFRenderSlice);
+		//glm::mat4 colPams = glm::mat4(1.0f);
+		//colPams
+		MVP = m_projectionColor;
+		MVP[0] = m_cameraParams_color;
+		glUniformSubroutinesuiv(GL_VERTEX_SHADER, 1, &m_fromMarkersVerticesID);
+		glUniformSubroutinesuiv(GL_FRAGMENT_SHADER, 1, &m_fromMarkersID);
 
-		//glUniformMatrix4fv(m_ProjectionID, 1, GL_FALSE, glm::value_ptr(m_projection));
 		glUniformMatrix4fv(m_MvpID, 1, GL_FALSE, glm::value_ptr(MVP));
 		glUniform2fv(m_imSizeID, 1, glm::value_ptr(imageSize));
 
-		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+		// upload the rVec and tVec and then use vertex instanceID to determine which transform to apply to the marker coords
+		//glDrawArraysInstanced(GL_POINTS, 0, 4, m_numMarkers);
+		//glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+		glDrawElementsInstanced(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0, m_numMarkers); // each marker is 2 triangles
+		//glDrawArrays(GL_POINTS, 0, m_numMarkers);
+		//glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+
+
 	}
 
-	if (m_showVolumeFlag)
-	{
-		// change verts for size of texture
-		setViewport(m_display3DPos.x, m_display3DPos.y, m_display3DSize.x, m_display3DSize.y);
-
-		//updateVerts(m_volume_size.x, m_volume_size.y);
-		glm::vec2 imageSize(m_depth_width, m_depth_height);
-
-		//glBindImageTexture(5, m_testTextureFragOut, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA32F);
-
-		glBindVertexArray(m_VAO);
-		MVP = m_projection * m_view * m_model_track;
-		glUniformSubroutinesuiv(GL_VERTEX_SHADER, 1, &m_fromStandardTextureID);
-		glUniformSubroutinesuiv(GL_FRAGMENT_SHADER, 1, &m_fromVolumeID);
-		glUniform1f(m_sliceID, m_volumeSDFRenderSlice);
-
-		//glUniformMatrix4fv(m_ProjectionID, 1, GL_FALSE, glm::value_ptr(m_projection));
-		glUniformMatrix4fv(m_MvpID, 1, GL_FALSE, glm::value_ptr(MVP));
-		glUniform2fv(m_imSizeID, 1, glm::value_ptr(imageSize));
-
-		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 	
-	}
-
-	//if (m_showFloodFlag)
+	//if (m_showVolumeSDFFlag)
 	//{
-	//	glm::vec2 imageSize(m_volume_size.x, m_volume_size.y);
+	//	// change verts for size of texture
+	//	setViewport(m_display3DPos.x, m_display3DPos.y, m_display3DSize.x, m_display3DSize.y);
 
-	//	glBindImageTexture(5, m_textureVolume, 0, GL_FALSE, 0, GL_READ_ONLY, GL_RG16I);
+	//	//updateVerts(m_volume_size.x, m_volume_size.y);
+	//	glm::vec2 imageSize(m_depth_width, m_depth_height);
+
+	//	//glBindImageTexture(5, m_textureVolume, 0, GL_FALSE, 0, GL_READ_ONLY, GL_RG16I);
 
 	//	glBindVertexArray(m_VAO);
-	//	MVP = m_projection * m_view * m_model_volume;
+	//	MVP = m_projection * m_view * m_model_track;
 	//	glUniformSubroutinesuiv(GL_VERTEX_SHADER, 1, &m_fromStandardTextureID);
-	//	glUniformSubroutinesuiv(GL_FRAGMENT_SHADER, 1, &m_fromVolumeID);
+	//	glUniformSubroutinesuiv(GL_FRAGMENT_SHADER, 1, &m_fromVolumeSDFID);
 	//	glUniform1f(m_sliceID, m_volumeSDFRenderSlice);
 
 	//	//glUniformMatrix4fv(m_ProjectionID, 1, GL_FALSE, glm::value_ptr(m_projection));
@@ -1098,92 +1122,88 @@ void kRender::renderLiveVideoWindow(bool useInfrared)
 	//	glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 	//}
 
-	if (m_showTrackFlag)
-	{
-		setViewport(m_display3DPos.x, m_display3DPos.y, m_display3DSize.x, m_display3DSize.y);
-
-		glBindVertexArray(m_VAO);
-		MVP = m_projection * m_view * m_model_track;
-		glm::vec2 imageSize(m_depth_width, m_depth_height);
-
-		glUniformSubroutinesuiv(GL_VERTEX_SHADER, 1, &m_fromStandardTextureID);
-		glUniformSubroutinesuiv(GL_FRAGMENT_SHADER, 1, &m_fromTrackID);
-		//glUniformMatrix4fv(m_ProjectionID, 1, GL_FALSE, glm::value_ptr(m_projection));
-		glUniformMatrix4fv(m_MvpID, 1, GL_FALSE, glm::value_ptr(MVP));
-		glUniform2fv(m_imSizeID, 1, glm::value_ptr(imageSize));
-
-		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
-
-
-
-	}
-
-
-
-	if (m_showFlowFlag)
-	{
-		setViewport(m_display2DPos.x, m_display2DPos.y, m_display2DSize.x, m_display2DSize.y);
-
-		glm::vec2 imageSize;
-		if (useInfrared)
-		{
-			imageSize = glm::vec2(m_depth_width, m_depth_height);
-			MVP = m_projection * m_view * m_model_flow;
-		}
-		else
-		{
-			imageSize = glm::vec2(m_color_width, m_color_height);
-			MVP = m_projection * m_view * m_model_flow;
-		}
-		glBindVertexArray(m_VAO);
-
-
-		glBindVertexArray(m_VAO);
-		//MVP = glm::translate(MVP, glm::vec3(0.0f, 0.0f, 5.0f));
-		glUniformSubroutinesuiv(GL_VERTEX_SHADER, 1, &m_fromStandardTextureID);
-		glUniformSubroutinesuiv(GL_FRAGMENT_SHADER, 1, &m_fromFlowID);
-		//glUniformMatrix4fv(m_ProjectionID, 1, GL_FALSE, glm::value_ptr(m_projection));
-		glUniformMatrix4fv(m_MvpID, 1, GL_FALSE, glm::value_ptr(MVP));
-		glUniform2fv(m_imSizeID, 1, glm::value_ptr(imageSize));
-
-		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
-	}
-
-	//glBindVertexArray(m_VAO_MC);
-
-	//glBindVertexArray(m_VAO_MC);
-	//glm::mat4 projection = glm::perspective(glm::radians(61.087f), 1920.0f / 1080.0f, 0.1f, 10000.0f); // 61 was obtained https://codeyarns.com/2015/09/08/how-to-compute-intrinsic-camera-matrix-for-a-camera/ from fy = y / tan(FOVy / 2) , where y = halfHeight = 1080 / 2
-
-	//MVP = m_projection * m_view * m_model_MC;
-	//glUniformSubroutinesuiv(GL_VERTEX_SHADER, 1, &m_fromPosition4DID);
-	//glUniformSubroutinesuiv(GL_FRAGMENT_SHADER, 1, &m_fromPointsID);
-	////glUniformMatrix4fv(m_ProjectionID, 1, GL_FALSE, glm::value_ptr(m_projection));
-	//glUniformMatrix4fv(m_MvpID, 1, GL_FALSE, glm::value_ptr(MVP));
-	//glDrawArrays(GL_TRIANGLES, 0, m_numVerts);
-	////glDrawArrays(GL_POINTS, 0, m_numVerts    
-
-	//glEnable(GL_PROGRAM_POINT_SIZE);
-
-	//MVP = m_projection * m_view * m_model_flow;
-	//MVP = m_projection * m_view * m_model_color;
-	//glm::vec2 imageSize;
-	//if (useInfrared)
+	//if (m_showVolumeFlag)
 	//{
-	//	imageSize = glm::vec2(m_depth_width, m_depth_height);
-	//}
-	//else
-	//{
-	//	imageSize = glm::vec2(m_color_width, m_color_height);
-	//}
-	//glUniform2fv(m_imSizeID, 1, glm::value_ptr(imageSize));
+	//	// change verts for size of texture
+	//	setViewport(m_display3DPos.x, m_display3DPos.y, m_display3DSize.x, m_display3DSize.y);
 
-	//MVP = glm::translate(MVP, glm::vec3(0.0f, 0.0f, 10.0f));
-	//glUniformSubroutinesuiv(GL_VERTEX_SHADER, 1, &m_fromPosition2DID);
-	//glUniformSubroutinesuiv(GL_FRAGMENT_SHADER, 1, &m_fromPointsID);
-	//glUniformMatrix4fv(m_ProjectionID, 1, GL_FALSE, glm::value_ptr(m_projection));
-	//glUniformMatrix4fv(m_MvpID, 1, GL_FALSE, glm::value_ptr(MVP));
-	//glDrawArrays(GL_TRIANGLES, 0, 3);
-	//glDrawArrays(GL_POINTS, 0, m_trackedPoints.size() / 2);
+	//	//updateVerts(m_volume_size.x, m_volume_size.y);
+	//	glm::vec2 imageSize(m_depth_width, m_depth_height);
+
+	//	//glBindImageTexture(5, m_testTextureFragOut, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA32F);
+
+	//	glBindVertexArray(m_VAO);
+	//	MVP = m_projection * m_view * m_model_track;
+	//	glUniformSubroutinesuiv(GL_VERTEX_SHADER, 1, &m_fromStandardTextureID);
+	//	glUniformSubroutinesuiv(GL_FRAGMENT_SHADER, 1, &m_fromVolumeID);
+	//	glUniform1f(m_sliceID, m_volumeSDFRenderSlice);
+
+	//	//glUniformMatrix4fv(m_ProjectionID, 1, GL_FALSE, glm::value_ptr(m_projection));
+	//	glUniformMatrix4fv(m_MvpID, 1, GL_FALSE, glm::value_ptr(MVP));
+	//	glUniform2fv(m_imSizeID, 1, glm::value_ptr(imageSize));
+
+	//	glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+	//
+	//}
+
+	////if (m_showFloodFlag)
+	////{
+	////	glm::vec2 imageSize(m_volume_size.x, m_volume_size.y);
+
+	////	glBindImageTexture(5, m_textureVolume, 0, GL_FALSE, 0, GL_READ_ONLY, GL_RG16I);
+
+	////	glBindVertexArray(m_VAO);
+	////	MVP = m_projection * m_view * m_model_volume;
+	////	glUniformSubroutinesuiv(GL_VERTEX_SHADER, 1, &m_fromStandardTextureID);
+	////	glUniformSubroutinesuiv(GL_FRAGMENT_SHADER, 1, &m_fromVolumeID);
+	////	glUniform1f(m_sliceID, m_volumeSDFRenderSlice);
+
+	////	//glUniformMatrix4fv(m_ProjectionID, 1, GL_FALSE, glm::value_ptr(m_projection));
+	////	glUniformMatrix4fv(m_MvpID, 1, GL_FALSE, glm::value_ptr(MVP));
+	////	glUniform2fv(m_imSizeID, 1, glm::value_ptr(imageSize));
+
+	////	glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+	////}
+
+
+
+	//if (m_showFlowFlag)
+	//{
+	//	setViewport(m_display2DPos.x, m_display2DPos.y, m_display2DSize.x, m_display2DSize.y);
+
+	//	glm::vec2 imageSize;
+	//	if (useInfrared)
+	//	{
+	//		imageSize = glm::vec2(m_depth_width, m_depth_height);
+	//		MVP = m_projection * m_view * m_model_flow;
+	//	}
+	//	else
+	//	{
+	//		imageSize = glm::vec2(m_color_width, m_color_height);
+	//		MVP = m_projection * m_view * m_model_flow;
+	//	}
+	//	glBindVertexArray(m_VAO);
+
+
+	//	glBindVertexArray(m_VAO);
+	//	//MVP = glm::translate(MVP, glm::vec3(0.0f, 0.0f, 5.0f));
+	//	glUniformSubroutinesuiv(GL_VERTEX_SHADER, 1, &m_fromStandardTextureID);
+	//	glUniformSubroutinesuiv(GL_FRAGMENT_SHADER, 1, &m_fromFlowID);
+	//	//glUniformMatrix4fv(m_ProjectionID, 1, GL_FALSE, glm::value_ptr(m_projection));
+	//	glUniformMatrix4fv(m_MvpID, 1, GL_FALSE, glm::value_ptr(MVP));
+	//	glUniform2fv(m_imSizeID, 1, glm::value_ptr(imageSize));
+
+	//	glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+	//}
+
+
+
+
+
+
+
+	//}
+
 
 
 	glBindVertexArray(0);

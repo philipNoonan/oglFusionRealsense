@@ -43,6 +43,7 @@ include(BasicConfig)
 
 find_package(OpenCV REQUIRED)
 find_package(aruco REQUIRED)
+find_package(gem2 REQUIRED)
 find_package(OpenGL REQUIRED)
 find_package(GLEW REQUIRED)
 find_package(glfw3 REQUIRED)
@@ -149,4 +150,4 @@ target_link_libraries(${PROJECT_NAME} Eigen3::Eigen)
 target_link_libraries(${PROJECT_NAME} realsense2::realsense-file realsense2::realsense2)
 target_link_libraries(${PROJECT_NAME} ${OpenCV_LIBS})
 target_link_libraries(${PROJECT_NAME} ${aruco_LIBS})
-
+target_link_libraries(${PROJECT_NAME} gem2::gem2)

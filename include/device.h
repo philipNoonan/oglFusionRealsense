@@ -43,8 +43,13 @@ public:
 
 	void setDev(rs2::device dev);
 	void setStreams();
-	void setDepthProperties(int width, int height, int rate);
-	void setColorProperties(int width, int height, int rate);
+	void setSensorOptions();
+	void setDepthProperties(int profileChoice);
+	void getDepthProperties(int &width, int &height, int &rate);
+
+	void setColorProperties(int profileChoice);
+	void getColorProperties(int &width, int &height, int &rate);
+
 	bool start();
 	bool stop();
 	bool getFrames(rs2::frame_queue &depthQ, rs2::frame_queue &colorQ);
@@ -52,6 +57,7 @@ public:
 	rs2_intrinsics getDepthIntrinsics();
 	rs2_intrinsics getColorIntrinsics();
 	uint32_t getDepthUnit();
+	rs2_extrinsics getDepthToColorExtrinsics();
 	void capture();
 	void colorThread(rs2::sensor& sens);
 	void capturingColor(rs2::frame &f)
@@ -102,9 +108,10 @@ private:
 	rs2::sensor m_depthSensor;
 	rs2::sensor m_colorSensor;
 
-	int m_depthStreamChoice = 71; //435I
+	int m_depthStreamChoice; //435I
 	//int m_depthStreamChoice = 211; // 415
-	int m_colorStreamChoice = 61; //435I
+	//int m_colorStreamChoice = 61; //435I 848 480 60hz rgb8
+	int m_colorStreamChoice; //435I 848 480 30hz rgb8
 
 	std::vector<rs2::sensor> m_sensors;
 

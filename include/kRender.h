@@ -123,6 +123,12 @@ public:
 		m_display3DPos = glm::vec2(x, y);
 		m_display3DSize = glm::vec2(w, h);
 	}
+
+	void setColorDisplayOriSize(int x, int y, glm::ivec2 fSize)
+	{
+		m_displayColorPos = glm::vec2(x, y);
+		m_displayColorSize = fSize;
+	}
 	//std::vector<float> graphPointsX()
 	//{
 	//	return m_graph_vector_x;
@@ -142,6 +148,8 @@ public:
 	//void getDepthPoints3D();
 
 	void getMouseClickPositionsDepth();
+
+	void setMarkerData(std::vector<glm::mat4> tMat);
 
 	void anchorMW(std::pair<int, int> anchor)
 	{
@@ -163,6 +171,19 @@ public:
 	void setVertPositions();
 	void allocateTextures();
 	void allocateBuffers();
+	void setDepthFrameSize(int width, int height)
+	{
+		m_depth_width = width;
+		m_depth_height = height;
+	}
+	void setColorFrameSize(int width, int height)
+	{
+		m_color_width = width;
+		m_color_height = height;
+	}
+
+
+
 	void setColorFrame(std::vector<uint16_t> imageArray);
 	void setColorFrame(std::vector<rs2::frame_queue> colorQ, int devNumber, cv::Mat &colorMat);
 	void setTextures(GLuint depthTex, GLuint colorTex, GLuint vertexTex, GLuint normalTex, GLuint volumeTex, GLuint trackTex, GLuint pvpNormTex, GLuint pvdNormTex);
@@ -207,7 +228,7 @@ public:
 	void setupComputeFBO();
 
 	// The correcter way 
-	void setRenderingOptions(bool showDepthFlag, bool showBigDepthFlag, bool showInfraFlag, bool showColorFlag, bool showLightFlag, bool showPointFlag, bool showFlowFlag, bool showEdgesFlag, bool showNormalFlag, bool showVolumeSDFFlag, bool showTrackFlag, bool showSFFlag);
+	void setRenderingOptions(bool showDepthFlag, bool showBigDepthFlag, bool showInfraFlag, bool showColorFlag, bool showLightFlag, bool showPointFlag, bool showFlowFlag, bool showEdgesFlag, bool showNormalFlag, bool showVolumeSDFFlag, bool showTrackFlag, bool showSFFlag, bool showMarkerFlag);
 	void setBuffersForRendering(float * depthArray, float * bigDepthArray, float * colorArray, float * infraArray, unsigned char * flowPtr);
 	void setDepthImageRenderPosition(float vertFov);
 	void setNormalImageRenderPosition();
@@ -215,7 +236,7 @@ public:
 	void setColorImageRenderPosition(float vertFov);
 	void setInfraImageRenderPosition();
 	void setTrackImageRenderPosition(float vertFov);
-	void setFlowImageRenderPosition(int height, int width, float vertFov);
+	void setFlowImageRenderPosition(float vertFov);
 	void setPointCloudRenderPosition(float modelZ);
 	void setLightModelRenderPosition();
 	void setMarchingCubesRenderPosition(float modelZ);
@@ -327,7 +348,7 @@ private:
 	bool m_show_imgui;
 
 	GLuint m_VAO, m_EBO;
-	GLuint m_VBO_Standard, m_VBO_Color, m_VBO_Depth;
+	GLuint m_VBO_Standard, m_VBO_Color, m_VBO_Depth, m_VBO_Markers;
 	std::vector<float> m_standard_verts;
 	std::vector<float> m_color_vert;
 	std::vector<float> m_depth_vert;
@@ -336,6 +357,8 @@ private:
 
 	GLuint m_VAO_MC;
 	GLuint m_VBO_Vert_MC;
+
+	GLuint m_VAO_Markers;
 
 	GLuint m_programID;
 	GLuint m_ProjectionID;
@@ -346,6 +369,10 @@ private:
 	GLuint m_imSizeID;
 	GLuint m_depthScaleID; // remember to set me from main
 	GLuint m_depthRangeID;
+
+	GLuint m_renderOptionsID;
+
+	GLuint m_fromStandardFragmentID;
 
 	GLuint m_getPositionSubroutineID;
 	GLuint m_fromTextureID;
@@ -362,6 +389,9 @@ private:
 	GLuint m_fromVolumeSDFID;
 	GLuint m_fromTrackID;
 	GLuint m_fromFlowID;
+
+	GLuint m_fromMarkersVerticesID;
+	GLuint m_fromMarkersID;
 
 	GLuint m_ambientID; 
 	GLuint m_lightID;
@@ -502,7 +532,7 @@ private:
 	glm::mat4 m_model_raynorm = glm::mat4(1.0f);
 	glm::mat4 m_view = glm::mat4(1.0f);
 	glm::mat4 m_projection = glm::perspective(glm::radians(45.0f), 1.0f, 0.1f, 3000.0f); // some default matrix
-
+    glm::mat4 m_projectionColor = glm::perspective(glm::radians(45.0f), 1.0f, 0.1f, 3000.0f); // some default matrix
 	glm::vec3 m_volume_size = glm::vec3(128.0f, 128.0f, 128.0f);
 
 	bool m_showDepthFlag = false;
@@ -517,6 +547,9 @@ private:
 	bool m_showVolumeSDFFlag = false;
 	bool m_showTrackFlag = false;
 	bool m_showVolumeFlag = false;
+	bool m_showMarkersFlag = false;
+
+	uint32_t m_renderOptions = 0;
 
 	bool m_usePVP;
 	bool m_usePVD;
@@ -544,5 +577,11 @@ private:
 
 	glm::vec2 m_display3DPos;
 	glm::vec2 m_display3DSize;
+
+	glm::vec2 m_displayColorPos;
+	glm::vec2 m_displayColorSize;
+
+	glm::mat4 m_tMat[256];
+	int m_numMarkers = 0;
 
 };

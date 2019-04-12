@@ -28,10 +28,60 @@ uniform float irHigh = 65536.0f;
 uniform float slice;
 uniform float depthScale;
 uniform vec2 depthRange;
-
+uniform uint renderOptions;
 
 subroutine vec4 getColor();
 subroutine uniform getColor getColorSelection;
+
+subroutine(getColor)
+vec4 fromStandardFragment()
+{
+	// decode Key
+	 //   return vec3((inUint & 4290772992) >> 22, (inUint & 4190208) >> 12, (inUint & 4092) >> 2); ;
+	uint renderDepth =   (renderOptions & 1); 
+	uint renderColor =   (renderOptions & 2) >> 1; 
+	uint renderNormals = (renderOptions & 4) >> 2; 
+	uint renderTrack =   (renderOptions & 8) >> 3; 
+
+	vec4 outColor = vec4(0.0f);
+
+	if (renderDepth == 1)
+	{
+		vec4 tColor = vec4(textureLod(currentTextureDepth, vec2(TexCoord), 0)) * 65535.0f;
+	    float depthVal = smoothstep(depthRange.x, depthRange.y, tColor.x * depthScale);
+
+		outColor = vec4(depthVal.xxx, 1.0f);
+	}
+
+	if (renderColor == 1)
+	{
+		outColor = textureLod(currentTextureColor, vec2(TexCoord),0);
+	}
+
+	if (renderNormals == 1)
+	{
+		vec4 tCol = texture(currentTextureNormal, vec2(TexCoord));
+		if (tCol.w > 0)
+		{
+			outColor = vec4(tCol.xy, -tCol.z, 1.0f);
+		}
+	}
+
+	if (renderTrack == 1)
+	{
+		vec4 tCol = texture(currentTextureTrack, vec2(TexCoord));
+		if (tCol.w > 0)
+		{
+			outColor = vec4(tCol.xyz, 1.0f);
+		}
+	}
+
+	return outColor;
+
+}
+
+
+
 
 subroutine(getColor)
 vec4 fromDepth()
@@ -71,6 +121,12 @@ subroutine(getColor)
 vec4 fromPoints()
 {
 	return vec4(0.03f, 1.0f, 0.02f, 1.0f);
+}
+
+subroutine(getColor)
+vec4 fromMarkers()
+{
+	return vec4(0.59f, 0.98f, 0.59f, 0.5f);
 }
 
 int ncols = 0;
