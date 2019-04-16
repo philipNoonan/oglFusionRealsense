@@ -35,6 +35,7 @@ namespace gemStatus
 		COLLECTING = 1,
 		AUTOCALIBRATING = 2,
 		TRACKING = 3,
+		PAIRING = 4,
 	};
 }
 
@@ -68,6 +69,8 @@ public:
 	void setGemOption(int opt);
 	void useGEM();
 	void filterOutliers();
+
+	void detectPairs();
 
 	void getMarkerData(std::vector<glm::mat4> &tMat);
 

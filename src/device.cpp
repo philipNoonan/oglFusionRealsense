@@ -140,8 +140,8 @@ void Realsense2Camera::setSensorOptions()
 	m_sensors[0].set_option(RS2_OPTION_EXPOSURE, 4000);
 	m_sensors[0].set_option(RS2_OPTION_ENABLE_AUTO_EXPOSURE, 0);
 	// rcolor
-	m_sensors[1].set_option(RS2_OPTION_EXPOSURE, 120);
-	m_sensors[1].set_option(RS2_OPTION_ENABLE_AUTO_EXPOSURE, 0);
+	//m_sensors[1].set_option(RS2_OPTION_EXPOSURE, 120);
+	m_sensors[1].set_option(RS2_OPTION_ENABLE_AUTO_EXPOSURE, 1);
 }
 
 
@@ -383,6 +383,7 @@ rs2_intrinsics Realsense2Camera::getColorIntrinsics()
 uint32_t Realsense2Camera::getDepthUnit()
 {
 	float depthScale = m_sensors[0].as<rs2::depth_sensor>().get_depth_scale();
+	//std::cout << "depth scale : " << depthScale * 1e6 << std::endl;
 	return (uint32_t)(depthScale * 1000000.0f);
 	//return m_ctrl_curr.depthUnits;
 }

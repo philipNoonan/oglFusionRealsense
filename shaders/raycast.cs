@@ -2,12 +2,12 @@
 
 layout(local_size_x = 32, local_size_y = 32) in;
 
-layout(binding = 0) uniform isampler3D volumeDataTexture;
+layout(binding = 0) uniform sampler3D volumeDataTexture;
 layout(binding = 1) uniform sampler3D volumeFloodSDF;
 //layout(binding= 1) uniform sampler3D volumeColorTexture;
 //layout(binding= 2) uniform sampler2D currentTextureColor;
      
-layout(binding = 0, rg16i) uniform iimage3D volumeData; // Gimage3D, where G = i, u, or blank, for int, u int, and floats respectively
+layout(binding = 0, rg16f) uniform image3D volumeData; // Gimage3D, where G = i, u, or blank, for int, u int, and floats respectively
 layout(binding = 1, rgba32f) uniform image2D refVertex;
 layout(binding = 2, rgba32f) uniform image2D refNormal;
     //layout(binding = 1, r32f) uniform image2D volumeSlice;
@@ -62,8 +62,7 @@ float vs(uvec3 pos)
     //vec4 data = imageLoad(volumeData, ivec3(pos));
     //return data.x; // convert short to float
 
-    ivec4 data = imageLoad(volumeData, ivec3(pos));
-    return float(data.x); // convert short to float
+    return imageLoad(volumeData, ivec3(pos)).x;
 
 }
 
@@ -109,7 +108,7 @@ float interpDistance(vec3 pos, inout bool interpolated)
                 current_voxel.z = int(k) + k_offset;
                 volume = abs(current_voxel.x - i) + abs(current_voxel.y - j) + abs(current_voxel.z - k);
 
-                ivec4 data = imageLoad(volumeData, current_voxel);
+                vec4 data = imageLoad(volumeData, current_voxel);
 
 
 

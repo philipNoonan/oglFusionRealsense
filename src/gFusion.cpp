@@ -290,7 +290,7 @@ void gFusion::initTextures()
 void gFusion::initVolume()
 {
 	//GLenum err = glGetError();
-	m_textureVolume = createTexture(GL_TEXTURE_3D, 1, configuration.volumeSize.x, configuration.volumeSize.y, configuration.volumeSize.z, GL_RG16I);
+	m_textureVolume = createTexture(GL_TEXTURE_3D, 1, configuration.volumeSize.x, configuration.volumeSize.y, configuration.volumeSize.z, GL_RG16F);
 	//err = glGetError();
 }
 
@@ -319,7 +319,7 @@ void gFusion::resetVolume()
 	int compWidth;
 	int compHeight;
 
-	glBindImageTexture(0, m_textureVolume, 0, GL_FALSE, 0, GL_READ_WRITE, GL_RG16I);
+	glBindImageTexture(0, m_textureVolume, 0, GL_FALSE, 0, GL_READ_WRITE, GL_RG16F);
 	//glBindImageTexture(1, m_textureTestImage, 0, GL_FALSE, 0, GL_READ_WRITE, GL_R32F);
 
 	glUniformSubroutinesuiv(GL_COMPUTE_SHADER, 1, &m_resetVolumeID);
@@ -1142,7 +1142,7 @@ bool gFusion::TrackSDF() {
 			dC_icp *= scaling;
 			db_icp *= scaling;
 
-			dC_icp = dC_icp + (double(iteration)*0.5)*Eigen::MatrixXd::Identity(6, 6);
+			dC_icp = dC_icp + (double(iteration)*0.001)*Eigen::MatrixXd::Identity(6, 6);
 
 			//Eigen::JacobiSVD<Eigen::MatrixXd> svd(dC_icp, Eigen::ComputeFullU | Eigen::ComputeFullV);
 			//result = svd.solve(db_icp); // TODO CHECK THIS WORKS, SHOULD WE MAKE A BACK SUB SOLVER?
@@ -1160,7 +1160,7 @@ bool gFusion::TrackSDF() {
 			//std::cout << "AE: " << alignmentEnergy << " snorm : " << Cnorm << " vec " << result.transpose() << std::endl;
 
 			//std::cout << "cnrom :" << Cnorm << std::endl;
-			if (alignmentEnergy != 0 && Cnorm < 1e-4)
+			if (alignmentEnergy != 0 && Cnorm < 1e-3)
 			{
 				//std::cout << "tracked!!! iteration " << iteration << " level " << level << " AE: " << alignmentEnergy << " snorm : " << Cnorm << " vec " << result.transpose() << std::endl;
 
@@ -1313,7 +1313,7 @@ void gFusion::trackSDF(int layer, Eigen::Matrix4f camToWorld)
 	glBindTexture(GL_TEXTURE_3D, m_textureVolume);
 
 	// bind images
-	glBindImageTexture(0, m_textureVolume, 0, GL_FALSE, 0, GL_READ_ONLY, GL_RG16I);
+	glBindImageTexture(0, m_textureVolume, 0, GL_FALSE, 0, GL_READ_ONLY, GL_RG16F);
 	glBindImageTexture(1, m_textureVertex, layer, GL_FALSE, 0, GL_READ_ONLY, GL_RGBA32F);
 	glBindImageTexture(2, m_textureNormal, layer, GL_FALSE, 0, GL_READ_ONLY, GL_RGBA32F);
 
@@ -1526,7 +1526,7 @@ void gFusion::integrate()
 	glUniform3fv(m_volDimID, 1, glm::value_ptr(configuration.volumeDimensions));
 	glUniform3fv(m_volSizeID, 1, glm::value_ptr(configuration.volumeSize));
 	//bind image textures
-	glBindImageTexture(0, m_textureVolume, 0, GL_FALSE, 0, GL_READ_WRITE, GL_RG16I);
+	glBindImageTexture(0, m_textureVolume, 0, GL_FALSE, 0, GL_READ_WRITE, GL_RG16F);
 	//errInt = glGetError();
 	if (m_usingFloatDepth)
 	{
@@ -1602,7 +1602,7 @@ void gFusion::raycast()
 	glUniform3fv(m_volSizeID_r, 1, glm::value_ptr(configuration.volumeSize));
 
 	//bind image textures
-	glBindImageTexture(0, m_textureVolume, 0, GL_FALSE, 0, GL_READ_ONLY, GL_RG16I);
+	glBindImageTexture(0, m_textureVolume, 0, GL_FALSE, 0, GL_READ_ONLY, GL_RG16F);
 	glBindImageTexture(1, m_textureReferenceVertex, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA32F);
 	glBindImageTexture(2, m_textureReferenceNormal, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA32F);
 
@@ -1668,7 +1668,7 @@ void gFusion::intensityProjection()
 {
 	mipProg.use();
 
-	glBindImageTexture(0, m_textureVolume, 0, GL_FALSE, 0, GL_READ_ONLY, GL_RG16I);
+	glBindImageTexture(0, m_textureVolume, 0, GL_FALSE, 0, GL_READ_ONLY, GL_RG16F);
 	glBindImageTexture(1, m_textureMip, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA32F);
 
 	glm::mat4 invK = GLHelper::getInverseCameraMatrix(m_camPamsDepth);

@@ -2,7 +2,7 @@
 
 layout(local_size_x = 32, local_size_y = 32) in;
 
-layout(binding = 0, rg16i) uniform iimage3D volumeData; // Gimage3D, where G = i, u, or blank, for int, u int, and floats respectively
+layout(binding = 0, rg16f) uniform image3D volumeData; // Gimage3D, where G = i, u, or blank, for int, u int, and floats respectively
 layout(binding = 1, r32f) uniform image2D depthImage;
 layout(binding = 2, r16ui) uniform uimage2D depthImageShort;
 
@@ -51,15 +51,14 @@ vec3 getVolumePosition(uvec3 p)
 vec4 getSDF(uvec3 pos)
 {
     //vec4 data = imageLoad(volumeData, ivec3(pos));
-    ivec4 data = imageLoad(volumeData, ivec3(pos));
+    return imageLoad(volumeData, ivec3(pos));
 
-    return vec4(float(data.x) * 0.00003051944088f, data.y, data.zw); 
 }
 
 void setSDF(uvec3 _pix, vec4 _data)
 {
     //imageStore(volumeData, vec3(_pix), ivec4(_data.x, _data.y, _data.zw));
-    imageStore(volumeData, ivec3(_pix), ivec4(int(_data.x * 32766.0f), int(_data.y), _data.zw));
+    imageStore(volumeData, ivec3(_pix), _data);
 
 }
 
@@ -154,7 +153,7 @@ void main()
                 data.y = 0;
             }
 
-            imageStore(volumeData, ivec3(pix), ivec4(int(data.x * 32766.0f), int(data.y), data.zw));
+            imageStore(volumeData, ivec3(pix), data);
 
             //setSDF(pix, data);
         }

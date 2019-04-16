@@ -66,6 +66,17 @@ void MarkerTracker::useGEM()
 
 }
 
+void MarkerTracker::detectPairs()
+{
+
+
+
+
+
+
+}
+
+
 
 void MarkerTracker::collectSamples()
 {

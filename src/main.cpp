@@ -689,6 +689,13 @@ void setUI()
 				
 				if (ImGui::Button("Export Calibration")) mTracker.exportCalibration();
 
+
+				if (ImGui::Button("Detect Marker Pairs"))
+				{
+					mTracker.detectPairs();
+					gemOption = gemStatus::PAIRING;
+				}
+
 			}
 
 

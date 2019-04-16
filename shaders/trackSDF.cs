@@ -2,9 +2,9 @@
 
 layout(local_size_x = 32, local_size_y = 32) in;
 
-layout(binding = 0) uniform isampler3D volumeDataTexture; // interp access
+layout(binding = 0) uniform sampler3D volumeDataTexture; // interp access
 
-layout(binding = 0, rg16i) uniform iimage3D volumeData; // texel access
+layout(binding = 0, rg16f) uniform image3D volumeData; // texel access
 layout(binding = 1, rgba32f) uniform image2D inVertex;
 layout(binding = 2, rgba32f) uniform image2D inNormal;
 
@@ -97,7 +97,7 @@ float vs(uvec3 pos)
     //vec4 data = imageLoad(volumeData, ivec3(pos));
     //return data.x; // convert short to float
 
-    ivec4 data = imageLoad(volumeData, ivec3(pos));
+    vec4 data = imageLoad(volumeData, ivec3(pos));
     //if (data.y > 0)
     //{
     //    interpolated = true;
@@ -107,13 +107,13 @@ float vs(uvec3 pos)
     //    interpolated = false;
     //}
     //return 0.0f;
-    return float(data.x); // convert short to float
+    return data.x; // convert short to float
 
 }
 
-int vsGrad(uvec3 pos)
+float vsGrad(uvec3 pos)
 {
-    ivec4 data = imageLoad(volumeData, ivec3(pos));
+    vec4 data = imageLoad(volumeData, ivec3(pos));
     return data.y;
 }
 
@@ -175,8 +175,8 @@ float SDF(vec3 location, inout bool validGradient)
 
     //return (a0 * (1.0 - y) + a1 * y) * (1.0 - x) + (b0 * (1.0 - y) + b1 * y) * x;
     //float currSDF = float(textureLod(volumeDataTexture, locationInVolumeTexture, 0).x) * 0.000030517f;
-    float currSDF = float(texelFetch(volumeDataTexture, ivec3(location), 0).x) * 0.000030517f;
-    if (currSDF == 0)
+    float currSDF = texelFetch(volumeDataTexture, ivec3(location), 0).x;
+    if (abs(currSDF) < 0.0001)
     {
         validGradient = false;
     }
@@ -190,18 +190,30 @@ float SDFGradient(vec3 location, vec3 location_offset, float numVoxels)
     float voxelLength = volDim.x / volSize.x;
     //vec3 location_offset = vec3(0, 0, 0);
     //location_offset(dim) = stepSize;
-    bool valGrad;
-    float upperVal = SDF(vec3(location.xyz + location_offset), valGrad);
-    if (!valGrad)
+    bool valGradUpper;
+    bool valGradLower;
+    float gradient;
+
+    float upperVal = SDF(vec3(location.xyz + location_offset), valGradUpper);
+
+    float lowerVal = SDF(vec3(location.xyz - location_offset), valGradLower);
+
+    if (valGradUpper == false && valGradLower == true)
     {
-        return 0.0f;
+        gradient = lowerVal;
     }
-    float lowerVal = SDF(vec3(location.xyz - location_offset), valGrad);
-    if (!valGrad)
+    else if (valGradUpper == true && valGradLower == false)
     {
-        return 0.0f;
+        gradient = upperVal;
     }
-    float gradient = (upperVal - lowerVal) / (2.0f * voxelLength * numVoxels);
+    else if (valGradUpper == false && valGradLower == false)
+    {
+        gradient = -2.0f;
+    }
+    else
+    {
+        gradient = (upperVal - lowerVal) / (2.0f * voxelLength * numVoxels);
+    }
     return gradient;
 
 
@@ -235,17 +247,17 @@ float interpDistance(vec3 pos, inout bool interpolated)
                 current_voxel.z = int(k) + k_offset;
                 volume = abs(current_voxel.x - i) + abs(current_voxel.y - j) + abs(current_voxel.z - k);
 
-                ivec4 data = imageLoad(volumeData, current_voxel);
+                vec4 data = imageLoad(volumeData, current_voxel);
                 if (data.y > 0)
                 {
                     interpolated = true;
                     if (volume < 0.00001)
                     {
-                        return float(data.x * 0.00003051944088f);
+                        return float(data.x);
                     }
                     w = 1.0f / volume;
                     w_sum += float(w);
-                    sum_d += float(w) * float(data.x * 0.00003051944088f);
+                    sum_d += float(w) * float(data.x);
                 }
 
             }
@@ -322,7 +334,7 @@ void main()
 
             float voxelLength = volDim.x / volSize.x; // in meters
             // umvox in 2.5 cm
-            float numVox = (dMax * 0.1) / voxelLength;
+            float numVox = (min(dMax,dMin) / voxelLength) * 0.05f;
 
 
 
@@ -341,23 +353,23 @@ void main()
             //    return;
             //}
 
-            if (any(greaterThan(rotatedNormal, vec3(1.0f))))
-            {
-                //imageStore(testImage, ivec2(pix), vec4(0.5f));
-                imageStore(trackImage, ivec2(pix), vec4(1.0f, 0.0f, 0, 1.0f));
-
-                trackOutput[(pix.y * imageSize.x) + pix.x].result = -4;
-
-                return;
-            }
-
-            //if (any(equal(dSDF_dx, vec3(0.0f))))
+            //if (any(greaterThan(rotatedNormal, vec3(1.0f))))
             //{
-            //    trackOutput[(pix.y * imageSize.x) + pix.x].result = -4;
+            //    //imageStore(testImage, ivec2(pix), vec4(0.5f));
             //    imageStore(trackImage, ivec2(pix), vec4(1.0f, 0.0f, 0, 1.0f));
+
+            //    trackOutput[(pix.y * imageSize.x) + pix.x].result = -4;
 
             //    return;
             //}
+
+            if (any(equal(dSDF_dx, vec3(-2.0f))))
+            {
+                trackOutput[(pix.y * imageSize.x) + pix.x].result = -4;
+                imageStore(trackImage, ivec2(pix), vec4(1.0f, 0.0f, 0, 1.0f));
+
+                return;
+            }
 
             imageStore(testImage, ivec2(pix), vec4(dSDF_dx, 1.0f));
 
@@ -381,7 +393,7 @@ void main()
 
                 float J[6] = getJ(dSDF_dx, dx_dxi);
 
-float huber = absD < 0.002f ? 1.0f : 0.002f / absD;
+float huber = absD < 0.001f ? 1.0f : 0.001f / absD;
 
 trackOutput[(pix.y * imageSize.x) + pix.x].result = 1;
 
