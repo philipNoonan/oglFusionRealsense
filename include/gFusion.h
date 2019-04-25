@@ -154,6 +154,13 @@ public:
 	// texture setup
 	void initTextures();
 
+	void setColorToColor(glm::mat4 cam2cam)
+	{
+		m_colorToColor = cam2cam;
+
+		m_depthToDepth = glm::inverse(m_extrinsics[0]) * (m_colorToColor) * m_extrinsics[1];
+	}
+
 	void setUsingDepthFloat(bool useFloat)
 	{
 		m_usingFloatDepth = useFloat;
@@ -195,7 +202,7 @@ public:
 	void allocateBuffers();
 	// depth functions
 	void depthToVertex();
-	void depthToVertex(std::vector<rs2::frame_queue> depthQ, int devNumber);
+	void depthToVertex(std::vector<rs2::frame_queue> depthQ, int devNumber, glm::vec3 &point);
 	void depthToVertex(float * depthArray);
 	void depthToVertex(uint16_t * depthArray);
 
@@ -254,14 +261,9 @@ public:
 	{
 		m_extrinsics.resize(numCams);
 	}
-	void setDepthToColorExtrinsics(rs2_extrinsics extrin, int devNumber)
+	void setDepthToColorExtrinsics(glm::mat4 extrin, int devNumber)
 	{
-		m_extrinsics[devNumber] = glm::mat4(1.0f);
-
-		m_extrinsics[devNumber][0] = glm::vec4(extrin.rotation[0], extrin.rotation[1], extrin.rotation[2], 0.0f);
-		m_extrinsics[devNumber][1] = glm::vec4(extrin.rotation[3], extrin.rotation[4], extrin.rotation[5], 0.0f);
-		m_extrinsics[devNumber][2] = glm::vec4(extrin.rotation[6], extrin.rotation[7], extrin.rotation[8], 0.0f);
-		m_extrinsics[devNumber][3] = glm::vec4(extrin.translation[0], extrin.translation[1], extrin.translation[2], 1.0f);
+		m_extrinsics[devNumber] = extrin;
 
 	}
 	void setConfig(gFusionConfig config)
@@ -687,6 +689,9 @@ private:
 	float m_depthUnit;
 
 	bool m_clickedPoint = false;
-	int m_pointX = 0;
-	int m_pointY = 0;
+	float m_pointX = 0.0f;
+	float m_pointY = 0.0f;
+
+	glm::mat4 m_colorToColor;
+	glm::mat4 m_depthToDepth = glm::mat4(1.0f);
 };

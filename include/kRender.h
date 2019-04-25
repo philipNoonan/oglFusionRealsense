@@ -10,6 +10,7 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtx/euler_angles.hpp>
 #include <glm/gtx/transform.hpp>
+#include <glm/gtx/string_cast.hpp>
 
 
 #include <librealsense2/rs.hpp> // Include RealSense Cross Platform API
@@ -60,6 +61,7 @@ public:
 		, m_gui_padding(std::make_pair<int, int>(50, 50))
 		, m_render_scale_height(1.0f)
 		, m_render_scale_width(1.0f)
+		, m_colorToDepth(glm::mat4(1.0f))
 		//, m_graph_points_x()
 		//, m_graph_points_y()
 		//, m_graph_points_z()
@@ -182,10 +184,16 @@ public:
 		m_color_height = height;
 	}
 
-
+	void setColorToDepth(glm::mat4 col2Dep)
+	{
+		m_colorToDepth = col2Dep;
+	}
 
 	void setColorFrame(std::vector<uint16_t> imageArray);
 	void setColorFrame(std::vector<rs2::frame_queue> colorQ, int devNumber, cv::Mat &colorMat);
+
+	void setInfraFrame(std::vector<rs2::frame_queue> infraQ, int devNumber, cv::Mat &infraMat);
+
 	void setTextures(GLuint depthTex, GLuint colorTex, GLuint vertexTex, GLuint normalTex, GLuint volumeTex, GLuint trackTex, GLuint pvpNormTex, GLuint pvdNormTex);
 	void setFlowTexture(GLuint flowTex);
 	void setBuffersFromMarchingCubes(GLuint posBuf, GLuint normBuf, size_t numVerts)
@@ -258,16 +266,22 @@ public:
 
 	void setVolumeSDFRenderPosition(float slice);
 
-	void Render(bool useInfrared);
+	void Render(bool useInfrared, int devNumber);
 
-	void renderLiveVideoWindow(bool useInfrared);
+	void renderLiveVideoWindow(bool useInfrared, int devNumber);
 
 	void setComputeWindowPosition(int x, int y, int w, int h);
 
-	void setCameraParams(glm::vec4 camPams, glm::vec4 camPamsColor)
+	void setNumberOfCameras(int numberOfCameras)
 	{
-		m_cameraParams = camPams;
-		m_cameraParams_color = camPamsColor;
+		m_cameraParams.resize(numberOfCameras);
+		m_cameraParams_color.resize(numberOfCameras);
+	}
+
+	void setCameraParams(int devNumber, glm::vec4 camPams, glm::vec4 camPamsColor)
+	{
+		m_cameraParams[devNumber] = camPams;
+		m_cameraParams_color[devNumber] = camPamsColor;
 	}
 
 
@@ -405,7 +419,7 @@ private:
 
 	//textures
 	GLuint m_textureDepth;
-	//GLuint m_textureInfra;
+	GLuint m_textureInfra;
 	GLuint m_textureColor;
 
 
@@ -445,8 +459,8 @@ private:
 
 	glm::mat4 ColorView = glm::translate(glm::mat4(1.0f), glm::vec3(-0.f, -0.f, -0.0f));
 
-	glm::vec4 m_cameraParams;
-	glm::vec4 m_cameraParams_color;
+	std::vector<glm::vec4> m_cameraParams;
+	std::vector<glm::vec4> m_cameraParams_color;
 
 	// k.x = fx, k.y = fy, k.z = cx, k.w = cy, skew = 1
 	glm::mat4 getInverseCameraMatrix(const glm::vec4 & k) { // [col][row]
@@ -531,8 +545,8 @@ private:
 	glm::mat4 m_model_volume = glm::mat4(1.0f);
 	glm::mat4 m_model_raynorm = glm::mat4(1.0f);
 	glm::mat4 m_view = glm::mat4(1.0f);
-	glm::mat4 m_projection = glm::perspective(glm::radians(45.0f), 1.0f, 0.1f, 3000.0f); // some default matrix
-    glm::mat4 m_projectionColor = glm::perspective(glm::radians(45.0f), 1.0f, 0.1f, 3000.0f); // some default matrix
+	glm::mat4 m_projection = glm::mat4(0.0f); // some default matrix
+    glm::mat4 m_projectionColor = glm::mat4(0.0f); // some default matrix
 	glm::vec3 m_volume_size = glm::vec3(128.0f, 128.0f, 128.0f);
 
 	bool m_showDepthFlag = false;
@@ -582,6 +596,9 @@ private:
 	glm::vec2 m_displayColorSize;
 
 	glm::mat4 m_tMat[256];
+	glm::mat4 m_tDMat[256];
 	int m_numMarkers = 0;
+
+	glm::mat4 m_colorToDepth;
 
 };

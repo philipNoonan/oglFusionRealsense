@@ -46,14 +46,20 @@ void kRenderInit()
 {
 	krender.SetCallbackFunctions();
 	krender.compileAndLinkShader();
-	krender.setCameraParams(glm::vec4(cameraInterface.getDepthIntrinsics(cameraDevice).fx,
-									  cameraInterface.getDepthIntrinsics(cameraDevice).fy, 
-								      cameraInterface.getDepthIntrinsics(cameraDevice).cx, 
-									  cameraInterface.getDepthIntrinsics(cameraDevice).cy), 
-						    glm::vec4(cameraInterface.getColorIntrinsics(cameraDevice).fx, 
-									  cameraInterface.getColorIntrinsics(cameraDevice).fy,
-									  cameraInterface.getColorIntrinsics(cameraDevice).cx,
-								      cameraInterface.getColorIntrinsics(cameraDevice).cy));
+
+	krender.setNumberOfCameras(numberOfCameras);
+
+	for (int i = 0; i < numberOfCameras; i++)
+	{
+		krender.setCameraParams(i, glm::vec4(cameraInterface.getDepthIntrinsics(i).fx,
+			cameraInterface.getDepthIntrinsics(i).fy,
+			cameraInterface.getDepthIntrinsics(i).cx,
+			cameraInterface.getDepthIntrinsics(i).cy),
+			glm::vec4(cameraInterface.getColorIntrinsics(i).fx,
+				cameraInterface.getColorIntrinsics(i).fy,
+				cameraInterface.getColorIntrinsics(i).cx,
+				cameraInterface.getColorIntrinsics(i).cy));
+	}
 
 	// Set locations
 	krender.setLocations();
@@ -108,7 +114,6 @@ void gFusionInit()
 
 
 	gfusion.setUsingDepthFloat(false);
-	gfusion.setDepthUnit((float)cameraInterface.getDepthUnit(cameraDevice));
 
 
 
@@ -183,7 +188,7 @@ void resetVolume()
 
 	gfusion.setConfig(gconfig);
 
-	iOff = initOffset(devNumber, mousePos.x - controlPoint0.x, controlPoint0.y - mousePos.y);
+	//iOff = initOffset(devNumber, mousePos.x - controlPoint0.x, controlPoint0.y - mousePos.y);
 
 	//std::cout << "lalala " << mousePos.x - controlPoint0.x << " " << controlPoint0.y - mousePos.y<< std::endl;
 
@@ -238,16 +243,20 @@ void startRealsense()
 	{
 		cameraRunning = true;
 		//kcamera.setPreset(eRate, eRes);
-		int numberOfCameras = cameraInterface.searchForCameras();
+		numberOfCameras = cameraInterface.searchForCameras();
 
 		if (numberOfCameras > 0)
 		{
 			
-			depthProfiles.resize(numberOfCameras, 71);
+			depthProfiles.resize(numberOfCameras, 71); // 71 on 435, 211 on 415
 			colorProfiles.resize(numberOfCameras, 13); // 0 1920x1080x30 rgb8 // 13 1920x1080x6 rgb8
+			infraProfiles.resize(numberOfCameras, 0); // 0 1280x800 @ 30
 
 			depthFrameSize.resize(numberOfCameras);
 			colorFrameSize.resize(numberOfCameras);
+			infraFrameSize.resize(numberOfCameras);
+
+			colorToDepth.resize(numberOfCameras);
 
 			gfusion.setNumberOfCameras(numberOfCameras);
 
@@ -259,7 +268,10 @@ void startRealsense()
 				cameraInterface.getDepthProperties(camera, wd, hd, rd);
 				cameraInterface.getColorProperties(camera, wc, hc, rc);
 
-				gfusion.setDepthToColorExtrinsics(cameraInterface.getDepthToColorIntrinsics(camera), camera);
+				colorToDepth[camera] = cameraInterface.getColorToDepthExtrinsics(cameraDevice);
+
+				gfusion.setDepthToColorExtrinsics(cameraInterface.getDepthToColorExtrinsics(camera), camera);
+				gfusion.setDepthUnit(cameraInterface.getDepthUnit(camera)); // this may bug out if you have two different cameras with different scales
 
 				depthFrameSize[camera].x = wd;
 				depthFrameSize[camera].y = hd;
@@ -291,6 +303,46 @@ void startRealsense()
 	}
 
 
+}
+
+void loadFromFile()
+{
+	
+		int camera = 0;
+		depthFrameSize.resize(1);
+		colorFrameSize.resize(1);
+		colorToDepth.resize(1);
+		gfusion.setNumberOfCameras(1);
+
+		if (cameraRunning == false)
+		{
+			cameraRunning = true;
+			usingDataFromFile = true;
+
+			cameraInterface.startDeviceFromFile("D:\\data\\bags\\20190423_162114.bag", 1, 0);
+			int wd, hd, rd;
+			int wc, hc, rc;
+			cameraInterface.getDepthPropertiesFromFile(wd, hd, rd);
+			cameraInterface.getColorPropertiesFromFile(wc, hc, rc);
+
+
+
+			//colorToDepth[camera] = cameraInterface.getColorToDepthExtrinsics(cameraDevice);
+
+			//gfusion.setDepthToColorExtrinsics(cameraInterface.getDepthToColorExtrinsics(camera), camera);
+			gfusion.setDepthUnit(cameraInterface.getDepthUnitFromFile());
+
+			depthFrameSize[camera].x = wd;
+			depthFrameSize[camera].y = hd;
+
+			colorFrameSize[camera].x = wc;
+			colorFrameSize[camera].y = hc;
+
+			krender.setColorFrameSize(colorFrameSize[0].x, colorFrameSize[0].y);
+			krender.allocateTextures();
+
+			setUpGPU();
+		}
 }
 
 void setImguiWindows()
@@ -493,6 +545,12 @@ void setUI()
 			startRealsense();
 		}
 		ImGui::PopStyleColor(3);
+		if (ImGui::Button("Load From File"))
+		{
+			loadFromFile();
+		}
+		//ImGui::PopStyleColor(3);
+
 		ImGui::SameLine();
 		if (ImGui::Button("Camera 0"))
 		{
@@ -508,7 +566,6 @@ void setUI()
 		if (ImGui::CollapsingHeader("Camera"))
 		{
 			
-
 
 			ImGui::RadioButton("30 Hz", &eRate, 30); ImGui::SameLine();
 			ImGui::RadioButton("90 Hz", &eRate, 30); ImGui::SameLine();
@@ -653,6 +710,20 @@ void setUI()
 				performAruco ^= 1;
 				if (performAruco)
 				{
+					mTracker.setNumberOfCameras(numberOfCameras);
+					mTracker.setCameraDevice(cameraDevice);
+					mTracker.setupAruco();
+
+					for (int i = 0; i < numberOfCameras; i++)
+					{
+						mTracker.setCamPams(i, cameraInterface.getDepthIntrinsics(i).fx,
+							cameraInterface.getDepthIntrinsics(i).fy,
+							cameraInterface.getDepthIntrinsics(i).cx,
+							cameraInterface.getDepthIntrinsics(i).cy,
+							depthFrameSize[i].x,
+							depthFrameSize[i].y);
+					}
+
 					mTracker.configGEM();
 					mTracker.startTracking();
 				}
@@ -667,6 +738,14 @@ void setUI()
 			//static int gemOpt = 0;
 			if (performAruco)
 			{
+
+				if (ImGui::Button("Emitter"))
+				{
+					emitterStatus ^= 1; 
+					cameraInterface.setEmitterOptions(cameraDevice, emitterStatus, 100.0f);
+				}
+				ImGui::SameLine();	ImGui::Checkbox("", &emitterStatus);
+
 				ImGui::RadioButton("Stopped", &gemOption, 0); ImGui::SameLine();
 				ImGui::RadioButton("Collect", &gemOption, 1); ImGui::SameLine();
 				ImGui::RadioButton("AutoCalibrate", &gemOption, 2); ImGui::SameLine();
@@ -692,7 +771,7 @@ void setUI()
 
 				if (ImGui::Button("Detect Marker Pairs"))
 				{
-					mTracker.detectPairs();
+					//mTracker.detectPairs();
 					gemOption = gemStatus::PAIRING;
 				}
 
@@ -717,6 +796,8 @@ void setUI()
 			if (ImGui::Button("Depth")) showDepthFlag ^= 1; ImGui::SameLine();	ImGui::Checkbox("", &showDepthFlag); 
 			ImGui::SameLine(); 
 			if (ImGui::Button("Color")) showColorFlag ^= 1; ImGui::SameLine(); ImGui::Checkbox("", &showColorFlag);
+			ImGui::SameLine();
+			if (ImGui::Button("Infra")) showInfraFlag ^= 1; ImGui::SameLine(); ImGui::Checkbox("", &showInfraFlag);
 
 			if (ImGui::Button("Flood##show")) showSDFVolume ^= 1; ImGui::SameLine(); ImGui::Checkbox("", &showSDFVolume);
 			ImGui::SameLine(); 
@@ -787,7 +868,12 @@ void setUI()
 		mousePos.y = mPos.y;
 		//std::cout << "from imgui " << mousePos.x << " " << mousePos.y << std::endl;
 		//std::cout << "lalala " << mousePos.x - controlPoint0.x << " " << controlPoint0.y - mousePos.y << std::endl;
-		iOff = initOffset(devNumber, mousePos.x - controlPoint0.x, controlPoint0.y - mousePos.y);
+		//iOff = initOffset(devNumber, mousePos.x - controlPoint0.x, controlPoint0.y - mousePos.y);
+
+		int pointX = float(mousePos.x - controlPoint0.x) * (float(depthFrameSize[devNumber].x) / float(display2DWindow.w));
+		int pointY = depthFrameSize[devNumber].y - float(controlPoint0.y - mousePos.y) * (float(depthFrameSize[devNumber].y) / float(display2DWindow.h));
+
+		gfusion.setClickedPoint(pointX, pointY);
 
 	}
 }
@@ -863,7 +949,7 @@ int main(int, char**)
 
 	bool frameReady = false;
 
-	cv::Mat colMat;
+	cv::Mat colMat, infraMat;
 
 	// Main loop
 	while (!glfwWindowShouldClose(window))
@@ -876,9 +962,16 @@ int main(int, char**)
 		glClear(GL_COLOR_BUFFER_BIT);
 
 
-		frameReady = cameraInterface.collateFrames();
+		if (usingDataFromFile)
+		{
+			frameReady = cameraInterface.collateFramesFromFile();
+		}
+		else
+		{
+			frameReady = cameraInterface.collateFrames();
+		}
 
-		//std::this_thread::sleep_for(std::chrono::milliseconds(30));
+		std::this_thread::sleep_for(std::chrono::milliseconds(30));
 
 		if (frameReady)
 		{
@@ -892,14 +985,8 @@ int main(int, char**)
 					cameraInterface.getColorIntrinsics(cameraDevice).cy));
 
 			gfusion.resetTimes();
-			gfusion.setDepthUnit((float)cameraInterface.getDepthUnit(cameraDevice));
 
-			mTracker.setCamPams(cameraInterface.getColorIntrinsics(cameraDevice).fx,
-				cameraInterface.getColorIntrinsics(cameraDevice).fy,
-				cameraInterface.getColorIntrinsics(cameraDevice).cx,
-				cameraInterface.getColorIntrinsics(cameraDevice).cy,
-				colorFrameSize[cameraDevice].x,
-				colorFrameSize[cameraDevice].y);
+
 
 			//auto eTime = epchTime();
 
@@ -907,11 +994,32 @@ int main(int, char**)
 			// THIS SHOULD ONLY BE COPIED WHENEVER THERES A NEW COLOR FRAME, NOT EVERY DEPTH FRAME
 			krender.setColorFrame(cameraInterface.getColorQueues(), cameraDevice, colMat);
 
+			krender.setInfraFrame(cameraInterface.getInfraQueues(), cameraDevice, infraMat);
+
+
+
+			//rs2::frame infraFrame;
+
+			//if (cameraInterface.getInfraQueues()[cameraDevice].poll_for_frame(&infraFrame))
+			//{
+
+			//
+			//	if (infraFrame != NULL)
+			//	{
+			//		cv::Mat infraMat = cv::Mat(depthFrameSize[0].y, depthFrameSize[0].x, CV_8UC1, (void*)infraFrame.get_data());
+
+			//		cv::imshow("col", infraMat);
+			//		cv::waitKey(1);
+
+
+			//	}
+			//}
 			if (!colMat.empty() && performAruco)
 			{
 				//cv::imshow("!", colMat);
 				//cv::waitKey(1);
-				mTracker.setMat(colMat);
+				mTracker.setCameraDevice(cameraDevice);
+				mTracker.setMat(infraMat);
 				mTracker.detect();
 				//mTracker.draw();
 			}
@@ -922,6 +1030,8 @@ int main(int, char**)
 
 				std::vector<glm::mat4> tMat;
 				mTracker.getMarkerData(tMat);
+
+				//krender.setColorToDepth(colorToDepth[cameraDevice]);
 				
 				if (tMat.size() > 0)
 				{
@@ -938,6 +1048,13 @@ int main(int, char**)
 				
 			}
 
+			if (numberOfCameras > 1 && mTracker.getGemStatus() == 5)
+			{
+				cam2camTrans = mTracker.getCam2CamTransform();
+
+				gfusion.setColorToColor(cam2camTrans);
+			}
+
 			double currentTime = epchTime();
 			double deltaTime = currentTime - previousTime;
 			previousTime = currentTime;
@@ -950,7 +1067,7 @@ int main(int, char**)
 				gflow.calc(false);
 			}		   
 
-			gfusion.depthToVertex(cameraInterface.getDepthQueues(), cameraDevice);
+			gfusion.depthToVertex(cameraInterface.getDepthQueues(), cameraDevice, iOff);
 
 			gfusion.vertexToNormal();
 			if (performFlood)
@@ -996,8 +1113,10 @@ int main(int, char**)
 				" " << gfusion.getPose()[2].x << " " << gfusion.getPose()[2].y << " " << gfusion.getPose()[2].z << " " << gfusion.getPose()[2].w << \
 				" " << gfusion.getPose()[3].x << " " << gfusion.getPose()[3].y << " " << gfusion.getPose()[3].z << " " << gfusion.getPose()[3].w << std::endl;
 
-			graphPoints.push_back(gfusion.getTransPose());
+			//graphPoints.push_back(gfusion.getTransPose());
+			glm::vec4 transformedInitOff = gfusion.getPose() * glm::vec4(iOff, 1.0f);
 
+			graphPoints.push_back(transformedInitOff);
 			if (graphPoints.size() > graphWindow.w)
 			{
 				graphPoints.pop_front();
@@ -1010,18 +1129,18 @@ int main(int, char**)
 			int idx = 0;
 			for (auto i : graphPoints)
 			{
-				if (i[0] < minmaxX.first) minmaxX.first = i[0];
-				if (i[0] > minmaxX.second) minmaxX.second = i[0];
+				if (i[0] < minmaxX.first) minmaxX.first = i.x;
+				if (i[0] > minmaxX.second) minmaxX.second = i.x;
 
-				if (i[1] < minmaxY.first) minmaxY.first = i[1];
-				if (i[1] > minmaxY.second) minmaxY.second = i[1];
+				if (i[1] < minmaxY.first) minmaxY.first = i.y;
+				if (i[1] > minmaxY.second) minmaxY.second = i.y;
 
-				if (i[2] < minmaxZ.first) minmaxZ.first = i[2];
-				if (i[2] > minmaxZ.second) minmaxZ.second = i[2];
+				if (i[2] < minmaxZ.first) minmaxZ.first = i.z;
+				if (i[2] > minmaxZ.second) minmaxZ.second = i.z;
 
-				arrayX[idx] = i[0];
-				arrayY[idx] = i[1];
-				arrayZ[idx] = i[2];
+				arrayX[idx] = i.x;
+				arrayY[idx] = i.y;
+				arrayZ[idx] = i.z;
 
 				idx++;
 			}
@@ -1074,7 +1193,7 @@ int main(int, char**)
 			krender.set3DDisplayOriSize(display3DWindow.x, display_h - display3DWindow.y - display3DWindow.h, display3DWindow.w, display3DWindow.h);
 			krender.setColorDisplayOriSize(display3DWindow.x, display_h - display3DWindow.y - display3DWindow.h, colorFrameSize[cameraDevice]);
 
-			krender.Render(false);
+			krender.Render(false, cameraDevice);
 		}
 
 		glfwSwapBuffers(window);

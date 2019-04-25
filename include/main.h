@@ -105,10 +105,12 @@ Realsense2Interface cameraInterface;
 int cameraDevice = 0;
 std::vector<int> depthProfiles;
 std::vector<int> colorProfiles;
+std::vector<int> infraProfiles;
 
 
 static bool cameraRunning = false;
 
+bool usingDataFromFile = false;
 
 MCubes mcubes;
 
@@ -153,6 +155,7 @@ const int screenHeight = 1080;
 
 std::vector<glm::ivec2> depthFrameSize;
 std::vector<glm::ivec2> colorFrameSize;
+std::vector<glm::ivec2> infraFrameSize;
 
 
 
@@ -194,6 +197,7 @@ float irLow = 0.0f;
 float irHigh = 65536.0f;
 float vertFov = 40.0f;
 
+bool emitterStatus = true;
 
 
 float xRot = 0.0f;
@@ -255,7 +259,7 @@ glm::vec3 initOffset(int devNumber, int pixX, int pixY)
 	rs2::frame depthFrame;
 	float z = 0.0f;
 
-
+	// bug be here
 	depthFrame = cameraInterface.getDepthQueues()[cameraDevice].wait_for_frame();
 
 
@@ -290,7 +294,7 @@ std::pair<float, float> minmaxY = std::make_pair<float, float>(-0.1f, 0.1f);;
 std::pair<float, float> minmaxZ = std::make_pair<float, float>(-0.1f, 0.1f);;
 
 
-std::deque<std::vector<float> > graphPoints;
+std::deque<glm::vec4> graphPoints;
 
 
 // FLOW STUFF
@@ -309,10 +313,15 @@ float mouseY = 0;
 
 glm::vec2 mousePos = glm::vec2(0,0);
 
-
+int numberOfCameras;
 
 /// MARKER TRACKING
 MarkerTracker mTracker;
+
+glm::mat4 cam2camTrans(1.0f);
+
+std::vector<glm::mat4> colorToDepth;
+
 
 // GEM STUFF
 

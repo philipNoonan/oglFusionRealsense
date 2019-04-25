@@ -44,6 +44,7 @@ public:
 	void setDev(rs2::device dev);
 	void setStreams();
 	void setSensorOptions();
+	void setEmitterOptions(float status, float power);
 	void setDepthProperties(int profileChoice);
 	void getDepthProperties(int &width, int &height, int &rate);
 
@@ -51,25 +52,27 @@ public:
 	void getColorProperties(int &width, int &height, int &rate);
 
 	bool start();
+	bool startFromFile();
 	bool stop();
-	bool getFrames(rs2::frame_queue &depthQ, rs2::frame_queue &colorQ);
+	bool getFrames(rs2::frame_queue &depthQ, rs2::frame_queue &colorQ, rs2::frame_queue &infraQ);
+	bool getFramesFromFile(rs2::frame_queue &depthQ, rs2::frame_queue &colorQ);
+
 	Realsense2Camera::Status getStatus();
 	rs2_intrinsics getDepthIntrinsics();
 	rs2_intrinsics getColorIntrinsics();
 	uint32_t getDepthUnit();
 	rs2_extrinsics getDepthToColorExtrinsics();
+	rs2_extrinsics getColorToDepthExtrinsics();
+
 	void capture();
 	void colorThread(rs2::sensor& sens);
-	void capturingColor(rs2::frame &f)
-	{
-		m_colorQueue.enqueue(f);
-	}
+	void capturingColor(rs2::frame &f);
 
 	void depthThread(rs2::sensor& sens);
-	void capturingDepth(rs2::frame &f)
-	{
-		m_depthQueue.enqueue(f);
-	}
+	void capturingDepth(rs2::frame &f);
+
+	void infraThread(rs2::sensor& sens);
+	void capturingInfra(rs2::frame &f);
 
 private:
 
@@ -104,6 +107,7 @@ private:
 
 	rs2::frame_queue m_depthQueue;
 	rs2::frame_queue m_colorQueue;
+	rs2::frame_queue m_infraQueue;
 
 	rs2::sensor m_depthSensor;
 	rs2::sensor m_colorSensor;

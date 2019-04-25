@@ -140,11 +140,24 @@ void Realsense2Camera::setSensorOptions()
 	m_sensors[0].set_option(RS2_OPTION_EXPOSURE, 4000);
 	m_sensors[0].set_option(RS2_OPTION_ENABLE_AUTO_EXPOSURE, 0);
 	// rcolor
-	//m_sensors[1].set_option(RS2_OPTION_EXPOSURE, 120);
-	m_sensors[1].set_option(RS2_OPTION_ENABLE_AUTO_EXPOSURE, 1);
+	m_sensors[1].set_option(RS2_OPTION_EXPOSURE, 200);
+	m_sensors[1].set_option(RS2_OPTION_ENABLE_AUTO_EXPOSURE, 0);
 }
 
+void Realsense2Camera::setEmitterOptions(float status, float power)
+{
+	if (m_sensors[0].supports(RS2_OPTION_EMITTER_ENABLED))
+	{
+		m_sensors[0].set_option(RS2_OPTION_EMITTER_ENABLED, status);
+	}
 
+	//if (m_sensors[devNumber].supports(RS2_OPTION_LASER_POWER))
+	//{
+	//	// Query min and max values:
+	//	m_sensors[devNumber].set_option(RS2_OPTION_LASER_POWER, power); // Set max power
+	//}
+
+}
 
 bool Realsense2Camera::start()
 {
@@ -164,13 +177,23 @@ bool Realsense2Camera::start()
 		std::thread colThread = std::thread(&Realsense2Camera::colorThread, this, m_sensors[1]);
 		colThread.join();
 
+
+
+		//int m_infraStreamChoice = 0;
+		//m_sensors[0].open(m_stream_profiles_depthIR[m_infraStreamChoice]); // depth 848*480@90
+		//std::thread infThread = std::thread(&Realsense2Camera::infraThread, this, m_sensors[0]);
+		//infThread.join();
+
 		//sensors[1].start([&](rs2::frame f) {this->capturingColor(f); });
 		//colorGrabber.wait();
 
+		std::vector<rs2::stream_profile> sp = { m_stream_profiles_depthIR[15], m_stream_profiles_depthIR[m_depthStreamChoice] };
+		//std::vector<rs2::stream_profile> sp = { m_stream_profiles_depthIR[35], m_stream_profiles_depthIR[m_depthStreamChoice] };
 
-		m_sensors[0].open(m_stream_profiles_depthIR[m_depthStreamChoice]); // depth 848*480@90
+		m_sensors[0].open(sp); // depth 848*480@90
 		std::thread depThread = std::thread(&Realsense2Camera::depthThread, this, m_sensors[0]);
 		depThread.join();
+
 		//depthThread(m_sensors[0]);
 
 		//FrameGrabber depthGrabber(depthSN);
@@ -204,15 +227,46 @@ bool Realsense2Camera::start()
 	return false;
 }
 
+bool Realsense2Camera::startFromFile()
+{
+
+	m_sensors[1].open(m_stream_profiles_color[m_colorStreamChoice]); //848 480 60fps rgb8
+	
+	m_sensors[0].open(m_stream_profiles_depthIR[m_depthStreamChoice]); // depth 848*480@90
+
+
+	return false;
+}
+
+void Realsense2Camera::capturingDepth(rs2::frame &f)
+{
+	if (f.get_profile().stream_type() == RS2_STREAM_DEPTH)
+	{
+		m_depthQueue.enqueue(f);
+	}
+	else if (f.get_profile().stream_type() == RS2_STREAM_INFRARED)
+	{
+		m_infraQueue.enqueue(f);
+	}
+}
+void Realsense2Camera::capturingInfra(rs2::frame &f)
+{
+	m_infraQueue.enqueue(f);
+}
+void Realsense2Camera::capturingColor(rs2::frame &f)
+{
+	m_colorQueue.enqueue(f);
+}
 void Realsense2Camera::depthThread(rs2::sensor& sens)
 {
-	std::cout << "in dep thread" << std::endl;
 	sens.start([&](rs2::frame f) {this->capturingDepth(f); });
+}
+void Realsense2Camera::infraThread(rs2::sensor& sens)
+{
+	sens.start([&](rs2::frame f) {this->capturingInfra(f); });
 }
 void Realsense2Camera::colorThread(rs2::sensor &sens)
 {
-	std::cout << "in col thread" << std::endl;
-
 	sens.start([&](rs2::frame f) {this->capturingColor(f); });
 }
 
@@ -228,12 +282,11 @@ bool Realsense2Camera::stop()
 	return false;
 }
 
-
-
 Realsense2Camera::Status Realsense2Camera::getStatus()
 {
 	return m_status;
 }
+
 void Realsense2Camera::capture()
 {
 	auto advanced = m_dev.as<rs400::advanced_mode>(); // NOTE rs400 namespace!
@@ -349,14 +402,29 @@ void Realsense2Camera::capture()
 
 
 }
-bool Realsense2Camera::getFrames(rs2::frame_queue &depthQ, rs2::frame_queue &colorQ)
+bool Realsense2Camera::getFrames(rs2::frame_queue &depthQ, rs2::frame_queue &colorQ, rs2::frame_queue & infraQ)
 {
 	depthQ = m_depthQueue;
 	colorQ = m_colorQueue;
-
+	infraQ = m_infraQueue;
 	return false;
 }
 
+bool Realsense2Camera::getFramesFromFile(rs2::frame_queue &depthQ, rs2::frame_queue &colorQ)
+{
+	
+	
+
+	//m_depthQueue.enqueue(dep);
+
+	//m_colorQueue.enqueue(col);
+
+	//depthQ = m_depthQueue;
+	//colorQ = m_colorQueue;
+
+	return false;
+
+}
 rs2_intrinsics Realsense2Camera::getDepthIntrinsics()
 {
 	auto video_stream = m_stream_profiles_depthIR[m_depthStreamChoice].as<rs2::video_stream_profile>();
@@ -382,7 +450,11 @@ rs2_intrinsics Realsense2Camera::getColorIntrinsics()
 
 uint32_t Realsense2Camera::getDepthUnit()
 {
+
 	float depthScale = m_sensors[0].as<rs2::depth_sensor>().get_depth_scale();
+
+	return 100;
+
 	//std::cout << "depth scale : " << depthScale * 1e6 << std::endl;
 	return (uint32_t)(depthScale * 1000000.0f);
 	//return m_ctrl_curr.depthUnits;
@@ -393,8 +465,8 @@ rs2_extrinsics Realsense2Camera::getDepthToColorExtrinsics()
 	rs2_extrinsics outExtrin;
 	try 
 	{
-		outExtrin = m_stream_profiles_depthIR[m_depthStreamChoice].get_extrinsics_to(m_stream_profiles_color[m_colorStreamChoice]);
-		//outExtrin = m_stream_profiles_color[m_colorStreamChoice].get_extrinsics_to(m_stream_profiles_depthIR[m_depthStreamChoice]);
+		//outExtrin = m_stream_profiles_depthIR[m_depthStreamChoice].get_extrinsics_to(m_stream_profiles_color[m_colorStreamChoice]);
+		outExtrin = m_stream_profiles_color[m_colorStreamChoice].get_extrinsics_to(m_stream_profiles_depthIR[m_depthStreamChoice]);
 
 		std::cout << "Translation Vector : [" << outExtrin.translation[0] << "," << outExtrin.translation[1] << "," << outExtrin.translation[2] << "]\n";
 		std::cout << "Rotation Matrix    : [" << outExtrin.rotation[0] << "," << outExtrin.rotation[3] << "," << outExtrin.rotation[6] << "]\n";
@@ -409,3 +481,27 @@ rs2_extrinsics Realsense2Camera::getDepthToColorExtrinsics()
 	}
 	return outExtrin;
 }
+
+rs2_extrinsics Realsense2Camera::getColorToDepthExtrinsics()
+{
+	rs2_extrinsics outExtrin;
+	try
+	{
+		//outExtrin = m_stream_profiles_depthIR[m_depthStreamChoice].get_extrinsics_to(m_stream_profiles_color[m_colorStreamChoice]);
+		outExtrin = m_stream_profiles_color[m_colorStreamChoice].get_extrinsics_to(m_stream_profiles_depthIR[m_depthStreamChoice]);
+
+		std::cout << "Translation Vector : [" << outExtrin.translation[0] << "," << outExtrin.translation[1] << "," << outExtrin.translation[2] << "]\n";
+		std::cout << "Rotation Matrix    : [" << outExtrin.rotation[0] << "," << outExtrin.rotation[3] << "," << outExtrin.rotation[6] << "]\n";
+		std::cout << "                   : [" << outExtrin.rotation[1] << "," << outExtrin.rotation[4] << "," << outExtrin.rotation[7] << "]\n";
+		std::cout << "                   : [" << outExtrin.rotation[2] << "," << outExtrin.rotation[5] << "," << outExtrin.rotation[8] << "]" << std::endl;
+
+	}
+	catch (const std::exception& e)
+	{
+		std::cerr << "Failed to get extrinsics for the given streams. " << e.what() << std::endl;
+
+	}
+	return outExtrin;
+}
+
+

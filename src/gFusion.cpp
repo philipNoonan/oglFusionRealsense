@@ -84,7 +84,7 @@ void gFusion::setLocations()
 	m_invkID = glGetUniformLocation(depthToVertProg.getHandle(), "invK");
 	m_colorKID = glGetUniformLocation(depthToVertProg.getHandle(), "colorK");
 
-	m_extrinsicsID = glGetUniformLocation(depthToVertProg.getHandle(), "depthToColor");
+	m_extrinsicsID = glGetUniformLocation(depthToVertProg.getHandle(), "depthToDepth");
 	m_camPamsDepthID = glGetUniformLocation(depthToVertProg.getHandle(), "camPamsDepth");
 	m_camPamsColorID = glGetUniformLocation(depthToVertProg.getHandle(), "camPamsColor");
 
@@ -632,7 +632,7 @@ void gFusion::depthToVertex(float * depthArray)
 
 }
 
-void gFusion::depthToVertex(std::vector<rs2::frame_queue> depthQ, int devNumber)
+void gFusion::depthToVertex(std::vector<rs2::frame_queue> depthQ, int devNumber, glm::vec3 &point)
 {
 	int compWidth;
 	int compHeight;
@@ -645,6 +645,30 @@ void gFusion::depthToVertex(std::vector<rs2::frame_queue> depthQ, int devNumber)
 		glBindTexture(GL_TEXTURE_2D, m_textureDepth);
 		glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, configuration.depthFrameSize.x, configuration.depthFrameSize.y, GL_RED, GL_UNSIGNED_SHORT, depthFrame.get_data());
 		glGenerateMipmap(GL_TEXTURE_2D);
+
+		if (m_clickedPoint)
+		{
+			const uint16_t* p_depth_frame = reinterpret_cast<const uint16_t*>(depthFrame.get_data());
+			//float z = float(depthArray[pointY * depthWidth + pointX]) * (float)cameraInterface.getDepthUnit(cameraDevice) / 1000000.0f;
+			int depth_pixel_index = (m_pointY * configuration.depthFrameSize.x + m_pointX);
+			point.z = p_depth_frame[depth_pixel_index] * (float)m_depthUnit / 1000000.0f;
+			//::cout << z << std::endl;
+
+
+
+			//kcamera.fx(), kcamera.fx(), kcamera.ppx(), kcamera.ppy()
+			//std::cout << z << std::endl;
+
+			point.x = (m_pointX - m_camPamsDepth.z) * (1.0f / m_camPamsDepth.x) * point.z;
+			point.y = (m_pointY - m_camPamsDepth.w) * (1.0f / m_camPamsDepth.y) * point.z;
+
+			m_clickedPoint = false;
+
+		}
+		
+
+
+
 	}
 
 	//std::vector<uint16_t> testvec(480 * 848 / 2, 10);
@@ -662,6 +686,17 @@ void gFusion::depthToVertex(std::vector<rs2::frame_queue> depthQ, int devNumber)
 	//cv::imshow("lvl1!d", (converted * 100.0 / 1000000.0 - 0.1) / (0.2 - 0.1));
 
 	//std::cout << m_camPamsDepth[0] << " " << m_camPamsDepth[1]  << " " << m_camPamsDepth[2] << " " << m_camPamsDepth[3] << std::endl;
+	glm::mat4 d2d = m_depthToDepth;
+	//d2d[0] = glm::vec4(0.978451f, 0.175385f, 0.108971f, 0.0f);
+	//d2d[1] = glm::vec4(-0.134947f, 0.946212f, -0.305406f, 0.0f);
+	//d2d[2] = glm::vec4(-0.156281f, 0.284119f, 0.945966f, 0.0f);
+	//d2d[3] = glm::vec4(0.0299399f, -0.0455756f, 0.0400084f, 1.0f);
+
+	
+	if (devNumber == 0)
+	{
+		d2d = glm::mat4(1.0f);
+	}
 
 	depthToVertProg.use();
 
@@ -679,7 +714,7 @@ void gFusion::depthToVertex(std::vector<rs2::frame_queue> depthQ, int devNumber)
 		glUniformMatrix4fv(m_invkID, 1, GL_FALSE, glm::value_ptr(invK));
 		glUniformMatrix4fv(m_colorKID, 1, GL_FALSE, glm::value_ptr(colorK));
 
-		glUniformMatrix4fv(m_extrinsicsID, 1, GL_FALSE, glm::value_ptr(m_extrinsics[devNumber]));
+		glUniformMatrix4fv(m_extrinsicsID, 1, GL_FALSE, glm::value_ptr(d2d));
 
 		glm::vec4 adjCamPamsDepth = (m_camPamsDepth / float(1 << i));
 		glm::vec4 adjCamPamsColor = (m_camPamsColor / float(1 << i));

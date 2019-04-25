@@ -7,6 +7,16 @@ rs2::device_list Realsense2Interface::getDeviceList()
 	return m_devices;
 }
 
+static std::string get_sensor_name(const rs2::sensor& sensor)
+{
+	// Sensors support additional information, such as a human readable name
+	if (sensor.supports(RS2_CAMERA_INFO_NAME))
+		return sensor.get_info(RS2_CAMERA_INFO_NAME);
+	else
+		return "Unknown Sensor";
+}
+
+
 int Realsense2Interface::searchForCameras()
 {
 	int numberOfRealsense = 0;
@@ -37,6 +47,7 @@ int Realsense2Interface::searchForCameras()
 		
 		m_depthFrames.resize(index);
 		m_colorFrames.resize(index);
+		m_infraFrames.resize(index);
 
 		m_depthProps.resize(index);
 		m_colorProps.resize(index);
@@ -46,6 +57,8 @@ int Realsense2Interface::searchForCameras()
 
 		m_depthQueues.resize(index);
 		m_colorQueues.resize(index);
+		m_infraQueues.resize(index);
+
 		numberOfRealsense = index;
 
 	}
@@ -78,6 +91,19 @@ void Realsense2Interface::getColorProperties(int devNumber, int &w, int &h, int 
 	m_cameras[devNumber].getColorProperties(w, h, r);
 }
 
+void Realsense2Interface::getDepthPropertiesFromFile(int &w, int &h, int &r)
+{
+	w = m_depthProps[0].width;
+	h = m_depthProps[0].height;
+	r = m_depthProps[0].rate;
+}
+
+void Realsense2Interface::getColorPropertiesFromFile(int &w, int &h, int &r)
+{
+	w = m_colorProps[0].width;
+	h = m_colorProps[0].height;
+	r = m_colorProps[0].rate;
+}
 
 void Realsense2Interface::startDevice(int devNumber, int depthProfile, int colorProfile)
 {
@@ -97,6 +123,97 @@ void Realsense2Interface::startDevice(int devNumber, int depthProfile, int color
 	setColorIntrinsics(devNumber);
 	//// this need references to the threads
 	//m_threads[devNumber] = std::thread(&Realsense2Camera::capture, &m_cameras[devNumber]);
+}
+
+void Realsense2Interface::startDeviceFromFile(std::string filename, int useDepth, int useColor)
+{
+	int numberOfRealsense = 0;
+	//rs2::context ctx;
+	rs2::config cfg;
+
+	cfg.enable_device_from_file(filename);
+	rs2::pipeline_profile selection = m_pipe.start(cfg);
+	auto playbackDevice = m_pipe.get_active_profile().get_device();
+
+	//auto playbackDevice = ctx.load_device(filename);
+
+	//m_devices.front() = device;
+
+	m_threads.resize(1);
+	m_cameras.resize(1);
+
+	m_depthFrames.resize(1);
+	m_colorFrames.resize(1);
+
+	m_depthProps.resize(1);
+	m_colorProps.resize(1);
+
+	m_depthIntrinsics.resize(1);
+	m_colorIntrinsics.resize(1);
+
+	m_depthQueues.resize(1);
+	m_colorQueues.resize(1);
+
+
+	//m_cameras[0].setDev(playbackDevice);
+	//m_cameras[0].setStreams();
+	//m_cameras[0].setSensorOptions();
+	//m_cameras[0].setDepthProperties(depthProfile);
+	//m_cameras[0].setColorProperties(colorProfile);
+
+	//m_threads[0] = std::thread(&Realsense2Camera::start, &m_cameras[0]);
+
+	//m_cameras[0].startFromFile();
+
+	auto depth_stream = selection.get_stream(RS2_STREAM_DEPTH)
+		.as<rs2::video_stream_profile>();
+
+
+
+	m_depthIntrinsics[0].cx = depth_stream.get_intrinsics().ppx;
+	m_depthIntrinsics[0].cy = depth_stream.get_intrinsics().ppy;
+	m_depthIntrinsics[0].fx = depth_stream.get_intrinsics().fx;
+	m_depthIntrinsics[0].fy = depth_stream.get_intrinsics().fy;
+
+	m_depthProps[0].width = depth_stream.width();
+	m_depthProps[0].height = depth_stream.height();
+	m_depthProps[0].rate = 90;
+
+	if (useColor)
+	{
+		auto color_stream = selection.get_stream(RS2_STREAM_COLOR)
+			.as<rs2::video_stream_profile>();
+	
+		m_colorIntrinsics[0].cx = color_stream.get_intrinsics().ppx;
+		m_colorIntrinsics[0].cy = color_stream.get_intrinsics().ppy;
+		m_colorIntrinsics[0].fx = color_stream.get_intrinsics().fx;
+		m_colorIntrinsics[0].fy = color_stream.get_intrinsics().fy;
+
+		m_colorProps[0].width = color_stream.width();
+		m_colorProps[0].height = color_stream.height();
+		m_colorProps[0].rate = 6;
+	}
+	else
+	{
+		m_colorIntrinsics[0].cx = depth_stream.get_intrinsics().ppx;
+		m_colorIntrinsics[0].cy = depth_stream.get_intrinsics().ppy;
+		m_colorIntrinsics[0].fx = depth_stream.get_intrinsics().fx;
+		m_colorIntrinsics[0].fy = depth_stream.get_intrinsics().fy;
+
+		m_colorProps[0].width = depth_stream.width();
+		m_colorProps[0].height = depth_stream.height();
+		m_colorProps[0].rate = 6;
+
+
+	}
+	
+
+	auto sensor = selection.get_device().first<rs2::depth_sensor>();
+	m_depthUnitFromFile = sensor.get_depth_scale() * 1000000.0f;
+
+	
+	//return numberOfRealsense;
+
 }
 
 void Realsense2Interface::stopDevice(int devNumber)
@@ -123,9 +240,38 @@ uint32_t Realsense2Interface::getDepthUnit(int devNumber)
 	return m_cameras[devNumber].getDepthUnit();
 }
 
-rs2_extrinsics Realsense2Interface::getDepthToColorIntrinsics(int devNumber)
+float Realsense2Interface::getDepthUnitFromFile()
 {
-	return m_cameras[devNumber].getDepthToColorExtrinsics();
+
+	return m_depthUnitFromFile;
+}
+
+glm::mat4 Realsense2Interface::getDepthToColorExtrinsics(int devNumber)
+{
+	glm::mat4 dep2Col = glm::mat4(1.0f);
+
+	rs2_extrinsics extrin = m_cameras[devNumber].getDepthToColorExtrinsics();
+
+	dep2Col[0] = glm::vec4(extrin.rotation[0], extrin.rotation[1], extrin.rotation[2], 0.0f);
+	dep2Col[1] = glm::vec4(extrin.rotation[3], extrin.rotation[4], extrin.rotation[5], 0.0f);
+	dep2Col[2] = glm::vec4(extrin.rotation[6], extrin.rotation[7], extrin.rotation[8], 0.0f);
+	dep2Col[3] = glm::vec4(extrin.translation[0], extrin.translation[1], extrin.translation[2], 1.0f);
+
+	return dep2Col;
+}
+
+glm::mat4 Realsense2Interface::getColorToDepthExtrinsics(int devNumber)
+{
+	glm::mat4 col2Dep = glm::mat4(1.0f);
+
+	rs2_extrinsics extrin = m_cameras[devNumber].getColorToDepthExtrinsics();
+
+	col2Dep[0] = glm::vec4(extrin.rotation[0], extrin.rotation[1], extrin.rotation[2], 0.0f);
+	col2Dep[1] = glm::vec4(extrin.rotation[3], extrin.rotation[4], extrin.rotation[5], 0.0f);
+	col2Dep[2] = glm::vec4(extrin.rotation[6], extrin.rotation[7], extrin.rotation[8], 0.0f);
+	col2Dep[3] = glm::vec4(extrin.translation[0], extrin.translation[1], extrin.translation[2], 1.0f);
+
+	return col2Dep;
 }
 
 void Realsense2Interface::getColorFrame(int devNumber, std::vector<uint16_t> &colorArray)
@@ -154,6 +300,11 @@ std::vector<rs2::frame_queue> Realsense2Interface::getColorQueues()
 	return m_colorQueues;
 }
 
+std::vector<rs2::frame_queue> Realsense2Interface::getInfraQueues()
+{
+	return m_infraQueues;
+}
+
 bool Realsense2Interface::collateFrames()
 {
 	bool frameReady = false;
@@ -161,7 +312,7 @@ bool Realsense2Interface::collateFrames()
 	{
 		//m_cameras[i].getStatus();
 
-		m_cameras[i].getFrames(m_depthQueues[i], m_colorQueues[i]);
+		m_cameras[i].getFrames(m_depthQueues[i], m_colorQueues[i], m_infraQueues[i]);
 
 		frameReady = true;
 
@@ -170,6 +321,29 @@ bool Realsense2Interface::collateFrames()
 	return frameReady;
 }
 
+bool Realsense2Interface::collateFramesFromFile()
+{
+	bool frameReady = false;
+	rs2::frameset frames;
+	rs2::frame depth;
+	rs2::frame color;
+
+	if (m_pipe.poll_for_frames(&frames)) // Check if new frames are ready
+	{
+		depth = frames.get_depth_frame(); 
+		m_depthQueues[0].enqueue(depth);
+
+#ifdef USE_COLOR
+		color = frames.get_color_frame();
+		m_colorQueues[0].enqueue(color);
+#endif
+	}
+	
+	//m_cameras[0].getFramesFromFile(m_depthQueues[0], m_colorQueues[0]);
+	frameReady = true;
+
+	return frameReady;
+}
 
 
 
@@ -200,6 +374,11 @@ void Realsense2Interface::setDepthIntrinsics(int devNumber)
 {
 	auto i = m_cameras[devNumber].getDepthIntrinsics();
 
+	float fov[2];
+	rs2_fov(&i, fov);
+
+	std::cout << " depth fov : " << fov[0] << " " << fov[1] << std::endl;
+
 	m_depthIntrinsics[devNumber].cx = i.ppx;
 	m_depthIntrinsics[devNumber].cy = i.ppy;
 	m_depthIntrinsics[devNumber].fx = i.fx;
@@ -214,4 +393,26 @@ void Realsense2Interface::setColorIntrinsics(int devNumber)
 	m_colorIntrinsics[devNumber].cy = i.ppy;
 	m_colorIntrinsics[devNumber].fx = i.fx;
 	m_colorIntrinsics[devNumber].fy = i.fy;
+
+	float fov[2];
+	rs2_fov(&i, fov);
+
+	std::cout << " color fov : " << fov[0] << " " << fov[1] << std::endl;
+
+	if (i.model == RS2_DISTORTION_BROWN_CONRADY)
+	{
+		m_colorIntrinsics[devNumber].k1 = i.coeffs[0];
+		m_colorIntrinsics[devNumber].k2 = i.coeffs[1];
+		m_colorIntrinsics[devNumber].p1 = i.coeffs[2];
+		m_colorIntrinsics[devNumber].p2 = i.coeffs[3];
+		m_colorIntrinsics[devNumber].k3 = i.coeffs[4];
+
+
+
+	}
+}
+
+void Realsense2Interface::setEmitterOptions(int devNumber, bool status, float power)
+{
+	m_cameras[devNumber].setEmitterOptions(status ? 1.0f : 0.0f, power);
 }

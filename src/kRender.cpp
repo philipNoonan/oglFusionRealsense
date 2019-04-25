@@ -323,6 +323,7 @@ void kRender::allocateTextures()
 	int patch_size = 8;
 	int numLevels = (int)(log((2 * m_color_width) / (4.0 * patch_size)) / log(2.0) + 0.5) + 1; ;// 1 + floor(std::log2(std::max(m_color_width, m_color_height)));
 	m_textureColor = GLHelper::createTexture(m_textureColor, GL_TEXTURE_2D, numLevels, m_color_width, m_color_height, 0, GL_RGB8);
+	m_textureInfra = GLHelper::createTexture(m_textureInfra, GL_TEXTURE_2D, numLevels, m_depth_width, m_depth_height, 0, GL_R8);
 
 }
 
@@ -349,12 +350,45 @@ void kRender::setColorFrame(std::vector<rs2::frame_queue> colorQ, int devNumber,
 		if (colorFrame != NULL)
 		{
 			colorMat = cv::Mat(m_color_height, m_color_width, CV_8UC3, (void*)colorFrame.get_data());
+
+			//cv::imshow("col", colorMat);
+			//cv::waitKey(1);
+
+
 		}
 
 	}
 
 
 	
+}
+
+void kRender::setInfraFrame(std::vector<rs2::frame_queue> infraQ, int devNumber, cv::Mat &infraMat)
+{
+	rs2::frame infraFrame;
+
+	if (infraQ[devNumber].poll_for_frame(&infraFrame))
+	{
+
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, m_textureInfra);
+		glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, m_depth_width, m_depth_height, GL_RED, GL_UNSIGNED_BYTE, infraFrame.get_data());
+		glGenerateMipmap(GL_TEXTURE_2D);
+
+		if (infraFrame != NULL)
+		{
+			infraMat = cv::Mat(m_depth_height, m_depth_width, CV_8UC1, (void*)infraFrame.get_data());
+
+			//cv::imshow("ir1", infraMat);
+			//cv::waitKey(1);
+
+
+		}
+
+	}
+
+
+
 }
 
 void kRender::allocateBuffers()
@@ -617,6 +651,12 @@ void kRender::bindTexturesForRendering()
 		glActiveTexture(GL_TEXTURE4);
 		glBindTexture(GL_TEXTURE_2D, m_textureColor);
 	}
+	if (m_showInfraFlag)
+	{
+		glActiveTexture(GL_TEXTURE5);
+		glBindTexture(GL_TEXTURE_2D, m_textureInfra);
+	}
+
 
 	if (m_showFlowFlag)
 	{
@@ -629,14 +669,14 @@ void kRender::bindTexturesForRendering()
 
 	if (m_showVolumeFlag)
 	{
-		glActiveTexture(GL_TEXTURE5);
+		glActiveTexture(GL_TEXTURE6);
 		glBindTexture(GL_TEXTURE_3D, m_textureVolume);
 	}
 
 	if (m_showVolumeSDFFlag)
 	{
 
-		glActiveTexture(GL_TEXTURE6);
+		glActiveTexture(GL_TEXTURE7);
 		glBindTexture(GL_TEXTURE_3D, m_textureFlood);
 
 	}
@@ -652,7 +692,14 @@ void kRender::setMarkerData(std::vector<glm::mat4> tMat)
 	m_numMarkers = tMat.size();
 	for (int i = 0; i < m_numMarkers; i++)
 	{
+		//glm::vec3 scaleVec = glm::vec3(5.0, 5.0, 5.0);
+
+		//glm::mat4 scaleMat = glm::scale(glm::mat4(1.0f), scaleVec);
+
+		//tMat[i] = glm::scale(tMat[i], scaleVec);
+		//glm::mat4 transMat = glm::translate(tMat[i], glm::vec3(0, 0, 10));
 		m_tMat[i] = tMat[i];
+		m_tDMat[i] = m_colorToDepth * tMat[i];
 	}
 }
 
@@ -673,7 +720,7 @@ void kRender::bindBuffersForRendering()
 
 
 
-void kRender::Render(bool useInfrared)
+void kRender::Render(bool useInfrared, int devNumber)
 {
 	// set positions
 	// set uniforms
@@ -683,7 +730,7 @@ void kRender::Render(bool useInfrared)
 	//setDepthImageRenderPosition();
 	setNormalImageRenderPosition();
 
-	renderLiveVideoWindow(useInfrared);
+	renderLiveVideoWindow(useInfrared, devNumber);
 
 
 
@@ -1015,10 +1062,21 @@ void kRender::setProjectionMatrix()
 void kRender::setDepthTextureProjectionMatrix()
 {
 
-	m_projection = glm::perspective(glm::radians(45.0f), (float)m_depth_width / (float)m_depth_height, 1.0f, 10000.0f); // scaling the texture to the current window size seems to work
-	m_projectionColor = glm::perspective(glm::radians(45.0f), (float)m_color_width / (float)m_color_height, 0.1f, 10000.0f); // scaling the texture to the current window size seems to work
+	// use the actual cameras vertical fov not a guess!
+	//m_projection = glm::perspective(glm::radians(59.1741f), (float)m_depth_width / (float)m_depth_height, 0.1f, 10.0f); // scaling the texture to the current window size seems to work
+	//m_projectionColor = glm::perspective(glm::radians(42.7669f), (float)m_color_width / (float)m_color_height, 0.1f, 10.0f); // scaling the texture to the current window size seems to work
+	
+	// use actual camera intrinsics not just glm::perspective
+	if (m_cameraParams.size() > 0)
+	{
+		GLHelper::projectionFromIntrinsics(m_projection, m_cameraParams[0].x, m_cameraParams[0].y, 1.0, m_cameraParams[0].z, m_cameraParams[0].w, m_depth_width, m_depth_height, 0.01, 100.0);
 
+	}
 
+	if (m_cameraParams_color.size() > 0)
+	{
+		GLHelper::projectionFromIntrinsics(m_projectionColor, m_cameraParams_color[0].x, m_cameraParams_color[0].y, 1.0, m_cameraParams_color[0].z, m_cameraParams_color[0].w, m_color_width, m_color_height, 0.01, 100.0);
+	}
 }
 
 void kRender::setViewport(int x, int y, int w, int h)
@@ -1026,7 +1084,7 @@ void kRender::setViewport(int x, int y, int w, int h)
 	glViewport(x, y, w, h);
 }
 
-void kRender::renderLiveVideoWindow(bool useInfrared)
+void kRender::renderLiveVideoWindow(bool useInfrared, int devNumber)
 {
 	//glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	renderProg.use();
@@ -1037,14 +1095,19 @@ void kRender::renderLiveVideoWindow(bool useInfrared)
 
 	//// RENDER LEFT WINDOW
 	m_renderOptions = m_showDepthFlag << 0 |
-		0 << 1 | // dont show color here
-		m_showNormalFlag << 2 |
-		m_showTrackFlag << 3;
+		m_showInfraFlag << 1 | 
+		0 << 2 | // dont show color here
+		m_showNormalFlag << 3 |
+		m_showTrackFlag << 4;
 
+
+
+	glm::vec2 imageSize(848.0f, 480.0f);
 	setViewport(m_display2DPos.x, m_display2DPos.y, m_display2DSize.x, m_display2DSize.y);
 	glBindVertexArray(m_VAO);
 	//MVP = m_projection * m_view * m_model_depth;
 	glm::vec2 depthRange(m_depthMin, m_depthMax);
+	glUniform2fv(m_imSizeID, 1, glm::value_ptr(imageSize));
 	glUniformSubroutinesuiv(GL_VERTEX_SHADER, 1, &m_fromStandardTextureID);
 	glUniform1ui(m_renderOptionsID, m_renderOptions);
 	glUniform2fv(m_depthRangeID, 1, glm::value_ptr(depthRange));
@@ -1053,13 +1116,17 @@ void kRender::renderLiveVideoWindow(bool useInfrared)
 	glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 
 	//// RENDER RIGHT WINDOW
-	m_renderOptions = 0 << 0 | // dont shwo depth here
-		m_showColorFlag << 1 |
-		0 << 2 | // dont show norms
-		0 << 3; // dont show track
+	m_renderOptions = 0 << 0 | // dont show depth here
+		0 << 1 |
+		m_showColorFlag << 2 | // dont show color here
+		0 << 3 |
+		m_showTrackFlag << 4;
 
 	setViewport(m_display3DPos.x, m_display3DPos.y, m_display3DSize.x, m_display3DSize.y);
 	glBindVertexArray(m_VAO);
+	imageSize = glm::vec2(1920.0f, 1080.0f);
+	glUniform2fv(m_imSizeID, 1, glm::value_ptr(imageSize));
+
 	//MVP = m_projection * m_view * m_model_depth;
 	glUniformSubroutinesuiv(GL_VERTEX_SHADER, 1, &m_fromStandardTextureID);
 	glUniform1ui(m_renderOptionsID, m_renderOptions);
@@ -1068,33 +1135,95 @@ void kRender::renderLiveVideoWindow(bool useInfrared)
 
 	if (m_showMarkersFlag)
 	{
-		glBindVertexArray(m_VAO_Markers);
-		glEnable(GL_PROGRAM_POINT_SIZE);
-		setViewport(m_display3DPos.x, m_display3DPos.y, m_display3DSize.x, m_display3DSize.y);
 
-		glm::vec2 imageSize(1920.0f, 1080.0f);
+		{
 
-		// bind and upload new mat4's
-		glBindBuffer(GL_ARRAY_BUFFER, m_VBO_Markers);
-		glBufferSubData(GL_ARRAY_BUFFER, 0, m_numMarkers * sizeof(glm::mat4), glm::value_ptr(m_tMat[0]));
 
-		//glm::mat4 colPams = glm::mat4(1.0f);
-		//colPams
-		MVP = m_projectionColor;
-		MVP[0] = m_cameraParams_color;
-		glUniformSubroutinesuiv(GL_VERTEX_SHADER, 1, &m_fromMarkersVerticesID);
-		glUniformSubroutinesuiv(GL_FRAGMENT_SHADER, 1, &m_fromMarkersID);
+			//glBindVertexArray(m_VAO_Markers);
+			//setViewport(m_display3DPos.x, m_display3DPos.y, m_display3DSize.x, m_display3DSize.y);
 
-		glUniformMatrix4fv(m_MvpID, 1, GL_FALSE, glm::value_ptr(MVP));
-		glUniform2fv(m_imSizeID, 1, glm::value_ptr(imageSize));
+			//glm::vec2 imageSize(1920.0f, 1080.0f);
 
-		// upload the rVec and tVec and then use vertex instanceID to determine which transform to apply to the marker coords
-		//glDrawArraysInstanced(GL_POINTS, 0, 4, m_numMarkers);
-		//glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-		glDrawElementsInstanced(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0, m_numMarkers); // each marker is 2 triangles
-		//glDrawArrays(GL_POINTS, 0, m_numMarkers);
-		//glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+			//// bind and upload new mat4's
+			//glBindBuffer(GL_ARRAY_BUFFER, m_VBO_Markers);
+			//glBufferSubData(GL_ARRAY_BUFFER, 0, m_numMarkers * sizeof(glm::mat4), glm::value_ptr(m_tMat[0]));
 
+			////glm::mat4 colPams = glm::mat4(1.0f);
+			////colPams
+			//MVP = m_projectionColor;
+			////glm::mat4 flipZ = glm::mat4(1.0f);
+			////flipZ[2][2] = -1.0f;
+			////m_tMat[0] = flipZ * m_tMat[0];
+			//glm::vec4 testClip = MVP * (m_tMat[0]) * glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
+			//std::cout << "test clip : " << m_tMat[0][3][2] << " " << testClip.x / testClip.w << " " << testClip.y / testClip.w << " " << testClip.z / testClip.w <<  " " << testClip.w << std::endl;
+			//
+			////MVP[0] = m_cameraParams_color[devNumber];
+			//glUniformSubroutinesuiv(GL_VERTEX_SHADER, 1, &m_fromMarkersVerticesID);
+			//glUniformSubroutinesuiv(GL_FRAGMENT_SHADER, 1, &m_fromMarkersID);
+
+			//glUniformMatrix4fv(m_MvpID, 1, GL_FALSE, glm::value_ptr(MVP));
+			//glUniform2fv(m_imSizeID, 1, glm::value_ptr(imageSize));
+
+			//// upload the rVec and tVec and then use vertex instanceID to determine which transform to apply to the marker coords
+			////glDrawArraysInstanced(GL_POINTS, 0, 4, m_numMarkers);
+			//glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+			//glDrawElementsInstanced(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0, m_numMarkers); // each marker is 2 triangles
+			////glDrawArrays(GL_POINTS, 0, m_numMarkers);
+			//glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+
+			//glBindVertexArray(0);
+
+		}
+
+		{
+
+
+
+			glBindVertexArray(m_VAO_Markers);
+			setViewport(m_display2DPos.x, m_display2DPos.y, m_display2DSize.x, m_display2DSize.y);
+
+			// THIS IS WEIRD< CHECK WHETHER THE EXTRINS PROVIDED FOR THIS PROFILE MAKE SENSE
+			//glm::vec2 imageSize(848.0f, 480.0f);
+
+			// bind and upload new mat4's
+			glBindBuffer(GL_ARRAY_BUFFER, m_VBO_Markers);
+			glBufferSubData(GL_ARRAY_BUFFER, 0, m_numMarkers * sizeof(glm::mat4), glm::value_ptr(m_tMat[0]));
+
+			//glm::mat4 colPams = glm::mat4(1.0f);
+			//colPams
+			//MVP = m_projection;
+			//MVP[2][0] = 0.01147f;
+			//MVP[2][1] = 0.0163f;
+			//MVP[0] = m_cameraParams[devNumber];
+			
+			
+
+			glm::vec4 testClip = m_projection * (m_tMat[0]) * glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
+			glm::vec4 testWorld = (m_tMat[0]) * glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
+
+			std::cout << "clip : " << glm::to_string(testClip) << " worl : " << glm::to_string(testWorld) << std::endl;
+
+			//std::cout << "test clip : " << m_tMat[0][3][2] << " " << testClip.x / testClip.w << " " << testClip.y / testClip.w << " " << testClip.z / testClip.w <<  " " << testClip.w << std::endl;
+
+			//glEnable(GL_PROGRAM_POINT_SIZE);
+
+			glUniformSubroutinesuiv(GL_VERTEX_SHADER, 1, &m_fromMarkersVerticesID);
+			glUniformSubroutinesuiv(GL_FRAGMENT_SHADER, 1, &m_fromMarkersID);
+
+			glUniformMatrix4fv(m_ProjectionID, 1, GL_FALSE, glm::value_ptr(m_projection));
+
+			//glUniform2fv(m_imSizeID, 1, glm::value_ptr(imageSize));
+
+			// upload the rVec and tVec and then use vertex instanceID to determine which transform to apply to the marker coords
+			//glDrawArraysInstanced(GL_POINTS, 0, 4, m_numMarkers);
+			glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+			glDrawElementsInstanced(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0, m_numMarkers); // each marker is 2 triangles
+			//glDrawArrays(GL_POINTS, 0, m_numMarkers);
+			glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+
+			glBindVertexArray(0);
+
+		}
 
 	}
 

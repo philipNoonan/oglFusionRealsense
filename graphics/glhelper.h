@@ -34,6 +34,9 @@ namespace GLHelper
 
 	uint32_t numberOfLevels(glm::ivec3 dims);
 
+	void projectionFromIntrinsics(glm::mat4 &projection, double fx, double fy, double skew, double cx, double cy, int img_width, int img_height, double near_clip, double far_clip);
+
+
 }
 
 

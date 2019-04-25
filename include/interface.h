@@ -6,8 +6,11 @@
 #include <fstream>
 #include <thread>
 
+#include <glm/glm.hpp>
+
 #include <librealsense2/rs.hpp> // Include RealSense Cross Platform API
 #include <librealsense2/rs_advanced_mode.hpp>
+#include<librealsense2/rsutil.h>
 
 #include "opencv2/core/utility.hpp"
 #include "opencv2/opencv.hpp"
@@ -43,20 +46,36 @@ public:
 	rs2::device_list getDeviceList();
 	void setDepthProperties(int devNumber, int w, int h, int r);
 	void getDepthProperties(int devNumber, int &w, int &h, int &r);
+	void getDepthPropertiesFromFile(int &w, int &h, int &r);
+
 	void setColorProperties(int devNumber, int w, int h, int r);
 	void getColorProperties(int devNumber, int &w, int &h, int &r);
+	void getColorPropertiesFromFile(int &w, int &h, int &r);
 
 	void startDevice(int devNumber, int depthProfile, int colorProfile);
+	void startDeviceFromFile(std::string filename, int depthProfile, int colorProfile);
 	void stopDevice(int devNumber);
 	bool collateFrames();
+	bool collateFramesFromFile();
+
+	void setEmitterOptions(int devNumber, bool status, float power);
+
+
 	std::vector<rs2::frame_queue> getDepthQueues();
 	std::vector<rs2::frame_queue> getColorQueues();
+	std::vector<rs2::frame_queue> getInfraQueues();
+
 	void getColorFrame(int devNumber, std::vector<uint16_t> &colorArray);
 	void getDepthFrame(int devNumber, std::vector<uint16_t> &depthArray);
 	FrameIntrinsics getDepthIntrinsics(int devNumber);
 	FrameIntrinsics getColorIntrinsics(int devNumber);
 	uint32_t getDepthUnit(int devNumber);
-	rs2_extrinsics getDepthToColorIntrinsics(int devNumber);
+	float getDepthUnitFromFile();
+
+	//rs2_extrinsics getDepthToColorExtrinsics(int devNumber);
+	glm::mat4 getDepthToColorExtrinsics(int devNumber);
+	glm::mat4 getColorToDepthExtrinsics(int devNumber);
+
 
 private:
 	std::string getDeviceName(const rs2::device &dev);
@@ -64,11 +83,16 @@ private:
 	void setColorIntrinsics(int devNumber);
 
 	rs2::device_list m_devices;
+	rs2::pipeline m_pipe;
+	float m_depthUnitFromFile;
 
 	std::vector<Realsense2Camera> m_cameras;
 	std::vector<std::thread> m_threads;
 	std::vector<rs2::frame> m_depthFrames;
 	std::vector<rs2::frame> m_colorFrames;
+	std::vector<rs2::frame> m_infraFrames;
+
+
 	std::vector<FrameProperties> m_depthProps;
 	std::vector<FrameProperties> m_colorProps;
 
@@ -77,6 +101,7 @@ private:
 
 	std::vector<rs2::frame_queue> m_depthQueues;
 	std::vector<rs2::frame_queue> m_colorQueues;
+	std::vector<rs2::frame_queue> m_infraQueues;
 
 
 };

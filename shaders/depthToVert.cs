@@ -8,6 +8,8 @@ uniform mat4 colorK;
 uniform mat4 colorIntrinsics;
 uniform mat4 depthToColor;
 
+uniform mat4 depthToDepth;
+
 uniform vec4 camPamsColor;
 uniform vec4 camPamsDepth;
     // camPams.x = fx, camPams.y = fy, camPams.z = cx, camPams.w = cy
@@ -78,13 +80,13 @@ void main()
 
 
         //vec4 pointIn3D = vec4(x * depth, y * depth, depth, 1.0f);
-        
+
 
         //vec3 colPixel = mat3(colorK) * tPos.xyz;
 
+        vec4 outPos = depthToDepth * tPos;
 
-
-        imageStore(OutputImage, ivec2(pix.xy), vec4(tPos.xyz, 1.0f));
+        imageStore(OutputImage, ivec2(pix.xy), vec4(outPos.xyz, 1.0f));
 
 
 

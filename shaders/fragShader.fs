@@ -6,10 +6,11 @@ layout (binding=1) uniform sampler2D currentTextureNormal;
 layout (binding=2) uniform sampler2D currentTextureTrack;
 layout (binding=3) uniform sampler2D currentTextureFlow;
 layout (binding=4) uniform sampler2D currentTextureColor;
+layout (binding=5) uniform sampler2D currentTextureInfra;
 
 //layout (binding=5) uniform isampler3D currentTextureVolume; 
-layout (binding=5) uniform isampler3D currentTextureVolume; 
-layout (binding=6) uniform usampler3D currentTextureSDF; 
+layout (binding=6) uniform isampler3D currentTextureVolume; 
+layout (binding=7) uniform usampler3D currentTextureSDF; 
 
 
 //layout(binding = 5, rgba32f) uniform image3D volumeData; // texel access
@@ -39,9 +40,10 @@ vec4 fromStandardFragment()
 	// decode Key
 	 //   return vec3((inUint & 4290772992) >> 22, (inUint & 4190208) >> 12, (inUint & 4092) >> 2); ;
 	uint renderDepth =   (renderOptions & 1); 
-	uint renderColor =   (renderOptions & 2) >> 1; 
-	uint renderNormals = (renderOptions & 4) >> 2; 
-	uint renderTrack =   (renderOptions & 8) >> 3; 
+	uint renderInfra =   (renderOptions & 2) >> 1; 
+	uint renderColor =   (renderOptions & 4) >> 2; 
+	uint renderNormals = (renderOptions & 8) >> 3; 
+	uint renderTrack =   (renderOptions & 16) >> 4; 
 
 	vec4 outColor = vec4(0.0f);
 
@@ -56,6 +58,11 @@ vec4 fromStandardFragment()
 	if (renderColor == 1)
 	{
 		outColor = textureLod(currentTextureColor, vec2(TexCoord),0);
+	}
+
+	if (renderInfra == 1)
+	{
+		outColor = vec4(textureLod(currentTextureInfra, vec2(TexCoord),0).xxx, 1.0f);
 	}
 
 	if (renderNormals == 1)

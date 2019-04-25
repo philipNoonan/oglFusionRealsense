@@ -43,17 +43,26 @@ subroutine(getPosition)
 vec4 fromMarkersVertices()
 {
 
-	float fx = MVP[0][0];
-	float fy = MVP[0][1];
-	float cx = MVP[0][2];
-	float cy = MVP[0][3];
+	//float fx = MVP[0][0];
+	//float fy = MVP[0][1];
+	//float cx = MVP[0][2];
+	//float cy = MVP[0][3];
 
-	vec4 worldPos = markerMat * vec4(position.x * 0.025f, position.y * 0.025f, 0.0f, 1.0f);
+	//vec4 worldPos = markerMat * vec4(position.x * 0.018f, position.y * 0.018f, 0.0f, 1.0f);
 
-	float u = fx * (worldPos.x / worldPos.z) + cx;
-	float v = fy * (worldPos.y / worldPos.z) + cy;
+	//float u = fx * (worldPos.x / worldPos.z) + cx;
+	//float v = fy * (worldPos.y / worldPos.z) + cy;
 
-	return vec4(1.0f - (2.0f * u / imSize.x), (-1.0f + (2.0f * v / imSize.y)), -0.5f, 1.0f);
+	//return vec4(1.0f - (2.0f * u / imSize.x), (-1.0f + (2.0f * v / imSize.y)), -0.5f, 1.0f);
+	//mat4 tmat = mat4(1.0f);
+	//tmat[3][2] = 10.0f;
+	vec4 worldPos = projection * markerMat * vec4(position.x * 0.018f, position.y * 0.018f, 0.0f, 1.0f);
+
+	//vec4 worldPos = projection * markerMat * vec4(position.z, position.z, 0.0f, 1.0f);
+	//    gl_PointSize = 20.0f;
+
+	return vec4(worldPos.x, -worldPos.y, worldPos.z, worldPos.w);
+
 }
 
 

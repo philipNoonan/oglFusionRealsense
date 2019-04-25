@@ -344,14 +344,14 @@ void main()
 
             vec3 rotatedNormal = vec3(Ttrack * vec4(normals.xyz, 0.0f)).xyz;
 
-            //if (dot(dSDF_dx, rotatedNormal) < 0.7 && !any(equal(dSDF_dx, vec3(0.0f))))
-            //{
-            //    imageStore(trackImage, ivec2(pix), vec4(1.0f, 1.0f, 0, 1.0f));
+            if (dot(dSDF_dx, rotatedNormal) < 0.8 && !any(equal(dSDF_dx, vec3(0.0f))))
+            {
+                imageStore(trackImage, ivec2(pix), vec4(1.0f, 1.0f, 0, 1.0f));
 
-            //    trackOutput[(pix.y * imageSize.x) + pix.x].result = -4;
+                trackOutput[(pix.y * imageSize.x) + pix.x].result = -4;
 
-            //    return;
-            //}
+                return;
+            }
 
             //if (any(greaterThan(rotatedNormal, vec3(1.0f))))
             //{
@@ -393,7 +393,7 @@ void main()
 
                 float J[6] = getJ(dSDF_dx, dx_dxi);
 
-float huber = absD < 0.001f ? 1.0f : 0.001f / absD;
+float huber = absD < 0.003f ? 1.0f : 0.003f / absD;
 
 trackOutput[(pix.y * imageSize.x) + pix.x].result = 1;
 
