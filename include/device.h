@@ -43,6 +43,7 @@ public:
 
 	void setDev(rs2::device dev);
 	void setStreams();
+	void setDepthTable(STDepthTableControl dTable);
 	void setSensorOptions();
 	void setEmitterOptions(float status, float power);
 	void setDepthProperties(int profileChoice);

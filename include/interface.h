@@ -52,6 +52,8 @@ public:
 	void getColorProperties(int devNumber, int &w, int &h, int &r);
 	void getColorPropertiesFromFile(int &w, int &h, int &r);
 
+	void setDepthTable(int devNumber, int depthMax, int depthMin, int depthUnit, int disparityMode, int disparity);
+
 	void startDevice(int devNumber, int depthProfile, int colorProfile);
 	void startDeviceFromFile(std::string filename, int depthProfile, int colorProfile);
 	void stopDevice(int devNumber);
@@ -92,6 +94,7 @@ private:
 	std::vector<rs2::frame> m_colorFrames;
 	std::vector<rs2::frame> m_infraFrames;
 
+	std::vector<STDepthTableControl> m_depthTables;
 
 	std::vector<FrameProperties> m_depthProps;
 	std::vector<FrameProperties> m_colorProps;

@@ -14,6 +14,9 @@
 #include <glm/gtx/string_cast.hpp>
 #include <iostream>
 #include <opencv2/highgui/highgui.hpp>
+#include "opencv2/calib3d.hpp"
+#include "opencv2/highgui.hpp"
+#include "opencv2/imgproc.hpp"
 #include <thread>
 #include <mutex>
 #include <shared_mutex>
@@ -72,6 +75,9 @@ public:
 
 	void detectPairs();
 
+	void setStereoPair(cv::Mat image0, cv::Mat image1);
+	void stereoCalibrate(glm::mat4 &cam2cam);
+
 	void setNumberOfCameras(int camNum)
 	{
 		m_numberOfCameras = camNum;
@@ -109,6 +115,8 @@ private:
 	void autoCalibrate();
 	void trackGEM();
 
+	glm::mat4 getMatrixFromMarker(aruco::Marker marker);
+
 	int m_cameraDevice;
 	int m_numberOfCameras;
 
@@ -133,6 +141,8 @@ private:
 	glm::dquat m_globalOri;
 
 	glm::mat4 m_cam2cam;
+
+	std::vector<std::pair<cv::Mat, cv::Mat>> m_stereoImages;
 
 
 };

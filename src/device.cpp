@@ -47,6 +47,19 @@ void Realsense2Camera::getColorProperties(int &width, int &height, int &rate)
 	rate = m_stream_profiles_color[m_colorStreamChoice].as<rs2::video_stream_profile>().fps();
 }
 
+void Realsense2Camera::setDepthTable(STDepthTableControl dTable)
+{
+	auto advanced = m_dev.as<rs400::advanced_mode>(); // NOTE rs400 namespace!
+	//STDepthTableControl depthTableOri = advanced.get_depth_table();
+	//STDepthTableControl depthTable;
+	//depthTable.depthClampMax = 10000;
+	//depthTable.depthClampMin = 0;
+	//depthTable.depthUnits = 100;
+	//depthTable.disparityMode = 0;
+	//depthTable.disparityShift = 0;
+	advanced.set_depth_table(dTable);
+}
+
 void Realsense2Camera::setStreams()
 {
 	m_sensors = m_dev.query_sensors();
@@ -465,8 +478,8 @@ rs2_extrinsics Realsense2Camera::getDepthToColorExtrinsics()
 	rs2_extrinsics outExtrin;
 	try 
 	{
-		//outExtrin = m_stream_profiles_depthIR[m_depthStreamChoice].get_extrinsics_to(m_stream_profiles_color[m_colorStreamChoice]);
-		outExtrin = m_stream_profiles_color[m_colorStreamChoice].get_extrinsics_to(m_stream_profiles_depthIR[m_depthStreamChoice]);
+		outExtrin = m_stream_profiles_depthIR[m_depthStreamChoice].get_extrinsics_to(m_stream_profiles_color[m_colorStreamChoice]);
+		//outExtrin = m_stream_profiles_color[m_colorStreamChoice].get_extrinsics_to(m_stream_profiles_depthIR[m_depthStreamChoice]);
 
 		std::cout << "Translation Vector : [" << outExtrin.translation[0] << "," << outExtrin.translation[1] << "," << outExtrin.translation[2] << "]\n";
 		std::cout << "Rotation Matrix    : [" << outExtrin.rotation[0] << "," << outExtrin.rotation[3] << "," << outExtrin.rotation[6] << "]\n";

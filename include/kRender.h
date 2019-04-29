@@ -188,7 +188,10 @@ public:
 	{
 		m_colorToDepth = col2Dep;
 	}
-
+	void setDepthToColor(glm::mat4 dep2Col)
+	{
+		m_depthToColor = dep2Col;
+	}
 	void setColorFrame(std::vector<uint16_t> imageArray);
 	void setColorFrame(std::vector<rs2::frame_queue> colorQ, int devNumber, cv::Mat &colorMat);
 
@@ -249,7 +252,7 @@ public:
 	void setLightModelRenderPosition();
 	void setMarchingCubesRenderPosition(float modelZ);
 	void setViewMatrix(float xRot, float yRot, float zRot, float xTran, float yTran, float zTran);
-	void setProjectionMatrix();
+	void setProjectionMatrix(int camDevice);
 	void setDepthTextureProjectionMatrix();
 	void setColorTextureProjectionMatrix();
 	void setViewport(int x, int y, int w, int h);
@@ -353,6 +356,11 @@ public:
 		m_usePVD = usePVD;
 	}
 
+	void setDepthToDepth(glm::mat4 dep2dep)
+	{
+		m_depthToDepth = dep2dep;
+	}
+	void setOtherMarkerData(std::vector<glm::mat4> tMat);
 
 private:
 
@@ -597,8 +605,10 @@ private:
 
 	glm::mat4 m_tMat[256];
 	glm::mat4 m_tDMat[256];
+	glm::mat4 m_tOtherDMat[256];
 	int m_numMarkers = 0;
-
+	int m_numMarkersOther = 0;
 	glm::mat4 m_colorToDepth;
-
+	glm::mat4 m_depthToColor;
+	glm::mat4 m_depthToDepth;
 };

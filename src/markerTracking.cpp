@@ -24,12 +24,118 @@ void MarkerTracker::setCamPams(int camDev, float fx, float fy, float cx, float c
 	cv::Mat camDist = cv::Mat::zeros(1, 4, CV_32F);
 
 	m_camPams[camDev].setParams(camMat, camDist, cv::Size(width, height));
-	double projMat[16];
-	m_camPams[0].glGetProjectionMatrix(cv::Size(848, 480), cv::Size(848, 480), projMat, 0.1, 10.0, true);
+	//double projMat[16];
+	//m_camPams[0].glGetProjectionMatrix(cv::Size(848, 480), cv::Size(848, 480), projMat, 0.1, 10.0, true);
 
 
 
 }
+
+void MarkerTracker::setStereoPair(cv::Mat image0, cv::Mat image1)
+{
+	cv::Mat im0, im1;
+	image0.copyTo(im0);
+	image1.copyTo(im1);
+
+	m_stereoImages.push_back(std::make_pair(im0, im1));
+}
+
+void MarkerTracker::stereoCalibrate(glm::mat4 &cam2cam)
+{
+	cv::Size boardSize(6, 9);
+	float squareSize = 0.026f;
+
+	std::pair<std::vector<std::vector<cv::Point2f>>, std::vector<std::vector<cv::Point2f>>> imagePoints; //[camera][image]
+
+	std::vector<std::vector<cv::Point3f> > objectPoints;
+
+	int nimages = m_stereoImages.size();
+
+	imagePoints.first.resize(nimages);
+	imagePoints.second.resize(nimages);
+
+	std::vector<int> goodImageList, badImageList;
+
+	for (int i = 0; i < nimages; i++)
+	{
+		bool found0 = cv::findChessboardCorners(m_stereoImages[i].first, boardSize, imagePoints.first[i], cv::CALIB_CB_ADAPTIVE_THRESH | cv::CALIB_CB_NORMALIZE_IMAGE);
+		if (found0)
+		{
+			cv::cornerSubPix(m_stereoImages[i].first, imagePoints.first[i], cv::Size(11, 11), cv::Size(-1, -1), cv::TermCriteria(cv::TermCriteria::COUNT + cv::TermCriteria::EPS, 30, 0.01));
+		}
+		else
+		{
+			cv::imshow("bad0", m_stereoImages[i].first);
+			cv::waitKey(0);
+
+		}
+		bool found1 = cv::findChessboardCorners(m_stereoImages[i].second, boardSize, imagePoints.second[i], cv::CALIB_CB_ADAPTIVE_THRESH | cv::CALIB_CB_NORMALIZE_IMAGE);
+		if (found1)
+		{
+			cv::cornerSubPix(m_stereoImages[i].second, imagePoints.second[i], cv::Size(11, 11), cv::Size(-1, -1), cv::TermCriteria(cv::TermCriteria::COUNT + cv::TermCriteria::EPS, 30, 0.01));
+		}
+		else
+		{
+			cv::imshow("bad1", m_stereoImages[i].second);
+			cv::waitKey(0);
+
+		}
+
+		if (found0 && found1)
+		{
+			goodImageList.push_back(i);
+		}
+		else
+		{
+			badImageList.push_back(i);
+		}
+
+	}
+
+	std::cout << goodImageList.size() << " : good image pairs found out of : " << nimages << std::endl;
+
+	for (int i = badImageList.size() - 1; i >= 0; i--)
+	{
+		imagePoints.first.erase(imagePoints.first.begin() + badImageList[i]);
+		imagePoints.second.erase(imagePoints.second.begin() + badImageList[i]);
+
+	}
+	objectPoints.resize(goodImageList.size());
+
+	for (int i = 0; i < goodImageList.size(); i++)
+	{
+		for (int j = 0; j < boardSize.height; j++)
+			for (int k = 0; k < boardSize.width; k++)
+				objectPoints[i].push_back(cv::Point3f(k*squareSize, j*squareSize, 0));
+	}
+
+	cv::Mat R, T, E, F;
+
+	double rms = cv::stereoCalibrate(objectPoints, imagePoints.first, imagePoints.second,
+		m_camPams[0].CameraMatrix, m_camPams[0].Distorsion,
+		m_camPams[1].CameraMatrix, m_camPams[1].Distorsion,
+		cv::Size(1, 1), //this shouldnt matter
+		R, T, E, F,
+		cv::CALIB_FIX_INTRINSIC,
+		cv::TermCriteria(cv::TermCriteria::COUNT + cv::TermCriteria::EPS, 100, 1e-5));
+											
+	std::cout << "Finished calibration with rms : " << rms << std::endl;
+
+	for (int i = 0; i < 3; i++)
+	{
+		for (int j = 0; j < 3; j++)
+		{
+			cam2cam[i][j] = R.at<double>(i, j);
+		}
+	}
+
+	cam2cam[3][0] = T.at<double>(0, 0);
+	cam2cam[3][1] = T.at<double>(1, 0);
+	cam2cam[3][2] = T.at<double>(2, 0);
+
+
+}
+
 
 void MarkerTracker::setMat(cv::Mat input)
 {
@@ -76,6 +182,39 @@ void MarkerTracker::useGEM()
 
 }
 
+glm::mat4 MarkerTracker::getMatrixFromMarker(aruco::Marker marker)
+{
+	glm::vec3 r = glm::vec3(marker.Rvec.at<float>(0, 0), marker.Rvec.at<float>(1, 0), marker.Rvec.at<float>(2, 0));
+
+	float theta = glm::sqrt((r.x*r.x +
+		r.y*r.y +
+		r.z*r.z));
+
+	glm::vec3 R = r / theta;
+
+	float lenR = glm::length(R);
+
+	//if (lenR != 1.0f)
+	//{
+	//	std::cout << "axis angle not normalised with length : " << lenR << std::endl;
+	//}
+
+	glm::quat rotQuat;
+
+	rotQuat.w = glm::cos(theta / 2.0);
+	rotQuat.x = R.x * glm::sin(theta / 2.0);
+	rotQuat.y = R.y * glm::sin(theta / 2.0);
+	rotQuat.z = R.z * glm::sin(theta / 2.0);
+
+	glm::mat4 rotMat = glm::toMat4(rotQuat);
+
+	rotMat[3][0] = marker.Tvec.at<float>(0, 0);
+	rotMat[3][1] = marker.Tvec.at<float>(1, 0);
+	rotMat[3][2] = marker.Tvec.at<float>(2, 0);
+
+	return rotMat;
+}
+
 void MarkerTracker::detectPairs()
 {
 	std::vector<int> pairIDs;
@@ -116,13 +255,11 @@ void MarkerTracker::detectPairs()
 
 		for (int i = 0; i < pairSize; i++)
 		{
-			double outGL0[16];
-			markerPairs[i].first.glGetModelViewMatrix(outGL0);
-			glm::mat4 rotMat0 = glm::make_mat4(outGL0);
 
-			double outGL1[16];
-			markerPairs[i].second.glGetModelViewMatrix(outGL1);
-			glm::mat4 rotMat1 = glm::make_mat4(outGL1);
+			glm::mat4 rotMat0 = getMatrixFromMarker(markerPairs[i].first);
+			glm::mat4 rotMat1 = getMatrixFromMarker(markerPairs[i].second);
+
+			//glm::mat4 rotMat0 = glm::make_mat4(outGL0);
 
 			cam0ToCam1[i] = rotMat0 * glm::inverse(rotMat1);
 
@@ -149,7 +286,8 @@ void MarkerTracker::detectPairs()
 
 		m_cam2cam = meanCam2Cam;
 
-		//std::cout << glm::to_string(meanCam2Cam) << std::endl;
+		//std::cout << "paired : " << glm::to_string(meanCam2Cam) << std::endl;
+		//std::cout << "inverted : " << glm::to_string(glm::inverse(meanCam2Cam)) << std::endl;
 
 
 		m_statusGem = gemStatus::PAIRED;
@@ -340,8 +478,14 @@ void MarkerTracker::getMarkerData(std::vector<glm::mat4> &tMat)
 			{
 				//glm::mat4 rotM = glm::eulerAngleXYZ(-markers[i].Rvec.at<float>(0, 0), -markers[i].Rvec.at<float>(1, 0), markers[i].Rvec.at<float>(2, 0));
 
+				//cv::Mat Rrod, trod;
 
-				//std::cout << "roddy : " << markers[i].Rvec.at<float>(0, 0) << " " << markers[i].Rvec.at<float>(1, 0) << " " << markers[i].Rvec.at<float>(2, 0) << " " << std::endl;
+				//cv::Rodrigues(markers[i].Rvec, Rrod);
+
+
+				//std::cout << "roddy : " << Rrod.at<float>(0, 0) << " " << Rrod.at<float>(1, 0) << " " << Rrod.at<float>(2, 0) << " " << std::endl;
+				//std::cout << "roddy : " << Rrod.at<float>(0, 1) << " " << Rrod.at<float>(1, 1) << " " << Rrod.at<float>(2, 1) << " " << std::endl;
+				//std::cout << "roddy : " << Rrod.at<float>(0, 2) << " " << Rrod.at<float>(1, 2) << " " << Rrod.at<float>(2, 2) << " " << std::endl;
 
 				glm::vec3 r = glm::vec3(markers[i].Rvec.at<float>(0, 0), markers[i].Rvec.at<float>(1, 0), markers[i].Rvec.at<float>(2, 0));
 
@@ -351,6 +495,10 @@ void MarkerTracker::getMarkerData(std::vector<glm::mat4> &tMat)
 
 				glm::vec3 R = r / theta;
 
+				//float lenR = glm::length(R);
+
+				//std::cout << "len : " << lenR << std::endl;
+
 				glm::quat rotQuat;
 				
 				rotQuat.w = glm::cos(theta / 2.0);
@@ -359,13 +507,13 @@ void MarkerTracker::getMarkerData(std::vector<glm::mat4> &tMat)
 				rotQuat.z = R.z * glm::sin(theta / 2.0);
 
 				glm::mat4 rotMat = glm::toMat4(rotQuat);
-				rotMat[0][2] *= -1.0;
-				rotMat[1][2] *= -1.0;
-				rotMat[2][2] *= -1.0;
+				//rotMat[0][2] *= -1.0;
+				//rotMat[1][2] *= -1.0;
+				//rotMat[2][2] *= -1.0;
 
 				rotMat[3][0] = markers[i].Tvec.at<float>(0, 0);
 				rotMat[3][1] = markers[i].Tvec.at<float>(1, 0);
-				rotMat[3][2] = -markers[i].Tvec.at<float>(2, 0);
+				rotMat[3][2] = markers[i].Tvec.at<float>(2, 0);
 
 
 				//double outGL[16];
@@ -380,7 +528,7 @@ void MarkerTracker::getMarkerData(std::vector<glm::mat4> &tMat)
 
 
 		//m_mtx.unlock();
-		draw();
+		//draw();
 
 	}
 

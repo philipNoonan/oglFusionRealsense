@@ -158,7 +158,12 @@ public:
 	{
 		m_colorToColor = cam2cam;
 
-		m_depthToDepth = glm::inverse(m_extrinsics[0]) * (m_colorToColor) * m_extrinsics[1];
+		//m_depthToDepth = glm::inverse(m_extrinsics[0]) * (m_colorToColor) * m_extrinsics[1];
+	}
+
+	void setDepthToDepth(glm::mat4 dep2dep)
+	{
+		m_depthToDepth = dep2dep;
 	}
 
 	void setUsingDepthFloat(bool useFloat)

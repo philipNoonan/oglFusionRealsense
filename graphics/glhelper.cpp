@@ -88,16 +88,44 @@ namespace GLHelper
 		//glm::mat4 trans = glm::mat4(1.0f);
 		//trans[2][2] = -1.0f;
 		// https://stackoverflow.com/questions/46317246/ar-with-opencv-opengl
-		projection[0][0] = (2.0 * fx / img_width);
-		projection[2][0] = 1.0 - (2.0 * cx / img_width);
+		// but the link does contain some inaccuracies, so be careful. below works!
 
-		projection[1][1] = (2.0 * fy / img_height);
-		projection[2][1] = 1.0 - (2.0 * cy / img_height);
+		// GLdouble perspMatrix[16]={2*fx/W,    0,          0,      0,
+		//                           2*s/W,     2*fy/H,     0,      0,
+		//                           2*(cx/W)-1,2*(cy/H)-1, (zmax+zmin)/(zmax-zmin), 1,
+		//                           0,         0,          2*zmax*zmin/(zmin-zmax), 0};
 
-		projection[2][2] = (far_clip + near_clip) / (far_clip - near_clip);
+		//GLdouble perspMatrix[16] = { 2 * fx / w,      0,               0,              0,
+		//                             0,               2 * fy / h,      0,              0,
+		//                             2 * (cx / w) - 1,2 * (cy / h) - 1, -(far + near) / (far - near),  -1,
+		//                             0,               0,                -2 * far*near / (far - near),  0 };
+
+		//projection[0][0] = (2.0f * fx / img_width);
+		//projection[2][0] = (2.0f * cx / img_width) - 1.0f;
+		//projection[1][1] = (2.0f * fy / img_height);
+		//projection[2][1] = (2.0f * cy / img_height) - 1.0f;
+		//projection[2][2] = (far_clip + near_clip) / (far_clip - near_clip);
+		//projection[3][2] = 2.0 * far_clip * near_clip / (far_clip - near_clip);
+		//projection[2][3] = 1.0;
+
+		projection[0][0] = (2.0f * fx / img_width);
+		projection[2][0] = (2.0f * cx / img_width) - 1.0f;
+		projection[1][1] = (2.0f * fy / img_height);
+		projection[2][1] = (2.0f * cy / img_height) - 1.0f;
+		projection[2][2] = -(far_clip + near_clip) / (far_clip - near_clip);
 		projection[3][2] = 2.0 * far_clip * near_clip / (far_clip - near_clip);
+		projection[2][3] = 1.0;
 
-		projection[2][3] = -1.0;
+		//projection[0][0] = (2.0 * fx / img_width);
+		//projection[2][0] = 1.0 - (2.0 * cx / img_width);
+
+		//projection[1][1] = (2.0 * fy / img_height);
+		//projection[2][1] = 1.0 - (2.0 * cy / img_height);
+
+		//projection[2][2] = (far_clip + near_clip) / (far_clip - near_clip);
+		//projection[3][2] = 2.0 * far_clip * near_clip / (far_clip - near_clip);
+
+		//projection[2][3] = -1.0;
 
 		//projection = trans * projection;
 

@@ -58,9 +58,9 @@ vec4 fromMarkersVertices()
 	//tmat[3][2] = 10.0f;
 	vec4 worldPos = projection * markerMat * vec4(position.x * 0.018f, position.y * 0.018f, 0.0f, 1.0f);
 
-	//vec4 worldPos = projection * markerMat * vec4(position.z, position.z, 0.0f, 1.0f);
-	//    gl_PointSize = 20.0f;
-
+	//vec4 worldPos = projection * markerMat * vec4(0.0f, 0.0f, 0.0f, 1.0f);
+	//gl_PointSize = 20.0f;
+	//return vec4(0.5, 0.5, -0.5, 1.0);
 	return vec4(worldPos.x, -worldPos.y, worldPos.z, worldPos.w);
 
 }

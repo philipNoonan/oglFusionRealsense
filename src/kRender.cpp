@@ -692,14 +692,22 @@ void kRender::setMarkerData(std::vector<glm::mat4> tMat)
 	m_numMarkers = tMat.size();
 	for (int i = 0; i < m_numMarkers; i++)
 	{
-		//glm::vec3 scaleVec = glm::vec3(5.0, 5.0, 5.0);
-
-		//glm::mat4 scaleMat = glm::scale(glm::mat4(1.0f), scaleVec);
-
-		//tMat[i] = glm::scale(tMat[i], scaleVec);
-		//glm::mat4 transMat = glm::translate(tMat[i], glm::vec3(0, 0, 10));
+		//glm::mat4 flipZ(1.0f);
+		//flipZ[2][2] = -1.0f;
 		m_tMat[i] = tMat[i];
 		m_tDMat[i] = m_colorToDepth * tMat[i];
+		//m_tDMat[i] = tMat[i];
+		//m_tMat[i] = m_depthToColor * tMat[i];
+
+	}
+}
+
+void kRender::setOtherMarkerData(std::vector<glm::mat4> tMat)
+{
+	m_numMarkersOther = tMat.size();
+	for (int i = 0; i < m_numMarkers; i++)
+	{
+		m_tOtherDMat[i] = glm::inverse(m_depthToDepth) * tMat[i];
 	}
 }
 
@@ -1049,14 +1057,24 @@ m_view = t1 * r0 * t0;
 
 }
 
-void kRender::setProjectionMatrix()
+void kRender::setProjectionMatrix(int camDevice)
 {
-	int w, h;
-	glfwGetFramebufferSize(m_window, &w, &h);
-	m_projection = glm::perspective(glm::radians(45.0f), (float)w / (float)h, 1.0f, 10000.0f); // scaling the texture to the current window size seems to work
-	glViewport(0, 0, w, h);
 
 
+
+	float skew = 1.0f;
+	if (m_cameraParams.size() > 0)
+	{
+		GLHelper::projectionFromIntrinsics(m_projection, m_cameraParams[camDevice].x, m_cameraParams[camDevice].y, skew, m_cameraParams[camDevice].z, m_cameraParams[camDevice].w, m_depth_width, m_depth_height, 0.01, 100.0);
+
+	}
+
+	//glm::mat4 testProj = glm::perspective(glm::radians(45.0f), 848.0f / 480.0f, 0.01f, 100.0f);
+
+	if (m_cameraParams_color.size() > 0)
+	{
+		GLHelper::projectionFromIntrinsics(m_projectionColor, m_cameraParams_color[camDevice].x, m_cameraParams_color[camDevice].y, skew, m_cameraParams_color[camDevice].z, m_cameraParams_color[camDevice].w, m_color_width, m_color_height, 0.01, 100.0);
+	}
 }
 
 void kRender::setDepthTextureProjectionMatrix()
@@ -1067,16 +1085,7 @@ void kRender::setDepthTextureProjectionMatrix()
 	//m_projectionColor = glm::perspective(glm::radians(42.7669f), (float)m_color_width / (float)m_color_height, 0.1f, 10.0f); // scaling the texture to the current window size seems to work
 	
 	// use actual camera intrinsics not just glm::perspective
-	if (m_cameraParams.size() > 0)
-	{
-		GLHelper::projectionFromIntrinsics(m_projection, m_cameraParams[0].x, m_cameraParams[0].y, 1.0, m_cameraParams[0].z, m_cameraParams[0].w, m_depth_width, m_depth_height, 0.01, 100.0);
 
-	}
-
-	if (m_cameraParams_color.size() > 0)
-	{
-		GLHelper::projectionFromIntrinsics(m_projectionColor, m_cameraParams_color[0].x, m_cameraParams_color[0].y, 1.0, m_cameraParams_color[0].z, m_cameraParams_color[0].w, m_color_width, m_color_height, 0.01, 100.0);
-	}
 }
 
 void kRender::setViewport(int x, int y, int w, int h)
@@ -1136,93 +1145,75 @@ void kRender::renderLiveVideoWindow(bool useInfrared, int devNumber)
 	if (m_showMarkersFlag)
 	{
 
+
 		{
 
 
-			//glBindVertexArray(m_VAO_Markers);
-			//setViewport(m_display3DPos.x, m_display3DPos.y, m_display3DSize.x, m_display3DSize.y);
+			glBindVertexArray(m_VAO_Markers);
+			setViewport(m_display3DPos.x, m_display3DPos.y, m_display3DSize.x, m_display3DSize.y);
 
-			//glm::vec2 imageSize(1920.0f, 1080.0f);
+			glBindBuffer(GL_ARRAY_BUFFER, m_VBO_Markers);
+			glBufferSubData(GL_ARRAY_BUFFER, 0, m_numMarkers * sizeof(glm::mat4), glm::value_ptr(m_tMat[0]));
 
-			//// bind and upload new mat4's
-			//glBindBuffer(GL_ARRAY_BUFFER, m_VBO_Markers);
-			//glBufferSubData(GL_ARRAY_BUFFER, 0, m_numMarkers * sizeof(glm::mat4), glm::value_ptr(m_tMat[0]));
+			glUniformSubroutinesuiv(GL_VERTEX_SHADER, 1, &m_fromMarkersVerticesID);
+			glUniformSubroutinesuiv(GL_FRAGMENT_SHADER, 1, &m_fromMarkersID);
 
-			////glm::mat4 colPams = glm::mat4(1.0f);
-			////colPams
-			//MVP = m_projectionColor;
-			////glm::mat4 flipZ = glm::mat4(1.0f);
-			////flipZ[2][2] = -1.0f;
-			////m_tMat[0] = flipZ * m_tMat[0];
-			//glm::vec4 testClip = MVP * (m_tMat[0]) * glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
-			//std::cout << "test clip : " << m_tMat[0][3][2] << " " << testClip.x / testClip.w << " " << testClip.y / testClip.w << " " << testClip.z / testClip.w <<  " " << testClip.w << std::endl;
-			//
-			////MVP[0] = m_cameraParams_color[devNumber];
-			//glUniformSubroutinesuiv(GL_VERTEX_SHADER, 1, &m_fromMarkersVerticesID);
-			//glUniformSubroutinesuiv(GL_FRAGMENT_SHADER, 1, &m_fromMarkersID);
+			glUniformMatrix4fv(m_ProjectionID, 1, GL_FALSE, glm::value_ptr(m_projectionColor));
 
-			//glUniformMatrix4fv(m_MvpID, 1, GL_FALSE, glm::value_ptr(MVP));
-			//glUniform2fv(m_imSizeID, 1, glm::value_ptr(imageSize));
+			glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+			glDrawElementsInstanced(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0, m_numMarkers);
+			glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 
-			//// upload the rVec and tVec and then use vertex instanceID to determine which transform to apply to the marker coords
-			////glDrawArraysInstanced(GL_POINTS, 0, 4, m_numMarkers);
-			//glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-			//glDrawElementsInstanced(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0, m_numMarkers); // each marker is 2 triangles
-			////glDrawArrays(GL_POINTS, 0, m_numMarkers);
-			//glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-
-			//glBindVertexArray(0);
+			glBindVertexArray(0);
 
 		}
 
 		{
-
-
-
 			glBindVertexArray(m_VAO_Markers);
 			setViewport(m_display2DPos.x, m_display2DPos.y, m_display2DSize.x, m_display2DSize.y);
 
-			// THIS IS WEIRD< CHECK WHETHER THE EXTRINS PROVIDED FOR THIS PROFILE MAKE SENSE
-			//glm::vec2 imageSize(848.0f, 480.0f);
-
-			// bind and upload new mat4's
 			glBindBuffer(GL_ARRAY_BUFFER, m_VBO_Markers);
-			glBufferSubData(GL_ARRAY_BUFFER, 0, m_numMarkers * sizeof(glm::mat4), glm::value_ptr(m_tMat[0]));
+			glBufferSubData(GL_ARRAY_BUFFER, 0, m_numMarkers * sizeof(glm::mat4), glm::value_ptr(m_tDMat[0]));
 
-			//glm::mat4 colPams = glm::mat4(1.0f);
-			//colPams
-			//MVP = m_projection;
-			//MVP[2][0] = 0.01147f;
-			//MVP[2][1] = 0.0163f;
-			//MVP[0] = m_cameraParams[devNumber];
-			
-			
-
-			glm::vec4 testClip = m_projection * (m_tMat[0]) * glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
-			glm::vec4 testWorld = (m_tMat[0]) * glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
-
-			std::cout << "clip : " << glm::to_string(testClip) << " worl : " << glm::to_string(testWorld) << std::endl;
-
-			//std::cout << "test clip : " << m_tMat[0][3][2] << " " << testClip.x / testClip.w << " " << testClip.y / testClip.w << " " << testClip.z / testClip.w <<  " " << testClip.w << std::endl;
-
-			//glEnable(GL_PROGRAM_POINT_SIZE);
 
 			glUniformSubroutinesuiv(GL_VERTEX_SHADER, 1, &m_fromMarkersVerticesID);
 			glUniformSubroutinesuiv(GL_FRAGMENT_SHADER, 1, &m_fromMarkersID);
 
 			glUniformMatrix4fv(m_ProjectionID, 1, GL_FALSE, glm::value_ptr(m_projection));
 
-			//glUniform2fv(m_imSizeID, 1, glm::value_ptr(imageSize));
+			// USEFUL SANITY CHECKING DO NOT DELETE
+			//glm::vec4 prospace = m_projection * m_tDMat[0] * glm::vec4(0.0, 0.0, 0.0, 1.0);
+			//std::cout << glm::to_string(m_tDMat[0] * glm::vec4(0.0, 0.0, 0.0, 1.0)) << " : : " << glm::to_string(prospace) << " : : : " << glm::to_string(glm::vec4(prospace.x / prospace.w, prospace.y / prospace.w, prospace.z / prospace.w, prospace.w / prospace.w)) << std::endl;
 
-			// upload the rVec and tVec and then use vertex instanceID to determine which transform to apply to the marker coords
-			//glDrawArraysInstanced(GL_POINTS, 0, 4, m_numMarkers);
 			glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 			glDrawElementsInstanced(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0, m_numMarkers); // each marker is 2 triangles
+
+			glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+
+			//glEnable(GL_VERTEX_PROGRAM_POINT_SIZE);
+			//glDrawArrays(GL_POINTS, 0, m_numMarkers);
+			glBindVertexArray(0);
+		}
+
+		{
+			glBindVertexArray(m_VAO_Markers);
+			setViewport(m_display2DPos.x, m_display2DPos.y, m_display2DSize.x, m_display2DSize.y);
+
+			glBindBuffer(GL_ARRAY_BUFFER, m_VBO_Markers);
+			glBufferSubData(GL_ARRAY_BUFFER, 0, m_numMarkersOther * sizeof(glm::mat4), glm::value_ptr(m_tOtherDMat[0]));
+
+
+			glUniformSubroutinesuiv(GL_VERTEX_SHADER, 1, &m_fromMarkersVerticesID);
+			glUniformSubroutinesuiv(GL_FRAGMENT_SHADER, 1, &m_fromMarkersID);
+
+			glUniformMatrix4fv(m_ProjectionID, 1, GL_FALSE, glm::value_ptr(m_projection));
+
+			glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+			glDrawElementsInstanced(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0, m_numMarkersOther); // each marker is 2 triangles
 			//glDrawArrays(GL_POINTS, 0, m_numMarkers);
 			glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 
 			glBindVertexArray(0);
-
 		}
 
 	}

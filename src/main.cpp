@@ -250,31 +250,38 @@ void startRealsense()
 			
 			depthProfiles.resize(numberOfCameras, 71); // 71 on 435, 211 on 415
 			colorProfiles.resize(numberOfCameras, 13); // 0 1920x1080x30 rgb8 // 13 1920x1080x6 rgb8
-			infraProfiles.resize(numberOfCameras, 0); // 0 1280x800 @ 30
+			infraProfiles.resize(numberOfCameras, 15); // 15 on 435 35 on 415
 
 			depthFrameSize.resize(numberOfCameras);
 			colorFrameSize.resize(numberOfCameras);
 			infraFrameSize.resize(numberOfCameras);
 
 			colorToDepth.resize(numberOfCameras);
+			depthToColor.resize(numberOfCameras);
 
 			gfusion.setNumberOfCameras(numberOfCameras);
 
 			for (int camera = 0; camera < numberOfCameras; camera++)
 			{
 				cameraInterface.startDevice(camera, depthProfiles[camera], colorProfiles[camera]);
+				cameraInterface.setDepthTable(camera, 10000, 0, 100, 0, 0);
+
 				int wd, hd, rd;
 				int wc, hc, rc;
 				cameraInterface.getDepthProperties(camera, wd, hd, rd);
 				cameraInterface.getColorProperties(camera, wc, hc, rc);
 
-				colorToDepth[camera] = cameraInterface.getColorToDepthExtrinsics(cameraDevice);
+				colorToDepth[camera] = cameraInterface.getColorToDepthExtrinsics(camera);
+				depthToColor[camera] = cameraInterface.getDepthToColorExtrinsics(camera);
 
 				gfusion.setDepthToColorExtrinsics(cameraInterface.getDepthToColorExtrinsics(camera), camera);
 				gfusion.setDepthUnit(cameraInterface.getDepthUnit(camera)); // this may bug out if you have two different cameras with different scales
 
 				depthFrameSize[camera].x = wd;
 				depthFrameSize[camera].y = hd;
+
+				infraFrameSize[camera].x = wd;
+				infraFrameSize[camera].y = hd;
 
 				colorFrameSize[camera].x = wc;
 				colorFrameSize[camera].y = hc;
@@ -567,11 +574,18 @@ void setUI()
 		{
 			
 
-			ImGui::RadioButton("30 Hz", &eRate, 30); ImGui::SameLine();
+			/*ImGui::RadioButton("30 Hz", &eRate, 30); ImGui::SameLine();
 			ImGui::RadioButton("90 Hz", &eRate, 30); ImGui::SameLine();
 
 			ImGui::RadioButton("848x480", &eRes, 0); ImGui::SameLine();
-			ImGui::RadioButton("1280x720", &eRes, 1);
+			ImGui::RadioButton("1280x720", &eRes, 1);*/
+
+			if (ImGui::Button("Emitter"))
+			{
+				emitterStatus ^= 1;
+				cameraInterface.setEmitterOptions(cameraDevice, emitterStatus, 100.0f);
+			}
+			ImGui::SameLine();	ImGui::Checkbox("", &emitterStatus);
 
 			int prevShift = dispShift;
 			ImGui::Text("Disparity");
@@ -580,6 +594,7 @@ void setUI()
 			if (prevShift != dispShift)
 			{
 				//////////////////////////kcamera.setDepthControlGroupValues(0, 0, 0, 0, (uint32_t)dispShift); // TODO make this work with depth min and depth max
+				cameraInterface.setDepthTable(cameraDevice, 10000, 0, 100, 0, dispShift);
 			}
 			ImGui::PopItemWidth();
 
@@ -705,6 +720,57 @@ void setUI()
 
 			}ImGui::SameLine(); ImGui::Checkbox("", &performFlow);
 
+			if (ImGui::Button("Stereo"))
+			{
+				mTracker.setNumberOfCameras(numberOfCameras);
+				mTracker.setCameraDevice(cameraDevice);
+				mTracker.setupAruco();
+
+				for (int i = 0; i < numberOfCameras; i++)
+				{
+					//mTracker.setCamPams(i, cameraInterface.getDepthIntrinsics(i).fx,
+					//	cameraInterface.getDepthIntrinsics(i).fy,
+					//	cameraInterface.getDepthIntrinsics(i).cx,
+					//	cameraInterface.getDepthIntrinsics(i).cy,
+					//	depthFrameSize[i].x,
+					//	depthFrameSize[i].y);
+
+					mTracker.setCamPams(i, cameraInterface.getColorIntrinsics(i).fx,
+						cameraInterface.getColorIntrinsics(i).fy,
+						cameraInterface.getColorIntrinsics(i).cx,
+						cameraInterface.getColorIntrinsics(i).cy,
+						colorFrameSize[i].x,
+						colorFrameSize[i].y);
+				}
+				performStereo ^= 1;
+
+			}ImGui::SameLine(); ImGui::Checkbox("", &performStereo);
+
+			if (performStereo)
+			{
+				if (ImGui::Button("Capture"))
+				{
+					rs2::frame infraFrame0, infraFrame1;
+					cv::Mat irMat0, irMat1;
+					if (cameraInterface.getInfraQueues()[0].poll_for_frame(&infraFrame0))
+					{
+						irMat0 = cv::Mat(infraFrameSize[0].y, infraFrameSize[0].x, CV_8UC1, (void*)infraFrame0.get_data());
+					}
+					if (cameraInterface.getInfraQueues()[1].poll_for_frame(&infraFrame1))
+					{
+						irMat1 = cv::Mat(infraFrameSize[1].y, infraFrameSize[1].x, CV_8UC1, (void*)infraFrame1.get_data());
+					}
+					mTracker.setStereoPair(irMat0, irMat1);
+				}
+
+				if (ImGui::Button("StereoCalibrate"))
+				{
+					mTracker.stereoCalibrate(depthToDepth);
+
+					std::cout << glm::to_string(depthToDepth) << std::endl;
+				}
+			}
+
 			if (ImGui::Button("Aruco"))
 			{
 				performAruco ^= 1;
@@ -716,12 +782,19 @@ void setUI()
 
 					for (int i = 0; i < numberOfCameras; i++)
 					{
-						mTracker.setCamPams(i, cameraInterface.getDepthIntrinsics(i).fx,
-							cameraInterface.getDepthIntrinsics(i).fy,
-							cameraInterface.getDepthIntrinsics(i).cx,
-							cameraInterface.getDepthIntrinsics(i).cy,
-							depthFrameSize[i].x,
-							depthFrameSize[i].y);
+						//mTracker.setCamPams(i, cameraInterface.getDepthIntrinsics(i).fx,
+						//	cameraInterface.getDepthIntrinsics(i).fy,
+						//	cameraInterface.getDepthIntrinsics(i).cx,
+						//	cameraInterface.getDepthIntrinsics(i).cy,
+						//	depthFrameSize[i].x,
+						//	depthFrameSize[i].y);
+
+						mTracker.setCamPams(i, cameraInterface.getColorIntrinsics(i).fx,
+							cameraInterface.getColorIntrinsics(i).fy,
+							cameraInterface.getColorIntrinsics(i).cx,
+							cameraInterface.getColorIntrinsics(i).cy,
+							colorFrameSize[i].x,
+							colorFrameSize[i].y);
 					}
 
 					mTracker.configGEM();
@@ -739,12 +812,7 @@ void setUI()
 			if (performAruco)
 			{
 
-				if (ImGui::Button("Emitter"))
-				{
-					emitterStatus ^= 1; 
-					cameraInterface.setEmitterOptions(cameraDevice, emitterStatus, 100.0f);
-				}
-				ImGui::SameLine();	ImGui::Checkbox("", &emitterStatus);
+
 
 				ImGui::RadioButton("Stopped", &gemOption, 0); ImGui::SameLine();
 				ImGui::RadioButton("Collect", &gemOption, 1); ImGui::SameLine();
@@ -896,7 +964,58 @@ void setUpGPU()
 
 int main(int, char**)
 {
+	// chess
+	// mat4x4((0.838242, -0.270351, 0.473562, 0.000000), 
+	//        (0.294389, 0.955376, 0.024323, 0.000000), 
+	//        (-0.459006, 0.119023, 0.880424, 0.000000), 
+
+	//        (-0.088125, 0.082131, 0.043788, 1.000000))
+
+	// paired
+	// mat4x4((0.838231, -0.287631, -0.463120, 0.000000), 
+	//        (0.309347, 0.950437, -0.030405, 0.000000), 
+	//        (0.448905, -0.117851, 0.885711, 0.000000), 
+
+	//        (0.065176, -0.106710, -0.002620, 1.000000))
+
+	// inverted  
+	// mat4x4((0.838363, 0.309386, 0.448983, -0.000000), 
+	//        (-0.287687, 0.950478, -0.117797, 0.000000), 
+	//        (-0.463187, -0.030338, 0.885804, -0.000000), 
+
+	//        (-0.086553, 0.081181, -0.039512, 1.000000))
 	
+	
+	glm::mat4 testA(1.0f);
+	testA[0] = glm::vec4(0.91, -0.23, 0.33, 0.0);
+	testA[1] = glm::vec4(0.25, 0.96, -0.02, 0);
+	testA[2] = glm::vec4(-0.32, 0.10, 0.94, 0.0);
+	//testA[3] = glm::vec4(-0.11, 0.07, 0.04, 1.0);
+
+	//glm::mat4 testB(1.0f);
+	//testB[0] = glm::vec4(0.91, -0.23, -0.33, 0);
+	//testB[1] = glm::vec4(0.26, 0.96, 0.03, 0);
+	//testB[2] = glm::vec4(0.31, -0.118, 0.94, 0);
+	////testB[3] = glm::vec4();
+
+	//glm::mat4 outAB = testA * glm::transpose(testB);
+
+	//std::cout << glm::to_string(outAB) << std::endl;
+
+	glm::mat4 flipXYZ(1.0f);
+	flipXYZ[0][0] *= -1.0f;
+	flipXYZ[1][1] *= -1.0f;
+	flipXYZ[2][2] *= -1.0f;
+
+	glm::mat4 flipZ(1.0f);
+	flipZ[2][2] *= -1.0f;
+
+	glm::mat4 outMat = flipZ * flipXYZ * testA;
+
+	std::cout << glm::to_string(flipZ * testA) << std::endl;
+
+
+	std::cout << glm::to_string(outMat) << std::endl;
 
 
 	int display_w, display_h;
@@ -1019,7 +1138,7 @@ int main(int, char**)
 				//cv::imshow("!", colMat);
 				//cv::waitKey(1);
 				mTracker.setCameraDevice(cameraDevice);
-				mTracker.setMat(infraMat);
+				mTracker.setMat(colMat);
 				mTracker.detect();
 				//mTracker.draw();
 			}
@@ -1028,12 +1147,12 @@ int main(int, char**)
 			{
 				mTracker.useGEM();
 
-				std::vector<glm::mat4> tMat;
-				mTracker.getMarkerData(tMat);
+				mTracker.getMarkerData(markerMats);
 
-				//krender.setColorToDepth(colorToDepth[cameraDevice]);
-				
-				if (tMat.size() > 0)
+				krender.setColorToDepth(colorToDepth[cameraDevice]);
+				krender.setDepthToColor(depthToColor[cameraDevice]);
+
+				if (markerMats.size() > 0)
 				{
 					//if (mTracker.gemStatus == gemStatus::TRACKING)
 					//{
@@ -1042,7 +1161,7 @@ int main(int, char**)
 					//}
 					//else
 					//{
-						krender.setMarkerData(tMat);
+						krender.setMarkerData(markerMats);
 					//}
 				}
 				
@@ -1052,7 +1171,14 @@ int main(int, char**)
 			{
 				cam2camTrans = mTracker.getCam2CamTransform();
 
-				gfusion.setColorToColor(cam2camTrans);
+				//gfusion.setColorToColor(cam2camTrans);
+				gfusion.setDepthToDepth(cam2camTrans);
+				krender.setDepthToDepth(cam2camTrans);
+				if (cameraDevice == 0)
+				{
+					krender.setOtherMarkerData(markerMats);
+				}
+
 			}
 
 			double currentTime = epchTime();
@@ -1182,13 +1308,14 @@ int main(int, char**)
 
 		krender.setMarchingCubesRenderPosition(zModelPC_offset);
 		krender.setViewMatrix(xRot, yRot, zRot, xTran, yTran, zTran);
-		krender.setDepthTextureProjectionMatrix();
 
 
 
 
 		if (cameraRunning)
 		{
+			krender.setProjectionMatrix(cameraDevice);
+
 			krender.setDisplayOriSize(display2DWindow.x, display_h - display2DWindow.y - display2DWindow.h, display2DWindow.w, display2DWindow.h);
 			krender.set3DDisplayOriSize(display3DWindow.x, display_h - display3DWindow.y - display3DWindow.h, display3DWindow.w, display3DWindow.h);
 			krender.setColorDisplayOriSize(display3DWindow.x, display_h - display3DWindow.y - display3DWindow.h, colorFrameSize[cameraDevice]);

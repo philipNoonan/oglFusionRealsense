@@ -317,11 +317,15 @@ int numberOfCameras;
 
 /// MARKER TRACKING
 MarkerTracker mTracker;
+std::vector<glm::mat4> markerMats;
 
 glm::mat4 cam2camTrans(1.0f);
 
 std::vector<glm::mat4> colorToDepth;
+std::vector<glm::mat4> depthToColor;
 
+glm::mat4 depthToDepth;
 
+bool performStereo = false;
 // GEM STUFF
 

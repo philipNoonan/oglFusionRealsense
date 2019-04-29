@@ -45,6 +45,8 @@ int Realsense2Interface::searchForCameras()
 		m_threads.resize(index);
 		m_cameras.resize(index);
 		
+		m_depthTables.resize(index);
+
 		m_depthFrames.resize(index);
 		m_colorFrames.resize(index);
 		m_infraFrames.resize(index);
@@ -103,6 +105,18 @@ void Realsense2Interface::getColorPropertiesFromFile(int &w, int &h, int &r)
 	w = m_colorProps[0].width;
 	h = m_colorProps[0].height;
 	r = m_colorProps[0].rate;
+}
+
+void Realsense2Interface::setDepthTable(int devNumber, int depthMax, int depthMin, int depthUnits, int disparityMode, int disparityShift)
+{
+	m_depthTables[devNumber].depthClampMax = depthMax;
+	m_depthTables[devNumber].depthClampMin = depthMin;
+	m_depthTables[devNumber].depthUnits = depthUnits;
+	m_depthTables[devNumber].disparityMode = disparityMode;
+	m_depthTables[devNumber].disparityShift = disparityShift;
+
+	m_cameras[devNumber].setDepthTable(m_depthTables[devNumber]);
+
 }
 
 void Realsense2Interface::startDevice(int devNumber, int depthProfile, int colorProfile)
