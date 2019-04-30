@@ -216,7 +216,7 @@ public:
 	bool TrackSDF();
 
 	// volume functions
-	void integrate();
+	void integrate(int devNumber);
 	void raycast();
 	//void marchingCubes();
 	void intensityProjection();

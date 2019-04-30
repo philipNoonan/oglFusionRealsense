@@ -282,11 +282,12 @@ void MarkerTracker::detectPairs()
 		//std::cout << glm::to_string(cumQuat) << std::endl;
 
 		glm::mat4 meanCam2Cam = glm::toMat4(cumQuat);
-		meanCam2Cam[3] = cumTrans;
+
+		meanCam2Cam[3] = cumTrans; // a negative here makes the marker pairs output match the stereo calibrate output
 
 		m_cam2cam = meanCam2Cam;
 
-		//std::cout << "paired : " << glm::to_string(meanCam2Cam) << std::endl;
+		std::cout << "paired : " << glm::to_string(meanCam2Cam) << std::endl;
 		//std::cout << "inverted : " << glm::to_string(glm::inverse(meanCam2Cam)) << std::endl;
 
 

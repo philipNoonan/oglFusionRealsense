@@ -687,16 +687,15 @@ void gFusion::depthToVertex(std::vector<rs2::frame_queue> depthQ, int devNumber,
 
 	//std::cout << m_camPamsDepth[0] << " " << m_camPamsDepth[1]  << " " << m_camPamsDepth[2] << " " << m_camPamsDepth[3] << std::endl;
 	glm::mat4 d2d = m_depthToDepth;
-	//d2d[0] = glm::vec4(0.978451f, 0.175385f, 0.108971f, 0.0f);
-	//d2d[1] = glm::vec4(-0.134947f, 0.946212f, -0.305406f, 0.0f);
-	//d2d[2] = glm::vec4(-0.156281f, 0.284119f, 0.945966f, 0.0f);
-	//d2d[3] = glm::vec4(0.0299399f, -0.0455756f, 0.0400084f, 1.0f);
+
 
 	
 	if (devNumber == 0)
 	{
 		d2d = glm::mat4(1.0f);
 	}
+
+
 
 	depthToVertProg.use();
 
@@ -1532,7 +1531,7 @@ void gFusion::getSDFReduction(std::vector<float>& b, std::vector<float>& C, floa
 
 }
 
-void gFusion::integrate()
+void gFusion::integrate(int devNumber)
 {
 
 	//GLenum errInt = glGetError();
@@ -1541,7 +1540,16 @@ void gFusion::integrate()
 
 	integrateProg.use();
 
-	glm::mat4 integratePose = glm::inverse(m_pose);
+	glm::mat4 d2d = (m_depthToDepth);
+
+
+
+	if (devNumber == 0)
+	{
+		d2d = glm::mat4(1.0f);
+	}
+
+	glm::mat4 integratePose = glm::inverse(m_pose * d2d);
 	glm::mat4 K = GLHelper::getCameraMatrix(m_camPamsDepth); // make sure im set
 
 	integratePose[3][3] = configuration.dMax;

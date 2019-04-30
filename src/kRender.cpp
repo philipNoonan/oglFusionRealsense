@@ -694,10 +694,10 @@ void kRender::setMarkerData(std::vector<glm::mat4> tMat)
 	{
 		//glm::mat4 flipZ(1.0f);
 		//flipZ[2][2] = -1.0f;
-		m_tMat[i] = tMat[i];
-		m_tDMat[i] = m_colorToDepth * tMat[i];
-		//m_tDMat[i] = tMat[i];
-		//m_tMat[i] = m_depthToColor * tMat[i];
+		//m_tMat[i] = tMat[i];
+		//m_tDMat[i] = m_colorToDepth * tMat[i];
+		m_tDMat[i] = tMat[i];
+		m_tMat[i] = m_depthToColor * tMat[i];
 
 	}
 }
@@ -707,7 +707,7 @@ void kRender::setOtherMarkerData(std::vector<glm::mat4> tMat)
 	m_numMarkersOther = tMat.size();
 	for (int i = 0; i < m_numMarkers; i++)
 	{
-		m_tOtherDMat[i] = glm::inverse(m_depthToDepth) * tMat[i];
+		m_tOtherDMat[i] =  glm::inverse(m_depthToDepth) * tMat[i];
 	}
 }
 
@@ -1197,7 +1197,7 @@ void kRender::renderLiveVideoWindow(bool useInfrared, int devNumber)
 
 		{
 			glBindVertexArray(m_VAO_Markers);
-			setViewport(m_display2DPos.x, m_display2DPos.y, m_display2DSize.x, m_display2DSize.y);
+			setViewport(m_display3DPos.x, m_display3DPos.y, m_display3DSize.x, m_display3DSize.y);
 
 			glBindBuffer(GL_ARRAY_BUFFER, m_VBO_Markers);
 			glBufferSubData(GL_ARRAY_BUFFER, 0, m_numMarkersOther * sizeof(glm::mat4), glm::value_ptr(m_tOtherDMat[0]));
@@ -1206,7 +1206,7 @@ void kRender::renderLiveVideoWindow(bool useInfrared, int devNumber)
 			glUniformSubroutinesuiv(GL_VERTEX_SHADER, 1, &m_fromMarkersVerticesID);
 			glUniformSubroutinesuiv(GL_FRAGMENT_SHADER, 1, &m_fromMarkersID);
 
-			glUniformMatrix4fv(m_ProjectionID, 1, GL_FALSE, glm::value_ptr(m_projection));
+			glUniformMatrix4fv(m_ProjectionID, 1, GL_FALSE, glm::value_ptr(m_projectionColor));
 
 			glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 			glDrawElementsInstanced(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0, m_numMarkersOther); // each marker is 2 triangles

@@ -728,19 +728,19 @@ void setUI()
 
 				for (int i = 0; i < numberOfCameras; i++)
 				{
-					//mTracker.setCamPams(i, cameraInterface.getDepthIntrinsics(i).fx,
-					//	cameraInterface.getDepthIntrinsics(i).fy,
-					//	cameraInterface.getDepthIntrinsics(i).cx,
-					//	cameraInterface.getDepthIntrinsics(i).cy,
-					//	depthFrameSize[i].x,
-					//	depthFrameSize[i].y);
+					mTracker.setCamPams(i, cameraInterface.getDepthIntrinsics(i).fx,
+						cameraInterface.getDepthIntrinsics(i).fy,
+						cameraInterface.getDepthIntrinsics(i).cx,
+						cameraInterface.getDepthIntrinsics(i).cy,
+						depthFrameSize[i].x,
+						depthFrameSize[i].y);
 
-					mTracker.setCamPams(i, cameraInterface.getColorIntrinsics(i).fx,
-						cameraInterface.getColorIntrinsics(i).fy,
-						cameraInterface.getColorIntrinsics(i).cx,
-						cameraInterface.getColorIntrinsics(i).cy,
-						colorFrameSize[i].x,
-						colorFrameSize[i].y);
+					//mTracker.setCamPams(i, cameraInterface.getColorIntrinsics(i).fx,
+					//	cameraInterface.getColorIntrinsics(i).fy,
+					//	cameraInterface.getColorIntrinsics(i).cx,
+					//	cameraInterface.getColorIntrinsics(i).cy,
+					//	colorFrameSize[i].x,
+					//	colorFrameSize[i].y);
 				}
 				performStereo ^= 1;
 
@@ -782,19 +782,19 @@ void setUI()
 
 					for (int i = 0; i < numberOfCameras; i++)
 					{
-						//mTracker.setCamPams(i, cameraInterface.getDepthIntrinsics(i).fx,
-						//	cameraInterface.getDepthIntrinsics(i).fy,
-						//	cameraInterface.getDepthIntrinsics(i).cx,
-						//	cameraInterface.getDepthIntrinsics(i).cy,
-						//	depthFrameSize[i].x,
-						//	depthFrameSize[i].y);
+						mTracker.setCamPams(i, cameraInterface.getDepthIntrinsics(i).fx,
+							cameraInterface.getDepthIntrinsics(i).fy,
+							cameraInterface.getDepthIntrinsics(i).cx,
+							cameraInterface.getDepthIntrinsics(i).cy,
+							depthFrameSize[i].x,
+							depthFrameSize[i].y);
 
-						mTracker.setCamPams(i, cameraInterface.getColorIntrinsics(i).fx,
-							cameraInterface.getColorIntrinsics(i).fy,
-							cameraInterface.getColorIntrinsics(i).cx,
-							cameraInterface.getColorIntrinsics(i).cy,
-							colorFrameSize[i].x,
-							colorFrameSize[i].y);
+						//mTracker.setCamPams(i, cameraInterface.getColorIntrinsics(i).fx,
+						//	cameraInterface.getColorIntrinsics(i).fy,
+						//	cameraInterface.getColorIntrinsics(i).cx,
+						//	cameraInterface.getColorIntrinsics(i).cy,
+						//	colorFrameSize[i].x,
+						//	colorFrameSize[i].y);
 					}
 
 					mTracker.configGEM();
@@ -984,13 +984,33 @@ int main(int, char**)
 	//        (-0.463187, -0.030338, 0.885804, -0.000000), 
 
 	//        (-0.086553, 0.081181, -0.039512, 1.000000))
-	
-	
-	glm::mat4 testA(1.0f);
-	testA[0] = glm::vec4(0.91, -0.23, 0.33, 0.0);
-	testA[1] = glm::vec4(0.25, 0.96, -0.02, 0);
-	testA[2] = glm::vec4(-0.32, 0.10, 0.94, 0.0);
-	//testA[3] = glm::vec4(-0.11, 0.07, 0.04, 1.0);
+
+
+	// mat4x4((0.936391, -0.146397,  0.318967, 0.000000), 
+	//        (0.236582,  0.934613, -0.265572, 0.000000),
+	//       (-0.259231,  0.324141,  0.909798, 0.000000), 
+	//       (-0.109869,  0.085190,  0.030209, 1.000000))
+
+
+	//glm::mat4 test0 = glm::mat4(0.936391, -0.146397, 0.318967, 0.000000,
+	//	        0.236582,  0.934613, -0.265572, 0.000000,
+	//	       -0.259231,  0.324141,  0.909798, 0.000000, 
+	//	       -0.109869,  0.085190,  0.030209, 1.000000);//
+
+	//std::cout << glm::to_string(glm::inverse(test0)) << std::endl;
+
+
+	//       0.935       -0.1469     0.321      0, 
+	//       0.240        0.931     -0.2738     0, 
+	//	    -0.259051     0.3334     0.90646    0,
+	//   	 0.0901      -0.10769    0.0325     1.0 
+
+
+	//glm::mat4 testA(1.0f);
+	//testA[0] = glm::vec4(0.91, -0.23, 0.33, 0.0);
+	//testA[1] = glm::vec4(0.25, 0.96, -0.02, 0);
+	//testA[2] = glm::vec4(-0.32, 0.10, 0.94, 0.0);
+	////testA[3] = glm::vec4(-0.11, 0.07, 0.04, 1.0);
 
 	//glm::mat4 testB(1.0f);
 	//testB[0] = glm::vec4(0.91, -0.23, -0.33, 0);
@@ -1002,20 +1022,32 @@ int main(int, char**)
 
 	//std::cout << glm::to_string(outAB) << std::endl;
 
-	glm::mat4 flipXYZ(1.0f);
-	flipXYZ[0][0] *= -1.0f;
-	flipXYZ[1][1] *= -1.0f;
-	flipXYZ[2][2] *= -1.0f;
+	//glm::mat4 flipXYZ(1.0f);
+	//flipXYZ[0][0] *= -1.0f;
+	//flipXYZ[1][1] *= -1.0f;
+	//flipXYZ[2][2] *= -1.0f;
 
-	glm::mat4 flipZ(1.0f);
-	flipZ[2][2] *= -1.0f;
+	//glm::mat4 flipZ(1.0f);
+	//flipZ[2][2] *= -1.0f;
 
-	glm::mat4 outMat = flipZ * flipXYZ * testA;
+	//glm::mat4 outMat = flipZ * flipXYZ * testA;
 
-	std::cout << glm::to_string(flipZ * testA) << std::endl;
+	//std::cout << glm::to_string(flipZ * testA) << std::endl;
 
 
-	std::cout << glm::to_string(outMat) << std::endl;
+	//std::cout << glm::to_string(outMat) << std::endl;
+
+	//glm::mat4 d2d(0.705696, 0.110563, 0.699675, 0.000000,
+	//	0.135722, 0.948362, -0.286617, 0.000000,
+	//	-0.695233, 0.297230, 0.654249, 0.000000,
+	//	0.145772, -0.098724, -0.054113, 1.000000);
+
+	//glm::vec4 point0(-0.05745, 0.0849, 0.21629, 1.0);
+	//glm::vec4 point1(0.0681, 0.0708, 0.3702, 1.0);
+
+	//std::cout << "d2d * 1 : " << glm::to_string(d2d * point1) << std::endl;
+
+	//std::cout << "inv d2d * 0 " << glm::to_string(glm::inverse(d2d) * point0) << std::endl;
 
 
 	int display_w, display_h;
@@ -1138,7 +1170,7 @@ int main(int, char**)
 				//cv::imshow("!", colMat);
 				//cv::waitKey(1);
 				mTracker.setCameraDevice(cameraDevice);
-				mTracker.setMat(colMat);
+				mTracker.setMat(infraMat);
 				mTracker.detect();
 				//mTracker.draw();
 			}
@@ -1218,7 +1250,7 @@ int main(int, char**)
 
 			if (tracked && integratingFlag && ((counter % 1) == 0) || reset)
 			{
-				gfusion.integrate();
+				gfusion.integrate(cameraDevice);
 				if (counter > 2)
 					reset = false;
 			}
