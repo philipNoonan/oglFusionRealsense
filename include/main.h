@@ -228,6 +228,7 @@ bool calibratingFlag = false;
 // FUSION STUFF
 bool trackDepthToPoint = false;
 bool trackDepthToVolume = true;
+bool useMultipleFusion = false;
 bool performFlood = false;
 bool performFlow = false;
 bool performAruco = false;
@@ -327,5 +328,6 @@ std::vector<glm::mat4> depthToColor;
 glm::mat4 depthToDepth;
 
 bool performStereo = false;
+bool pairFromFile = false;
 // GEM STUFF
 

@@ -77,7 +77,7 @@ struct gFusionConfig
 		normal_threshold = 0.8f;
 		iterations.push_back(2);
 		iterations.push_back(4);
-		iterations.push_back(6);
+		//iterations.push_back(6);
 		track_threshold = 0.5f;
 		depthFrameSize = glm::vec2(848, 480);
 		dMax = 0.1f;
@@ -177,18 +177,18 @@ public:
 	void setDepthTexture(GLuint depthTex)
 	{
 
-		GLenum theerror;
+		/*GLenum theerror;
 		theerror = glGetError();
 
-		glCopyImageSubData(depthTex, GL_TEXTURE_2D, 0, 0, 0, 0, m_textureDepth, GL_TEXTURE_2D, 0, 0, 0, 0, configuration.depthFrameSize.x, configuration.depthFrameSize.y, 1);
+		glCopyImageSubData(depthTex, GL_TEXTURE_2D, 0, 0, 0, 0, m_textureDepth0, GL_TEXTURE_2D, 0, 0, 0, 0, configuration.depthFrameSize.x, configuration.depthFrameSize.y, 1);
 
 		theerror = glGetError();
 
 		glActiveTexture(GL_TEXTURE0);
-		glBindTexture(GL_TEXTURE_2D, m_textureDepth);
+		glBindTexture(GL_TEXTURE_2D, m_textureDepth0);
 		glGenerateMipmap(GL_TEXTURE_2D);
 
-		theerror = glGetError();
+		theerror = glGetError();*/
 
 
 	}
@@ -207,27 +207,31 @@ public:
 	void allocateBuffers();
 	// depth functions
 	void depthToVertex();
+	// combine multiple depth into one buffer of verts
+	void depthToVertex(std::vector<rs2::frame_queue> depthQ, glm::vec3 &point);
+	// backproject depth frame into vertex image
 	void depthToVertex(std::vector<rs2::frame_queue> depthQ, int devNumber, glm::vec3 &point);
 	void depthToVertex(float * depthArray);
 	void depthToVertex(uint16_t * depthArray);
 
-	void vertexToNormal();
+	void vertexToNormal(int devNumber);
 	bool Track();
 	bool TrackSDF();
 
 	// volume functions
+	void integrate(bool forceIntegrate);
 	void integrate(int devNumber);
-	void raycast();
+	void raycast(int devNumber);
 	//void marchingCubes();
 	void intensityProjection();
 
 	// fusion functions
-	void track(int layer);
-	void reduce(int layer);
+	void track(int devNumber, int layer);
+	void reduce(int devNumber, int layer);
 	void getReduction(std::vector<float>& b, std::vector<float>& C, float & alignmentEnergy);
 
 	// fusion sdf functions
-	void trackSDF(int layer, Eigen::Matrix4f camToWorld);
+	void trackSDF(int devNumber, int layer, Eigen::Matrix4f camToWorld);
 	void reduceSDF(int layer);
 	void getSDFReduction(std::vector<float>& b, std::vector<float>& C, float &alignmentEnergy);
 
@@ -257,14 +261,17 @@ public:
 		std::memcpy(m_pose_eig.data(), glm::value_ptr(pose), 16 * sizeof(float));
 	}
 	// camera parameters
-	void setCameraParams(glm::vec4 camPams, glm::vec4 camPamsColor)
+	void setCameraParams(int devNumber, glm::vec4 camPams, glm::vec4 camPamsColor)
 	{
-		m_camPamsDepth = camPams;
-		m_camPamsColor = camPamsColor;
+		m_camPamsDepth[devNumber] = camPams;
+		m_camPamsColor[devNumber] = camPamsColor;
 	}
 	void setNumberOfCameras(int numCams)
 	{
+		m_numberOfCameras = numCams;
 		m_extrinsics.resize(numCams);
+		m_camPamsDepth.resize(numCams);
+		m_camPamsColor.resize(numCams);
 	}
 	void setDepthToColorExtrinsics(glm::mat4 extrin, int devNumber)
 	{
@@ -279,32 +286,32 @@ public:
 	//{
 	//	mcubeConfiguration = config;
 	//}
-	GLuint getDepthImage()
+	GLuint getDepthImage(int devNumber)
 	{
-		return m_textureDepth;
+		return m_textureDepth[devNumber];
 	}
 	GLuint getColorImage()
 	{
 		return m_textureColor;
 	}
-	GLuint getVerts()
+	GLuint getVerts(int devNumber)
 	{
-		return m_textureVertex;
+		return m_textureVertex[devNumber];
 
 		//return m_textureReferenceVertex;
 
 	}
-	GLuint getNorms()
+	GLuint getNorms(int devNumber)
 	{
-		return m_textureNormal;
+		return m_textureNormal[devNumber];
 	}
 	GLuint getPVPNorms()
 	{
 		return m_textureReferenceNormal;
 	}
-	GLuint getPVDNorms()
+	GLuint getPVDNorms(int devNumber)
 	{
-		return m_textureTest;
+		return m_textureSDFImage[devNumber];
 	}
 	GLuint getVertsMC()
 	{
@@ -318,9 +325,9 @@ public:
 	{
 		return m_textureVolume;
 	}
-	GLuint getTrackImage()
+	GLuint getTrackImage(int devNumber)
 	{
-		return m_textureTrackImage;
+		return m_textureTrackImage[devNumber];
 	}
 	size_t getNumVerts()
 	{
@@ -333,7 +340,7 @@ public:
 	}
 
 
-	void showNormals();
+	void showNormals(int devNumber);
 	void showRaycast();
 	void showDifference();
 	void showTrack();
@@ -405,6 +412,10 @@ private:
 	// reduce
 	GLuint m_imageSizeID;
 	// integrate
+	GLuint m_integrateSubroutineID;
+	GLuint m_integrateStandardID;
+	GLuint m_integrateMultipleID;
+	GLuint m_integrateExperimentalID;
 	GLuint m_invTrackID;
 	GLuint m_KID;
 	GLuint m_muID;
@@ -415,6 +426,10 @@ private:
 	GLuint m_depthScaleID_i;
 	GLuint m_dMaxID_i;
 	GLuint m_dMinID_i;
+	GLuint m_cameraDeviceID_i;
+	GLuint m_numberOfCamerasID_i;
+	GLuint m_forceIntegrateID;
+
 	// INTEGRTATE UB
 	unsigned int m_ub_integrateID;
 	GLuint m_ub_integrate;
@@ -481,16 +496,18 @@ private:
 
 	// TEXTURES
 	GLuint createTexture(GLenum target, int levels, int w, int h, int d, GLint internalformat);
-	GLuint m_textureDepth;
 	GLuint m_textureColor;
-	GLuint m_textureVertex;
-	GLuint m_textureNormal;
+	std::vector<GLuint> m_textureDepth;
+	std::vector<GLuint> m_textureVertex;
+	std::vector<GLuint> m_textureNormal;
+	std::vector<GLuint> m_textureSDFImage;
+	std::vector<GLuint> m_textureTrackImage;
+
 	GLuint m_textureReferenceVertex;
 	GLuint m_textureReferenceNormal;
 	GLuint m_textureOutputData;
 	GLuint m_textureDifferenceVertex;
 	GLuint m_textureTestImage;
-	GLuint m_textureTrackImage;
 	GLuint m_textureFloodSDF;
 
 	//GLuint m_textureEdgeTable;
@@ -526,6 +543,9 @@ private:
 
 	GLuint m_bufferPrefixSumByGroup;
 
+	GLuint m_devNumberTrackSdfID;
+	GLuint m_devNumberReduceSdfID;
+
 	// TRACKED POINTS
 	std::vector<float> m_trackedPoints3D;
 	GLuint m_trackedPoints3DBuffer;
@@ -551,8 +571,8 @@ private:
 	// glm::vec3 m_volSize = glm::vec3(256,256,256);
 	glm::mat4 m_K;
 	glm::mat4 m_invK;
-	glm::vec4 m_camPamsDepth;
-	glm::vec4 m_camPamsColor;
+	std::vector<glm::vec4> m_camPamsDepth;
+	std::vector<glm::vec4> m_camPamsColor;
 	glm::mat4 m_pose;
 
 
@@ -699,4 +719,6 @@ private:
 
 	glm::mat4 m_colorToColor;
 	glm::mat4 m_depthToDepth = glm::mat4(1.0f);
+
+	int m_numberOfCameras;
 };

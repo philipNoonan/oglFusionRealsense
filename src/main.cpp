@@ -65,7 +65,7 @@ void kRenderInit()
 	krender.setLocations();
 	krender.setVertPositions();
 	krender.allocateBuffers();
-	krender.setTextures(gfusion.getDepthImage(), gflow.getColorTexture(), gfusion.getVerts(), gfusion.getNorms(), gfusion.getVolume(), gfusion.getTrackImage(), gfusion.getPVPNorms(), gfusion.getPVDNorms()); //needs texture uints from gfusion init
+	krender.setTextures(gfusion.getDepthImage(0), gflow.getColorTexture(), gfusion.getVerts(0), gfusion.getNorms(0), gfusion.getVolume(), gfusion.getTrackImage(0), gfusion.getPVPNorms(), gfusion.getPVDNorms(0)); //needs texture uints from gfusion init
 	krender.anchorMW(std::make_pair<int, int>(1920 - 512 - krender.guiPadding().first, krender.guiPadding().second));
 
 	krender.setFusionType(trackDepthToPoint, trackDepthToVolume);
@@ -84,6 +84,8 @@ void gFusionInit()
 	gfusion.compileAndLinkShader();
 	gfusion.setLocations();
 
+	gfusion.setNumberOfCameras(numberOfCameras);
+
 	gconfig.volumeSize = glm::vec3(128);
 	gconfig.volumeDimensions = glm::vec3(1.0f);
 	gconfig.depthFrameSize = glm::vec2(depthFrameSize[devNumber]);
@@ -93,14 +95,17 @@ void gFusionInit()
 	gconfig.iterations[1] = 4;
 	gconfig.iterations[2] = 6;
 	
-	gfusion.setCameraParams(glm::vec4(cameraInterface.getDepthIntrinsics(cameraDevice).fx,
-									  cameraInterface.getDepthIntrinsics(cameraDevice).fy,
-									  cameraInterface.getDepthIntrinsics(cameraDevice).cx,
-									  cameraInterface.getDepthIntrinsics(cameraDevice).cy),
-							glm::vec4(cameraInterface.getColorIntrinsics(cameraDevice).fx,
-									  cameraInterface.getColorIntrinsics(cameraDevice).fy,
-									  cameraInterface.getColorIntrinsics(cameraDevice).cx,
-									  cameraInterface.getColorIntrinsics(cameraDevice).cy));
+	for (int i = 0; i < numberOfCameras; i++)
+	{
+		gfusion.setCameraParams(i, glm::vec4(cameraInterface.getDepthIntrinsics(cameraDevice).fx,
+			cameraInterface.getDepthIntrinsics(cameraDevice).fy,
+			cameraInterface.getDepthIntrinsics(cameraDevice).cx,
+			cameraInterface.getDepthIntrinsics(cameraDevice).cy),
+			glm::vec4(cameraInterface.getColorIntrinsics(cameraDevice).fx,
+				cameraInterface.getColorIntrinsics(cameraDevice).fy,
+				cameraInterface.getColorIntrinsics(cameraDevice).cx,
+				cameraInterface.getColorIntrinsics(cameraDevice).cy));
+	}
 
 	glm::mat4 initPose = glm::translate(glm::mat4(1.0f), glm::vec3(gconfig.volumeDimensions.x / 2.0f, gconfig.volumeDimensions.y / 2.0f, 0.0f));
 
@@ -202,7 +207,7 @@ void resetVolume()
 	reset = true;
 	if (trackDepthToPoint)
 	{
-		gfusion.raycast();
+		gfusion.raycast(cameraDevice);
 	}
 
 	counter = 0;
@@ -223,6 +228,58 @@ void saveSTL()
 	mcubes.setIsolevel(0.0f);
 	mcubes.generateMarchingCubes();
 	mcubes.exportMesh();
+}
+
+void loadPreviousExtrinsicCalibrationFromFile()
+{
+	std::ifstream extrinsicFile("./data/calib/extrinsic.txt");
+	
+	if (extrinsicFile.is_open())
+	{
+		float inValues[16];
+
+		for (int i = 0; i < 16; i++)
+		{
+			extrinsicFile >> inValues[i];
+		}
+
+		std::memcpy(glm::value_ptr(cam2camTrans), inValues, sizeof(inValues));
+		extrinsicFile.close();
+
+		std::cout << "Values from file : " << std::endl;
+		std::cout << glm::to_string(cam2camTrans) << std::endl;
+		gfusion.setDepthToDepth(cam2camTrans);
+		pairFromFile = true;
+
+	}
+	else
+	{
+		std::cout << "Calib file could not be opened, does it exist?" << std::endl;
+	}
+
+
+}
+
+void saveExtrinsicCalibrationToFile()
+{
+	std::ofstream extrinsicFile("./data/calib/extrinsic.txt"); 
+
+	if (extrinsicFile.is_open())
+	{
+		float outValues[16];
+		std::memcpy(outValues, glm::value_ptr(cam2camTrans), sizeof(outValues));
+		for (int i = 0; i < 16; i++)
+		{
+			extrinsicFile << outValues[i] << " ";
+		}
+
+		extrinsicFile.close();
+	}
+	else
+	{
+		std::cout << "Could not open file for writing" << std::endl;
+	}
+
 }
 
 void startRealsense()
@@ -492,6 +549,7 @@ void setUI()
 
 		arr[0] = gflow.getTimeElapsed();
 		gfusion.getTimes(arr);
+		arr[2] = gflood.getTimeElapsed();
 		arr[8] = arr[0] + arr[1] + arr[2] + arr[3] + arr[4] + arr[5] + arr[6] + arr[7];
 
 		for (int i = 0; i < 9; i++)
@@ -514,9 +572,9 @@ void setUI()
 		ImGui::Text("Framerate %.3f ms/frame (%.1f FPS)", arr[8], 1000.0f / arr[8]);
 		if (ImGui::BeginPopupContextItem("item context menu"))
 		{
-			ImGui::Text("Jump Flooding %.3f ms/frame (max : %.3f)", arr[0], maxArr[0]);
+			ImGui::Text("Flow %.3f ms/frame (max : %.3f)", arr[0], maxArr[0]);
 			ImGui::Text("Raycasting %.3f ms/frame (max : %.3f)", arr[1], maxArr[1]);
-			ImGui::Text("TBC %.3f ms/frame (max : %.3f)", arr[2], maxArr[2]);
+			ImGui::Text("Flood %.3f ms/frame (max : %.3f)", arr[2], maxArr[2]);
 			ImGui::Text("Track P2P %.3f ms/frame (max : %.3f)", arr[3], maxArr[3]);
 			ImGui::Text("TBC %.3f ms/frame (max : %.3f)", arr[4], maxArr[4]);
 			ImGui::Text("Integration %.3f ms/frame (max : %.3f)", arr[5], maxArr[5]);
@@ -650,6 +708,8 @@ void setUI()
 
 			if (ImGui::Button("P2P")) trackDepthToPoint ^= 1; ImGui::SameLine(); ImGui::Checkbox("", &trackDepthToPoint); ImGui::SameLine();
 			if (ImGui::Button("P2V")) trackDepthToVolume ^= 1; ImGui::SameLine(); ImGui::Checkbox("", &trackDepthToVolume);
+			if (ImGui::Button("Multi")) useMultipleFusion ^= 1; ImGui::SameLine(); ImGui::Checkbox("", &useMultipleFusion);
+
 
 			ImGui::Text("Resolution");
 			ImGui::PushItemWidth(-1);
@@ -708,8 +768,8 @@ void setUI()
 					krender.setFloodTexture(gflood.getFloodOutputTexture());
 					//krender.setFloodTexture(gflood.getFloodSDFTexture());
 
-					gflood.setVertices(gfusion.getVerts());
-					gflood.setNormals(gfusion.getNorms());
+					gflood.setVertices(gfusion.getVerts(cameraDevice));
+					gflood.setNormals(gfusion.getNorms(cameraDevice));
 
 				}
 			} ImGui::SameLine(); ImGui::Checkbox("", &performFlood); ImGui::SameLine();
@@ -808,6 +868,15 @@ void setUI()
 			}
 			ImGui::SameLine(); ImGui::Checkbox("", &performAruco);
 			static int gemOption = gemStatus::STOPPED;
+
+			if (ImGui::Button("Load Previous"))
+			{
+				loadPreviousExtrinsicCalibrationFromFile();
+			}
+			if (ImGui::Button("Save Current"))
+			{
+				saveExtrinsicCalibrationToFile();
+			}
 			//static int gemOpt = 0;
 			if (performAruco)
 			{
@@ -842,6 +911,8 @@ void setUI()
 					//mTracker.detectPairs();
 					gemOption = gemStatus::PAIRING;
 				}
+
+				
 
 			}
 
@@ -1050,6 +1121,7 @@ int main(int, char**)
 	//std::cout << "inv d2d * 0 " << glm::to_string(glm::inverse(d2d) * point0) << std::endl;
 
 
+
 	int display_w, display_h;
 	// load openGL window
 	window = krender.loadGLFWWindow();
@@ -1126,14 +1198,7 @@ int main(int, char**)
 
 		if (frameReady)
 		{
-			gfusion.setCameraParams(glm::vec4(cameraInterface.getDepthIntrinsics(cameraDevice).fx,
-				cameraInterface.getDepthIntrinsics(cameraDevice).fy,
-				cameraInterface.getDepthIntrinsics(cameraDevice).cx,
-				cameraInterface.getDepthIntrinsics(cameraDevice).cy),
-				glm::vec4(cameraInterface.getColorIntrinsics(cameraDevice).fx,
-					cameraInterface.getColorIntrinsics(cameraDevice).fy,
-					cameraInterface.getColorIntrinsics(cameraDevice).cx,
-					cameraInterface.getColorIntrinsics(cameraDevice).cy));
+			
 
 			gfusion.resetTimes();
 
@@ -1225,9 +1290,23 @@ int main(int, char**)
 				gflow.calc(false);
 			}		   
 
-			gfusion.depthToVertex(cameraInterface.getDepthQueues(), cameraDevice, iOff);
+			if (numberOfCameras > 1 && (mTracker.isPaired() || pairFromFile))
+			{
+				for (int i = 0; i < numberOfCameras; i++)
+				{
+					gfusion.depthToVertex(cameraInterface.getDepthQueues(), i, iOff);
+					gfusion.vertexToNormal(i);
 
-			gfusion.vertexToNormal();
+				}
+			}
+			else
+			{
+				gfusion.depthToVertex(cameraInterface.getDepthQueues(), cameraDevice, iOff);
+				gfusion.vertexToNormal(cameraDevice);
+
+			}
+
+
 			if (performFlood)
 			{
 				gflood.setPose(gfusion.getPose());
@@ -1239,7 +1318,7 @@ int main(int, char**)
 			if (trackDepthToPoint)
 			{
 				tracked = gfusion.Track(); 
-				gfusion.raycast();
+				gfusion.raycast(cameraDevice);
 			}
 
 			if (trackDepthToVolume)
@@ -1250,7 +1329,15 @@ int main(int, char**)
 
 			if (tracked && integratingFlag && ((counter % 1) == 0) || reset)
 			{
-				gfusion.integrate(cameraDevice);
+				if (useMultipleFusion)
+				{
+					gfusion.integrate(reset);
+				}
+				else
+				{
+					gfusion.integrate(cameraDevice);
+				}
+
 				if (counter > 2)
 					reset = false;
 			}
@@ -1347,6 +1434,7 @@ int main(int, char**)
 		if (cameraRunning)
 		{
 			krender.setProjectionMatrix(cameraDevice);
+			krender.setTextures(gfusion.getDepthImage(cameraDevice), gflow.getColorTexture(), gfusion.getVerts(cameraDevice), gfusion.getNorms(cameraDevice), gfusion.getVolume(), gfusion.getTrackImage(cameraDevice), gfusion.getPVPNorms(), gfusion.getPVDNorms(cameraDevice)); //needs texture uints from gfusion init
 
 			krender.setDisplayOriSize(display2DWindow.x, display_h - display2DWindow.y - display2DWindow.h, display2DWindow.w, display2DWindow.h);
 			krender.set3DDisplayOriSize(display3DWindow.x, display_h - display3DWindow.y - display3DWindow.h, display3DWindow.w, display3DWindow.h);

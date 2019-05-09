@@ -557,6 +557,9 @@ private:
     glm::mat4 m_projectionColor = glm::mat4(0.0f); // some default matrix
 	glm::vec3 m_volume_size = glm::vec3(128.0f, 128.0f, 128.0f);
 
+
+	int getRenderOptions(bool depth, bool infra, bool color, bool norm, bool track, bool flood);
+
 	bool m_showDepthFlag = false;
 	bool m_showNormalFlag = false;
 	bool m_showInfraFlag = false;

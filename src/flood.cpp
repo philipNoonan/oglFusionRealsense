@@ -502,7 +502,7 @@ void gFlood::jumpFloodCalc()
 	GLuint64 elapsed;
 	glGetQueryObjectui64vEXT(timeQuery[0], GL_QUERY_RESULT, &elapsed);
 	//std::cout << elapsed / 1000000.0 << std::endl;
-
+	m_timeElapsed = elapsed / 1000000.0;
 	//std::vector<float> vecdata(m_texture_width * m_texture_height * 2);
 	//cv::Mat col = cv::Mat(m_texture_height, m_texture_width, CV_32FC2, vecdata.data());
 

@@ -4,7 +4,7 @@ layout(local_size_x = 32, local_size_y = 32) in;
 
 layout(binding = 0) uniform sampler3D volumeDataTexture; // interp access
 
-layout(binding = 0, rg16f) uniform image3D volumeData; // texel access
+layout(binding = 0, rgba16f) uniform image3D volumeData; // texel access, lets define r as main sdf, g as running fused, b as to be fused, a as weights for each, 0-1000 for running, 1000-2000 for to be fused
 layout(binding = 1, rgba32f) uniform image2D inVertex;
 layout(binding = 2, rgba32f) uniform image2D inNormal;
 
@@ -33,6 +33,8 @@ uniform float eps;
 
 uniform float dMax;
 uniform float dMin;
+
+uniform int devNumber;
 
 uniform float robust_statistic_coefficent = 0.02f;
 
@@ -175,7 +177,8 @@ float SDF(vec3 location, inout bool validGradient)
 
     //return (a0 * (1.0 - y) + a1 * y) * (1.0 - x) + (b0 * (1.0 - y) + b1 * y) * x;
     //float currSDF = float(textureLod(volumeDataTexture, locationInVolumeTexture, 0).x) * 0.000030517f;
-    float currSDF = texelFetch(volumeDataTexture, ivec3(location), 0).x;
+    //float currSDF = texelFetch(volumeDataTexture, ivec3(location), 0).x;
+    float currSDF = imageLoad(volumeData, ivec3(location)).x;
     if (abs(currSDF) < 0.0001)
     {
         validGradient = false;
@@ -282,6 +285,8 @@ float[6] getJ(vec3 dsdf, float[3][6] dxdxi)
 void main()
 {
 
+    uint offset = uint(devNumber * imageSize.x * imageSize.y);
+
     uvec2 pix = gl_GlobalInvocationID.xy;
     //ivec2 inSize = imageSize(inVertex); // mipmapped sizes
     imageStore(testImage, ivec2(pix), vec4(0.0f));
@@ -295,7 +300,7 @@ void main()
 
         if (normals.x == 2)
         {
-            trackOutput[(pix.y * imageSize.x) + pix.x].result = -4; 
+            trackOutput[offset + ((pix.y * imageSize.x) + pix.x)].result = -4; 
             imageStore(trackImage, ivec2(pix), vec4(0, 0, 0, 0));
 
         }
@@ -321,7 +326,7 @@ void main()
             {
                 //imageStore(testImage, ivec2(pix), vec4(0.5f));
                 imageStore(trackImage, ivec2(pix), vec4(0.0f, 0.0f, 1.0, 1.0f));
-                trackOutput[(pix.y * imageSize.x) + pix.x].result = -4;
+                trackOutput[offset + ((pix.y * imageSize.x) + pix.x)].result = -4;
 
                 return;
             }
@@ -348,7 +353,7 @@ void main()
             {
                 imageStore(trackImage, ivec2(pix), vec4(1.0f, 1.0f, 0, 1.0f));
 
-                trackOutput[(pix.y * imageSize.x) + pix.x].result = -4;
+                trackOutput[offset + ((pix.y * imageSize.x) + pix.x)].result = -4;
 
                 return;
             }
@@ -365,7 +370,7 @@ void main()
 
             if (any(equal(dSDF_dx, vec3(-2.0f))))
             {
-                trackOutput[(pix.y * imageSize.x) + pix.x].result = -4;
+                trackOutput[offset + ((pix.y * imageSize.x) + pix.x)].result = -4;
                 imageStore(trackImage, ivec2(pix), vec4(1.0f, 0.0f, 0, 1.0f));
 
                 return;
@@ -395,11 +400,11 @@ void main()
 
 float huber = absD < 0.003f ? 1.0f : 0.003f / absD;
 
-trackOutput[(pix.y * imageSize.x) + pix.x].result = 1;
+trackOutput[offset + ((pix.y * imageSize.x) + pix.x)].result = 1;
 
-                trackOutput[(pix.y * imageSize.x) + pix.x].h = huber;
-                trackOutput[(pix.y * imageSize.x) + pix.x].D = D;
-                trackOutput[(pix.y * imageSize.x) + pix.x].J = J;
+                trackOutput[offset + ((pix.y * imageSize.x) + pix.x)].h = huber;
+                trackOutput[offset + ((pix.y * imageSize.x) + pix.x)].D = D;
+                trackOutput[offset + ((pix.y * imageSize.x) + pix.x)].J = J;
 
                 imageStore(trackImage, ivec2(pix), vec4(0.5f, 0.5f, 0.5f, 1.0f));
 
@@ -413,11 +418,11 @@ trackOutput[(pix.y * imageSize.x) + pix.x].result = 1;
                 imageStore(trackImage, ivec2(pix), vec4(0, 0, 1.0f, 1.0f));
 
                 float J0[6] = { 0, 0, 0, 0, 0, 0 };
-                trackOutput[(pix.y * imageSize.x) + pix.x].result = -4;
+                trackOutput[offset + ((pix.y * imageSize.x) + pix.x)].result = -4;
 
-                trackOutput[(pix.y * imageSize.x) + pix.x].h = 0;
-                trackOutput[(pix.y * imageSize.x) + pix.x].D = 0;
-                trackOutput[(pix.y * imageSize.x) + pix.x].J = J0;
+                trackOutput[offset + ((pix.y * imageSize.x) + pix.x)].h = 0;
+                trackOutput[offset + ((pix.y * imageSize.x) + pix.x)].D = 0;
+                trackOutput[offset + ((pix.y * imageSize.x) + pix.x)].J = J0;
             }
         } 
     }

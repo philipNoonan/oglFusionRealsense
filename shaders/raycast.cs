@@ -7,7 +7,7 @@ layout(binding = 1) uniform sampler3D volumeFloodSDF;
 //layout(binding= 1) uniform sampler3D volumeColorTexture;
 //layout(binding= 2) uniform sampler2D currentTextureColor;
      
-layout(binding = 0, rg16f) uniform image3D volumeData; // Gimage3D, where G = i, u, or blank, for int, u int, and floats respectively
+layout(binding = 0, rgba16f) uniform image3D volumeData; // Gimage3D, where G = i, u, or blank, for int, u int, and floats respectively
 layout(binding = 1, rgba32f) uniform image2D refVertex;
 layout(binding = 2, rgba32f) uniform image2D refNormal;
     //layout(binding = 1, r32f) uniform image2D volumeSlice;

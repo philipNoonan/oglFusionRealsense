@@ -293,7 +293,7 @@ void MarkerTracker::detectPairs()
 
 		m_statusGem = gemStatus::PAIRED;
 
-
+		m_pairStatus = true;
 
 	}
 

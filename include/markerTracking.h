@@ -108,7 +108,10 @@ public:
 	{
 		return m_cam2cam;
 	}
-
+	bool isPaired()
+	{
+		return m_pairStatus;
+	}
 private:
 
 	void collectSamples();
@@ -143,7 +146,7 @@ private:
 	glm::mat4 m_cam2cam;
 
 	std::vector<std::pair<cv::Mat, cv::Mat>> m_stereoImages;
-
+	bool m_pairStatus = false;
 
 };
 

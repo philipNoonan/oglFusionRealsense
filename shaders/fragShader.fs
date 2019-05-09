@@ -44,6 +44,7 @@ vec4 fromStandardFragment()
 	uint renderColor =   (renderOptions & 4) >> 2; 
 	uint renderNormals = (renderOptions & 8) >> 3; 
 	uint renderTrack =   (renderOptions & 16) >> 4; 
+	uint renderFlood =   (renderOptions & 32) >> 5;
 
 	vec4 outColor = vec4(0.0f);
 
@@ -81,6 +82,18 @@ vec4 fromStandardFragment()
 		{
 			outColor = vec4(tCol.xyz, 1.0f);
 		}
+	}
+
+	if (renderFlood == 1)
+	{
+	    uint tData = texture(currentTextureSDF, vec3(TexCoord, slice) ).x;
+		vec3 texSize = vec3(textureSize(currentTextureSDF, 0));
+
+		vec3 SDF = vec3((tData & 4290772992) >> 22, (tData & 4190208) >> 12, (tData & 4092) >> 2);
+
+		float distCol = distance(vec3(TexCoord.xy, slice), SDF.xyz / texSize.x);
+		float ssDist = smoothstep(0.0f, 0.5f, distCol);
+		outColor = vec4(ssDist.xxx, 1.0f);
 	}
 
 	return outColor;

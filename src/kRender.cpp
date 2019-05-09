@@ -1093,6 +1093,18 @@ void kRender::setViewport(int x, int y, int w, int h)
 	glViewport(x, y, w, h);
 }
 
+int kRender::getRenderOptions(bool depth, bool infra, bool color, bool norms, bool track, bool flood)
+{
+	int opts = depth << 0 |
+		       infra << 1 |
+			   color << 2 | // dont show color here
+		       norms << 3 |
+		       track << 4 |
+		       flood << 5;
+
+	return opts;
+}
+
 void kRender::renderLiveVideoWindow(bool useInfrared, int devNumber)
 {
 	//glBindFramebuffer(GL_FRAMEBUFFER, 0);
@@ -1103,12 +1115,7 @@ void kRender::renderLiveVideoWindow(bool useInfrared, int devNumber)
 
 
 	//// RENDER LEFT WINDOW
-	m_renderOptions = m_showDepthFlag << 0 |
-		m_showInfraFlag << 1 | 
-		0 << 2 | // dont show color here
-		m_showNormalFlag << 3 |
-		m_showTrackFlag << 4;
-
+	int leftRenderOptions = getRenderOptions(m_showDepthFlag, m_showInfraFlag, 0, m_showNormalFlag, m_showTrackFlag, 0);
 
 
 	glm::vec2 imageSize(848.0f, 480.0f);
@@ -1118,18 +1125,15 @@ void kRender::renderLiveVideoWindow(bool useInfrared, int devNumber)
 	glm::vec2 depthRange(m_depthMin, m_depthMax);
 	glUniform2fv(m_imSizeID, 1, glm::value_ptr(imageSize));
 	glUniformSubroutinesuiv(GL_VERTEX_SHADER, 1, &m_fromStandardTextureID);
-	glUniform1ui(m_renderOptionsID, m_renderOptions);
+	glUniform1ui(m_renderOptionsID, leftRenderOptions);
 	glUniform2fv(m_depthRangeID, 1, glm::value_ptr(depthRange));
 	glUniform1f(m_depthScaleID, 100.0f / 1000000.0f); // 1000 == each depth unit == 1 mm
 	glUniformSubroutinesuiv(GL_FRAGMENT_SHADER, 1, &m_fromStandardFragmentID);
 	glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 
 	//// RENDER RIGHT WINDOW
-	m_renderOptions = 0 << 0 | // dont show depth here
-		0 << 1 |
-		m_showColorFlag << 2 | // dont show color here
-		0 << 3 |
-		m_showTrackFlag << 4;
+	int rightRenderOptions = getRenderOptions(0, 0, m_showColorFlag, 0, 0, m_showVolumeSDFFlag);
+
 
 	setViewport(m_display3DPos.x, m_display3DPos.y, m_display3DSize.x, m_display3DSize.y);
 	glBindVertexArray(m_VAO);
@@ -1138,7 +1142,8 @@ void kRender::renderLiveVideoWindow(bool useInfrared, int devNumber)
 
 	//MVP = m_projection * m_view * m_model_depth;
 	glUniformSubroutinesuiv(GL_VERTEX_SHADER, 1, &m_fromStandardTextureID);
-	glUniform1ui(m_renderOptionsID, m_renderOptions);
+	glUniform1ui(m_renderOptionsID, rightRenderOptions);
+	glUniform1f(m_sliceID, m_volumeSDFRenderSlice);
 	glUniformSubroutinesuiv(GL_FRAGMENT_SHADER, 1, &m_fromStandardFragmentID);
 	glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 

@@ -2,7 +2,7 @@
 
 layout(local_size_x = 32, local_size_y = 32) in; // 
 
-layout(binding = 0, rg16i) uniform iimage3D volumeData;
+layout(binding = 0, rgba16f) uniform image3D volumeData;
 layout(binding = 1, r32f) uniform image2D testImage;
 
 
@@ -41,7 +41,7 @@ void resetVolume()
     {
         for (int zDep = 0; zDep < volSize.z; zDep++)
         {
-            imageStore(volumeData, ivec3(pix.x, pix.y, zDep), ivec4(0));
+            imageStore(volumeData, ivec3(pix.x, pix.y, zDep), vec4(0));
         }
     }
 
