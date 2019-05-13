@@ -54,8 +54,7 @@ struct Camera
 bool inFrustrum(in vec4 pClip)
 {
     return abs(pClip.x) < pClip.w &&
-           abs(pClip.y) < pClip.w &&
-           abs(pClip.z) < pClip.w; 
+           abs(pClip.y) < pClip.w; 
 }
 
 subroutine(launchSubroutine)
@@ -77,13 +76,13 @@ void integrateExperimental()
     for (pix.z = 0; pix.z < volSize.z; pix.z++)
     {
         // get world position of voxel 
-        vec3 worldPos = vec3(vec4(getVolumePosition(pix), 1.0f)).xyz;
+        vec3 worldPos = vec3(itrack * vec4(getVolumePosition(pix), 1.0f)).xyz;
         // get clip position
         vec4 pClip = Kmat * vec4(worldPos, 1.0f);
         // check if in camera frustrum
         if (!inFrustrum(pClip))
         {
-            continue;
+            //continue;
         }
         // determin if valid pixel
         vec2 pixel = vec2(pClip.x / pClip.z, pClip.y / pClip.z);
@@ -100,7 +99,10 @@ void integrateExperimental()
             //continue;
         }
         // get distance from voxel to depth
-        float diff = distance(depthPoint.xyz, worldPos);
+        //float diff = distance(depthPoint.xyz, worldPos);
+        vec3 shiftVec = depthPoint.xyz - worldPos;
+        float diff = length(shiftVec);
+        diff = shiftVec.z > 0.0 ? diff : -diff;
 
         // if diff within TSDF range, write to volume
         if (diff < deemax && diff > deemin)
@@ -115,7 +117,7 @@ void integrateExperimental()
             if (weightedDistance < 0.1f)
             {
                 data.x = clamp(weightedDistance, -0.04f, 0.1f);
-                // data.x = diff;
+                //data.x = diff;
                 data.y = min(data.y + 1, (maxWeight));
             }
             else

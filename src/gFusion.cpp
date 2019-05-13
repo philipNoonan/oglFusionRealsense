@@ -1660,7 +1660,7 @@ void gFusion::integrate(int devNumber)
 	glBeginQuery(GL_TIME_ELAPSED, query[2]);
 
 	integrateProg.use();
-	glUniformSubroutinesuiv(GL_COMPUTE_SHADER, 1, &m_integrateStandardID);
+	glUniformSubroutinesuiv(GL_COMPUTE_SHADER, 1, &m_integrateExperimentalID);
 
 	glm::mat4 d2d = (m_depthToDepth);
 
@@ -1673,6 +1673,8 @@ void gFusion::integrate(int devNumber)
 
 	glm::mat4 integratePose = glm::inverse(m_pose * d2d);
 	glm::mat4 K = GLHelper::getCameraMatrix(m_camPamsDepth[devNumber]); // make sure im set
+	glm::mat4 K0;
+	GLHelper::projectionFromIntrinsics(K0, m_camPamsDepth[devNumber].x, m_camPamsDepth[devNumber].y, 1.0, m_camPamsDepth[devNumber].y, m_camPamsDepth[devNumber].z, 848, 480, 0.001, 1000.0);
 
 	integratePose[3][3] = configuration.dMax;
 	integratePose[2][3] = configuration.dMin;
@@ -1683,6 +1685,14 @@ void gFusion::integrate(int devNumber)
 	glUniformMatrix4fv(m_invTrackID, 1, GL_FALSE, glm::value_ptr(integratePose));
 	glUniformMatrix4fv(m_KID, 1, GL_FALSE, glm::value_ptr(K));
 	glUniform1f(m_muID, configuration.mu);
+
+	//glm::vec4 volVox = glm::vec4(64.5 * 1.0 / 128.0, 64.5 * 1.0 / 128.0, 0.0, 1.0);
+
+	//glm::vec4 worldPos = m_pose * volVox;
+
+	//glm::vec4 clipPos = K0 * worldPos;
+
+	//std::cout << glm::to_string(clipPos) << std::endl;
 
 	//glUniform1i(m_cameraDeviceID_i, devNumber);
 	//glUniform1i(m_numberOfCamerasID_i, m_numberOfCameras);
