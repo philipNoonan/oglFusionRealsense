@@ -1194,40 +1194,27 @@ int main(int, char**)
 			frameReady = cameraInterface.collateFrames();
 		}
 
-		std::this_thread::sleep_for(std::chrono::milliseconds(30));
-
 		if (frameReady)
 		{
 			
 
 			gfusion.resetTimes();
 
-
-
 			//auto eTime = epchTime();
-
-
 			// THIS SHOULD ONLY BE COPIED WHENEVER THERES A NEW COLOR FRAME, NOT EVERY DEPTH FRAME
 			krender.setColorFrame(cameraInterface.getColorQueues(), cameraDevice, colMat);
 
 			krender.setInfraFrame(cameraInterface.getInfraQueues(), cameraDevice, infraMat);
 
-
-
 			//rs2::frame infraFrame;
-
 			//if (cameraInterface.getInfraQueues()[cameraDevice].poll_for_frame(&infraFrame))
 			//{
-
 			//
 			//	if (infraFrame != NULL)
 			//	{
 			//		cv::Mat infraMat = cv::Mat(depthFrameSize[0].y, depthFrameSize[0].x, CV_8UC1, (void*)infraFrame.get_data());
-
 			//		cv::imshow("col", infraMat);
 			//		cv::waitKey(1);
-
-
 			//	}
 			//}
 			if (!colMat.empty() && performAruco)
@@ -1296,14 +1283,12 @@ int main(int, char**)
 				{
 					gfusion.depthToVertex(cameraInterface.getDepthQueues(), i, iOff);
 					gfusion.vertexToNormal(i);
-
 				}
 			}
 			else
 			{
 				gfusion.depthToVertex(cameraInterface.getDepthQueues(), cameraDevice, iOff);
 				gfusion.vertexToNormal(cameraDevice);
-
 			}
 
 

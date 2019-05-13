@@ -77,7 +77,7 @@ struct gFusionConfig
 		normal_threshold = 0.8f;
 		iterations.push_back(2);
 		iterations.push_back(4);
-		//iterations.push_back(6);
+		iterations.push_back(6);
 		track_threshold = 0.5f;
 		depthFrameSize = glm::vec2(848, 480);
 		dMax = 0.1f;
