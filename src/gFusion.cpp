@@ -226,8 +226,8 @@ GLuint gFusion::createTexture(GLenum target, int levels, int w, int h, int d, GL
 
 	glTexParameteri(target, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 	glTexParameteri(target, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_NEAREST);
-	glTexParameteri(target, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-	glTexParameteri(target, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glTexParameteri(target, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
+	glTexParameteri(target, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
 
 	// https://stackoverflow.com/questions/15405869/is-gltexstorage2d-imperative-when-auto-generating-mipmaps
 	//glTexImage2D(target, 0, internalformat, w, h, 0, format, type, 0); // cretes mutable storage that requires glTexImage2D
@@ -243,9 +243,12 @@ GLuint gFusion::createTexture(GLenum target, int levels, int w, int h, int d, GL
 	}
 	else if (target == GL_TEXTURE_3D || d > 0)
 	{
-		glTexParameteri(target, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+		glTexParameteri(target, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_BORDER);
 		glTexStorage3D(target, levels, internalformat, w, h, d);
 	}
+
+	float color[] = { 0.0f, 0.0f, 0.0f, 0.0f };
+	glTexParameterfv(target, GL_TEXTURE_BORDER_COLOR, color);
 
 	return texid;
 }
@@ -1632,7 +1635,7 @@ void gFusion::integrate(bool forceIntegrate)
 	//{
 	glm::mat4 cameraPoses[4];
 	cameraPoses[0] = glm::inverse(m_pose);
-	cameraPoses[1] = glm::inverse(d2d);
+	cameraPoses[1] = glm::inverse(m_pose * d2d);
 
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D_ARRAY, m_textureDepthArray);
@@ -1708,16 +1711,16 @@ void gFusion::integrate(int devNumber)
 	}
 
 
-	glm::mat4 integratePose = glm::inverse(m_pose* d2d);
+	glm::mat4 integratePose = glm::inverse(m_pose * d2d);
 
-	glm::mat4 cameraPoses[4];
-	cameraPoses[0] = integratePose;
-	cameraPoses[1] = glm::inverse(d2d);
+	//glm::mat4 cameraPoses[4];
+	//cameraPoses[0] = integratePose;
+	//cameraPoses[1] = glm::inverse(d2d);
 
 
 
-	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 4, m_bufferCameraData); // this could just be uniform buffer rather than shader storage bufer
-	glBufferData(GL_SHADER_STORAGE_BUFFER, 4 * sizeof(glm::mat4), glm::value_ptr(cameraPoses[0]), GL_DYNAMIC_READ); // 4 x mat4
+	//glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 4, m_bufferCameraData); // this could just be uniform buffer rather than shader storage bufer
+	//glBufferData(GL_SHADER_STORAGE_BUFFER, 4 * sizeof(glm::mat4), glm::value_ptr(cameraPoses[0]), GL_DYNAMIC_READ); // 4 x mat4
 
 	
 
