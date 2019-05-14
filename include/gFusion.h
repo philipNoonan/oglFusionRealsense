@@ -419,6 +419,7 @@ private:
 	GLuint m_integrateExperimentalID;
 	GLuint m_invTrackID;
 	GLuint m_KID;
+	GLuint m_invKID_i;
 	GLuint m_muID;
 	GLuint m_maxWeightID;
 	GLuint m_volDimID;
@@ -430,6 +431,8 @@ private:
 	GLuint m_cameraDeviceID_i;
 	GLuint m_numberOfCamerasID_i;
 	GLuint m_forceIntegrateID;
+
+
 
 	// INTEGRTATE UB
 	unsigned int m_ub_integrateID;
@@ -498,6 +501,7 @@ private:
 	// TEXTURES
 	GLuint createTexture(GLenum target, int levels, int w, int h, int d, GLint internalformat);
 	GLuint m_textureColor;
+	GLuint m_textureDepthArray;
 	std::vector<GLuint> m_textureDepth;
 	std::vector<GLuint> m_textureVertex;
 	std::vector<GLuint> m_textureNormal;
@@ -537,6 +541,9 @@ private:
 	GLuint m_bufferCompactedVoxelArray;
 	GLuint m_bufferPos;
 	GLuint m_bufferNorm;
+
+	GLuint m_bufferCameraData;
+
 
 	GLuint m_buffer_testInput;
 	GLuint m_buffer_testOutput;

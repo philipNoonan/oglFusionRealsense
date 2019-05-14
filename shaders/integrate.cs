@@ -8,11 +8,22 @@ layout(binding = 2, r16ui) uniform uimage2D depthImageShort;
 
 layout(binding = 3, rgba32f) uniform image2D depthVertexImage;
 
+
+layout(std430, binding = 4) buffer CameraData
+{
+    mat4 cameraMat [];
+};
+
+layout(binding = 0) uniform usampler2DArray depthTextureArray; // 
+
+
 uniform float dMax;
 uniform float dMin;
 
 uniform mat4 invTrack;
 uniform mat4 Kmat; 
+uniform mat4 invK;
+
 //uniform float mu; 
 uniform float maxWeight;
 uniform vec3 volDim; // vol dim real world span of the volume in meters
@@ -45,11 +56,7 @@ void setSDF(uvec3 pix, vec4 data)
 subroutine void launchSubroutine();
 subroutine uniform launchSubroutine integrateSubroutine;
 
-struct Camera
-{
-    vec4 camPosition;
-    vec4 camDirection;
-};
+
 
 bool inFrustrum(in vec4 pClip)
 {
@@ -73,30 +80,46 @@ void integrateExperimental()
     itrack[1][3] = 0.0f;
     itrack[0][3] = 0.0f;
 
+    mat4 trackMat = cameraMat[0];
+
+  
+
+       if (cameraDevice > 0)
+       {
+           trackMat = trackMat * cameraMat[cameraDevice]; 
+       }
+
     for (pix.z = 0; pix.z < volSize.z; pix.z++)
     {
-        // get world position of voxel 
-        vec3 worldPos = vec3(itrack * vec4(getVolumePosition(pix), 1.0f)).xyz;
-        // get clip position
-        vec4 pClip = Kmat * vec4(worldPos, 1.0f);
-        // check if in camera frustrum
-        if (!inFrustrum(pClip))
-        {
-            //continue;
-        }
-        // determin if valid pixel
-        vec2 pixel = vec2(pClip.x / pClip.z, pClip.y / pClip.z);
-        if (pixel.x < 0 || pixel.x > depthSize.x - 1 || pixel.y < 0 || pixel.y > depthSize.y - 1)
-        {
-            //continue;
-        }
-        // determine if valid depth
-        vec4 depthPoint = imageLoad(depthVertexImage, ivec2(pixel));
 
-        float depth = float(imageLoad(depthImageShort, ivec2(pixel)).x) * depthScale;
+        //for (int cameraDevice = 0; cameraDevice < numberOfCameras; cameraDevice++)
+        //{
+            // get world position of voxel 
+            vec3 worldPos = vec3(trackMat * vec4(getVolumePosition(pix), 1.0f)).xyz;
+            // get clip position
+            vec4 pClip = Kmat * vec4(worldPos, 1.0f);
+
+            // determin if valid pixel for each camera
+            vec2 pixel = vec2(pClip.x / pClip.z, pClip.y / pClip.z);
+            if (pixel.x < 0 || pixel.x > depthSize.x - 1 || pixel.y < 0 || pixel.y > depthSize.y - 1)
+            {
+                continue;
+            }
+        //}
+        // determine if valid depth
+        //vec4 depthPoint = imageLoad(depthVertexImage, ivec2(pixel));
+
+        float depth = float(texelFetch(depthTextureArray, ivec3(pixel.xy, cameraDevice), 0).x) * depthScale;
+
+        //float depth0 = float(imageLoad(depthImageShort, ivec2(pixel)).x) * depthScale;
+
+        //imageStore(volumeData, ivec3(pix), vec4(depth0,(depth), 0,1));
+
+        vec4 depthPoint = (depth) * (invK * vec4(pixel.x, pixel.y, 1.0f, 0.0f));
+
         if (depthPoint.z <= 0.0f)
         {
-            //continue;
+            continue;
         }
         // get distance from voxel to depth
         //float diff = distance(depthPoint.xyz, worldPos);
@@ -131,14 +154,16 @@ void integrateExperimental()
         }
         else
         {
+            //pix.z += 50; // need to be clever here, but this could work nicely woudl like to jump to just before the 
+
             vec4 data;// = vs(pix);
             data.x = 0;
             data.y = 0;
             imageStore(volumeData, ivec3(pix), data);
         }
     }
-    
 
+    
     //Camera cameraArray[numberOfCameras];
 
     //for (int i = 0; i < numberOfCameras; i++)

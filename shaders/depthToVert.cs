@@ -75,21 +75,21 @@ void main()
 
         vec4 tPos = (depth) * (invK * vec4(pix.x, pix.y, 1.0f, 0.0f));
 
-        float x = (pix.x - camPamsDepth.x) / camPamsDepth.z;
-        float y = (pix.y - camPamsDepth.y) / camPamsDepth.w;
+        //float x = (pix.x - camPamsDepth.x) / camPamsDepth.z;
+        //float y = (pix.y - camPamsDepth.y) / camPamsDepth.w;
 
 
         //vec3 tPos = depth * rotate(invK, vec3(pix.x, pix.y, 1.0f));
 
 
-        vec4 pointIn3D = vec4(x * depth, y * depth, depth, 1.0f);
+        //vec4 pointIn3D = vec4(x * depth, y * depth, depth, 1.0f);
 
 
         //vec3 colPixel = mat3(colorK) * tPos.xyz;
 
-        vec4 outPos = depthToDepth * vec4(tPos.xyz, 1.0f);
+        //vec4 outPos = depthToDepth * vec4(tPos.xyz, 1.0f);
 
-        imageStore(OutputImage, ivec2(pix.xy), vec4(outPos.xyz, 1.0f));
+        imageStore(OutputImage, ivec2(pix.xy), vec4(tPos.xyz, 1.0f));
 
 
 

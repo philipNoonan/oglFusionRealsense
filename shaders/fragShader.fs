@@ -71,7 +71,7 @@ vec4 fromStandardFragment()
 		vec4 tCol = texture(currentTextureNormal, vec2(TexCoord));
 		if (tCol.w > 0)
 		{
-			outColor = vec4(tCol.xy, -tCol.z, 1.0f);
+			outColor = mix(outColor, vec4(tCol.xy, -tCol.z, 1.0f), 0.5f);
 		}
 	}
 

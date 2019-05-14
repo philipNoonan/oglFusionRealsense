@@ -117,6 +117,7 @@ void gFusion::setLocations()
 
 	m_invTrackID = glGetUniformLocation(integrateProg.getHandle(), "invTrack");
 	m_KID = glGetUniformLocation(integrateProg.getHandle(), "Kmat");
+	m_invKID_i = glGetUniformLocation(integrateProg.getHandle(), "invK");
 	m_muID = glGetUniformLocation(integrateProg.getHandle(), "mu");
 	m_maxWeightID = glGetUniformLocation(integrateProg.getHandle(), "maxWeight");
 	m_volDimID = glGetUniformLocation(integrateProg.getHandle(), "volDim");
@@ -240,7 +241,7 @@ GLuint gFusion::createTexture(GLenum target, int levels, int w, int h, int d, GL
 		glTexStorage2D(target, levels, internalformat, w, h); // creates immutable storage and requires glTexSubImage2D
 
 	}
-	else if (target == GL_TEXTURE_3D)
+	else if (target == GL_TEXTURE_3D || d > 0)
 	{
 		glTexParameteri(target, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
 		glTexStorage3D(target, levels, internalformat, w, h, d);
@@ -273,6 +274,9 @@ void gFusion::initTextures()
 			m_textureTrackImage[i] = createTexture(GL_TEXTURE_2D, 1, configuration.depthFrameSize.x, configuration.depthFrameSize.y, 1, GL_RGBA32F);
 
 		}
+
+		m_textureDepthArray = createTexture(GL_TEXTURE_2D_ARRAY, 3, configuration.depthFrameSize.x, configuration.depthFrameSize.y, m_numberOfCameras, GL_R16UI);
+
 		// https://www.khronos.org/opengl/wiki/Normalized_Integer
 		// I think that we have to use normailsed images here, because we cannot use ints for mip maps, they just dont work
 	}
@@ -443,6 +447,9 @@ void gFusion::allocateBuffers()
 	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 13, m_bufferSDFoutputdata);
 	glBufferData(GL_SHADER_STORAGE_BUFFER, 32 * 8 * sizeof(float), NULL, GL_STATIC_DRAW);
 
+	glGenBuffers(1, &m_bufferCameraData);
+	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 4, m_bufferCameraData); // this could just be uniform buffer rather than shader storage bufer
+	glBufferData(GL_SHADER_STORAGE_BUFFER, 4 * 16 * sizeof(float), NULL, GL_DYNAMIC_READ); // 4 x mat4
 
 	// TESTS
 	glGenBuffers(1, &m_buffer_testInput);
@@ -672,6 +679,15 @@ void gFusion::depthToVertex(std::vector<rs2::frame_queue> depthQ, int devNumber,
 		glBindTexture(GL_TEXTURE_2D, m_textureDepth[devNumber]);
 		glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, configuration.depthFrameSize.x, configuration.depthFrameSize.y, GL_RED, GL_UNSIGNED_SHORT, depthFrame.get_data());
 		glGenerateMipmap(GL_TEXTURE_2D);
+
+		glActiveTexture(GL_TEXTURE1);
+		glBindTexture(GL_TEXTURE_2D_ARRAY, m_textureDepthArray);
+		glTexSubImage3D(GL_TEXTURE_2D_ARRAY, 0, 0, 0, devNumber, configuration.depthFrameSize.x, configuration.depthFrameSize.y, 1, GL_RED_INTEGER, GL_UNSIGNED_SHORT, depthFrame.get_data());
+
+		if (devNumber == 1)
+		{
+			glGenerateMipmap(GL_TEXTURE_2D_ARRAY);
+		}
 
 		if (m_clickedPoint)
 		{
@@ -1417,7 +1433,17 @@ void gFusion::trackSDF(int devNumber, int layer, Eigen::Matrix4f camToWorld)
 
 	// set uniforms
 	//glUniformMatrix4fv(m_TtrackID_t, 1, GL_FALSE, glm::value_ptr(m_pose));
-	glUniformMatrix4fv(m_TtrackID_t, 1, GL_FALSE, camToWorld.data());
+
+	glm::mat4 trackPose;
+	std::memcpy(glm::value_ptr(trackPose), camToWorld.data(), 16 * sizeof(float));
+
+
+	if (devNumber > 0)
+	{
+		trackPose = trackPose * m_depthToDepth;
+	}
+
+	glUniformMatrix4fv(m_TtrackID_t, 1, GL_FALSE, glm::value_ptr(trackPose));
 	glUniform2iv(m_imageSizeID_t_sdf, 1, glm::value_ptr(imageSize));
 	
 	glUniform1f(m_dMaxID_t, configuration.dMax);
@@ -1598,23 +1624,31 @@ void gFusion::integrate(bool forceIntegrate)
 {
 	glBeginQuery(GL_TIME_ELAPSED, query[2]);
 	integrateProg.use();
-	glUniformSubroutinesuiv(GL_COMPUTE_SHADER, 1, &m_integrateMultipleID);
+	glUniformSubroutinesuiv(GL_COMPUTE_SHADER, 1, &m_integrateExperimentalID);
 
 	glm::mat4 d2d = (m_depthToDepth);
 
-	for (int i = 0; i < m_numberOfCameras; i++)
-	{
-		if (i == 0)
-		{
-			d2d = glm::mat4(1.0f);
-		}
+	//for (int i = 0; i < m_numberOfCameras; i++)
+	//{
+	glm::mat4 cameraPoses[4];
+	cameraPoses[0] = glm::inverse(m_pose);
+	cameraPoses[1] = glm::inverse(d2d);
+
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D_ARRAY, m_textureDepthArray);
+
+	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 4, m_bufferCameraData); // this could just be uniform buffer rather than shader storage bufer
+	glBufferData(GL_SHADER_STORAGE_BUFFER, 4 * sizeof(glm::mat4), glm::value_ptr(cameraPoses[0]), GL_DYNAMIC_READ); // 4 x mat4
+
+
 
 		glm::mat4 integratePose = glm::inverse(m_pose * d2d);
-		glm::mat4 K = GLHelper::getCameraMatrix(m_camPamsDepth[i]); // make sure im set
+		glm::mat4 K = GLHelper::getCameraMatrix(m_camPamsDepth[0]); // make sure im set!!!!!!!!!!!!!!!!!!
+		glm::mat4 invK = GLHelper::getInverseCameraMatrix(m_camPamsDepth[0]);
 
 		integratePose[3][3] = configuration.dMax;
 		integratePose[2][3] = configuration.dMin;
-		integratePose[1][3] = i;
+		integratePose[1][3] = 0;
 		integratePose[0][3] = m_numberOfCameras;
 
 		// bind uniforms
@@ -1622,6 +1656,8 @@ void gFusion::integrate(bool forceIntegrate)
 		
 		glUniformMatrix4fv(m_invTrackID, 1, GL_FALSE, glm::value_ptr(integratePose));
 		glUniformMatrix4fv(m_KID, 1, GL_FALSE, glm::value_ptr(K));
+		glUniformMatrix4fv(m_invKID_i, 1, GL_FALSE, glm::value_ptr(invK));
+
 		glUniform1f(m_muID, configuration.mu);
 		//glUniform1i(m_cameraDeviceID_i, i);
 		//glUniform1i(m_numberOfCamerasID_i, m_numberOfCameras);
@@ -1637,9 +1673,9 @@ void gFusion::integrate(bool forceIntegrate)
 
 		glUniform1i(m_imageTypeID_i, 0); // image type 0 == short
 		glUniform1f(m_depthScaleID, m_depthUnit / 1000000.0f); // 1000 == each depth unit == 1 mm
-		glBindImageTexture(2, m_textureDepth[i], 0, GL_FALSE, 0, GL_READ_ONLY, GL_R16UI);
+		glBindImageTexture(2, m_textureDepth[0], 0, GL_FALSE, 0, GL_READ_ONLY, GL_R16UI);
 
-		glBindImageTexture(3, m_textureVertex[i], 0, GL_FALSE, 0, GL_READ_ONLY, GL_RGBA32F);
+		glBindImageTexture(3, m_textureVertex[0], 0, GL_FALSE, 0, GL_READ_ONLY, GL_RGBA32F);
 
 
 		int xWidth;
@@ -1649,7 +1685,7 @@ void gFusion::integrate(bool forceIntegrate)
 
 		glDispatchCompute(xWidth, yWidth, 1);
 		glMemoryBarrier(GL_ALL_BARRIER_BITS);
-	}
+	//}
 
 }
 
@@ -1660,7 +1696,7 @@ void gFusion::integrate(int devNumber)
 	glBeginQuery(GL_TIME_ELAPSED, query[2]);
 
 	integrateProg.use();
-	glUniformSubroutinesuiv(GL_COMPUTE_SHADER, 1, &m_integrateExperimentalID);
+	glUniformSubroutinesuiv(GL_COMPUTE_SHADER, 1, &m_integrateStandardID);
 
 	glm::mat4 d2d = (m_depthToDepth);
 
@@ -1671,7 +1707,21 @@ void gFusion::integrate(int devNumber)
 		d2d = glm::mat4(1.0f);
 	}
 
-	glm::mat4 integratePose = glm::inverse(m_pose * d2d);
+
+	glm::mat4 integratePose = glm::inverse(m_pose* d2d);
+
+	glm::mat4 cameraPoses[4];
+	cameraPoses[0] = integratePose;
+	cameraPoses[1] = glm::inverse(d2d);
+
+
+
+	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 4, m_bufferCameraData); // this could just be uniform buffer rather than shader storage bufer
+	glBufferData(GL_SHADER_STORAGE_BUFFER, 4 * sizeof(glm::mat4), glm::value_ptr(cameraPoses[0]), GL_DYNAMIC_READ); // 4 x mat4
+
+	
+
+
 	glm::mat4 K = GLHelper::getCameraMatrix(m_camPamsDepth[devNumber]); // make sure im set
 	glm::mat4 K0;
 	GLHelper::projectionFromIntrinsics(K0, m_camPamsDepth[devNumber].x, m_camPamsDepth[devNumber].y, 1.0, m_camPamsDepth[devNumber].y, m_camPamsDepth[devNumber].z, 848, 480, 0.001, 1000.0);
