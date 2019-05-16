@@ -391,6 +391,7 @@ private:
 	GLuint m_imSizeID;
 	GLuint m_depthScaleID; // remember to set me from main
 	GLuint m_depthRangeID;
+	GLuint m_cameraDeviceID;
 
 	GLuint m_renderOptionsID;
 

@@ -216,6 +216,7 @@ public:
 	void depthToVertex(uint16_t * depthArray);
 
 	void vertexToNormal(int devNumber);
+	void vertexToNormal();
 	bool Track();
 	bool TrackSDF();
 
@@ -235,6 +236,7 @@ public:
 	void trackSDF(int devNumber, int layer, Eigen::Matrix4f camToWorld);
 	void reduceSDF(int layer);
 	void getSDFReduction(std::vector<float>& b, std::vector<float>& C, float &alignmentEnergy);
+	void trackSDF(int layer, Eigen::Matrix4f camToWorld);
 
 	// tracking lost functions
 	void updatePoseFinder();
@@ -287,9 +289,9 @@ public:
 	//{
 	//	mcubeConfiguration = config;
 	//}
-	GLuint getDepthImage(int devNumber)
+	GLuint getDepthImage()
 	{
-		return m_textureDepth[devNumber];
+		return m_textureDepthArray;
 	}
 	GLuint getColorImage()
 	{
@@ -302,9 +304,10 @@ public:
 		//return m_textureReferenceVertex;
 
 	}
-	GLuint getNorms(int devNumber)
+	GLuint getNorms()
 	{
-		return m_textureNormal[devNumber];
+		return m_textureNormalArray;
+		//return m_textureNormal[devNumber];
 	}
 	GLuint getPVPNorms()
 	{
@@ -312,7 +315,7 @@ public:
 	}
 	GLuint getPVDNorms(int devNumber)
 	{
-		return m_textureSDFImage[devNumber];
+		return m_textureSDFImage;
 	}
 	GLuint getVertsMC()
 	{
@@ -402,6 +405,10 @@ private:
 	GLuint m_camPamsColorID;
 	GLuint m_imageTypeID;
 	GLuint m_depthScaleID;
+	GLuint m_numberOfCamerasID_d;
+	// vert to norm
+	GLuint m_numberOfCamerasID_v;
+
 	// track
 	GLuint m_viewID_t;
 	GLuint m_TtrackID;
@@ -483,7 +490,8 @@ private:
 	GLuint m_volSizeID_t;
 	GLuint m_cID;
 	GLuint m_epsID;
-
+	GLuint m_numberOfCamerasID_t;
+	GLuint m_mipLayerID_t;
 	// track sdf
 	GLuint m_imageSizeID_t_sdf;
 	//reduce sdf
@@ -499,13 +507,15 @@ private:
 	GLuint m_volSizeID_m;
 
 	// TEXTURES
-	GLuint createTexture(GLenum target, int levels, int w, int h, int d, GLint internalformat);
+	GLuint createTexture(GLenum target, int levels, int w, int h, int d, GLint internalformat, GLenum magFilter, GLenum minFilter);
 	GLuint m_textureColor;
 	GLuint m_textureDepthArray;
+	GLuint m_textureVertexArray;
+	GLuint m_textureNormalArray;
 	std::vector<GLuint> m_textureDepth;
 	std::vector<GLuint> m_textureVertex;
 	std::vector<GLuint> m_textureNormal;
-	std::vector<GLuint> m_textureSDFImage;
+	GLuint m_textureSDFImage;
 	std::vector<GLuint> m_textureTrackImage;
 
 	GLuint m_textureReferenceVertex;
@@ -543,7 +553,7 @@ private:
 	GLuint m_bufferNorm;
 
 	GLuint m_bufferCameraData;
-
+	GLuint m_bufferCameraData_i;
 
 	GLuint m_buffer_testInput;
 	GLuint m_buffer_testOutput;

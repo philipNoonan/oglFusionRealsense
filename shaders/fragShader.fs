@@ -1,8 +1,8 @@
 #version 430 core
 const float PI = 3.1415926535897932384626433832795f;
 
-layout (binding=0) uniform sampler2D currentTextureDepth;
-layout (binding=1) uniform sampler2D currentTextureNormal;
+layout (binding=0) uniform sampler2DArray currentTextureDepth;
+layout (binding=1) uniform sampler2DArray currentTextureNormal;
 layout (binding=2) uniform sampler2D currentTextureTrack;
 layout (binding=3) uniform sampler2D currentTextureFlow;
 layout (binding=4) uniform sampler2D currentTextureColor;
@@ -25,6 +25,8 @@ uniform vec3 ambient;
 uniform vec3 light;
 uniform float irLow = 0.0f;
 uniform float irHigh = 65536.0f;
+
+uniform int cameraDevice;
 
 uniform float slice;
 uniform float depthScale;
@@ -50,7 +52,7 @@ vec4 fromStandardFragment()
 
 	if (renderDepth == 1)
 	{
-		vec4 tColor = vec4(textureLod(currentTextureDepth, vec2(TexCoord), 0)) * 65535.0f;
+		vec4 tColor = vec4(textureLod(currentTextureDepth, vec3(TexCoord, cameraDevice), 0)) * 65535.0f;
 	    float depthVal = smoothstep(depthRange.x, depthRange.y, tColor.x * depthScale);
 
 		outColor = vec4(depthVal.xxx, 1.0f);
@@ -68,7 +70,7 @@ vec4 fromStandardFragment()
 
 	if (renderNormals == 1)
 	{
-		vec4 tCol = texture(currentTextureNormal, vec2(TexCoord));
+		vec4 tCol = textureLod(currentTextureNormal, vec3(TexCoord, cameraDevice), 0);
 		if (tCol.w > 0)
 		{
 			outColor = mix(outColor, vec4(tCol.xy, -tCol.z, 1.0f), 0.5f);
@@ -106,7 +108,7 @@ vec4 fromStandardFragment()
 subroutine(getColor)
 vec4 fromDepth()
 {
-	vec4 tColor = vec4(textureLod(currentTextureDepth, vec2(TexCoord), 0)) * 65535.0f;
+	vec4 tColor = vec4(textureLod(currentTextureDepth, vec3(TexCoord, 0), 0)) * 65535.0f;
 	//float outVal = smoothstep(0.0, 200000.0, float(tColor.x) * depthScale);
 	//return vec4((tColor.x * 100.0 / 1000000.0 - 0.15) / (0.2 - 0.15), (tColor.x  * 100.0 / 1000000.0 - 0.1) / (0.15 - 0.1),( tColor.x  * 100.0 / 1000000.0 - 0.2) / (0.3 - 0.2), 1.0f);
     float depthVal = smoothstep(depthRange.x, depthRange.y, tColor.x * depthScale);
@@ -121,13 +123,6 @@ vec4 fromColor()
 	return tColor.xyzw;
 }
 
-
-subroutine(getColor)
-vec4 fromRayNorm()
-{
-	vec4 tCol = texture(currentTextureNormal, vec2(TexCoord));
-	return vec4(tCol.xy, -tCol.z, tCol.w);
-}
 
 subroutine(getColor)
 vec4 fromTrack()

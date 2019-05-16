@@ -212,6 +212,7 @@ void kRender::setLocations()
 	m_imSizeID = glGetUniformLocation(renderProg.getHandle(), "imSize");
 	m_depthScaleID = glGetUniformLocation(renderProg.getHandle(), "depthScale");
 	m_depthRangeID = glGetUniformLocation(renderProg.getHandle(), "depthRange");
+	m_cameraDeviceID = glGetUniformLocation(renderProg.getHandle(), "cameraDevice");
 
 	m_renderOptionsID = glGetUniformLocation(renderProg.getHandle(), "renderOptions");
 
@@ -615,7 +616,7 @@ void kRender::bindTexturesForRendering()
 	if (m_showDepthFlag)
 	{
 		glActiveTexture(GL_TEXTURE0);
-		glBindTexture(GL_TEXTURE_2D, m_textureDepth);
+		glBindTexture(GL_TEXTURE_2D_ARRAY, m_textureDepth);
 	}
 
 	if (m_showNormalFlag)
@@ -628,12 +629,12 @@ void kRender::bindTexturesForRendering()
 		else if (m_usePVD)
 		{
 			glActiveTexture(GL_TEXTURE1);
-			glBindTexture(GL_TEXTURE_2D, m_texturePVDNormal);
+			glBindTexture(GL_TEXTURE_2D_ARRAY, m_texturePVDNormal);
 		}
 		else
 		{
 			glActiveTexture(GL_TEXTURE1);
-			glBindTexture(GL_TEXTURE_2D, m_textureNormal);
+			glBindTexture(GL_TEXTURE_2D_ARRAY, m_textureNormal);
 		}
 
 	}
@@ -1126,6 +1127,7 @@ void kRender::renderLiveVideoWindow(bool useInfrared, int devNumber)
 	glUniform2fv(m_imSizeID, 1, glm::value_ptr(imageSize));
 	glUniformSubroutinesuiv(GL_VERTEX_SHADER, 1, &m_fromStandardTextureID);
 	glUniform1ui(m_renderOptionsID, leftRenderOptions);
+	glUniform1i(m_cameraDeviceID, devNumber);
 	glUniform2fv(m_depthRangeID, 1, glm::value_ptr(depthRange));
 	glUniform1f(m_depthScaleID, 100.0f / 1000000.0f); // 1000 == each depth unit == 1 mm
 	glUniformSubroutinesuiv(GL_FRAGMENT_SHADER, 1, &m_fromStandardFragmentID);

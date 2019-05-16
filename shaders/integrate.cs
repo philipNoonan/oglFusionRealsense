@@ -9,12 +9,12 @@ layout(binding = 2, r16ui) uniform uimage2D depthImageShort;
 layout(binding = 3, rgba32f) uniform image2D depthVertexImage;
 
 
-layout(std430, binding = 4) buffer CameraData
+layout(std430, binding = 5) buffer CameraData
 {
     mat4 cameraMat [];
 };
 
-layout(binding = 0) uniform usampler2DArray depthTextureArray; // 
+layout(binding = 0) uniform sampler2DArray depthTextureArray; // 
 
 
 uniform float dMax;
@@ -88,7 +88,7 @@ void integrateExperimental()
 
     for (pix.z = 0; pix.z < volSize.z; pix.z++)
     {
-        for (int cameraDevice = 0; cameraDevice < 2; cameraDevice++)
+        for (int cameraDevice = 0; cameraDevice < numberOfCameras; cameraDevice++)
         {
 
             trackMat = cameraMat[cameraDevice];
@@ -106,12 +106,18 @@ void integrateExperimental()
                 continue;
             }
 
-            float depth = float(texelFetch(depthTextureArray, ivec3(pixel.xy, cameraDevice), 0).x) * depthScale;
+            float depth = float(texelFetch(depthTextureArray, ivec3(pixel.xy, cameraDevice), 0).x) * 65535.0f * 0.0001f; // this may be 65535
+
+            //if (depth != 0)
+            //{
+           //     imageStore(volumeData, ivec3(pix), vec4(0.1, 0.6, 0.9, 1.0f));
+            //}
             vec4 depthPoint = (depth) * (invK * vec4(pixel.x, pixel.y, 1.0f, 0.0f));
             if (depthPoint.z <= 0.0f)
             {
                 continue;
             }
+            //imageStore(volumeData, ivec3(pix), vec4(0.2, 0.3, 0.4, 1.0f));
 
             // if we get here, then the voxel is seen by this cameraDevice
             // determin best cameraDevice
