@@ -209,7 +209,7 @@ public:
 	// depth functions
 	void depthToVertex();
 	// combine multiple depth into one buffer of verts
-	void depthToVertex(std::vector<rs2::frame_queue> depthQ, glm::vec3 &point);
+	//void depthToVertex(std::vector<rs2::frame_queue> depthQ, glm::vec3 &point);
 	// backproject depth frame into vertex image
 	void depthToVertex(std::vector<rs2::frame_queue> depthQ, int devNumber, glm::vec3 &point);
 	void depthToVertex(float * depthArray);
@@ -297,9 +297,9 @@ public:
 	{
 		return m_textureColor;
 	}
-	GLuint getVerts(int devNumber)
+	GLuint getVerts()
 	{
-		return m_textureVertex[devNumber];
+		return m_textureVertex;
 
 		//return m_textureReferenceVertex;
 
@@ -313,7 +313,7 @@ public:
 	{
 		return m_textureReferenceNormal;
 	}
-	GLuint getPVDNorms(int devNumber)
+	GLuint getPVDNorms()
 	{
 		return m_textureSDFImage;
 	}
@@ -329,9 +329,9 @@ public:
 	{
 		return m_textureVolume;
 	}
-	GLuint getTrackImage(int devNumber)
+	GLuint getTrackImage()
 	{
-		return m_textureTrackImage[devNumber];
+		return m_textureTrackImage;
 	}
 	size_t getNumVerts()
 	{
@@ -513,10 +513,10 @@ private:
 	GLuint m_textureVertexArray;
 	GLuint m_textureNormalArray;
 	std::vector<GLuint> m_textureDepth;
-	std::vector<GLuint> m_textureVertex;
+	GLuint m_textureVertex;
 	std::vector<GLuint> m_textureNormal;
 	GLuint m_textureSDFImage;
-	std::vector<GLuint> m_textureTrackImage;
+	GLuint m_textureTrackImage;
 
 	GLuint m_textureReferenceVertex;
 	GLuint m_textureReferenceNormal;

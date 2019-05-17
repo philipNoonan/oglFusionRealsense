@@ -65,7 +65,7 @@ void kRenderInit()
 	krender.setLocations();
 	krender.setVertPositions();
 	krender.allocateBuffers();
-	krender.setTextures(gfusion.getDepthImage(), gflow.getColorTexture(), gfusion.getVerts(0), gfusion.getNorms(), gfusion.getVolume(), gfusion.getTrackImage(0), gfusion.getPVPNorms(), gfusion.getPVDNorms(0)); //needs texture uints from gfusion init
+	krender.setTextures(gfusion.getDepthImage(), gflow.getColorTexture(), gfusion.getVerts(), gfusion.getNorms(), gfusion.getVolume(), gfusion.getTrackImage(), gfusion.getPVPNorms(), gfusion.getPVDNorms()); //needs texture uints from gfusion init
 	krender.anchorMW(std::make_pair<int, int>(1920 - 512 - krender.guiPadding().first, krender.guiPadding().second));
 
 	krender.setFusionType(trackDepthToPoint, trackDepthToVolume);
@@ -768,7 +768,7 @@ void setUI()
 					krender.setFloodTexture(gflood.getFloodOutputTexture());
 					//krender.setFloodTexture(gflood.getFloodSDFTexture());
 
-					gflood.setVertices(gfusion.getVerts(cameraDevice));
+					gflood.setVertices(gfusion.getVerts());
 					gflood.setNormals(gfusion.getNorms());
 
 				}
@@ -1281,7 +1281,7 @@ int main(int, char**)
 			//{
 				//for (int i = 0; i < numberOfCameras; i++)
 				//{
-					gfusion.depthToVertex(cameraInterface.getDepthQueues(), iOff);
+					gfusion.depthToVertex(cameraInterface.getDepthQueues(), cameraDevice, iOff);
 					gfusion.vertexToNormal();
 				//}
 			//
@@ -1419,7 +1419,7 @@ int main(int, char**)
 		if (cameraRunning)
 		{
 			krender.setProjectionMatrix(cameraDevice);
-			krender.setTextures(gfusion.getDepthImage(), gflow.getColorTexture(), gfusion.getVerts(cameraDevice), gfusion.getNorms(), gfusion.getVolume(), gfusion.getTrackImage(cameraDevice), gfusion.getPVPNorms(), gfusion.getPVDNorms(cameraDevice)); //needs texture uints from gfusion init
+			krender.setTextures(gfusion.getDepthImage(), gflow.getColorTexture(), gfusion.getVerts(), gfusion.getNorms(), gfusion.getVolume(), gfusion.getTrackImage(), gfusion.getPVPNorms(), gfusion.getPVDNorms()); //needs texture uints from gfusion init
 
 			krender.setDisplayOriSize(display2DWindow.x, display_h - display2DWindow.y - display2DWindow.h, display2DWindow.w, display2DWindow.h);
 			krender.set3DDisplayOriSize(display3DWindow.x, display_h - display3DWindow.y - display3DWindow.h, display3DWindow.w, display3DWindow.h);

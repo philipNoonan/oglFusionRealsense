@@ -47,12 +47,6 @@ vec4 getSDF(uvec3 pos)
     return imageLoad(volumeData, ivec3(pos));
 }
 
-void setSDF(uvec3 pix, vec4 data)
-{
-    imageStore(volumeData, ivec3(pix), data);
-}
-
-
 subroutine void launchSubroutine();
 subroutine uniform launchSubroutine integrateSubroutine;
 
@@ -88,7 +82,7 @@ void integrateExperimental()
 
     for (pix.z = 0; pix.z < volSize.z; pix.z++)
     {
-        for (int cameraDevice = 0; cameraDevice < numberOfCameras; cameraDevice++)
+        for (int cameraDevice = 0; cameraDevice < 2; cameraDevice++)
         {
 
             trackMat = cameraMat[cameraDevice];
@@ -103,6 +97,7 @@ void integrateExperimental()
             // if we dont check if we hit the image here and just assume that if pixel is out of bounds the resultant texture read will be zero
             if (pixel.x < 0 || pixel.x > depthSize.x - 1 || pixel.y < 0 || pixel.y > depthSize.y - 1)
             {
+                diff[cameraDevice] = -10000.0f;
                 continue;
             }
 
@@ -115,6 +110,7 @@ void integrateExperimental()
             vec4 depthPoint = (depth) * (invK * vec4(pixel.x, pixel.y, 1.0f, 0.0f));
             if (depthPoint.z <= 0.0f)
             {
+                diff[cameraDevice] = -10000.0f;
                 continue;
             }
             //imageStore(volumeData, ivec3(pix), vec4(0.2, 0.3, 0.4, 1.0f));
@@ -130,19 +126,20 @@ void integrateExperimental()
         float finalDiff = 10000.0f;
         for (int cameraDevice = 0; cameraDevice < numberOfCameras; cameraDevice++)
         {
-            if (abs(diff[cameraDevice]) > 0)
+            if (diff[cameraDevice] != 10000.0f)
             {
                 finalDiff = abs(diff[cameraDevice]) < abs(finalDiff) ? diff[cameraDevice] : finalDiff;
             }
         }
 
+        //finalDiff = diff[0];
 
         // get distance from voxel to depth
         //float diff = distance(depthPoint.xyz, worldPos);
 
 
         // if diff within TSDF range, write to volume
-        if (finalDiff < deemax && finalDiff > deemin)
+        if (finalDiff < 0.1f && finalDiff > -0.04f)
         {
             //if ((diff) < 0.1)
             //{
@@ -159,8 +156,8 @@ void integrateExperimental()
             }
             else
             {
-              //  data.x = 0;
-             //   data.y = 0;
+                data.x = 0;
+                data.y = 0;
             }
 
             imageStore(volumeData, ivec3(pix), data);
@@ -169,11 +166,8 @@ void integrateExperimental()
         else
         {
             //pix.z += 50; // need to be clever here, but this could work nicely woudl like to jump to just before the 
+            imageStore(volumeData, ivec3(pix), vec4(0.0f));
 
-           // vec4 data;// = vs(pix);
-           // data.x = 0;
-           // data.y = 0;
-           // imageStore(volumeData, ivec3(pix), data);
         }
     }
 
@@ -281,10 +275,8 @@ void integrateStandard()
         }
         else
         {
-            vec4 data;// = vs(pix);
-            data.x = 0;
-            data.y = 0;
-            setSDF(pix, data);
+            imageStore(volumeData, ivec3(pix), vec4(0.0f));
+
         }
     }
 }
@@ -302,158 +294,146 @@ void fuse(in vec4 previousTSDF, in vec4 currentTSDF, out vec4 outputTSDF)
     }
 }
 
-subroutine(launchSubroutine)
-void integrateMultiple()
-{
-    ivec2 depthSize;
-    if (imageType == 0)
-    {
-        depthSize = ivec2(imageSize(depthImageShort).xy);
-    }
-    else
-    {
-        depthSize = ivec2(imageSize(depthImage).xy);
-    }
-    uvec3 pix = gl_GlobalInvocationID.xyz;
+//subroutine(launchSubroutine)
+//void integrateMultiple()
+//{
+//    ivec2 depthSize;
+//    if (imageType == 0)
+//    {
+//        depthSize = ivec2(imageSize(depthImageShort).xy);
+//    }
+//    else
+//    {
+//        depthSize = ivec2(imageSize(depthImage).xy);
+//    }
+//    uvec3 pix = gl_GlobalInvocationID.xyz;
 
-    float deemax = invTrack[3][3];
-    float deemin = invTrack[2][3];
-    int cameraDevice = int(invTrack[1][3]);
-    int numberOfCameras = int(invTrack[0][3]);
+//    float deemax = invTrack[3][3];
+//    float deemin = invTrack[2][3];
+//    int cameraDevice = int(invTrack[1][3]);
+//    int numberOfCameras = int(invTrack[0][3]);
 
-    mat4 itrack = invTrack;
-    itrack[3][3] = 1.0f;
-    itrack[2][3] = 0.0f;
-    itrack[1][3] = 0.0f;
-    itrack[0][3] = 0.0f;
+//    mat4 itrack = invTrack;
+//    itrack[3][3] = 1.0f;
+//    itrack[2][3] = 0.0f;
+//    itrack[1][3] = 0.0f;
+//    itrack[0][3] = 0.0f;
 
-    vec3 pos = vec3(itrack * vec4(getVolumePosition(pix), 1.0f)).xyz;
-    vec3 cameraX = vec3(Kmat * vec4(pos, 1.0f)).xyz;
-    vec3 delta = vec3(itrack * vec4(0.0f, 0.0f, volDim.z / volSize.z, 0.0f)).xyz;
-    vec3 cameraDelta = vec3(Kmat * vec4(delta, 0.0f)).xyz;
-
-
-    for (pix.z = 0; pix.z < volSize.z; ++pix.z, pos += delta, cameraX += cameraDelta)
-    {
-        if (pos.z < 0.0001f)
-            continue;
-
-        vec2 pixel = vec2(cameraX.x / cameraX.z, cameraX.y / cameraX.z);
-
-        if (pixel.x < 0 || pixel.x > depthSize.x - 1 || pixel.y < 0 || pixel.y > depthSize.y - 1)
-            continue;
-
-        uvec2 px = uvec2(pixel.x, pixel.y);
-
-        float depth;
-        if (imageType == 0)
-        {
-            depth = float(imageLoad(depthImageShort, ivec2(px)).x) * depthScale;
-        }
-        else if (imageType == 1)
-        {
-            depth = imageLoad(depthImage, ivec2(px)).x / 1000.0f; // chnage me to whatever float type images have scales, if they do
-        }
-
-        if (depth.x == 0)
-            continue;
-
-        float diff = (depth.x - cameraX.z) * sqrt(1 + pow(pos.x / pos.z, 2) + pow(pos.y / pos.z, 2));
-
-        if (diff < deemax && diff > deemin)
-        {
-            // data.x is the global sdf
-            // data.y is the weight
-            // data.z is the cumfused sdf
-            // data.w is the cumfused weight
-
-            // FUSE and output to correct volume chanel
+//    vec3 pos = vec3(itrack * vec4(getVolumePosition(pix), 1.0f)).xyz;
+//    vec3 cameraX = vec3(Kmat * vec4(pos, 1.0f)).xyz;
+//    vec3 delta = vec3(itrack * vec4(0.0f, 0.0f, volDim.z / volSize.z, 0.0f)).xyz;
+//    vec3 cameraDelta = vec3(Kmat * vec4(delta, 0.0f)).xyz;
 
 
-            // we read from the global and fuse to the cumfused
-            vec4 data = imageLoad(volumeData, ivec3(pos));
+//    for (pix.z = 0; pix.z < volSize.z; ++pix.z, pos += delta, cameraX += cameraDelta)
+//    {
+//        if (pos.z < 0.0001f)
+//            continue;
 
-            vec4 currentData;
-            vec4 outputData;
+//        vec2 pixel = vec2(cameraX.x / cameraX.z, cameraX.y / cameraX.z);
 
-            float weightedDistance = (data.y * data.x + diff) / (data.y + 1);
+//        if (pixel.x < 0 || pixel.x > depthSize.x - 1 || pixel.y < 0 || pixel.y > depthSize.y - 1)
+//            continue;
 
-            if (weightedDistance < 0.1f)
-            {
-                currentData.x = clamp(weightedDistance, -0.04f, 0.1f);
-                //if (cameraDevice == 0)
-                //{
-                    currentData.y = min(data.y + 1, (maxWeight));
-                //}
-                //else
-                //{
-                //    currentData.y = min(data.w + 1, (maxWeight));
-                //}
-            }
-            else
-            {
-                currentData.x = 12345; // some large number
-                currentData.y = 54321;
-            }
+//        uvec2 px = uvec2(pixel.x, pixel.y);
 
-            if (forceIntegrate == 1)
-            {
-                // need to fuse, even here
+//        float depth;
+//        if (imageType == 0)
+//        {
+//            depth = float(imageLoad(depthImageShort, ivec2(px)).x) * depthScale;
+//        }
+//        else if (imageType == 1)
+//        {
+//            depth = imageLoad(depthImage, ivec2(px)).x / 1000.0f; // chnage me to whatever float type images have scales, if they do
+//        }
+
+//        if (depth.x == 0)
+//            continue;
+
+//        float diff = (depth.x - cameraX.z) * sqrt(1 + pow(pos.x / pos.z, 2) + pow(pos.y / pos.z, 2));
+
+//        if (diff < deemax && diff > deemin)
+//        {
+
+//            // we read from the global and fuse to the cumfused
+//            vec4 data = imageLoad(volumeData, ivec3(pos));
+
+//            vec4 currentData;
+//            vec4 outputData;
+
+//            float weightedDistance = (data.y * data.x + diff) / (data.y + 1);
+
+//            if (weightedDistance < 0.1f)
+//            {
+//                currentData.x = clamp(weightedDistance, -0.04f, 0.1f);
+//                //if (cameraDevice == 0)
+//                //{
+//                    currentData.y = min(data.y + 1, (maxWeight));
+//                //}
+//                //else
+//                //{
+//                //    currentData.y = min(data.w + 1, (maxWeight));
+//                //}
+//            }
+//            else
+//            {
+//                currentData.x = 0; // some large number
+//                currentData.y = 0;
+//            }
+
+//            if (forceIntegrate == 1)
+//            {
+//                // need to fuse, even here
 
 
-                if (cameraDevice == 0)
-                {
-                    outputData = vec4(0, 0, currentData.x, currentData.y);
-                }
-                else
-                {
-                    vec4 tempData;
-                    fuse(data, currentData, tempData);
-                    outputData = vec4(tempData.zw, 0, 0);
-                }
+//                if (cameraDevice == 0)
+//                {
+//                    outputData = vec4(0, 0, currentData.x, currentData.y);
+//                }
+//                else
+//                {
+//                    vec4 tempData;
+//                    fuse(data, currentData, tempData);
+//                    outputData = vec4(tempData.zw, 0, 0);
+//                }
 
-            }
-            else
-            {
-                if (cameraDevice < (numberOfCameras - 1))
-                {
-                    if (cameraDevice == 0) // first camera, nothing to fuse against
-                    {
-                        outputData = vec4(data.x, data.y, currentData.x, currentData.y);
-                    }
-                    else
-                    {
-                        // fuse
-                        fuse(data, currentData, outputData);
-                    }
-                }
-                else // final camera for this frame
-                {
-                    // we read from the global, fuse to the cumfused, then overwrite the gloabl with the cumfused
-                    if (abs(data.z) > 0.0f && abs(currentData.x) < abs(data.z))
-                    {
-                        outputData = vec4(data.x, data.y, currentData.x, currentData.y);
-                    }
+//            }
+//            else
+//            {
+//                if (cameraDevice < (numberOfCameras - 1))
+//                {
+//                    if (cameraDevice == 0) // first camera, nothing to fuse against
+//                    {
+//                        outputData = vec4(data.x, data.y, currentData.x, currentData.y);
+//                    }
+//                    else
+//                    {
+//                        // fuse
+//                        fuse(data, currentData, outputData);
+//                    }
+//                }
+//                else // final camera for this frame
+//                {
+//                    // we read from the global, fuse to the cumfused, then overwrite the gloabl with the cumfused
+//                    if (abs(data.z) > 0.0f && abs(currentData.x) < abs(data.z))
+//                    {
+//                        outputData = vec4(data.x, data.y, currentData.x, currentData.y);
+//                    }
 
-                    outputData = vec4(currentData.x, currentData.y, 0, 0); //numberOfCameras swapping happens
-                }
-            }
+//                    outputData = vec4(currentData.x, currentData.y, 0, 0); //numberOfCameras swapping happens
+//                }
+//            }
             
 
-            imageStore(volumeData, ivec3(pix), outputData);
+//            imageStore(volumeData, ivec3(pix), outputData);
+//        }
+//        else
+//        {
+//            imageStore(volumeData, ivec3(pix), vec4(0.0f));
+//        }
+//    }
 
-            //setSDF(pix, data);
-        }
-        else
-        {
-            //vec4 data;// = vs(pix);
-            //data.x = 0;
-           // data.y = 0;
-           // setSDF(pix, data);
-        }
-    }
-
-}
+//}
 
 void main()
 {

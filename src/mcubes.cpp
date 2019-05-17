@@ -218,7 +218,7 @@ void MCubes::histoPyramids()
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_3D, m_textureHistoPyramid);
 
-	glActiveTexture(GL_TEXTURE7);
+	glActiveTexture(GL_TEXTURE1);
 	glBindTexture(GL_TEXTURE_3D, m_textureVolume);
 
 	glActiveTexture(GL_TEXTURE3);
@@ -239,7 +239,7 @@ void MCubes::histoPyramids()
 
 	glUniformSubroutinesuiv(GL_COMPUTE_SHADER, 1, &m_classifyCubesID);
 	glUniform1f(m_isoLevelID, m_isoLevel);
-	glUniform1f(m_volumeTypeID, 1);
+	glUniform1f(m_volumeTypeID, 0);
 
 	glDispatchCompute(nthreads.x, nthreads.y, nthreads.z);
 	glMemoryBarrier(GL_ALL_BARRIER_BITS);
@@ -299,7 +299,7 @@ void MCubes::histoPyramids()
 	glBindTexture(GL_TEXTURE_3D, 0);
 	//
 
-	//std::cout << "num of triangles " << sumData[0] << std::endl;
+	std::cout << "num of triangles " << sumData[0] << std::endl;
 
 	m_totalSum = sumData[0] * 3; // total num verts
 

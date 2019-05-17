@@ -9,7 +9,7 @@ layout(binding = 2) uniform sampler2DArray normalTextureArray;
 // bind images
 layout(binding = 0, rgba16f) uniform image3D volumeData;
 layout(binding = 1, rgba32f) uniform image2DArray SDFImage;
-layout(binding = 2, rgba32f) uniform image2D trackImage;
+layout(binding = 2, rgba32f) uniform image2DArray trackImage;
 
 layout(std430, binding = 4) buffer CameraData
 {
@@ -172,11 +172,11 @@ void main()
     uvec2 pix = gl_GlobalInvocationID.xy;
 
 
-    imageStore(trackImage, ivec2(pix), vec4(0.0f, 0.0, 0.0, 1.0));
 
     for (int camera = 0; camera < numberOfCameras; camera++)
     { 
         imageStore(SDFImage, ivec3(pix, camera), vec4(0.0f, 0.0f, 0.0, 1.0));
+        imageStore(trackImage, ivec3(pix, camera), vec4(0.0f, 0.0, 0.0, 1.0));
 
         uint offset = uint(camera * imageSize.x * imageSize.y);
 
@@ -190,7 +190,7 @@ void main()
             if (normals.x == 2)
             {
                 trackOutput[offset + ((pix.y * imageSize.x) + pix.x)].result = -4;
-                imageStore(trackImage, ivec2(pix), vec4(0, 0, 0, 0));
+                imageStore(trackImage, ivec3(pix, camera), vec4(0, 0, 0, 0));
 
             }
             else
@@ -215,7 +215,7 @@ void main()
                 if (any(lessThan(cvp, vec3(0.0f))) || any(greaterThan(cvp, volSize)))
                 {
                     //imageStore(testImage, ivec2(pix), vec4(0.5f));
-                    imageStore(trackImage, ivec2(pix), vec4(0.0f, 0.0f, 1.0, 1.0f));
+                    imageStore(trackImage, ivec3(pix, camera), vec4(0.0f, 0.0f, 1.0, 1.0f));
                     trackOutput[offset + ((pix.y * imageSize.x) + pix.x)].result = -4;
 
                     continue;
@@ -241,7 +241,7 @@ void main()
 
                 if (dot(dSDF_dx, rotatedNormal) < 0.8 && !any(equal(dSDF_dx, vec3(0.0f))))
                 {
-                    imageStore(trackImage, ivec2(pix), vec4(1.0f, 1.0f, 0, 1.0f));
+                    imageStore(trackImage, ivec3(pix, camera), vec4(1.0f, 1.0f, 0, 1.0f));
 
                     trackOutput[offset + ((pix.y * imageSize.x) + pix.x)].result = -4;
 
@@ -261,7 +261,7 @@ void main()
                 if (any(equal(dSDF_dx, vec3(-2.0f))))
                 {
                     trackOutput[offset + ((pix.y * imageSize.x) + pix.x)].result = -4;
-                    imageStore(trackImage, ivec2(pix), vec4(1.0f, 0.0f, 0, 1.0f));
+                    imageStore(trackImage, ivec3(pix, camera), vec4(1.0f, 0.0f, 0, 1.0f));
 
                     continue;
                 }
@@ -296,7 +296,7 @@ void main()
                 trackOutput[offset + ((pix.y * imageSize.x) + pix.x)].D = D;
                 trackOutput[offset + ((pix.y * imageSize.x) + pix.x)].J = J;
 
-                imageStore(trackImage, ivec2(pix), vec4(0.5f, 0.5f, 0.5f, 1.0f));
+                imageStore(trackImage, ivec3(pix, camera), vec4(0.5f, 0.5f, 0.5f, 1.0f));
 
                
             }
@@ -305,7 +305,7 @@ void main()
                   // imageStore(testImage, ivec2(pix), vec4(0,0,0, 1.0f));
 
                // imageStore(testImage, ivec2(pix), vec4(0.0f, 1.0f, 0.0f, 1.0f));
-                imageStore(trackImage, ivec2(pix), vec4(0.0, 0.0, 0.0f, 1.0f));
+                imageStore(trackImage, ivec3(pix, camera), vec4(0.0, 0.0, 0.0f, 1.0f));
 
                 float J0[6] = { 0, 0, 0, 0, 0, 0 };
                 trackOutput[offset + ((pix.y * imageSize.x) + pix.x)].result = -4;

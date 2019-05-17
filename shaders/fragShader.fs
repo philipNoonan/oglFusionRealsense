@@ -3,7 +3,7 @@ const float PI = 3.1415926535897932384626433832795f;
 
 layout (binding=0) uniform sampler2DArray currentTextureDepth;
 layout (binding=1) uniform sampler2DArray currentTextureNormal;
-layout (binding=2) uniform sampler2D currentTextureTrack;
+layout (binding=2) uniform sampler2DArray currentTextureTrack;
 layout (binding=3) uniform sampler2D currentTextureFlow;
 layout (binding=4) uniform sampler2D currentTextureColor;
 layout (binding=5) uniform sampler2D currentTextureInfra;
@@ -79,7 +79,7 @@ vec4 fromStandardFragment()
 
 	if (renderTrack == 1)
 	{
-		vec4 tCol = texture(currentTextureTrack, vec2(TexCoord));
+		vec4 tCol = texture(currentTextureTrack, vec3(TexCoord, cameraDevice));
 		if (tCol.w > 0)
 		{
 			outColor = vec4(tCol.xyz, 1.0f);
@@ -123,13 +123,6 @@ vec4 fromColor()
 	return tColor.xyzw;
 }
 
-
-subroutine(getColor)
-vec4 fromTrack()
-{
-	vec4 tCol = texture(currentTextureTrack, vec2(TexCoord));
-	return vec4(tCol);
-}
 
 
 subroutine(getColor)

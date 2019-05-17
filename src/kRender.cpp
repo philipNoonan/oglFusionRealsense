@@ -643,7 +643,7 @@ void kRender::bindTexturesForRendering()
 	if (m_showTrackFlag)
 	{
 		glActiveTexture(GL_TEXTURE2);
-		glBindTexture(GL_TEXTURE_2D, m_textureTrack);
+		glBindTexture(GL_TEXTURE_2D_ARRAY, m_textureTrack);
 
 	}
 

@@ -270,11 +270,11 @@ void gFusion::initTextures()
 	}
 	else
 	{
-		m_textureDepth.resize(m_numberOfCameras);
-		m_textureVertex.resize(m_numberOfCameras);
-		m_textureNormal.resize(m_numberOfCameras);
+		//m_textureDepth.resize(m_numberOfCameras);
+		//m_textureVertex.resize(m_numberOfCameras);
+		//m_textureNormal.resize(m_numberOfCameras);
 		//m_textureSDFImage.resize(m_numberOfCameras);
-		m_textureTrackImage.resize(m_numberOfCameras);
+		//m_textureTrackImage.resize(m_numberOfCameras);
 		// make these a 3d texture of depth
 		for (int i = 0; i < m_numberOfCameras; i++)
 		{
@@ -283,7 +283,7 @@ void gFusion::initTextures()
 			//m_textureNormal[i] = createTexture(GL_TEXTURE_2D, 3, configuration.depthFrameSize.x, configuration.depthFrameSize.y, 1, GL_RGBA32F);
 
 			//m_textureSDFImage[i] = createTexture(GL_TEXTURE_2D, 1, configuration.depthFrameSize.x, configuration.depthFrameSize.y, 1, GL_RGBA32F, GL_LINEAR, GL_LINEAR_MIPMAP_NEAREST);
-			m_textureTrackImage[i] = createTexture(GL_TEXTURE_2D, 1, configuration.depthFrameSize.x, configuration.depthFrameSize.y, 1, GL_RGBA32F, GL_LINEAR, GL_LINEAR_MIPMAP_NEAREST);
+			//m_textureTrackImage[i] = createTexture(GL_TEXTURE_2D, 1, configuration.depthFrameSize.x, configuration.depthFrameSize.y, 1, GL_RGBA32F, GL_LINEAR, GL_LINEAR_MIPMAP_NEAREST);
 
 		}
 
@@ -292,6 +292,7 @@ void gFusion::initTextures()
 		m_textureNormalArray = createTexture(GL_TEXTURE_2D_ARRAY, 3, configuration.depthFrameSize.x, configuration.depthFrameSize.y, m_numberOfCameras, GL_RGBA32F, GL_LINEAR, GL_LINEAR_MIPMAP_NEAREST);
 
 		m_textureSDFImage = createTexture(GL_TEXTURE_2D_ARRAY, 1, configuration.depthFrameSize.x, configuration.depthFrameSize.y, m_numberOfCameras, GL_RGBA32F, GL_LINEAR, GL_LINEAR_MIPMAP_NEAREST);
+		m_textureTrackImage = createTexture(GL_TEXTURE_2D_ARRAY, 1, configuration.depthFrameSize.x, configuration.depthFrameSize.y, m_numberOfCameras, GL_RGBA32F, GL_LINEAR, GL_LINEAR_MIPMAP_NEAREST);
 
 
 		// https://www.khronos.org/opengl/wiki/Normalized_Integer
@@ -683,7 +684,7 @@ void gFusion::depthToVertex(float * depthArray)
 
 }
 
-void gFusion::depthToVertex(std::vector<rs2::frame_queue> depthQ, glm::vec3 &point)
+void gFusion::depthToVertex(std::vector<rs2::frame_queue> depthQ, int devNumber, glm::vec3 &point)
 {
 	int compWidth;
 	int compHeight;
@@ -712,24 +713,52 @@ void gFusion::depthToVertex(std::vector<rs2::frame_queue> depthQ, glm::vec3 &poi
 
 	if (m_clickedPoint)
 	{
-		const uint16_t* p_depth_frame = reinterpret_cast<const uint16_t*>(depthFrame[0].get_data()); // FIXME SPECIFIC TO CAMERA 0
-		//float z = float(depthArray[pointY * depthWidth + pointX]) * (float)cameraInterface.getDepthUnit(cameraDevice) / 1000000.0f;
-		int depth_pixel_index = (m_pointY * configuration.depthFrameSize.x + m_pointX);
+		std::cout << "clicky pointy" << std::endl;
+		if (depthFrame[0] != NULL)
+		{
+			const uint16_t* p_depth_frame = reinterpret_cast<const uint16_t*>(depthFrame[0].get_data()); // FIXME SPECIFIC TO CAMERA 0
+//float z = float(depthArray[pointY * depthWidth + pointX]) * (float)cameraInterface.getDepthUnit(cameraDevice) / 1000000.0f;
+			int depth_pixel_index = (m_pointY * configuration.depthFrameSize.x + m_pointX);
 
-		glm::vec4 tempPoint(0.0f, 0.0f, 0.0f, 1.0f);
+			glm::vec4 tempPoint(0.0f, 0.0f, 0.0f, 1.0f);
 
-		tempPoint.z = p_depth_frame[depth_pixel_index] * (float)m_depthUnit / 1000000.0f;
-		//::cout << z << std::endl;
+			tempPoint.z = p_depth_frame[depth_pixel_index] * (float)m_depthUnit / 1000000.0f;
+			std::cout << tempPoint.z << std::endl;
 
 
 
-		//kcamera.fx(), kcamera.fx(), kcamera.ppx(), kcamera.ppy()
-		//std::cout << z << std::endl;
+			//kcamera.fx(), kcamera.fx(), kcamera.ppx(), kcamera.ppy()
+			//std::cout << z << std::endl;
 
-		tempPoint.x = (m_pointX - m_camPamsDepth[0].z) * (1.0f / m_camPamsDepth[0].x) * tempPoint.z; // HERE WE ONKLY ALLOW RESETNIG ON THE 0 camera
-		tempPoint.y = (m_pointY - m_camPamsDepth[0].w) * (1.0f / m_camPamsDepth[0].y) * tempPoint.z;
+			tempPoint.x = (m_pointX - m_camPamsDepth[devNumber].z) * (1.0f / m_camPamsDepth[devNumber].x) * tempPoint.z; // HERE WE ONKLY ALLOW RESETNIG ON THE 0 camera
+			tempPoint.y = (m_pointY - m_camPamsDepth[devNumber].w) * (1.0f / m_camPamsDepth[devNumber].y) * tempPoint.z;
 
-		m_clickedPoint = false;
+			m_clickedPoint = false;
+
+			if (devNumber == 0)
+			{
+				point.x = tempPoint.x;
+				point.y = tempPoint.y;
+				point.z = tempPoint.z;
+			}
+			else
+			{
+				glm::vec4 toutput = m_depthToDepth * tempPoint;
+				point.x = toutput.x;
+				point.y = toutput.y;
+				point.z = toutput.z;
+			}
+
+		}
+		else
+		{
+			m_clickedPoint = true;
+
+		}
+
+
+
+
 
 	}
 
@@ -762,226 +791,9 @@ void gFusion::depthToVertex(std::vector<rs2::frame_queue> depthQ, glm::vec3 &poi
 	glMemoryBarrier(GL_ALL_BARRIER_BITS);
 
 
-
-}
-
-void gFusion::depthToVertex(std::vector<rs2::frame_queue> depthQ, int devNumber, glm::vec3 &point)
-{
-	int compWidth;
-	int compHeight;
-
-	rs2::frame depthFrame;
-
-	if (depthQ[devNumber].poll_for_frame(&depthFrame))
-	{
-		glActiveTexture(GL_TEXTURE0);
-		glBindTexture(GL_TEXTURE_2D, m_textureDepth[devNumber]);
-		glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, configuration.depthFrameSize.x, configuration.depthFrameSize.y, GL_RED, GL_UNSIGNED_SHORT, depthFrame.get_data());
-		glGenerateMipmap(GL_TEXTURE_2D);
-
-		glActiveTexture(GL_TEXTURE1);
-		glBindTexture(GL_TEXTURE_2D_ARRAY, m_textureDepthArray);
-		glTexSubImage3D(GL_TEXTURE_2D_ARRAY, 0, 0, 0, devNumber, configuration.depthFrameSize.x, configuration.depthFrameSize.y, 1, GL_RED_INTEGER, GL_UNSIGNED_SHORT, depthFrame.get_data());
-
-		if (devNumber == 1)
-		{
-			glGenerateMipmap(GL_TEXTURE_2D_ARRAY);
-		}
-
-		if (m_clickedPoint)
-		{
-			const uint16_t* p_depth_frame = reinterpret_cast<const uint16_t*>(depthFrame.get_data());
-			//float z = float(depthArray[pointY * depthWidth + pointX]) * (float)cameraInterface.getDepthUnit(cameraDevice) / 1000000.0f;
-			int depth_pixel_index = (m_pointY * configuration.depthFrameSize.x + m_pointX);
-
-			glm::vec4 tempPoint(0.0f,0.0f,0.0f,1.0f);
-
-			tempPoint.z = p_depth_frame[depth_pixel_index] * (float)m_depthUnit / 1000000.0f;
-			//::cout << z << std::endl;
-
-
-
-			//kcamera.fx(), kcamera.fx(), kcamera.ppx(), kcamera.ppy()
-			//std::cout << z << std::endl;
-
-			tempPoint.x = (m_pointX - m_camPamsDepth[devNumber].z) * (1.0f / m_camPamsDepth[devNumber].x) * tempPoint.z;
-			tempPoint.y = (m_pointY - m_camPamsDepth[devNumber].w) * (1.0f / m_camPamsDepth[devNumber].y) * tempPoint.z;
-
-			if (devNumber == 0)
-			{
-				point.x = tempPoint.x;
-				point.y = tempPoint.y;
-				point.z = tempPoint.z;
-			}
-			else
-			{
-				glm::vec4 toutput = m_depthToDepth * tempPoint;
-				point.x = toutput.x;
-				point.y = toutput.y;
-				point.z = toutput.z;
-			}
-
-			m_clickedPoint = false;
-
-		}
-		
-
-
-
-	}
-
-	//std::vector<uint16_t> testvec(480 * 848 / 2, 10);
-
-
-	//glActiveTexture(GL_TEXTURE0);
-	//glBindTexture(GL_TEXTURE_2D, m_textureDepth);
-	//glGetTexImage(GL_TEXTURE_2D, 1, GL_RED, GL_UNSIGNED_SHORT, testvec.data());
-	//glBindTexture(GL_TEXTURE_2D, 0);
-	//
-
-	//cv::Mat lvl1d = cv::Mat(480 / 2, 848 / 2, CV_16SC1, testvec.data()); 
-	//cv::Mat converted;
-	//lvl1d.convertTo(converted, CV_32FC1);
-	//cv::imshow("lvl1!d", (converted * 100.0 / 1000000.0 - 0.1) / (0.2 - 0.1));
-
-	//std::cout << m_camPamsDepth[0] << " " << m_camPamsDepth[1]  << " " << m_camPamsDepth[2] << " " << m_camPamsDepth[3] << std::endl;
-	glm::mat4 d2d = m_depthToDepth;
-
-
-	
-	if (devNumber == 0)
-	{
-		d2d = glm::mat4(1.0f);
-	}
-
-
-
-	depthToVertProg.use();
-
-	for (int i = 0; i < 3; i++) // here 3 is the number of mipmap levels
-	{
-		compWidth = divup((int)configuration.depthFrameSize.x >> i, 32);
-		compHeight = divup((int)configuration.depthFrameSize.y >> i, 32);
-
-
-		glm::mat4 invK = GLHelper::getInverseCameraMatrix(m_camPamsDepth[devNumber] / float(1 << i));
-		glm::mat4 colorK = GLHelper::getCameraMatrix(m_camPamsColor[devNumber] / float(1 << i));
-		
-		//std::cout << "mip : " << i << " : " << glm::to_string(invK) << std::endl;
-
-
-		glBindImageTexture(1, m_textureDepth[devNumber], i, GL_FALSE, 0, GL_READ_ONLY, GL_R16UI);
-		glBindImageTexture(2, m_textureVertex[devNumber], i, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA32F);
-		glUniformMatrix4fv(m_invkID, 1, GL_FALSE, glm::value_ptr(invK));
-		glUniformMatrix4fv(m_colorKID, 1, GL_FALSE, glm::value_ptr(colorK));
-
-		glUniformMatrix4fv(m_extrinsicsID, 1, GL_FALSE, glm::value_ptr(d2d));
-
-		glm::vec4 adjCamPamsDepth = (m_camPamsDepth[devNumber] / float(1 << i));
-		glm::vec4 adjCamPamsColor = (m_camPamsColor[devNumber] / float(1 << i));
-
-		glUniform4fv(m_camPamsDepthID, 1, glm::value_ptr(adjCamPamsDepth));
-		glUniform4fv(m_camPamsColorID, 1, glm::value_ptr(adjCamPamsColor));
-
-		glUniform1i(m_imageTypeID, 0); // 0 == type short
-		glUniform1f(m_depthScaleID, m_depthUnit / 1000000.0f); // 1000 == each depth unit == 1 mm
-
-		glDispatchCompute(compWidth, compHeight, 1);
-		glMemoryBarrier(GL_ALL_BARRIER_BITS);
-	}
-
-	//std::vector<float> testvec(480 * 848, 10);
-
-
-	//glActiveTexture(GL_TEXTURE0);
-	//glBindTexture(GL_TEXTURE_2D, m_textureVertex);
-	//glGetTexImage(GL_TEXTURE_2D, 2, GL_RGBA, GL_FLOAT, testvec.data());
-	//glBindTexture(GL_TEXTURE_2D, 0);
-	//
-
-}
-
-void gFusion::depthToVertex(uint16_t * depthArray)
-{
-	//int compWidth;
-	//int compHeight;
-
-	//glActiveTexture(GL_TEXTURE0);
-	//glBindTexture(GL_TEXTURE_2D, m_textureDepth);
-	//if (depthArray != NULL) 
-	//{
-	//	glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, configuration.depthFrameSize.x, configuration.depthFrameSize.y, GL_RED, GL_UNSIGNED_SHORT, depthArray);
-	//}
-	//glGenerateMipmap(GL_TEXTURE_2D);
-
-	////std::vector<uint16_t> testvec(480 * 848 / 2, 10);
-
-
-	////glActiveTexture(GL_TEXTURE0);
-	////glBindTexture(GL_TEXTURE_2D, m_textureDepth);
-	////glGetTexImage(GL_TEXTURE_2D, 1, GL_RED, GL_UNSIGNED_SHORT, testvec.data());
-	////glBindTexture(GL_TEXTURE_2D, 0);
-	////
-
-	////cv::Mat lvl1d = cv::Mat(480 / 2, 848 / 2, CV_16SC1, testvec.data()); 
-	////cv::Mat converted;
-	////lvl1d.convertTo(converted, CV_32FC1);
-	////cv::imshow("lvl1!d", (converted * 100.0 / 1000000.0 - 0.1) / (0.2 - 0.1));
-
-
-
-	//depthToVertProg.use();
-
-	//for (int i = 0; i < 3; i++) // here 3 is the number of mipmap levels
-	//{
-	//	compWidth = divup((int)configuration.depthFrameSize.x >> i, 32);
-	//	compHeight = divup((int)configuration.depthFrameSize.y >> i, 32);
-	//	
-
-	//	glm::mat4 invK = GLHelper::getInverseCameraMatrix(m_camPamsDepth / float(1 << i));
-	//	glBindImageTexture(1, m_textureDepth, i, GL_FALSE, 0, GL_READ_ONLY, GL_R16UI);
-	//	glBindImageTexture(2, m_textureVertex, i, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA32F);
-	//	glUniformMatrix4fv(m_invkID, 1, GL_FALSE, glm::value_ptr(invK));
-	//	//glUniform4fv(m_camPamsID, 1, glm::value_ptr(m_camPamsDepth));
-	//	glUniform1i(m_imageTypeID, 0); // 0 == type short
-	//	glUniform1f(m_depthScaleID, m_depthUnit / 1000000.0f); // 1000 == each depth unit == 1 mm
-
-	//	glDispatchCompute(compWidth, compHeight, 1);
-	//	glMemoryBarrier(GL_ALL_BARRIER_BITS);
-	//}
-
-	////std::vector<float> testvec(480 * 848, 10);
-
-
-	////glActiveTexture(GL_TEXTURE0);
-	////glBindTexture(GL_TEXTURE_2D, m_textureVertex);
-	////glGetTexImage(GL_TEXTURE_2D, 2, GL_RGBA, GL_FLOAT, testvec.data());
-	////glBindTexture(GL_TEXTURE_2D, 0);
-	////
-
 }
 
 
-void gFusion::vertexToNormal(int devNumber)
-{
-	int compWidth;
-	int compHeight; 
-
-	vertToNormProg.use();
-
-	for (int i = 0; i < 3; i++) // here 3 is the number of mipmap levels
-	{
-		glBindImageTexture(0, m_textureVertex[devNumber], i, GL_FALSE, 0, GL_READ_WRITE, GL_RGBA32F);
-		glBindImageTexture(1, m_textureNormal[devNumber], i, GL_FALSE, 0, GL_READ_WRITE, GL_RGBA32F);
-
-		compWidth = divup((int)configuration.depthFrameSize.x >> i, 32);
-		compHeight = divup((int)configuration.depthFrameSize.y >> i, 32);
-
-		glDispatchCompute(compWidth, compHeight, 1);
-		glMemoryBarrier(GL_ALL_BARRIER_BITS);
-
-	}
-}
 
 void gFusion::vertexToNormal()
 {
@@ -1004,107 +816,6 @@ void gFusion::vertexToNormal()
 	glMemoryBarrier(GL_ALL_BARRIER_BITS);
 
 
-}
-
-void gFusion::showNormals(int devNumber)
-{
-#ifdef USE_OPENCV
-	cv::Mat lvl0 = cv::Mat(480, 848, CV_32FC4);
-	cv::Mat lvl1 = cv::Mat(480 / 2, 848 / 2, CV_32FC4);
-	cv::Mat lvl2 = cv::Mat(480 / 4, 848 / 4, CV_32FC4);
-
-	glActiveTexture(GL_TEXTURE0);
-	glBindTexture(GL_TEXTURE_2D, m_textureNormal[devNumber]);
-	glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_FLOAT, lvl0.data);
-	glGetTexImage(GL_TEXTURE_2D, 1, GL_RGBA, GL_FLOAT, lvl1.data);
-	glGetTexImage(GL_TEXTURE_2D, 2, GL_RGBA, GL_FLOAT, lvl2.data);
-	glBindTexture(GL_TEXTURE_2D, 0);
-	
-
-	cv::imshow("lvl0!", lvl0);
-	cv::imshow("lvl1!", lvl1);
-	cv::imshow("lvl2!", lvl2);
-
-
-
-	lvl0 = cv::Mat(480, 848, CV_32FC4);
-	lvl1 = cv::Mat(480 / 2, 848 / 2, CV_32FC4);
-	lvl2 = cv::Mat(480 / 4, 848 / 4, CV_32FC4);
-
-	glActiveTexture(GL_TEXTURE0);
-	glBindTexture(GL_TEXTURE_2D, m_textureVertex[devNumber]);
-	glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_FLOAT, lvl0.data);
-	glGetTexImage(GL_TEXTURE_2D, 1, GL_RGBA, GL_FLOAT, lvl1.data);
-	glGetTexImage(GL_TEXTURE_2D, 2, GL_RGBA, GL_FLOAT, lvl2.data);
-	glBindTexture(GL_TEXTURE_2D, 0);
-	
-
-	cv::Mat image0[4];
-	cv::split(lvl0, image0);
-	cv::Mat image1[4];
-	cv::split(lvl1, image1);
-	cv::Mat image2[4];
-	cv::split(lvl2, image2);
-
-	cv::imshow("lvl0", image0[2]);
-	cv::imshow("lvl1", image1[2]);
-	cv::imshow("lvl2", image2[2]);
-#endif
-
-}
-
-void gFusion::showRaycast()
-{
-	/*cv::Mat points = cv::Mat(424, 512, CV_32FC4);
-	cv::Mat norms = cv::Mat(424, 512, CV_32FC4);
-
-	glActiveTexture(GL_TEXTURE0);
-	glBindTexture(GL_TEXTURE_2D, m_textureReferenceVertex);
-	glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_FLOAT, points.data);
-	glBindTexture(GL_TEXTURE_2D, 0);
-	
-
-	cv::Mat pointsDepth[4];
-	cv::split(points, pointsDepth);
-	cv::imshow("points", pointsDepth[2]);
-
-	glActiveTexture(GL_TEXTURE0);
-	glBindTexture(GL_TEXTURE_2D, m_textureReferenceNormal);
-	glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_FLOAT, norms.data);
-	glBindTexture(GL_TEXTURE_2D, 0);
-	
-
-	cv::imshow("normals", norms);
-*/
-
-}
-
-void gFusion::showDifference()
-{
-	/*cv::Mat dif = cv::Mat(424, 512, CV_32FC1);
-
-	glActiveTexture(GL_TEXTURE0);
-	glBindTexture(GL_TEXTURE_2D, m_textureDifferenceVertex);
-	glGetTexImage(GL_TEXTURE_2D, 0, GL_RED, GL_FLOAT, dif.data);
-	glBindTexture(GL_TEXTURE_2D, 0);
-	
-
-	cv::imshow("difs", dif* 10.0f);*/
-}
-
-void gFusion::showTrack()
-{
-	/*cv::Mat trk = cv::Mat(424, 512, CV_32FC4);
-
-	glActiveTexture(GL_TEXTURE0);
-	glBindTexture(GL_TEXTURE_2D, m_textureTrackImage);
-	glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_FLOAT, trk.data);
-	glBindTexture(GL_TEXTURE_2D, 0);
-	
-
-	cv::cvtColor(trk, trk, CV_RGBA2BGRA);
-
-	cv::imshow("trk", trk);*/
 }
 
 bool gFusion::Track()
@@ -1206,47 +917,47 @@ bool gFusion::Track()
 void gFusion::track(int devNumber, int layer)
 {
 
-	glm::mat4 invK = GLHelper::getInverseCameraMatrix(m_camPamsDepth[devNumber]);
-	glm::mat4 oldPose = pose;
-	glm::mat4 projectReference = GLHelper::getCameraMatrix(m_camPamsDepth[devNumber]) * glm::inverse(m_pose);
+	//glm::mat4 invK = GLHelper::getInverseCameraMatrix(m_camPamsDepth[devNumber]);
+	//glm::mat4 oldPose = pose;
+	//glm::mat4 projectReference = GLHelper::getCameraMatrix(m_camPamsDepth[devNumber]) * glm::inverse(m_pose);
 
-	int compWidth;
-	int compHeight;
+	//int compWidth;
+	//int compHeight;
 
-	trackProg.use();
+	//trackProg.use();
 
-	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, m_buffer_reduction);
-
-
-	glUniformMatrix4fv(m_viewID_t, 1, GL_FALSE, glm::value_ptr(projectReference));
-	glUniformMatrix4fv(m_TtrackID, 1, GL_FALSE, glm::value_ptr(m_pose));
-	glUniform1f(m_distThresh_t, configuration.dist_threshold);
-	glUniform1f(m_normThresh_t, configuration.normal_threshold);
-
-	glBindImageTexture(0, m_textureVertex[devNumber], layer, GL_FALSE, 0, GL_READ_WRITE, GL_RGBA32F);
-	glBindImageTexture(1, m_textureNormal[devNumber], layer, GL_FALSE, 0, GL_READ_WRITE, GL_RGBA32F);
-
-	glBindImageTexture(2, m_textureReferenceVertex, 0, GL_FALSE, 0, GL_READ_WRITE, GL_RGBA32F); // the raycasted images do not need to be scaled, since the mipmaped verts are projected back to 512*424 image space resolution in the shader
-	glBindImageTexture(3, m_textureReferenceNormal, 0, GL_FALSE, 0, GL_READ_WRITE, GL_RGBA32F);
-	
-	glBindImageTexture(4, m_textureDifferenceVertex, 0, GL_FALSE, 0, GL_READ_WRITE, GL_R32F);
-	glBindImageTexture(5, m_textureTrackImage[devNumber], 0, GL_FALSE, 0, GL_READ_WRITE, GL_RGBA32F);
-
-	
-	compWidth = divup((int)configuration.depthFrameSize.x >> layer, 32); // right bitshift does division by powers of 2
-	compHeight = divup((int)configuration.depthFrameSize.y >> layer, 32);
-
-	glDispatchCompute(compWidth, compHeight, 1);
-	glMemoryBarrier(GL_ALL_BARRIER_BITS);
-
-	//std::vector<float> testvec(480 * 848*4, 10);
+	//glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, m_buffer_reduction);
 
 
-	//glActiveTexture(GL_TEXTURE0);
-	//glBindTexture(GL_TEXTURE_2D, m_textureReferenceVertex);
-	//glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_FLOAT, testvec.data());
-	//glBindTexture(GL_TEXTURE_2D, 0);
+	//glUniformMatrix4fv(m_viewID_t, 1, GL_FALSE, glm::value_ptr(projectReference));
+	//glUniformMatrix4fv(m_TtrackID, 1, GL_FALSE, glm::value_ptr(m_pose));
+	//glUniform1f(m_distThresh_t, configuration.dist_threshold);
+	//glUniform1f(m_normThresh_t, configuration.normal_threshold);
+
+	//glBindImageTexture(0, m_textureVertex[devNumber], layer, GL_FALSE, 0, GL_READ_WRITE, GL_RGBA32F);
+	//glBindImageTexture(1, m_textureNormal[devNumber], layer, GL_FALSE, 0, GL_READ_WRITE, GL_RGBA32F);
+
+	//glBindImageTexture(2, m_textureReferenceVertex, 0, GL_FALSE, 0, GL_READ_WRITE, GL_RGBA32F); // the raycasted images do not need to be scaled, since the mipmaped verts are projected back to 512*424 image space resolution in the shader
+	//glBindImageTexture(3, m_textureReferenceNormal, 0, GL_FALSE, 0, GL_READ_WRITE, GL_RGBA32F);
 	//
+	//glBindImageTexture(4, m_textureDifferenceVertex, 0, GL_FALSE, 0, GL_READ_WRITE, GL_R32F);
+	//glBindImageTexture(5, m_textureTrackImage, 0, GL_FALSE, 0, GL_READ_WRITE, GL_RGBA32F);
+
+	//
+	//compWidth = divup((int)configuration.depthFrameSize.x >> layer, 32); // right bitshift does division by powers of 2
+	//compHeight = divup((int)configuration.depthFrameSize.y >> layer, 32);
+
+	//glDispatchCompute(compWidth, compHeight, 1);
+	//glMemoryBarrier(GL_ALL_BARRIER_BITS);
+
+	////std::vector<float> testvec(480 * 848*4, 10);
+
+
+	////glActiveTexture(GL_TEXTURE0);
+	////glBindTexture(GL_TEXTURE_2D, m_textureReferenceVertex);
+	////glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_FLOAT, testvec.data());
+	////glBindTexture(GL_TEXTURE_2D, 0);
+	////
 
 
 
@@ -1553,7 +1264,7 @@ void gFusion::trackSDF(int layer, Eigen::Matrix4f camToWorld)
 	// bind images
 	glBindImageTexture(0, m_textureVolume, 0, GL_FALSE, 0, GL_READ_ONLY, GL_RGBA16F);
 	glBindImageTexture(1, m_textureSDFImage, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA32F);
-	glBindImageTexture(2, m_textureTrackImage[0], 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA32F);
+	glBindImageTexture(2, m_textureTrackImage, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA32F);
 	
 	// bind buffers
 	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 12, m_bufferSDFReduction);
@@ -1589,53 +1300,53 @@ void gFusion::trackSDF(int devNumber, int layer, Eigen::Matrix4f camToWorld)
 {
 
 
-	trackSDFProg.use();
+	//trackSDFProg.use();
 
-	int xthreads, ythreads;
-	xthreads = divup((int)configuration.depthFrameSize.x >> layer, 32); // right bitshift does division by powers of 2
-	ythreads = divup((int)configuration.depthFrameSize.y >> layer, 32);
-	glm::ivec2 imageSize = glm::ivec2((int)configuration.depthFrameSize.x >> layer, (int)configuration.depthFrameSize.y >> layer);
+	//int xthreads, ythreads;
+	//xthreads = divup((int)configuration.depthFrameSize.x >> layer, 32); // right bitshift does division by powers of 2
+	//ythreads = divup((int)configuration.depthFrameSize.y >> layer, 32);
+	//glm::ivec2 imageSize = glm::ivec2((int)configuration.depthFrameSize.x >> layer, (int)configuration.depthFrameSize.y >> layer);
 
-	// bind textures
-	glActiveTexture(GL_TEXTURE0);
-	glBindTexture(GL_TEXTURE_3D, m_textureVolume);
+	//// bind textures
+	//glActiveTexture(GL_TEXTURE0);
+	//glBindTexture(GL_TEXTURE_3D, m_textureVolume);
 
-	// bind images
-	glBindImageTexture(0, m_textureVolume, 0, GL_FALSE, 0, GL_READ_ONLY, GL_RGBA16F);
-	glBindImageTexture(1, m_textureVertex[devNumber], layer, GL_FALSE, 0, GL_READ_ONLY, GL_RGBA32F);
-	glBindImageTexture(2, m_textureNormal[devNumber], layer, GL_FALSE, 0, GL_READ_ONLY, GL_RGBA32F);
-	glBindImageTexture(3, m_textureSDFImage, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA32F);
-	glBindImageTexture(4, m_textureTrackImage[devNumber], 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA32F);
+	//// bind images
+	//glBindImageTexture(0, m_textureVolume, 0, GL_FALSE, 0, GL_READ_ONLY, GL_RGBA16F);
+	//glBindImageTexture(1, m_textureVertex[devNumber], layer, GL_FALSE, 0, GL_READ_ONLY, GL_RGBA32F);
+	//glBindImageTexture(2, m_textureNormal[devNumber], layer, GL_FALSE, 0, GL_READ_ONLY, GL_RGBA32F);
+	//glBindImageTexture(3, m_textureSDFImage, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA32F);
+	//glBindImageTexture(4, m_textureTrackImage, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA32F);
 
-	// bind buffers
-	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 12, m_bufferSDFReduction);
+	//// bind buffers
+	//glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 12, m_bufferSDFReduction);
 
-	// set uniforms
-	//glUniformMatrix4fv(m_TtrackID_t, 1, GL_FALSE, glm::value_ptr(m_pose));
+	//// set uniforms
+	////glUniformMatrix4fv(m_TtrackID_t, 1, GL_FALSE, glm::value_ptr(m_pose));
 
-	glm::mat4 trackPose;
-	std::memcpy(glm::value_ptr(trackPose), camToWorld.data(), 16 * sizeof(float));
+	//glm::mat4 trackPose;
+	//std::memcpy(glm::value_ptr(trackPose), camToWorld.data(), 16 * sizeof(float));
 
 
-	if (devNumber > 0)
-	{
-		trackPose = trackPose * m_depthToDepth;
-	}
+	//if (devNumber > 0)
+	//{
+	//	trackPose = trackPose * m_depthToDepth;
+	//}
 
-	glUniformMatrix4fv(m_TtrackID_t, 1, GL_FALSE, glm::value_ptr(trackPose));
-	glUniform2iv(m_imageSizeID_t_sdf, 1, glm::value_ptr(imageSize));
-	
-	glUniform1f(m_dMaxID_t, configuration.dMax);
-	glUniform1f(m_dMinID_t, configuration.dMin);
-	glUniform1i(m_devNumberTrackSdfID, devNumber);
+	//glUniformMatrix4fv(m_TtrackID_t, 1, GL_FALSE, glm::value_ptr(trackPose));
+	//glUniform2iv(m_imageSizeID_t_sdf, 1, glm::value_ptr(imageSize));
+	//
+	//glUniform1f(m_dMaxID_t, configuration.dMax);
+	//glUniform1f(m_dMinID_t, configuration.dMin);
+	//glUniform1i(m_devNumberTrackSdfID, devNumber);
 
-	glUniform1f(m_cID, 0.02f * 0.1f);
-	glUniform1f(m_epsID, 10e-9);
-	glUniform3fv(m_volDimID_t, 1, glm::value_ptr(configuration.volumeDimensions));
-	glUniform3fv(m_volSizeID_t, 1, glm::value_ptr(configuration.volumeSize));
+	//glUniform1f(m_cID, 0.02f * 0.1f);
+	//glUniform1f(m_epsID, 10e-9);
+	//glUniform3fv(m_volDimID_t, 1, glm::value_ptr(configuration.volumeDimensions));
+	//glUniform3fv(m_volSizeID_t, 1, glm::value_ptr(configuration.volumeSize));
 
-	glDispatchCompute(xthreads, ythreads, 1);
-	glMemoryBarrier(GL_ALL_BARRIER_BITS);
+	//glDispatchCompute(xthreads, ythreads, 1);
+	//glMemoryBarrier(GL_ALL_BARRIER_BITS);
 
 }
 
@@ -1784,7 +1495,7 @@ void gFusion::getSDFReduction(std::vector<float>& b, std::vector<float>& C, floa
 // a running fusion of the current frames tsdf is fused against other cameras tp prevent the tsdf being set to zero for voxels that are occluded from their own view but are perfectly valid in other views
 void gFusion::integrate(bool forceIntegrate)
 {
-	glBeginQuery(GL_TIME_ELAPSED, query[2]);
+	//glBeginQuery(GL_TIME_ELAPSED, query[2]);
 	integrateProg.use();
 	glUniformSubroutinesuiv(GL_COMPUTE_SHADER, 1, &m_integrateExperimentalID);
 
@@ -1835,9 +1546,9 @@ void gFusion::integrate(bool forceIntegrate)
 
 		glUniform1i(m_imageTypeID_i, 0); // image type 0 == short
 		glUniform1f(m_depthScaleID, m_depthUnit / 1000000.0f); // 1000 == each depth unit == 1 mm
-		glBindImageTexture(2, m_textureDepth[0], 0, GL_FALSE, 0, GL_READ_ONLY, GL_R16UI);
 
-		glBindImageTexture(3, m_textureVertex[0], 0, GL_FALSE, 0, GL_READ_ONLY, GL_RGBA32F);
+		//glBindImageTexture(2, m_textureDepth[0], 0, GL_FALSE, 0, GL_READ_ONLY, GL_R16UI);
+		//glBindImageTexture(3, m_textureVertex[0], 0, GL_FALSE, 0, GL_READ_ONLY, GL_RGBA32F);
 
 
 		int xWidth;
@@ -1853,120 +1564,120 @@ void gFusion::integrate(bool forceIntegrate)
 
 void gFusion::integrate(int devNumber)
 {
-	//GLenum errInt = glGetError();
+	////GLenum errInt = glGetError();
 
-	glBeginQuery(GL_TIME_ELAPSED, query[2]);
+	//glBeginQuery(GL_TIME_ELAPSED, query[2]);
 
-	integrateProg.use();
-	glUniformSubroutinesuiv(GL_COMPUTE_SHADER, 1, &m_integrateStandardID);
+	//integrateProg.use();
+	//glUniformSubroutinesuiv(GL_COMPUTE_SHADER, 1, &m_integrateStandardID);
 
-	glm::mat4 d2d = (m_depthToDepth);
-
-
-
-	if (devNumber == 0)
-	{
-		d2d = glm::mat4(1.0f);
-	}
-
-
-	glm::mat4 integratePose = glm::inverse(m_pose * d2d);
-
-	//glm::mat4 cameraPoses[4];
-	//cameraPoses[0] = integratePose;
-	//cameraPoses[1] = glm::inverse(d2d);
+	//glm::mat4 d2d = (m_depthToDepth);
 
 
 
-	//glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 4, m_bufferCameraData); // this could just be uniform buffer rather than shader storage bufer
-	//glBufferData(GL_SHADER_STORAGE_BUFFER, 4 * sizeof(glm::mat4), glm::value_ptr(cameraPoses[0]), GL_DYNAMIC_READ); // 4 x mat4
-
-	
-
-
-	glm::mat4 K = GLHelper::getCameraMatrix(m_camPamsDepth[devNumber]); // make sure im set
-	glm::mat4 K0;
-	GLHelper::projectionFromIntrinsics(K0, m_camPamsDepth[devNumber].x, m_camPamsDepth[devNumber].y, 1.0, m_camPamsDepth[devNumber].y, m_camPamsDepth[devNumber].z, 848, 480, 0.001, 1000.0);
-
-	integratePose[3][3] = configuration.dMax;
-	integratePose[2][3] = configuration.dMin;
-	integratePose[1][3] = devNumber;
-	integratePose[0][3] = m_numberOfCameras;
-
-	// bind uniforms
-	glUniformMatrix4fv(m_invTrackID, 1, GL_FALSE, glm::value_ptr(integratePose));
-	glUniformMatrix4fv(m_KID, 1, GL_FALSE, glm::value_ptr(K));
-	glUniform1f(m_muID, configuration.mu);
-
-	//glm::vec4 volVox = glm::vec4(64.5 * 1.0 / 128.0, 64.5 * 1.0 / 128.0, 0.0, 1.0);
-
-	//glm::vec4 worldPos = m_pose * volVox;
-
-	//glm::vec4 clipPos = K0 * worldPos;
-
-	//std::cout << glm::to_string(clipPos) << std::endl;
-
-	//glUniform1i(m_cameraDeviceID_i, devNumber);
-	//glUniform1i(m_numberOfCamerasID_i, m_numberOfCameras);
-
-	glUniform1f(m_dMaxID_i, configuration.dMax);
-	glUniform1f(m_dMinID_i, configuration.dMin);
-
-	glUniform1f(m_maxWeightID, configuration.maxWeight);
-
-	glUniform3fv(m_volDimID, 1, glm::value_ptr(configuration.volumeDimensions));
-	glUniform3fv(m_volSizeID, 1, glm::value_ptr(configuration.volumeSize));
-	//bind image textures
-	glBindImageTexture(0, m_textureVolume, 0, GL_FALSE, 0, GL_READ_WRITE, GL_RGBA16F);
-	//errInt = glGetError();
-	if (m_usingFloatDepth)
-	{
-		glUniform1i(m_imageTypeID_i, 1); // image type 1 == float
-		//glUniform1f(m_depthScaleID, m_depthUnit / 1000000.0f); // 1000 == each depth unit == 1 mm // FIX ME WHEN GOING BACK TO KINECT
-
-		glBindImageTexture(1, m_textureDepth[devNumber], 0, GL_FALSE, 0, GL_READ_ONLY, GL_R32F);
-	}
-	else
-	{
-		
-		glUniform1i(m_imageTypeID_i, 0); // image type 0 == short
-		glUniform1f(m_depthScaleID, m_depthUnit / 1000000.0f); // 1000 == each depth unit == 1 mm
-		glBindImageTexture(2, m_textureDepth[devNumber], 0, GL_FALSE, 0, GL_READ_ONLY, GL_R16UI);
-	}
-	//errInt = glGetError();
-
-	glBindImageTexture(3, m_textureVertex[devNumber], 0, GL_FALSE, 0, GL_READ_ONLY, GL_RGBA32F);
+	//if (devNumber == 0)
+	//{
+	//	d2d = glm::mat4(1.0f);
+	//}
 
 
-	int xWidth;
-	int yWidth;
+	//glm::mat4 integratePose = glm::inverse(m_pose * d2d);
+
+	////glm::mat4 cameraPoses[4];
+	////cameraPoses[0] = integratePose;
+	////cameraPoses[1] = glm::inverse(d2d);
 
 
-	xWidth = divup(configuration.volumeSize.x, 32);
-	yWidth = divup(configuration.volumeSize.y, 32);
 
-	//xWidth = divup(configuration.depthFrameSize.x, 32);
-	//yWidth = divup(configuration.depthFrameSize.y, 32);
+	////glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 4, m_bufferCameraData); // this could just be uniform buffer rather than shader storage bufer
+	////glBufferData(GL_SHADER_STORAGE_BUFFER, 4 * sizeof(glm::mat4), glm::value_ptr(cameraPoses[0]), GL_DYNAMIC_READ); // 4 x mat4
 
-	
-	glDispatchCompute(xWidth, yWidth, 1);
-	glMemoryBarrier(GL_ALL_BARRIER_BITS);
-
-	glEndQuery(GL_TIME_ELAPSED);
+	//
 
 
-	GLuint available = 0;
-	while (!available) {
-		glGetQueryObjectuiv(query[2], GL_QUERY_RESULT_AVAILABLE, &available);
-	}
+	//glm::mat4 K = GLHelper::getCameraMatrix(m_camPamsDepth[devNumber]); // make sure im set
+	//glm::mat4 K0;
+	//GLHelper::projectionFromIntrinsics(K0, m_camPamsDepth[devNumber].x, m_camPamsDepth[devNumber].y, 1.0, m_camPamsDepth[devNumber].y, m_camPamsDepth[devNumber].z, 848, 480, 0.001, 1000.0);
 
-	// elapsed time in nanoseconds
-	GLuint64 elapsed;
-	glGetQueryObjectui64vEXT(query[2], GL_QUERY_RESULT, &elapsed);
+	//integratePose[3][3] = configuration.dMax;
+	//integratePose[2][3] = configuration.dMin;
+	//integratePose[1][3] = devNumber;
+	//integratePose[0][3] = m_numberOfCameras;
 
-	integrateTime = elapsed / 1000000.0;
+	//// bind uniforms
+	//glUniformMatrix4fv(m_invTrackID, 1, GL_FALSE, glm::value_ptr(integratePose));
+	//glUniformMatrix4fv(m_KID, 1, GL_FALSE, glm::value_ptr(K));
+	//glUniform1f(m_muID, configuration.mu);
 
-	//std::cout << "i time " << integrateTime << std::endl;
+	////glm::vec4 volVox = glm::vec4(64.5 * 1.0 / 128.0, 64.5 * 1.0 / 128.0, 0.0, 1.0);
+
+	////glm::vec4 worldPos = m_pose * volVox;
+
+	////glm::vec4 clipPos = K0 * worldPos;
+
+	////std::cout << glm::to_string(clipPos) << std::endl;
+
+	////glUniform1i(m_cameraDeviceID_i, devNumber);
+	////glUniform1i(m_numberOfCamerasID_i, m_numberOfCameras);
+
+	//glUniform1f(m_dMaxID_i, configuration.dMax);
+	//glUniform1f(m_dMinID_i, configuration.dMin);
+
+	//glUniform1f(m_maxWeightID, configuration.maxWeight);
+
+	//glUniform3fv(m_volDimID, 1, glm::value_ptr(configuration.volumeDimensions));
+	//glUniform3fv(m_volSizeID, 1, glm::value_ptr(configuration.volumeSize));
+	////bind image textures
+	//glBindImageTexture(0, m_textureVolume, 0, GL_FALSE, 0, GL_READ_WRITE, GL_RGBA16F);
+	////errInt = glGetError();
+	//if (m_usingFloatDepth)
+	//{
+	//	glUniform1i(m_imageTypeID_i, 1); // image type 1 == float
+	//	//glUniform1f(m_depthScaleID, m_depthUnit / 1000000.0f); // 1000 == each depth unit == 1 mm // FIX ME WHEN GOING BACK TO KINECT
+
+	//	glBindImageTexture(1, m_textureDepth[devNumber], 0, GL_FALSE, 0, GL_READ_ONLY, GL_R32F);
+	//}
+	//else
+	//{
+	//	
+	//	glUniform1i(m_imageTypeID_i, 0); // image type 0 == short
+	//	glUniform1f(m_depthScaleID, m_depthUnit / 1000000.0f); // 1000 == each depth unit == 1 mm
+	//	glBindImageTexture(2, m_textureDepth[devNumber], 0, GL_FALSE, 0, GL_READ_ONLY, GL_R16UI);
+	//}
+	////errInt = glGetError();
+
+	//glBindImageTexture(3, m_textureVertex[devNumber], 0, GL_FALSE, 0, GL_READ_ONLY, GL_RGBA32F);
+
+
+	//int xWidth;
+	//int yWidth;
+
+
+	//xWidth = divup(configuration.volumeSize.x, 32);
+	//yWidth = divup(configuration.volumeSize.y, 32);
+
+	////xWidth = divup(configuration.depthFrameSize.x, 32);
+	////yWidth = divup(configuration.depthFrameSize.y, 32);
+
+	//
+	//glDispatchCompute(xWidth, yWidth, 1);
+	//glMemoryBarrier(GL_ALL_BARRIER_BITS);
+
+	//glEndQuery(GL_TIME_ELAPSED);
+
+
+	//GLuint available = 0;
+	//while (!available) {
+	//	glGetQueryObjectuiv(query[2], GL_QUERY_RESULT_AVAILABLE, &available);
+	//}
+
+	//// elapsed time in nanoseconds
+	//GLuint64 elapsed;
+	//glGetQueryObjectui64vEXT(query[2], GL_QUERY_RESULT, &elapsed);
+
+	//integrateTime = elapsed / 1000000.0;
+
+	////std::cout << "i time " << integrateTime << std::endl;
 
 
 }

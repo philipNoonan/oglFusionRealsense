@@ -2,7 +2,7 @@
 
 layout(local_size_x = 32, local_size_y = 32) in; // 
 
-layout(binding = 0, rgba16f) uniform image3D volumeData;
+layout(binding = 0, rg16f) uniform image3D volumeData;
 layout(binding = 1, r32f) uniform image2D testImage;
 
 
