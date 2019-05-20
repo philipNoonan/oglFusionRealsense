@@ -120,16 +120,16 @@ void scanHPLevel(uint target, int lod, inout uvec4 current)
 
 float getVolumeData(ivec3 pos, int level)
 {
-    if (volumeType == 0)
-    {
+    //if (volumeType == 0)
+    //{
         return texelFetch(volumeFloatTexture, pos, level).x;
-    }
-    else if (volumeType == 1)
-    {
-        return float(texelFetch(volumeRGShortTexture, pos, level).x);
-    }
+    //}
+    //else if (volumeType == 1)
+    //{
+    //    return float(texelFetch(volumeRGShortTexture, pos, level).x);
+   // }
 
-    return 0.0f;
+    //return 0.0f;
 }
 
 subroutine(launchSubroutine)

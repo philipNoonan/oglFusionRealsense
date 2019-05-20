@@ -101,26 +101,6 @@ void MCubes::allocateBuffers()
 	size_t memSize = sizeof(GLuint) * m_mcubeConfiguration.numVoxels;
 	size_t memSizeVec4 = sizeof(float) * 4 * m_mcubeConfiguration.maxVerts;
 
-	/*glGenBuffers(1, &m_bufferVoxelVerts);
-	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, m_bufferVoxelVerts);
-	glBufferData(GL_SHADER_STORAGE_BUFFER, memSize, NULL, GL_DYNAMIC_DRAW);
-
-	glGenBuffers(1, &m_bufferVoxelOccupied);
-	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 3, m_bufferVoxelOccupied);
-	glBufferData(GL_SHADER_STORAGE_BUFFER, memSize, NULL, GL_DYNAMIC_DRAW);
-
-	glGenBuffers(1, &m_bufferVoxelOccupiedScan);
-	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 4, m_bufferVoxelOccupiedScan);
-	glBufferData(GL_SHADER_STORAGE_BUFFER, memSize, NULL, GL_DYNAMIC_DRAW);
-
-	glGenBuffers(1, &m_bufferCompactedVoxelArray);
-	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 5, m_bufferCompactedVoxelArray);
-	glBufferData(GL_SHADER_STORAGE_BUFFER, memSize, NULL, GL_DYNAMIC_DRAW);
-
-	glGenBuffers(1, &m_bufferVoxelVertsScan);
-	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 6, m_bufferVoxelVertsScan);
-	glBufferData(GL_SHADER_STORAGE_BUFFER, memSize, NULL, GL_DYNAMIC_DRAW);*/
-
 	glGenBuffers(1, &m_bufferPos);
 	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, m_bufferPos);
 	glBufferData(GL_SHADER_STORAGE_BUFFER, memSizeVec4, NULL, GL_DYNAMIC_DRAW);
@@ -129,9 +109,6 @@ void MCubes::allocateBuffers()
 	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, m_bufferNorm);
 	glBufferData(GL_SHADER_STORAGE_BUFFER, memSizeVec4, NULL, GL_DYNAMIC_DRAW);
 
-	//glGenBuffers(1, &m_bufferPrefixSumByGroup);
-	//glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 11, m_bufferPrefixSumByGroup);
-	//glBufferData(GL_SHADER_STORAGE_BUFFER, memSize / 1024, NULL, GL_DYNAMIC_DRAW);
 }
 
 
@@ -214,7 +191,7 @@ void MCubes::histoPyramids()
 
 	histoPyramidsProg.use();
 
-	/// Classify cubes
+	// Classify cubes
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_3D, m_textureHistoPyramid);
 
@@ -247,7 +224,7 @@ void MCubes::histoPyramids()
 
 
 
-	/// Do first level of histoprys
+	// Do first level of histoprys
 	glBindImageTexture(2, m_textureHistoPyramid, 0, GL_TRUE, 0, GL_READ_ONLY, GL_RG16UI);
 	glBindImageTexture(1, m_textureHistoPyramid, 1, GL_TRUE, 0, GL_WRITE_ONLY, GL_R32UI);
 	nthreads /= 2;
@@ -260,7 +237,7 @@ void MCubes::histoPyramids()
 
 
 
-	/// Do other levels of histopyr
+	// Do other levels of histopyr
 	for (int i = 1; i < std::log2(m_mcubeConfiguration.gridSize.x); i++)
 	{
 		// https://stackoverflow.com/questions/17015132/compute-shader-not-modifying-3d-texture
@@ -290,31 +267,25 @@ void MCubes::histoPyramids()
 
 
 
-	/// Read top of pyramid to get total number of triangles in volume
+	// Read top of pyramid to get total number of triangles in volume
 	std::vector<uint32_t> sumData(1, 5);
 	//uint32_t sumData;
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_3D, m_textureHistoPyramid);
 	glGetTexImage(GL_TEXTURE_3D, std::log2(m_mcubeConfiguration.gridSize.x), GL_RED_INTEGER, GL_UNSIGNED_INT, sumData.data());
 	glBindTexture(GL_TEXTURE_3D, 0);
-	//
+	
 
 	std::cout << "num of triangles " << sumData[0] << std::endl;
 
 	m_totalSum = sumData[0] * 3; // total num verts
-
-	
-	//for (size_t i = 0; i < outData0.size(); i += 1000)
-	//{
-	//	std::cout << outData0[i] << " ";
-	//}
 
 	traverseHistoPyramidsProg.use();
 
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_3D, m_textureHistoPyramid);
 
-	glActiveTexture(GL_TEXTURE7); // here volume is a rg short 16
+	glActiveTexture(GL_TEXTURE1); // here volume is a rg short 16
 	glBindTexture(GL_TEXTURE_3D, m_textureVolume);
 
 	glActiveTexture(GL_TEXTURE3);
@@ -341,7 +312,7 @@ void MCubes::histoPyramids()
 	nthreads = GLHelper::divup(glm::uvec3(sumData[0], 1, 1), glm::uvec3(32, 1, 1));
 	glUniformSubroutinesuiv(GL_COMPUTE_SHADER, 1, &m_traverseHPLevelID);
 	glUniform1ui(m_totalSumID, sumData[0]);
-	glUniform1ui(m_volumeTypeTHPID, 1);
+	glUniform1ui(m_volumeTypeTHPID, 0);
 	glUniform1f(m_isoLevelTHPID, m_isoLevel);
 
 	
@@ -352,42 +323,6 @@ void MCubes::histoPyramids()
 
 	glDispatchCompute(nthreads.x, nthreads.y, nthreads.z);
 	glMemoryBarrier(GL_ALL_BARRIER_BITS);
-
-
-	
-
-
-	//std::string modelFileName = "data/meshes/marchingCubesBin.stl";
-
-
-	//std::ofstream outFile(modelFileName, std::ios::out | std::ios::binary);
-
-	//if (!outFile)
-	//{
-	//	//cerr << "Error opening output file: " << FileName << "!" << endl;
-	//	printf("Error opening output file: %s!\n", modelFileName);
-	//	exit(1);
-	//}
-
-	//char hdr[80];
-
-	//int pointNum = totalSum;
-	//uint32_t NumTri = totalSum / 3;
-	//uint16_t attributeByteCount = 0;
-
-	//outFile.write(hdr, 80);
-	//outFile.write((char*)&NumTri, sizeof(uint32_t));
-
-	//for (int i = 0; i < totalSum; i++) 
-	//{
-
-	//}
-
-	//for (int pi = 0; pi < pointNum; pi += 3)
-	//{
-	//	const float* point = (float*)(&posData[pi]);
-	//	outFile << point[0] << " " << point[1] << " " << point[2] << std::endl;
-	//}
 
 	glEndQuery(GL_TIME_ELAPSED);
 	GLuint available = 0;
