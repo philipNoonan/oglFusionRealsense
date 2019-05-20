@@ -239,6 +239,19 @@ void Realsense2Interface::stopDevice(int devNumber)
 	}
 }
 
+void Realsense2Interface::stopDevices()
+{
+	for (int i = 0; i < m_cameras.size(); i++)
+	{
+		if (m_threads[i].joinable())
+		{
+			m_threads[i].join();
+		}
+		m_cameras[i].stop();
+
+	}
+}
+
 FrameIntrinsics Realsense2Interface::getDepthIntrinsics(int devnumber)
 {
 	return m_depthIntrinsics[devnumber];

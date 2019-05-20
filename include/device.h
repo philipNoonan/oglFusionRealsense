@@ -16,6 +16,42 @@
 
 #include "frameGrabber.h"
 
+class frameViewer
+{
+public:
+	frameViewer(const std::string& windowTitle) :
+		m_windowTitle(windowTitle),
+		m_thread(new std::thread(&frameViewer::run, this))
+	{
+	}
+	~frameViewer()
+	{
+		if (m_thread && m_thread->joinable())
+		{
+			m_thread->join();
+		}
+	}
+	void operator()(rs2::frame f)
+	{
+		m_frames.enqueue(f);
+	}
+	void wait()
+	{
+		if (m_thread)
+		{
+			m_thread->join();
+		}
+	}
+private:
+	void run()
+	{
+
+	}
+	std::unique_ptr<std::thread> m_thread;
+	std::string m_windowTitle;
+	rs2::frame_queue m_frames;
+};
+
 class Realsense2Camera
 {
 

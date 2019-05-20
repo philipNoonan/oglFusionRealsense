@@ -1441,10 +1441,10 @@ int main(int, char**)
 	ImGui_ImplGlfwGL3_Shutdown();
 	ImGui::DestroyContext();
 	//kcamera.stop();
-	cameraInterface.stopDevice(cameraDevice);
+	//cameraInterface.stopDevice(cameraDevice);
+	cameraInterface.stopDevices();
 	glfwTerminate();
 
-	//krender.cleanUp();
 
 	return 0;
 }

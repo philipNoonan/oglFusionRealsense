@@ -60,10 +60,11 @@ public:
 	};
 	~MarkerTracker() 
 	{
-		if (m_status[m_cameraDevice] == arucoStatus::TRACKING)
-		{
-			stopTracking();
-		}
+
+		//if (m_status[m_cameraDevice] == arucoStatus::TRACKING)
+		//{
+		//	stopTracking();
+		//}
 	};
 
 	bool detect();

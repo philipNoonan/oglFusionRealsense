@@ -57,6 +57,7 @@ public:
 	void startDevice(int devNumber, int depthProfile, int colorProfile);
 	void startDeviceFromFile(std::string filename, int depthProfile, int colorProfile);
 	void stopDevice(int devNumber);
+	void stopDevices();
 	bool collateFrames();
 	bool collateFramesFromFile();
 

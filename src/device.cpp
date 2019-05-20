@@ -174,69 +174,18 @@ void Realsense2Camera::setEmitterOptions(float status, float power)
 
 bool Realsense2Camera::start()
 {
-	//if (m_status == STOPPED)
-	//{
-//
-		
-
-		std::string sn = "########";
-		if (m_dev.supports(RS2_CAMERA_INFO_SERIAL_NUMBER))
-			sn = std::string("#") + m_dev.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER);
-
-		std::string colorSN = "color" + sn;
-		std::string depthSN = "depth" + sn;
-
 		m_sensors[1].open(m_stream_profiles_color[m_colorStreamChoice]); //848 480 60fps rgb8
 		std::thread colThread = std::thread(&Realsense2Camera::colorThread, this, m_sensors[1]);
-		colThread.join();
-
-
-
-		//int m_infraStreamChoice = 0;
-		//m_sensors[0].open(m_stream_profiles_depthIR[m_infraStreamChoice]); // depth 848*480@90
-		//std::thread infThread = std::thread(&Realsense2Camera::infraThread, this, m_sensors[0]);
-		//infThread.join();
-
-		//sensors[1].start([&](rs2::frame f) {this->capturingColor(f); });
-		//colorGrabber.wait();
+		colThread.detach();
 
 		std::vector<rs2::stream_profile> sp = { m_stream_profiles_depthIR[15], m_stream_profiles_depthIR[m_depthStreamChoice] };
 		//std::vector<rs2::stream_profile> sp = { m_stream_profiles_depthIR[35], m_stream_profiles_depthIR[m_depthStreamChoice] };
 
 		m_sensors[0].open(sp); // depth 848*480@90
 		std::thread depThread = std::thread(&Realsense2Camera::depthThread, this, m_sensors[0]);
-		depThread.join();
+		depThread.detach();
 
-		//depthThread(m_sensors[0]);
-
-		//FrameGrabber depthGrabber(depthSN);
-		//m_sensors[0].start([&](rs2::frame f) {depthGrabber(f); });
-		//depthGrabber.wait();
-
-		//std::this_thread::sleep_for(std::chrono::seconds(10));
-
-
-		//helper::frame_viewer display(oss.str());
-		//sensor.start([&](rs2::frame f) { display(f); });
-
-		//sensors[0].start(&m_depth);
-
-
-
-		//rs2::config cfg;
-
-		//std::string serial_number(m_dev.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER));
-
-		//cfg.enable_device(serial_number);
-		//cfg.enable_device(serial_number);
-
-		//cfg.enable_stream(RS2_STREAM_COLOR, m_colorWidth, m_colorHeight, RS2_FORMAT_RGB8, m_colorRate);
-		//cfg.enable_stream(RS2_STREAM_DEPTH, m_depthWidth, m_depthHeight, RS2_FORMAT_Z16, m_depthRate);
-
-		//m_selection = m_pipe.start(cfg);
-
-		//m_status = CAPTURING;
-	//}
+		
 	return false;
 }
 
@@ -285,11 +234,14 @@ void Realsense2Camera::colorThread(rs2::sensor &sens)
 
 bool Realsense2Camera::stop()
 {
-	if (m_status == CAPTURING)
-	{
-		m_status = STOPPED;
-	}
+	// stop the sensors
 
+	// close the sensors
+	for (int i = 0; i < 2; i++)
+	{
+		m_sensors[i].stop();
+		m_sensors[i].close();
+	}
 
 
 	return false;
