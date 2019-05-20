@@ -464,7 +464,7 @@ void gFusion::allocateBuffers()
 
 
 
-	size_t reductionSDFSize = 2 * configuration.depthFrameSize.y * configuration.depthFrameSize.x * (sizeof(GLint) + sizeof(GLfloat) * 8); // this is the size of one reduction element 1 int + 1 float + 1 float + 6 float
+	size_t reductionSDFSize = m_numberOfCameras * configuration.depthFrameSize.y * configuration.depthFrameSize.x * (sizeof(GLint) + sizeof(GLfloat) * 8); // this is the size of one reduction element 1 int + 1 float + 1 float + 6 float
 	glGenBuffers(1, &m_bufferSDFReduction);
 	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 12, m_bufferSDFReduction);
 	glBufferData(GL_SHADER_STORAGE_BUFFER, reductionSDFSize, NULL, GL_STATIC_DRAW);
@@ -1364,7 +1364,7 @@ void gFusion::reduceSDF(int layer)
 {
 	//glBeginQuery(GL_TIME_ELAPSED, query[6]);
 
-	glm::ivec2 imageSize = glm::ivec2((int)configuration.depthFrameSize.x >> layer, (int)configuration.depthFrameSize.y >> layer);
+	glm::ivec2 imageSize = glm::ivec2((int)(configuration.depthFrameSize.x * m_numberOfCameras) >> layer, (int)configuration.depthFrameSize.y >> layer);
 
 	reduceSDFProg.use();
 

@@ -45,7 +45,7 @@ void main()
         sums[i] = 0.0f;
     }
 
-    for (uint y = gl_WorkGroupID.x; y < imageSize.y * 2; y += gl_NumWorkGroups.x) // y = (0:8); y < 424; y += 8
+    for (uint y = gl_WorkGroupID.x; y < imageSize.y; y += gl_NumWorkGroups.x) // y = (0:8); y < 424; y += 8
     {
         for (uint x = sline; x < imageSize.x; x += gl_WorkGroupSize.x) // x = (0:112); x < 512; x += 112
         {
