@@ -81,6 +81,7 @@ void gFusion::compileAndLinkShader()
 
 void gFusion::setLocations()
 {
+	depthToVertProg.use();
 	m_invkID = glGetUniformLocation(depthToVertProg.getHandle(), "invK");
 	m_colorKID = glGetUniformLocation(depthToVertProg.getHandle(), "colorK");
 
@@ -93,6 +94,7 @@ void gFusion::setLocations()
 
 	m_numberOfCamerasID_d = glGetUniformLocation(depthToVertProg.getHandle(), "numberOfCameras");
 	
+	vertToNormProg.use();
 	m_numberOfCamerasID_v = glGetUniformLocation(vertToNormProg.getHandle(), "numberOfCameras");
 
 
@@ -100,7 +102,7 @@ void gFusion::setLocations()
 	//std::cout << "camPams " << m_camPamsID << std::endl;
 	//std::cout << "imageType " << m_imageTypeID << std::endl;
 	//std::cout << "depthScale " << m_depthScaleID << std::endl;
-
+	trackProg.use();
 	m_viewID_t = glGetUniformLocation(trackProg.getHandle(), "view");
 	m_TtrackID = glGetUniformLocation(trackProg.getHandle(), "Ttrack");
 	m_distThresh_t = glGetUniformLocation(trackProg.getHandle(), "dist_threshold");
@@ -110,11 +112,11 @@ void gFusion::setLocations()
 	//std::cout << "Ttrack " << m_TtrackID << std::endl;
 	//std::cout << "dist_threshold " << m_distThresh_t << std::endl;
 	//std::cout << "normal_threshold " << m_normThresh_t << std::endl;
-
+	reduceProg.use();
 	m_imageSizeID = glGetUniformLocation(reduceProg.getHandle(), "imageSize");
 
 	//std::cout << "imageSize " << m_imageSizeID << std::endl;
-
+	integrateProg.use();
 	m_integrateSubroutineID = glGetSubroutineUniformLocation(integrateProg.getHandle(), GL_COMPUTE_SHADER, "integrateSubroutine");
 	m_integrateStandardID = glGetSubroutineIndex(integrateProg.getHandle(), GL_COMPUTE_SHADER, "integrateStandard");
 	m_integrateMultipleID = glGetSubroutineIndex(integrateProg.getHandle(), GL_COMPUTE_SHADER, "integrateMultiple");
@@ -144,6 +146,7 @@ void gFusion::setLocations()
 	//std::cout << "imageType " << m_imageTypeID_i << std::endl;
 	//std::cout << "depthScale " << m_depthScaleID_i << std::endl;
 
+	raycastProg.use();
 	m_viewID_r = glGetUniformLocation(raycastProg.getHandle(), "view");
 	m_nearPlaneID = glGetUniformLocation(raycastProg.getHandle(), "nearPlane");
 	m_farPlaneID = glGetUniformLocation(raycastProg.getHandle(), "farPlane");
@@ -153,6 +156,7 @@ void gFusion::setLocations()
 	m_volSizeID_r = glGetUniformLocation(raycastProg.getHandle(), "volSize");
 
 	//HELPERS
+	helpersProg.use();
 	m_helpersSubroutineID = glGetSubroutineUniformLocation(helpersProg.getHandle(), GL_COMPUTE_SHADER, "performHelperFunction");
 	m_resetVolumeID = glGetSubroutineIndex(helpersProg.getHandle(), GL_COMPUTE_SHADER, "resetVolume");
 	m_trackPointsToVertsID = glGetSubroutineIndex(helpersProg.getHandle(), GL_COMPUTE_SHADER, "trackPointsToVerts");
@@ -161,6 +165,7 @@ void gFusion::setLocations()
 	m_invKID_h = glGetUniformLocation(helpersProg.getHandle(), "invK");
 
 	// PREFIX SUMS
+	prefixSumProg.use();
 	m_prefixSumSubroutineID = glGetSubroutineUniformLocation(prefixSumProg.getHandle(), GL_COMPUTE_SHADER, "getPrefixSum");
 	m_resetSumsArrayID = glGetSubroutineIndex(prefixSumProg.getHandle(), GL_COMPUTE_SHADER, "resetSumsArray");
 
@@ -169,6 +174,7 @@ void gFusion::setLocations()
 	m_forFinalIncrementalSumID = glGetSubroutineIndex(prefixSumProg.getHandle(), GL_COMPUTE_SHADER, "forFinalIncrementalSum");
 
 	// MARCHING CUBES
+	marchingCubesProg.use();
 	m_marchingCubesSubroutineID = glGetSubroutineUniformLocation(marchingCubesProg.getHandle(), GL_COMPUTE_SHADER, "marchingCubesSubroutine");
 	m_classifyVoxelID = glGetSubroutineIndex(marchingCubesProg.getHandle(), GL_COMPUTE_SHADER, "launchClassifyVoxel");
 	m_compactVoxelsID = glGetSubroutineIndex(marchingCubesProg.getHandle(), GL_COMPUTE_SHADER, "launchCompactVoxels");
@@ -184,6 +190,7 @@ void gFusion::setLocations()
 	m_voxelSizeID = glGetUniformLocation(marchingCubesProg.getHandle(), "voxelSize");
 
 	// TRACKSDF
+	trackSDFProg.use();
 	m_TtrackID_t = glGetUniformLocation(trackSDFProg.getHandle(), "Ttrack");
 	m_volDimID_t = glGetUniformLocation(trackSDFProg.getHandle(), "volDim");
 	m_volSizeID_t = glGetUniformLocation(trackSDFProg.getHandle(), "volSize");
@@ -199,10 +206,12 @@ void gFusion::setLocations()
 
 
 	// REDUCE SDF
+	reduceSDFProg.use();
 	m_imageSizeID_sdf = glGetUniformLocation(reduceSDFProg.getHandle(), "imageSize");
 	m_devNumberReduceSdfID = glGetUniformLocation(reduceSDFProg.getHandle(), "devNumber");
 
 	//INTENSITY PROJECTION
+	mipProg.use();
 	m_viewID_m = glGetUniformLocation(mipProg.getHandle(), "view");
 	m_nearPlaneID_m = glGetUniformLocation(mipProg.getHandle(), "nearPlane");
 	m_farPlaneID_m = glGetUniformLocation(mipProg.getHandle(), "farPlane");
@@ -1284,6 +1293,7 @@ void gFusion::trackSDF(int layer, Eigen::Matrix4f camToWorld)
 	glUniform1f(m_dMaxID_t, configuration.dMax);
 	glUniform1f(m_dMinID_t, configuration.dMin);
 	glUniform1i(m_numberOfCamerasID_t, m_numberOfCameras);
+
 	glUniform1i(m_mipLayerID_t, layer);
 
 	glUniform1f(m_cID, 0.02f * 0.1f);
@@ -1495,9 +1505,9 @@ void gFusion::getSDFReduction(std::vector<float>& b, std::vector<float>& C, floa
 // a running fusion of the current frames tsdf is fused against other cameras tp prevent the tsdf being set to zero for voxels that are occluded from their own view but are perfectly valid in other views
 void gFusion::integrate(bool forceIntegrate)
 {
-	//glBeginQuery(GL_TIME_ELAPSED, query[2]);
+	glBeginQuery(GL_TIME_ELAPSED, query[2]);
 	integrateProg.use();
-	glUniformSubroutinesuiv(GL_COMPUTE_SHADER, 1, &m_integrateExperimentalID);
+	//glUniformSubroutinesuiv(GL_COMPUTE_SHADER, 1, &m_integrateExperimentalID);
 
 	glm::mat4 d2d = (m_depthToDepth);
 
@@ -1533,7 +1543,7 @@ void gFusion::integrate(bool forceIntegrate)
 
 		glUniform1f(m_muID, configuration.mu);
 		//glUniform1i(m_cameraDeviceID_i, i);
-		//glUniform1i(m_numberOfCamerasID_i, m_numberOfCameras);
+		glUniform1i(m_numberOfCamerasID_i, m_numberOfCameras);
 
 		glUniform1f(m_dMaxID_i, configuration.dMax);
 		glUniform1f(m_dMinID_i, configuration.dMin);
@@ -1559,6 +1569,21 @@ void gFusion::integrate(bool forceIntegrate)
 		glDispatchCompute(xWidth, yWidth, 1);
 		glMemoryBarrier(GL_ALL_BARRIER_BITS);
 	//}
+
+		glEndQuery(GL_TIME_ELAPSED);
+
+
+	GLuint available = 0;
+	while (!available) {
+		glGetQueryObjectuiv(query[2], GL_QUERY_RESULT_AVAILABLE, &available);
+	}
+
+	// elapsed time in nanoseconds
+	GLuint64 elapsed;
+	glGetQueryObjectui64vEXT(query[2], GL_QUERY_RESULT, &elapsed);
+
+	integrateTime = elapsed / 1000000.0;
+
 
 }
 

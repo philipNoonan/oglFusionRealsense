@@ -708,7 +708,7 @@ void setUI()
 
 			if (ImGui::Button("P2P")) trackDepthToPoint ^= 1; ImGui::SameLine(); ImGui::Checkbox("", &trackDepthToPoint); ImGui::SameLine();
 			if (ImGui::Button("P2V")) trackDepthToVolume ^= 1; ImGui::SameLine(); ImGui::Checkbox("", &trackDepthToVolume);
-			if (ImGui::Button("Multi")) useMultipleFusion ^= 1; ImGui::SameLine(); ImGui::Checkbox("", &useMultipleFusion);
+			//if (ImGui::Button("Multi")) useMultipleFusion ^= 1; ImGui::SameLine(); ImGui::Checkbox("", &useMultipleFusion);
 
 
 			ImGui::Text("Resolution");
@@ -1314,14 +1314,14 @@ int main(int, char**)
 
 			if (tracked && integratingFlag && ((counter % 1) == 0) || reset)
 			{
-				if (useMultipleFusion)
-				{
+				//if (useMultipleFusion)
+				//{
 					gfusion.integrate(reset);
-				}
-				else
-				{
-					gfusion.integrate(cameraDevice);
-				}
+				//}
+				//else
+				//{
+				//	gfusion.integrate(cameraDevice);
+				//}
 
 				if (counter > 2)
 					reset = false;
