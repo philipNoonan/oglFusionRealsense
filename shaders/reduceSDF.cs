@@ -32,9 +32,6 @@ void main()
 {
     uint sline = gl_LocalInvocationID.x; // 0 - 111
     uint offset = uint(devNumber * imageSize.x * imageSize.y);
-
-
-
     float sums[32];
     // sums[0] reserved
     // sums[1] - sums[6] = g0 - g5

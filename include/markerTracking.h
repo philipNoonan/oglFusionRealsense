@@ -21,7 +21,7 @@
 #include <mutex>
 #include <shared_mutex>
 
-#include "gem.h"
+//#include "gem.h"
 
 namespace arucoStatus
 {
@@ -75,6 +75,7 @@ public:
 	void filterOutliers();
 
 	void detectPairs();
+	void detectExtrinsicFromFractal();
 
 	void setStereoPair(cv::Mat image0, cv::Mat image1);
 	void stereoCalibrate(glm::mat4 &cam2cam);
@@ -120,6 +121,7 @@ private:
 	void trackGEM();
 
 	glm::mat4 getMatrixFromMarker(aruco::Marker marker);
+	glm::mat4 getMatrixFromFractal(int devNumber);
 
 	int m_cameraDevice;
 	int m_numberOfCameras;
@@ -135,7 +137,10 @@ private:
 	std::vector<arucoStatus::Status> m_status;
 	std::vector<std::vector<aruco::Marker>> m_markers;
 
-	gem::GeometryExtendedMarker *m_gemMarker = NULL;
+	std::vector<aruco::FractalDetector> FDetector;
+
+
+	//gem::GeometryExtendedMarker *m_gemMarker = NULL;
 	std::vector<std::vector<std::vector<aruco::Marker>>> m_calibrationSamples;
 	int m_samplingCount = 0;
 	gemStatus::Status m_statusGem;

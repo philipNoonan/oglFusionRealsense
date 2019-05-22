@@ -122,6 +122,9 @@ void gFusion::setLocations()
 	m_integrateMultipleID = glGetSubroutineIndex(integrateProg.getHandle(), GL_COMPUTE_SHADER, "integrateMultiple");
 	m_integrateExperimentalID = glGetSubroutineIndex(integrateProg.getHandle(), GL_COMPUTE_SHADER, "integrateExperimental");
 
+	m_cameraPosesID_i = glGetUniformLocation(integrateProg.getHandle(), "cameraPoses");
+	m_cameraIntrinsicsID_i = glGetUniformLocation(integrateProg.getHandle(), "cameraIntrinsics");
+	m_inverseCameraIntrinsicsID_i = glGetUniformLocation(integrateProg.getHandle(), "inverseCameraIntrinsics");
 	m_invTrackID = glGetUniformLocation(integrateProg.getHandle(), "invTrack");
 	m_KID = glGetUniformLocation(integrateProg.getHandle(), "Kmat");
 	m_invKID_i = glGetUniformLocation(integrateProg.getHandle(), "invK");
@@ -411,7 +414,6 @@ void gFusion::resetPose(glm::mat4 pose)
 
 void gFusion::allocateBuffers()
 {
-
 	// REDUCTION BUFFER OBJECT
 	m_reduction.resize(configuration.depthFrameSize.x * configuration.depthFrameSize.y);
 	size_t reductionSize = configuration.depthFrameSize.x * configuration.depthFrameSize.y * (sizeof(GLint) + (sizeof(GLfloat) * 7)); // this is the size of one reduction element 1 int + 1 float + 6 float
@@ -426,43 +428,21 @@ void gFusion::allocateBuffers()
 	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, m_buffer_outputdata);
 	glBufferData(GL_SHADER_STORAGE_BUFFER, 32 * 8 * sizeof(float), &m_outputdata[0], GL_STATIC_DRAW);
 
-	//// MARCHING CUBES BUFFERS
-	//size_t memSize = sizeof(GLuint) * mcubeConfiguration.numVoxels;
-	//size_t memSizeVec4 = sizeof(float) * 4 * mcubeConfiguration.maxVerts;
+	glGenBuffers(1, &m_bufferCameraData);
+	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 4, m_bufferCameraData);
+	glBufferData(GL_SHADER_STORAGE_BUFFER, 4 * sizeof(glm::mat4), NULL, GL_DYNAMIC_READ);
 
-	//glGenBuffers(1, &m_bufferVoxelVerts);
-	//glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, m_bufferVoxelVerts);
-	//glBufferData(GL_SHADER_STORAGE_BUFFER, memSize, NULL, GL_DYNAMIC_DRAW);
-	//
-	//glGenBuffers(1, &m_bufferVoxelOccupied);
-	//glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 3, m_bufferVoxelOccupied);
-	//glBufferData(GL_SHADER_STORAGE_BUFFER, memSize, NULL, GL_DYNAMIC_DRAW);
+	glGenBuffers(1, &m_bufferCameraData_i);
+	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 5, m_bufferCameraData_i);
+	glBufferData(GL_SHADER_STORAGE_BUFFER, 4 * sizeof(glm::mat4), NULL, GL_DYNAMIC_READ);
 
-	//glGenBuffers(1, &m_bufferVoxelOccupiedScan);
-	//glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 4, m_bufferVoxelOccupiedScan);
-	//glBufferData(GL_SHADER_STORAGE_BUFFER, memSize, NULL, GL_DYNAMIC_DRAW);
-	//
-	//glGenBuffers(1, &m_bufferCompactedVoxelArray);
-	//glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 5, m_bufferCompactedVoxelArray);
-	//glBufferData(GL_SHADER_STORAGE_BUFFER, memSize, NULL, GL_DYNAMIC_DRAW);
-	//
-	//glGenBuffers(1, &m_bufferVoxelVertsScan);
-	//glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 6, m_bufferVoxelVertsScan);
-	//glBufferData(GL_SHADER_STORAGE_BUFFER, memSize, NULL, GL_DYNAMIC_DRAW);
+	//glGenBuffers(1, &m_bufferCameraIntrinsics);
+	//glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 6, m_bufferCameraIntrinsics);
+	//glBufferData(GL_SHADER_STORAGE_BUFFER, 4 * sizeof(glm::mat4), NULL, GL_DYNAMIC_READ);
 
-	//glGenBuffers(1, &m_bufferPos);
-	//glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 7, m_bufferPos);
-	//glBufferData(GL_SHADER_STORAGE_BUFFER, memSizeVec4, NULL, GL_DYNAMIC_DRAW);
-
-	//glGenBuffers(1, &m_bufferNorm);
-	//glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 8, m_bufferNorm);
-	//glBufferData(GL_SHADER_STORAGE_BUFFER, memSizeVec4, NULL, GL_DYNAMIC_DRAW);
-
-	//glGenBuffers(1, &m_bufferPrefixSumByGroup);
-	//glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 11, m_bufferPrefixSumByGroup);
-	//glBufferData(GL_SHADER_STORAGE_BUFFER, memSize / 1024, NULL, GL_DYNAMIC_DRAW);
-
-
+	glGenBuffers(1, &m_bufferInverseCameraIntrinsics);
+	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 7, m_bufferInverseCameraIntrinsics);
+	glBufferData(GL_SHADER_STORAGE_BUFFER, 4 * sizeof(glm::mat4), NULL, GL_DYNAMIC_READ);
 
 	size_t reductionSDFSize = m_numberOfCameras * configuration.depthFrameSize.y * configuration.depthFrameSize.x * (sizeof(GLint) + sizeof(GLfloat) * 8); // this is the size of one reduction element 1 int + 1 float + 1 float + 6 float
 	glGenBuffers(1, &m_bufferSDFReduction);
@@ -474,22 +454,12 @@ void gFusion::allocateBuffers()
 	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 13, m_bufferSDFoutputdata);
 	glBufferData(GL_SHADER_STORAGE_BUFFER, 32 * 8 * sizeof(float), NULL, GL_STATIC_DRAW);
 
-	glGenBuffers(1, &m_bufferCameraData);
-	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 4, m_bufferCameraData); // this could just be uniform buffer rather than shader storage bufer
-	glBufferData(GL_SHADER_STORAGE_BUFFER, 4 * 16 * sizeof(float), NULL, GL_DYNAMIC_READ); // 4 x mat4
-
-	glGenBuffers(1, &m_bufferCameraData_i);
-	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 5, m_bufferCameraData_i); // this could just be uniform buffer rather than shader storage bufer
-	glBufferData(GL_SHADER_STORAGE_BUFFER, 4 * 16 * sizeof(float), NULL, GL_DYNAMIC_READ); // 4 x mat4
 
 
 	// TESTS
 	glGenBuffers(1, &m_buffer_testInput);
 	glGenBuffers(1, &m_buffer_testOutput);
 	glGenBuffers(1, &m_buffer_testMidput);
-
-
-
 
 	m_trackedPoints3D.resize(configuration.depthFrameSize.y * configuration.depthFrameSize.y * 3);
 	int xOffTrack = configuration.depthFrameSize.y / 2;
@@ -504,8 +474,6 @@ void gFusion::allocateBuffers()
 			m_trackedPoints3D[j * configuration.depthFrameSize.y * 2 + i] = ((int)configuration.depthFrameSize.x >> 1) - xOffTrack + (i / 3) * xSpacing;
 			m_trackedPoints3D[j * configuration.depthFrameSize.y * 2 + i + 1] = ((int)configuration.depthFrameSize.x >> 1) - yOffTrack + j * ySpacing;
 			m_trackedPoints3D[j * configuration.depthFrameSize.y * 2 + i + 2] = 0.0f;
-
-
 		}
 	}
 
@@ -513,10 +481,6 @@ void gFusion::allocateBuffers()
 	glBindBuffer(GL_SHADER_STORAGE_BUFFER, m_trackedPoints3DBuffer);
 	glBufferData(GL_SHADER_STORAGE_BUFFER, m_trackedPoints3D.size() * sizeof(float), m_trackedPoints3D.data(), GL_DYNAMIC_DRAW);
 	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 14, m_trackedPoints3DBuffer);
-
-
-
-
 }
 
 void gFusion::resetTimes()
@@ -1113,7 +1077,7 @@ bool gFusion::TrackSDF() {
 			//std::cout << "AE: " << alignmentEnergy << " snorm : " << Cnorm << " vec " << result.transpose() << std::endl;
 
 			//std::cout << "cnrom :" << Cnorm << std::endl;
-			if (alignmentEnergy != 0 && Cnorm < 1e-3)
+			if (alignmentEnergy != 0 && alignmentEnergy < 1e-3 || Cnorm < 1e-3)
 			{
 				//std::cout << "tracked!!! iteration " << iteration << " level " << level << " AE: " << alignmentEnergy << " snorm : " << Cnorm << " vec " << result.transpose() << std::endl;
 
@@ -1511,11 +1475,25 @@ void gFusion::integrate(bool forceIntegrate)
 
 	glm::mat4 d2d = (m_depthToDepth);
 
-	//for (int i = 0; i < m_numberOfCameras; i++)
-	//{
+	glm::mat4 integratePose = glm::inverse(m_pose * d2d);
+	glm::mat4 K = GLHelper::getCameraMatrix(m_camPamsDepth[0]); // make sure im set!!!!!!!!!!!!!!!!!!
+	glm::mat4 invK = GLHelper::getInverseCameraMatrix(m_camPamsDepth[0]);
+
+
 	glm::mat4 cameraPoses[4];
 	cameraPoses[0] = glm::inverse(m_pose);
 	cameraPoses[1] = glm::inverse(m_pose * d2d);
+
+	glm::mat4 cameraIntrinsics[4];
+	glm::mat4 inverseCameraIntrinsics[4];
+
+	for (int i = 0; i < m_numberOfCameras; i++)
+	{
+		cameraIntrinsics[i] = GLHelper::getCameraMatrix(m_camPamsDepth[i]);;
+		inverseCameraIntrinsics[i] = GLHelper::getInverseCameraMatrix(m_camPamsDepth[i]);;
+
+	}
+
 
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D_ARRAY, m_textureDepthArray);
@@ -1523,54 +1501,53 @@ void gFusion::integrate(bool forceIntegrate)
 	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 5, m_bufferCameraData); // this could just be uniform buffer rather than shader storage bufer
 	glBufferData(GL_SHADER_STORAGE_BUFFER, 4 * sizeof(glm::mat4), glm::value_ptr(cameraPoses[0]), GL_DYNAMIC_READ); // 4 x mat4
 
+	//glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 6, m_bufferCameraIntrinsics); // this could just be uniform buffer rather than shader storage bufer
+	//glBufferData(GL_SHADER_STORAGE_BUFFER, 4 * sizeof(glm::mat4), glm::value_ptr(cameraIntrinsics[0]), GL_DYNAMIC_READ); // 4 x mat4
 
+	//glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 7, m_bufferInverseCameraIntrinsics); // this could just be uniform buffer rather than shader storage bufer
+	//glBufferData(GL_SHADER_STORAGE_BUFFER, 4 * sizeof(glm::mat4), glm::value_ptr(cameraIntrinsics[0]), GL_DYNAMIC_READ); // 4 x mat4
 
-		glm::mat4 integratePose = glm::inverse(m_pose * d2d);
-		glm::mat4 K = GLHelper::getCameraMatrix(m_camPamsDepth[0]); // make sure im set!!!!!!!!!!!!!!!!!!
-		glm::mat4 invK = GLHelper::getInverseCameraMatrix(m_camPamsDepth[0]);
+	integratePose[3][3] = configuration.dMax;
+	integratePose[2][3] = configuration.dMin;
+	integratePose[1][3] = 0;
+	integratePose[0][3] = m_numberOfCameras;
 
-		integratePose[3][3] = configuration.dMax;
-		integratePose[2][3] = configuration.dMin;
-		integratePose[1][3] = 0;
-		integratePose[0][3] = m_numberOfCameras;
+	// bind uniforms
+	glUniformMatrix4fv(m_cameraPosesID_i, 4, GL_FALSE, glm::value_ptr(cameraPoses[0]));
+	glUniformMatrix4fv(m_cameraIntrinsicsID_i, 4, GL_FALSE, glm::value_ptr(cameraIntrinsics[0]));
+	glUniformMatrix4fv(m_inverseCameraIntrinsicsID_i, 4, GL_FALSE, glm::value_ptr(inverseCameraIntrinsics[0]));
 
-		// bind uniforms
-		glUniform1i(m_forceIntegrateID, forceIntegrate ? 1 : 0);
-		
-		glUniformMatrix4fv(m_invTrackID, 1, GL_FALSE, glm::value_ptr(integratePose));
-		glUniformMatrix4fv(m_KID, 1, GL_FALSE, glm::value_ptr(K));
-		glUniformMatrix4fv(m_invKID_i, 1, GL_FALSE, glm::value_ptr(invK));
+	glUniform1i(m_forceIntegrateID, forceIntegrate ? 1 : 0);
 
-		glUniform1f(m_muID, configuration.mu);
-		//glUniform1i(m_cameraDeviceID_i, i);
-		glUniform1i(m_numberOfCamerasID_i, m_numberOfCameras);
+	glUniformMatrix4fv(m_invTrackID, 1, GL_FALSE, glm::value_ptr(integratePose));
+	glUniformMatrix4fv(m_KID, 1, GL_FALSE, glm::value_ptr(K));
 
-		glUniform1f(m_dMaxID_i, configuration.dMax);
-		glUniform1f(m_dMinID_i, configuration.dMin);
-		glUniform1f(m_maxWeightID, configuration.maxWeight);
-		glUniform3fv(m_volDimID, 1, glm::value_ptr(configuration.volumeDimensions));
-		glUniform3fv(m_volSizeID, 1, glm::value_ptr(configuration.volumeSize));
-		//bind image textures
-		glBindImageTexture(0, m_textureVolume, 0, GL_FALSE, 0, GL_READ_WRITE, GL_RGBA16F);
+	glUniformMatrix4fv(m_invKID_i, 1, GL_FALSE, glm::value_ptr(invK));
 
+	glUniform1f(m_muID, configuration.mu);
+	//glUniform1i(m_cameraDeviceID_i, i);
+	glUniform1i(m_numberOfCamerasID_i, m_numberOfCameras);
 
-		glUniform1i(m_imageTypeID_i, 0); // image type 0 == short
-		glUniform1f(m_depthScaleID, m_depthUnit / 1000000.0f); // 1000 == each depth unit == 1 mm
+	glUniform1f(m_dMaxID_i, configuration.dMax);
+	glUniform1f(m_dMinID_i, configuration.dMin);
+	glUniform1f(m_maxWeightID, configuration.maxWeight);
+	glUniform3fv(m_volDimID, 1, glm::value_ptr(configuration.volumeDimensions));
+	glUniform3fv(m_volSizeID, 1, glm::value_ptr(configuration.volumeSize));
+	//bind image textures
+	glBindImageTexture(0, m_textureVolume, 0, GL_FALSE, 0, GL_READ_WRITE, GL_RGBA16F);
 
-		//glBindImageTexture(2, m_textureDepth[0], 0, GL_FALSE, 0, GL_READ_ONLY, GL_R16UI);
-		//glBindImageTexture(3, m_textureVertex[0], 0, GL_FALSE, 0, GL_READ_ONLY, GL_RGBA32F);
+	glUniform1i(m_imageTypeID_i, 0); // image type 0 == short
+	glUniform1f(m_depthScaleID, m_depthUnit / 1000000.0f); // 1000 == each depth unit == 1 mm
 
+	int xWidth;
+	int yWidth;
+	xWidth = divup(configuration.volumeSize.x, 32);
+	yWidth = divup(configuration.volumeSize.y, 32);
 
-		int xWidth;
-		int yWidth;
-		xWidth = divup(configuration.volumeSize.x, 32);
-		yWidth = divup(configuration.volumeSize.y, 32);
+	glDispatchCompute(xWidth, yWidth, 1);
+	glMemoryBarrier(GL_ALL_BARRIER_BITS);
 
-		glDispatchCompute(xWidth, yWidth, 1);
-		glMemoryBarrier(GL_ALL_BARRIER_BITS);
-	//}
-
-		glEndQuery(GL_TIME_ELAPSED);
+	glEndQuery(GL_TIME_ELAPSED);
 
 
 	GLuint available = 0;

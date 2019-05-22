@@ -438,7 +438,9 @@ private:
 	GLuint m_cameraDeviceID_i;
 	GLuint m_numberOfCamerasID_i;
 	GLuint m_forceIntegrateID;
-
+	GLuint m_cameraPosesID_i;
+	GLuint m_cameraIntrinsicsID_i;
+	GLuint m_inverseCameraIntrinsicsID_i;
 
 
 	// INTEGRTATE UB
@@ -554,6 +556,8 @@ private:
 
 	GLuint m_bufferCameraData;
 	GLuint m_bufferCameraData_i;
+	GLuint m_bufferCameraIntrinsics;
+	GLuint m_bufferInverseCameraIntrinsics;
 
 	GLuint m_buffer_testInput;
 	GLuint m_buffer_testOutput;

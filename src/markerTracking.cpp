@@ -2,15 +2,15 @@
 
 void MarkerTracker::configGEM()
 {
-	m_MDetector[m_cameraDevice].loadParamsFromFile("./resources/dodecConfig.yml");
+	//m_MDetector[m_cameraDevice].loadParamsFromFile("./resources/dodecConfig.yml");
 
-	aruco::Dictionary dict;
-	//auto myDict = dict.loadFromFile(m_MDetector.getParameters().dictionary);
-	m_gemMarker = new gem::GeometryExtendedMarker(0.036f, dict.loadFromFile(m_MDetector[m_cameraDevice].getParameters().dictionary));
-	m_gemMarker->setTrackingRange(0.01, 1.0);
-	m_gemMarker->setTrackingDistanceThreshold(0.003);
-	m_gemMarker->setTrackingRotationThreshold(3.0);
-	m_gemMarker->setBaseSubmarker(0);
+	//aruco::Dictionary dict;
+	////auto myDict = dict.loadFromFile(m_MDetector.getParameters().dictionary);
+	//m_gemMarker = new gem::GeometryExtendedMarker(0.036f, dict.loadFromFile(m_MDetector[m_cameraDevice].getParameters().dictionary));
+	//m_gemMarker->setTrackingRange(0.01, 1.0);
+	//m_gemMarker->setTrackingDistanceThreshold(0.003);
+	//m_gemMarker->setTrackingRotationThreshold(3.0);
+	//m_gemMarker->setBaseSubmarker(0);
 
 }
 
@@ -26,8 +26,11 @@ void MarkerTracker::setCamPams(int camDev, float fx, float fy, float cx, float c
 	m_camPams[camDev].setParams(camMat, camDist, cv::Size(width, height));
 	//double projMat[16];
 	//m_camPams[0].glGetProjectionMatrix(cv::Size(848, 480), cv::Size(848, 480), projMat, 0.1, 10.0, true);
+	FDetector[camDev].setConfiguration("FRACTAL_3L_6");
 
+	FDetector[camDev].setParams(m_camPams[camDev], 0.112f);
 
+	//FDetector[camDev].conver
 
 }
 
@@ -172,7 +175,8 @@ void MarkerTracker::useGEM()
 		}
 		case gemStatus::PAIRING:
 		{
-			detectPairs();
+			//detectPairs();
+			detectExtrinsicFromFractal();
 			break;
 		}
 		default: 
@@ -180,6 +184,36 @@ void MarkerTracker::useGEM()
 			break;
 	}
 
+}
+
+glm::mat4 MarkerTracker::getMatrixFromFractal(int devNumber)
+{
+	cv::Mat rvec = FDetector[devNumber].getRvec();
+	cv::Mat tvec = FDetector[devNumber].getTvec();
+
+	glm::vec3 r = glm::vec3(rvec.at<double>(0, 0), rvec.at<double>(1, 0), rvec.at<double>(2, 0));
+	float theta = glm::sqrt((r.x*r.x +
+		r.y*r.y +
+		r.z*r.z));
+
+	glm::vec3 R = r / theta;
+
+	float lenR = glm::length(R);
+
+	glm::quat rotQuat;
+
+	rotQuat.w = glm::cos(theta / 2.0);
+	rotQuat.x = R.x * glm::sin(theta / 2.0);
+	rotQuat.y = R.y * glm::sin(theta / 2.0);
+	rotQuat.z = R.z * glm::sin(theta / 2.0);
+
+	glm::mat4 rotMat = glm::toMat4(rotQuat);
+
+	rotMat[3][0] = tvec.at<double>(0, 0) *  (0.112 / 2.0);
+	rotMat[3][1] = tvec.at<double>(1, 0) *  (0.112 / 2.0);
+	rotMat[3][2] = tvec.at<double>(2, 0) *  (0.112 / 2.0);
+
+	return rotMat;
 }
 
 glm::mat4 MarkerTracker::getMatrixFromMarker(aruco::Marker marker)
@@ -215,6 +249,24 @@ glm::mat4 MarkerTracker::getMatrixFromMarker(aruco::Marker marker)
 	return rotMat;
 }
 
+void MarkerTracker::detectExtrinsicFromFractal()
+{
+	glm::mat4 rotMat0 = getMatrixFromFractal(0);
+	glm::mat4 rotMat1 = getMatrixFromFractal(1);
+
+	m_cam2cam = rotMat0 * glm::inverse(rotMat1);
+
+	
+
+	std::cout << "paired : " << glm::to_string(m_cam2cam) << std::endl;
+	//std::cout << "inverted : " << glm::to_string(glm::inverse(meanCam2Cam)) << std::endl;
+
+
+	m_statusGem = gemStatus::PAIRED;
+
+	m_pairStatus = true;
+
+}
 void MarkerTracker::detectPairs()
 {
 	std::vector<int> pairIDs;
@@ -309,14 +361,21 @@ void MarkerTracker::setupAruco()
 	m_status.resize(m_numberOfCameras);
 	m_markers.resize(m_numberOfCameras);
 	m_calibrationSamples.resize(m_numberOfCameras);
+	FDetector.resize(m_numberOfCameras);
 
 	for (int i = 0; i < m_numberOfCameras; i++)
 	{
+
+
+
 		m_MDetector[i].loadParamsFromFile("./resources/dodecConfig.yml");
 
 		m_status[i] = arucoStatus::STOPPED;
 	}
 	m_statusGem = gemStatus::STOPPED;
+
+
+
 }
 
 void MarkerTracker::collectSamples()
@@ -341,14 +400,14 @@ void MarkerTracker::autoCalibrate()
 
 void MarkerTracker::calibrate()
 {
-	if (m_gemMarker->calibrateTransformations(m_calibrationSamples[m_cameraDevice]))
+	/*if (m_gemMarker->calibrateTransformations(m_calibrationSamples[m_cameraDevice]))
 	{
 		m_gemMarker->printTransformationSummary();
 	}
 	else
 	{
 		std::cout << "Calibration failed." << std::endl;
-	}
+	}*/
 }
 
 void MarkerTracker::clearCalibration()
@@ -358,16 +417,16 @@ void MarkerTracker::clearCalibration()
 
 void MarkerTracker::trackGEM()
 {
-	std::map<int, std::pair<glm::dvec3, glm::dquat>> empty;
-	empty.swap(m_poses);
-	m_poses = m_gemMarker->estimateSubmarkerPoses(m_markers[m_cameraDevice]);
-	m_globalPoseTracked = m_gemMarker->estimateGlobalPose(m_globalPos, m_globalOri, m_poses);
-	//std::cout << "size of detected markers : " << m_markers.size() << " : size of submarkers : " << m_poses.size() << std::endl;
-	//std::cout << "global tracked : " << m_globalPoseTracked << std::endl;
-	//for (map<int, pair<glm::dvec3, glm::dquat>>::iterator pose = m_poses.begin(); pose != m_poses.end(); pose++)
-	//{
-	//	glm::dmat4 modelview = gem::glMatFromVecQuat(pose->second.first, pose->second.second);
-	//}
+	//std::map<int, std::pair<glm::dvec3, glm::dquat>> empty;
+	//empty.swap(m_poses);
+	//m_poses = m_gemMarker->estimateSubmarkerPoses(m_markers[m_cameraDevice]);
+	//m_globalPoseTracked = m_gemMarker->estimateGlobalPose(m_globalPos, m_globalOri, m_poses);
+	////std::cout << "size of detected markers : " << m_markers.size() << " : size of submarkers : " << m_poses.size() << std::endl;
+	////std::cout << "global tracked : " << m_globalPoseTracked << std::endl;
+	////for (map<int, pair<glm::dvec3, glm::dquat>>::iterator pose = m_poses.begin(); pose != m_poses.end(); pose++)
+	////{
+	////	glm::dmat4 modelview = gem::glMatFromVecQuat(pose->second.first, pose->second.second);
+	////}
 
 
 
@@ -376,7 +435,7 @@ void MarkerTracker::trackGEM()
 
 void MarkerTracker::exportCalibration()
 {
-	m_gemMarker->saveCalibrations(m_MDetector[m_cameraDevice].getParameters().dictionary + ".calib");
+	//m_gemMarker->saveCalibrations(m_MDetector[m_cameraDevice].getParameters().dictionary + ".calib");
 }
 
 
@@ -422,17 +481,51 @@ bool MarkerTracker::detect()
 	{
 		if (!m_targetMat.empty())
 		{
-			//std::cout << "inside second loop" << std::endl;
-			//m_mtx.lock();
 
-			auto markers = m_MDetector[m_cameraDevice].detect(m_targetMat, m_camPams[m_cameraDevice], 0.036f);
-			//std::lock_guard<std::shared_timed_mutex> lk(m_shared_mtx);
-			//m_mtx.lock();
-			m_markers[m_cameraDevice] = markers;
+			cv::Mat outMat;
+			m_targetMat.copyTo(outMat);
+
+
+			if (FDetector[m_cameraDevice].detect(outMat))
+			{
+				FDetector[m_cameraDevice].drawMarkers(outMat);
+			}
+			if (FDetector[m_cameraDevice].poseEstimation()) {
+
+				FDetector[m_cameraDevice].draw3d(outMat); //3d
+				cv::Mat tvec = FDetector[m_cameraDevice].getTvec();
+
+				//std::cout << tvec.at<double>(2, 0) * (0.112 / 2.0) << std::endl;
+			}
+			else
+				FDetector[m_cameraDevice].draw2d(outMat); //Ok, show me at least the inner corners!
+
+			cv::imshow("FD", outMat);
+			cv::waitKey(1);
+
+			//m_markers[m_cameraDevice] = FDetector.getMarkers();
+
 			
-			//m_mtx.unlock();
 
-			//std::cout << "marker size : " << m_markers.size() << std::endl;
+
+
+
+
+
+
+
+
+			////std::cout << "inside second loop" << std::endl;
+			////m_mtx.lock();
+
+			//auto markers = m_MDetector[m_cameraDevice].detect(m_targetMat, m_camPams[m_cameraDevice], 0.036f);
+			////std::lock_guard<std::shared_timed_mutex> lk(m_shared_mtx);
+			////m_mtx.lock();
+			//m_markers[m_cameraDevice] = markers;
+			//
+			////m_mtx.unlock();
+
+			////std::cout << "marker size : " << m_markers.size() << std::endl;
 
 		}
 
@@ -442,7 +535,7 @@ bool MarkerTracker::detect()
 
 void MarkerTracker::filterOutliers()
 {
-	m_gemMarker->filterOutliers(m_markers[m_cameraDevice]).swap(m_markers[m_cameraDevice]);
+	//m_gemMarker->filterOutliers(m_markers[m_cameraDevice]).swap(m_markers[m_cameraDevice]);
 }
 
 void MarkerTracker::getMarkerData(std::vector<glm::mat4> &tMat)
@@ -460,7 +553,7 @@ void MarkerTracker::getMarkerData(std::vector<glm::mat4> &tMat)
 			int i = 0;
 			for (std::map<int, std::pair<glm::dvec3, glm::dquat>>::iterator pose = m_poses.begin(); pose != m_poses.end(); pose++, i++)
 			{
-				tMat[i] = gem::glMatFromVecQuat(pose->second.first, pose->second.second);
+				//tMat[i] = gem::glMatFromVecQuat(pose->second.first, pose->second.second);
 			}
 
 
@@ -488,7 +581,8 @@ void MarkerTracker::getMarkerData(std::vector<glm::mat4> &tMat)
 				//std::cout << "roddy : " << Rrod.at<float>(0, 1) << " " << Rrod.at<float>(1, 1) << " " << Rrod.at<float>(2, 1) << " " << std::endl;
 				//std::cout << "roddy : " << Rrod.at<float>(0, 2) << " " << Rrod.at<float>(1, 2) << " " << Rrod.at<float>(2, 2) << " " << std::endl;
 
-				glm::vec3 r = glm::vec3(markers[i].Rvec.at<float>(0, 0), markers[i].Rvec.at<float>(1, 0), markers[i].Rvec.at<float>(2, 0));
+				//glm::vec3 r = glm::vec3(markers[i].Rvec.at<float>(0, 0), markers[i].Rvec.at<float>(1, 0), markers[i].Rvec.at<float>(2, 0));
+				glm::vec3 r = glm::vec3(FDetector[m_cameraDevice].getRvec().at<float>(0, 0), FDetector[m_cameraDevice].getRvec().at<float>(1, 0), FDetector[m_cameraDevice].getRvec().at<float>(2, 0));
 
 				float theta = glm::sqrt((r.x*r.x +
 										 r.y*r.y +
@@ -512,9 +606,9 @@ void MarkerTracker::getMarkerData(std::vector<glm::mat4> &tMat)
 				//rotMat[1][2] *= -1.0;
 				//rotMat[2][2] *= -1.0;
 
-				rotMat[3][0] = markers[i].Tvec.at<float>(0, 0);
-				rotMat[3][1] = markers[i].Tvec.at<float>(1, 0);
-				rotMat[3][2] = markers[i].Tvec.at<float>(2, 0);
+				rotMat[3][0] = FDetector[m_cameraDevice].getTvec().at<float>(0, 0);
+				rotMat[3][1] = FDetector[m_cameraDevice].getTvec().at<float>(1, 0);
+				rotMat[3][2] = FDetector[m_cameraDevice].getTvec().at<float>(2, 0);
 
 
 				//double outGL[16];

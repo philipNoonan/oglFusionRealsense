@@ -97,14 +97,14 @@ void gFusionInit()
 	
 	for (int i = 0; i < numberOfCameras; i++)
 	{
-		gfusion.setCameraParams(i, glm::vec4(cameraInterface.getDepthIntrinsics(cameraDevice).fx,
-			cameraInterface.getDepthIntrinsics(cameraDevice).fy,
-			cameraInterface.getDepthIntrinsics(cameraDevice).cx,
-			cameraInterface.getDepthIntrinsics(cameraDevice).cy),
-			glm::vec4(cameraInterface.getColorIntrinsics(cameraDevice).fx,
-				cameraInterface.getColorIntrinsics(cameraDevice).fy,
-				cameraInterface.getColorIntrinsics(cameraDevice).cx,
-				cameraInterface.getColorIntrinsics(cameraDevice).cy));
+		gfusion.setCameraParams(i, glm::vec4(cameraInterface.getDepthIntrinsics(i).fx,
+			cameraInterface.getDepthIntrinsics(i).fy,
+			cameraInterface.getDepthIntrinsics(i).cx,
+			cameraInterface.getDepthIntrinsics(i).cy),
+			glm::vec4(cameraInterface.getColorIntrinsics(i).fx,
+				cameraInterface.getColorIntrinsics(i).fy,
+				cameraInterface.getColorIntrinsics(i).cx,
+				cameraInterface.getColorIntrinsics(i).cy));
 	}
 
 	glm::mat4 initPose = glm::translate(glm::mat4(1.0f), glm::vec3(gconfig.volumeDimensions.x / 2.0f, gconfig.volumeDimensions.y / 2.0f, 0.0f));
@@ -788,19 +788,19 @@ void setUI()
 
 				for (int i = 0; i < numberOfCameras; i++)
 				{
-					mTracker.setCamPams(i, cameraInterface.getDepthIntrinsics(i).fx,
-						cameraInterface.getDepthIntrinsics(i).fy,
-						cameraInterface.getDepthIntrinsics(i).cx,
-						cameraInterface.getDepthIntrinsics(i).cy,
-						depthFrameSize[i].x,
-						depthFrameSize[i].y);
+					//mTracker.setCamPams(i, cameraInterface.getDepthIntrinsics(i).fx,
+					//	cameraInterface.getDepthIntrinsics(i).fy,
+					//	cameraInterface.getDepthIntrinsics(i).cx,
+					//	cameraInterface.getDepthIntrinsics(i).cy,
+					//	depthFrameSize[i].x,
+					//	depthFrameSize[i].y);
 
-					//mTracker.setCamPams(i, cameraInterface.getColorIntrinsics(i).fx,
-					//	cameraInterface.getColorIntrinsics(i).fy,
-					//	cameraInterface.getColorIntrinsics(i).cx,
-					//	cameraInterface.getColorIntrinsics(i).cy,
-					//	colorFrameSize[i].x,
-					//	colorFrameSize[i].y);
+					mTracker.setCamPams(i, cameraInterface.getColorIntrinsics(i).fx,
+						cameraInterface.getColorIntrinsics(i).fy,
+						cameraInterface.getColorIntrinsics(i).cx,
+						cameraInterface.getColorIntrinsics(i).cy,
+						colorFrameSize[i].x,
+						colorFrameSize[i].y);
 				}
 				performStereo ^= 1;
 
@@ -842,19 +842,19 @@ void setUI()
 
 					for (int i = 0; i < numberOfCameras; i++)
 					{
-						mTracker.setCamPams(i, cameraInterface.getDepthIntrinsics(i).fx,
-							cameraInterface.getDepthIntrinsics(i).fy,
-							cameraInterface.getDepthIntrinsics(i).cx,
-							cameraInterface.getDepthIntrinsics(i).cy,
-							depthFrameSize[i].x,
-							depthFrameSize[i].y);
+						//mTracker.setCamPams(i, cameraInterface.getDepthIntrinsics(i).fx,
+						//	cameraInterface.getDepthIntrinsics(i).fy,
+						//	cameraInterface.getDepthIntrinsics(i).cx,
+						//	cameraInterface.getDepthIntrinsics(i).cy,
+						//	depthFrameSize[i].x,
+						//	depthFrameSize[i].y);
 
-						//mTracker.setCamPams(i, cameraInterface.getColorIntrinsics(i).fx,
-						//	cameraInterface.getColorIntrinsics(i).fy,
-						//	cameraInterface.getColorIntrinsics(i).cx,
-						//	cameraInterface.getColorIntrinsics(i).cy,
-						//	colorFrameSize[i].x,
-						//	colorFrameSize[i].y);
+						mTracker.setCamPams(i, cameraInterface.getColorIntrinsics(i).fx,
+							cameraInterface.getColorIntrinsics(i).fy,
+							cameraInterface.getColorIntrinsics(i).cx,
+							cameraInterface.getColorIntrinsics(i).cy,
+							colorFrameSize[i].x,
+							colorFrameSize[i].y);
 					}
 
 					mTracker.configGEM();
@@ -1222,9 +1222,10 @@ int main(int, char**)
 				//cv::imshow("!", colMat);
 				//cv::waitKey(1);
 				mTracker.setCameraDevice(cameraDevice);
-				mTracker.setMat(infraMat);
+				mTracker.setMat(colMat);
 				mTracker.detect();
 				//mTracker.draw();
+
 			}
 
 			if (performAruco)
@@ -1255,9 +1256,19 @@ int main(int, char**)
 			{
 				cam2camTrans = mTracker.getCam2CamTransform();
 
+				glm::mat4 test0 = colorToDepth[0] * cam2camTrans * depthToColor[1];
+				//glm::mat4 test1 = colorToDepth[1] * cam2camTrans * depthToColor[0];
+				//glm::mat4 test01 = colorToDepth[0] * glm::inverse(cam2camTrans) * depthToColor[1];
+				//glm::mat4 test11 = colorToDepth[1] * glm::inverse(cam2camTrans) * depthToColor[0];
+
+				//std::cout << glm::to_string(test0) << std::endl;
+				//std::cout << glm::to_string(test1) << std::endl;
+				//std::cout << glm::to_string(test01) << std::endl;
+				//std::cout << glm::to_string(test11) << std::endl;
+
 				//gfusion.setColorToColor(cam2camTrans);
-				gfusion.setDepthToDepth(cam2camTrans);
-				krender.setDepthToDepth(cam2camTrans);
+				gfusion.setDepthToDepth(test0);
+				krender.setDepthToDepth(test0);
 				if (cameraDevice == 0)
 				{
 					krender.setOtherMarkerData(markerMats);

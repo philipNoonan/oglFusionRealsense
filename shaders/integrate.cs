@@ -14,8 +14,21 @@ layout(std430, binding = 5) buffer CameraData
     mat4 cameraMat [];
 };
 
+//layout(std430, binding = 6) buffer CameraIntrinsics
+//{
+//   mat4 cameraIntrins [];
+//};
+
+//layout(std430, binding = 7) buffer inverseCameraIntrinsics
+//{
+//    mat4 inverseCameraIntrins [];
+//};
+
 layout(binding = 0) uniform sampler2DArray depthTextureArray; // 
 
+uniform mat4 cameraPoses[4];
+uniform mat4 cameraIntrinsics[4];
+uniform mat4 inverseCameraIntrinsics[4];
 
 uniform float dMax;
 uniform float dMin;
@@ -77,12 +90,12 @@ void integrateExperimental()
     {
         for (int cameraDevice = 0; cameraDevice < numberOfCameras; cameraDevice++)
         {
-            trackMat = cameraMat[cameraDevice];
+            trackMat = cameraPoses[cameraDevice];
             
             // get world position of voxel 
             vec3 worldPos = vec3(trackMat * vec4(getVolumePosition(pix), 1.0f)).xyz;
             // get clip position
-            vec4 pClip = Kmat * vec4(worldPos, 1.0f);
+            vec4 pClip = cameraIntrinsics[cameraDevice] * vec4(worldPos, 1.0f);
             // determin if valid pixel for each camera
             vec2 pixel = vec2(pClip.x / pClip.z, pClip.y / pClip.z);
      
@@ -97,9 +110,9 @@ void integrateExperimental()
 
             //if (depth != 0)
             //{
-           //     imageStore(volumeData, ivec3(pix), vec4(0.1, 0.6, 0.9, 1.0f));
+            //    imageStore(volumeData, ivec3(pix), vec4(0.1, 0.6, 0.9, 1.0f));
             //}
-            vec4 depthPoint = (depth) * (invK * vec4(pixel.x, pixel.y, 1.0f, 0.0f));
+            vec4 depthPoint = (depth) * (inverseCameraIntrinsics[cameraDevice] * vec4(pixel.x, pixel.y, 1.0f, 0.0f));
             if (depthPoint.z <= 0.0f)
             {
                 diff[cameraDevice] = -10000.0f;
