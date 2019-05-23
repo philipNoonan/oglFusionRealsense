@@ -81,8 +81,8 @@ struct gFusionConfig
 		iterations.push_back(6);
 		track_threshold = 0.5f;
 		depthFrameSize = glm::vec2(848, 480);
-		dMax = 0.1f;
-		dMin = -0.04f;
+		dMax = 0.025f;
+		dMin = -0.024f;
 	}
 
 	float stepSize()
@@ -96,6 +96,18 @@ struct gFusionConfig
 		return minxyz / maxxyz;
 	}
 };
+
+struct integrateShaderConfigs
+{
+	int numberOfCameras;
+	float dMax;
+	float dMin;
+	float maxWeight;
+	float depthScale;
+	float volDim; // vol dim real world span of the volume in meters
+	float volSize; // voxel grid size of the volume 
+};
+
 //
 //struct mCubeConfig
 //{
@@ -553,6 +565,8 @@ private:
 	GLuint m_bufferCompactedVoxelArray;
 	GLuint m_bufferPos;
 	GLuint m_bufferNorm;
+
+	GLuint m_uboIntegrationConfig;
 
 	GLuint m_bufferCameraData;
 	GLuint m_bufferCameraData_i;

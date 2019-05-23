@@ -104,9 +104,9 @@ float SDF(vec3 location, inout bool validGradient)
     //}
 
     //return (a0 * (1.0 - y) + a1 * y) * (1.0 - x) + (b0 * (1.0 - y) + b1 * y) * x;
-    //float currSDF = float(textureLod(volumeDataTexture, locationInVolumeTexture, 0).x) * 0.000030517f;
+    float currSDF = float(textureLod(volumeDataTexture, locationInVolumeTexture, 0).x);
     //float currSDF = texelFetch(volumeDataTexture, ivec3(location), 0).x;
-    float currSDF = imageLoad(volumeData, ivec3(location)).x;
+    //float currSDF = imageLoad(volumeData, ivec3(location)).x;
     //float currSDF = texelFetch(volumeDataTexture, ivec3(location), 0).x;
 
     if (abs(currSDF) < 0.0001)
@@ -227,13 +227,13 @@ void main()
 
                 //float Dup = SDF(cvp + vec3(0,0,1));
 
-                float voxelLength = volDim.x / volSize.x; // in meters
+                //float voxelLength = volDim.x / volSize.x; // in meters
                                                           // umvox in 2.5 cm
-                float numVox = (min(dMax, dMin) / voxelLength) * 0.05f;
+                //float numVox = (min(dMax, dMin) / voxelLength) * 0.05f;
 
 
 
-                vec3 dSDF_dx = vec3(SDFGradient(cvp, vec3(numVox, 0, 0), numVox), SDFGradient(cvp, vec3(0, numVox, 0), numVox), SDFGradient(cvp, vec3(0, 0, numVox), numVox));
+                vec3 dSDF_dx = vec3(SDFGradient(cvp, vec3(1, 0, 0), 1), SDFGradient(cvp, vec3(0, 1, 0), 1), SDFGradient(cvp, vec3(0, 0, 1), 1));
 
 
 

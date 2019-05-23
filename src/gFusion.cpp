@@ -117,37 +117,10 @@ void gFusion::setLocations()
 
 	//std::cout << "imageSize " << m_imageSizeID << std::endl;
 	integrateProg.use();
-	m_integrateSubroutineID = glGetSubroutineUniformLocation(integrateProg.getHandle(), GL_COMPUTE_SHADER, "integrateSubroutine");
-	m_integrateStandardID = glGetSubroutineIndex(integrateProg.getHandle(), GL_COMPUTE_SHADER, "integrateStandard");
-	m_integrateMultipleID = glGetSubroutineIndex(integrateProg.getHandle(), GL_COMPUTE_SHADER, "integrateMultiple");
-	m_integrateExperimentalID = glGetSubroutineIndex(integrateProg.getHandle(), GL_COMPUTE_SHADER, "integrateExperimental");
-
 	m_cameraPosesID_i = glGetUniformLocation(integrateProg.getHandle(), "cameraPoses");
 	m_cameraIntrinsicsID_i = glGetUniformLocation(integrateProg.getHandle(), "cameraIntrinsics");
 	m_inverseCameraIntrinsicsID_i = glGetUniformLocation(integrateProg.getHandle(), "inverseCameraIntrinsics");
-	m_invTrackID = glGetUniformLocation(integrateProg.getHandle(), "invTrack");
-	m_KID = glGetUniformLocation(integrateProg.getHandle(), "Kmat");
-	m_invKID_i = glGetUniformLocation(integrateProg.getHandle(), "invK");
-	m_muID = glGetUniformLocation(integrateProg.getHandle(), "mu");
-	m_maxWeightID = glGetUniformLocation(integrateProg.getHandle(), "maxWeight");
-	m_volDimID = glGetUniformLocation(integrateProg.getHandle(), "volDim");
-	m_volSizeID = glGetUniformLocation(integrateProg.getHandle(), "volSize");
-	m_imageTypeID_i = glGetUniformLocation(integrateProg.getHandle(), "imageType");
-	m_depthScaleID_i = glGetUniformLocation(integrateProg.getHandle(), "depthScale");
-	m_dMaxID_i = glGetUniformLocation(integrateProg.getHandle(), "dMax");
-	m_dMinID_i = glGetUniformLocation(integrateProg.getHandle(), "dMin");
-	m_forceIntegrateID = glGetUniformLocation(integrateProg.getHandle(), "forceIntegrate");
-	//m_cameraDeviceID_i = glGetUniformLocation(integrateProg.getHandle(), "cameraDevice");
-	//m_numberOfCamerasID_i = glGetUniformLocation(integrateProg.getHandle(), "numberOfCameras");
 
-	//std::cout << "invTrack " << m_invTrackID << std::endl;
-	//std::cout << "Kmat " << m_KID << std::endl;
-	//std::cout << "mu " << m_muID << std::endl;
-	//std::cout << "maxWeight " << m_maxWeightID << std::endl;
-	//std::cout << "volDim " << m_volDimID << std::endl;
-	//std::cout << "volSize " << m_volSizeID << std::endl;
-	//std::cout << "imageType " << m_imageTypeID_i << std::endl;
-	//std::cout << "depthScale " << m_depthScaleID_i << std::endl;
 
 	raycastProg.use();
 	m_viewID_r = glGetUniformLocation(raycastProg.getHandle(), "view");
@@ -454,7 +427,14 @@ void gFusion::allocateBuffers()
 	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 13, m_bufferSDFoutputdata);
 	glBufferData(GL_SHADER_STORAGE_BUFFER, 32 * 8 * sizeof(float), NULL, GL_STATIC_DRAW);
 
+	glGenBuffers(1, &m_uboIntegrationConfig);
+	glBindBuffer(GL_UNIFORM_BUFFER, m_uboIntegrationConfig);
+	glBufferData(GL_UNIFORM_BUFFER, sizeof(integrateShaderConfigs), NULL, GL_DYNAMIC_DRAW);
+	glBindBuffer(GL_UNIFORM_BUFFER, 0);
 
+	//unsigned int block_index = glGetUniformBlockIndex(integrateProg.getHandle(), "Configs");
+
+	glBindBufferRange(GL_UNIFORM_BUFFER, 0, m_uboIntegrationConfig, 0, sizeof(integrateShaderConfigs));
 
 	// TESTS
 	glGenBuffers(1, &m_buffer_testInput);
@@ -1471,7 +1451,6 @@ void gFusion::integrate(bool forceIntegrate)
 {
 	glBeginQuery(GL_TIME_ELAPSED, query[2]);
 	integrateProg.use();
-	//glUniformSubroutinesuiv(GL_COMPUTE_SHADER, 1, &m_integrateExperimentalID);
 
 	glm::mat4 d2d = (m_depthToDepth);
 
@@ -1491,53 +1470,40 @@ void gFusion::integrate(bool forceIntegrate)
 	{
 		cameraIntrinsics[i] = GLHelper::getCameraMatrix(m_camPamsDepth[i]);;
 		inverseCameraIntrinsics[i] = GLHelper::getInverseCameraMatrix(m_camPamsDepth[i]);;
-
 	}
-
+	glm::vec4 vDim = glm::vec4(configuration.volumeDimensions, 0.0f);
+	glm::vec4 vSize = glm::vec4(configuration.volumeSize, 0.0f);
 
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D_ARRAY, m_textureDepthArray);
 
-	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 5, m_bufferCameraData); // this could just be uniform buffer rather than shader storage bufer
-	glBufferData(GL_SHADER_STORAGE_BUFFER, 4 * sizeof(glm::mat4), glm::value_ptr(cameraPoses[0]), GL_DYNAMIC_READ); // 4 x mat4
-
-	//glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 6, m_bufferCameraIntrinsics); // this could just be uniform buffer rather than shader storage bufer
-	//glBufferData(GL_SHADER_STORAGE_BUFFER, 4 * sizeof(glm::mat4), glm::value_ptr(cameraIntrinsics[0]), GL_DYNAMIC_READ); // 4 x mat4
-
-	//glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 7, m_bufferInverseCameraIntrinsics); // this could just be uniform buffer rather than shader storage bufer
-	//glBufferData(GL_SHADER_STORAGE_BUFFER, 4 * sizeof(glm::mat4), glm::value_ptr(cameraIntrinsics[0]), GL_DYNAMIC_READ); // 4 x mat4
-
-	integratePose[3][3] = configuration.dMax;
-	integratePose[2][3] = configuration.dMin;
-	integratePose[1][3] = 0;
-	integratePose[0][3] = m_numberOfCameras;
-
-	// bind uniforms
-	glUniformMatrix4fv(m_cameraPosesID_i, 4, GL_FALSE, glm::value_ptr(cameraPoses[0]));
-	glUniformMatrix4fv(m_cameraIntrinsicsID_i, 4, GL_FALSE, glm::value_ptr(cameraIntrinsics[0]));
-	glUniformMatrix4fv(m_inverseCameraIntrinsicsID_i, 4, GL_FALSE, glm::value_ptr(inverseCameraIntrinsics[0]));
-
-	glUniform1i(m_forceIntegrateID, forceIntegrate ? 1 : 0);
-
-	glUniformMatrix4fv(m_invTrackID, 1, GL_FALSE, glm::value_ptr(integratePose));
-	glUniformMatrix4fv(m_KID, 1, GL_FALSE, glm::value_ptr(K));
-
-	glUniformMatrix4fv(m_invKID_i, 1, GL_FALSE, glm::value_ptr(invK));
-
-	glUniform1f(m_muID, configuration.mu);
-	//glUniform1i(m_cameraDeviceID_i, i);
-	glUniform1i(m_numberOfCamerasID_i, m_numberOfCameras);
-
-	glUniform1f(m_dMaxID_i, configuration.dMax);
-	glUniform1f(m_dMinID_i, configuration.dMin);
-	glUniform1f(m_maxWeightID, configuration.maxWeight);
-	glUniform3fv(m_volDimID, 1, glm::value_ptr(configuration.volumeDimensions));
-	glUniform3fv(m_volSizeID, 1, glm::value_ptr(configuration.volumeSize));
-	//bind image textures
 	glBindImageTexture(0, m_textureVolume, 0, GL_FALSE, 0, GL_READ_WRITE, GL_RGBA16F);
 
-	glUniform1i(m_imageTypeID_i, 0); // image type 0 == short
-	glUniform1f(m_depthScaleID, m_depthUnit / 1000000.0f); // 1000 == each depth unit == 1 mm
+	// bind uniforms
+	glProgramUniformMatrix4fv(integrateProg.getHandle(), m_cameraPosesID_i, 4, GL_FALSE, glm::value_ptr(cameraPoses[0]));
+	glProgramUniformMatrix4fv(integrateProg.getHandle(), m_cameraIntrinsicsID_i, 4, GL_FALSE, glm::value_ptr(cameraIntrinsics[0]));
+	glProgramUniformMatrix4fv(integrateProg.getHandle(), m_inverseCameraIntrinsicsID_i, 4, GL_FALSE, glm::value_ptr(inverseCameraIntrinsics[0]));
+
+	integrateShaderConfigs shaderConfigs;
+	shaderConfigs.numberOfCameras = m_numberOfCameras;
+	shaderConfigs.dMax = configuration.dMax;
+	shaderConfigs.dMin = configuration.dMin;
+	shaderConfigs.maxWeight = configuration.maxWeight;
+	shaderConfigs.depthScale = m_depthUnit / 1000000.0f;
+	shaderConfigs.volDim = configuration.volumeDimensions.x;
+	shaderConfigs.volSize = configuration.volumeSize.x;
+
+	glBindBuffer(GL_UNIFORM_BUFFER, m_uboIntegrationConfig);
+	glBufferData(GL_UNIFORM_BUFFER, sizeof(integrateShaderConfigs), &shaderConfigs, GL_DYNAMIC_DRAW);
+	glBindBuffer(GL_UNIFORM_BUFFER, 0);
+
+	//glProgramUniform1i(integrateProg.getHandle(), m_numberOfCamerasID_i, m_numberOfCameras);
+	//glProgramUniform1f(integrateProg.getHandle(), m_dMaxID_i, configuration.dMax);
+	//glProgramUniform1f(integrateProg.getHandle(), m_dMinID_i, configuration.dMin);
+	//glProgramUniform1f(integrateProg.getHandle(), m_maxWeightID, configuration.maxWeight);
+	//glProgramUniform4fv(integrateProg.getHandle(), m_volDimID, 1, glm::value_ptr(vDim));
+	//glProgramUniform4fv(integrateProg.getHandle(), m_volSizeID, 1, glm::value_ptr(vSize));
+	//glProgramUniform1f(integrateProg.getHandle(), m_depthScaleID, m_depthUnit / 1000000.0f); // 1000 == each depth unit == 1 mm
 
 	int xWidth;
 	int yWidth;
@@ -1548,6 +1514,26 @@ void gFusion::integrate(bool forceIntegrate)
 	glMemoryBarrier(GL_ALL_BARRIER_BITS);
 
 	glEndQuery(GL_TIME_ELAPSED);
+
+	//GLint i;
+	//GLint count;
+
+	//GLint size; // size of the variable
+	//GLenum type; // type of the variable (float, vec3 or mat4, etc)
+
+	//const GLsizei bufSize = 16; // maximum name length
+	//GLchar name[bufSize]; // variable name in GLSL
+
+	//GLsizei length; // name length
+	//glGetProgramiv(integrateProg.getHandle(), GL_ACTIVE_UNIFORMS, &count);
+	//printf("Active Uniforms: %d\n", count);
+
+	//for (i = 0; i < count; i++)
+	//{
+	//	glGetActiveUniform(integrateProg.getHandle(), (GLuint)i, bufSize, &length, &size, &type, name);
+
+	//	printf("Uniform #%d Type: %u Name: %s\n", i, type, name);
+	//}
 
 
 	GLuint available = 0;
