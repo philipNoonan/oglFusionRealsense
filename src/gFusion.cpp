@@ -938,7 +938,7 @@ void gFusion::reduce(int devNumber, int layer)
 
 	//glBeginQuery(GL_TIME_ELAPSED, query[1]);
 
-	glm::ivec2 imageSize = glm::ivec2((int)configuration.depthFrameSize.x >> layer, (int)configuration.depthFrameSize.y >> layer);
+	glm::ivec2 imageSize = glm::ivec2((int)(configuration.depthFrameSize.x * m_numberOfCameras) >> layer, (int)configuration.depthFrameSize.y >> layer);
 
 	reduceProg.use();
 
@@ -1055,7 +1055,7 @@ bool gFusion::TrackSDF() {
 			dC_icp *= scaling;
 			db_icp *= scaling;
 
-			dC_icp = dC_icp + (double(iteration)*0.001)*Eigen::MatrixXd::Identity(6, 6);
+			dC_icp = dC_icp + (double(iteration))*Eigen::MatrixXd::Identity(6, 6);
 
 			//Eigen::JacobiSVD<Eigen::MatrixXd> svd(dC_icp, Eigen::ComputeFullU | Eigen::ComputeFullV);
 			//result = svd.solve(db_icp); // TODO CHECK THIS WORKS, SHOULD WE MAKE A BACK SUB SOLVER?
@@ -1081,71 +1081,6 @@ bool gFusion::TrackSDF() {
 				tracked = true;
 				break;
 			}
-
-
-			//m_pose_eig = Twist(result).exp() * m_pose_eig;
-
-
-
-
-			//result = dC_icp.inverse() * db_icp;
-
-			//Eigen::Affine3d aff = eigen_utils::direct_exponential_map(result, 1.0);
-
-
-
-
-			//rot <<	m_pose[0][0], m_pose[1][0], m_pose[2][0],
-			//		m_pose[0][1], m_pose[1][1], m_pose[2][1],
-			//		m_pose[0][2], m_pose[1][2], m_pose[2][2];
-
-			//trans << m_pose[3][0], m_pose[3][1], m_pose[3][2];
-
-			//Eigen::Matrix3d postRot = aff.rotation().transpose() * rot;
-			//Eigen::Vector3d postTrans = trans - aff.rotation().transpose() * aff.translation();
-
-		//	std::cout << postRot << std::endl;
-		//	std::cout << postTrans << std::endl;
-			//Eigen::JacobiSVD<Eigen::MatrixXd> svd(dC_icp, Eigen::ComputeFullU | Eigen::ComputeFullV);
-			//result = svd.solve(db_icp); // TODO CHECK THIS WORKS, SHOULD WE MAKE A BACK SUB SOLVER?
-			//result = dC_icp.ldlt().solve(db_icp);
-
-			//glm::mat4 delta = glm::eulerAngleXYZ(result(3), result(4), result(5));
-			//delta[3][0] = result(0);
-			//delta[3][1] = result(1);
-			//delta[3][2] = result(2);
-
-			//sdfPose = delta * sdfPose;
-
-			/*m_pose[0][0] = postRot(0, 0); m_pose[1][0] = postRot(0, 1); m_pose[2][0] = postRot(0, 2); m_pose[3][0] = postTrans(0);
-			m_pose[0][1] = postRot(1, 0); m_pose[1][1] = postRot(1, 1); m_pose[2][1] = postRot(1, 2); m_pose[3][1] = postTrans(1);
-			m_pose[0][2] = postRot(2, 0); m_pose[1][2] = postRot(2, 1); m_pose[2][2] = postRot(2, 2); m_pose[3][2] = postTrans(2);
-			m_pose[0][3] = 0;		  m_pose[1][3] = 0;			m_pose[2][3] = 0;	      m_pose[3][3] = 1.0f;
-
-			if (result(0, 0) < 0.001
-				&& result(1, 0) < 0.001
-				&& result(2, 0) < 0.001
-				&& result(3, 0) < 0.001
-				&& result(4, 0) < 0.001
-				&& result(5, 0) < 0.001) {
-				std::cout << "STOP Gauss Newton at level: " << level << " it: " << iteration << std::endl;
-				tracked = true;
-				break;
-
-			}*/
-
-			//m_pose = sdfPose;
-
-		//	std::cout << result.norm() << std::endl;
-			//if (result.norm() < 1e-2 && result.norm() != 0)
-			//{
-			//	//std::cout << "converged" << std::endl;
-			//	tracked = true;
-			//	break;
-
-			//}
-
-
 
 			}
 
