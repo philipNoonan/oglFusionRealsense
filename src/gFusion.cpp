@@ -107,7 +107,9 @@ void gFusion::setLocations()
 	m_TtrackID = glGetUniformLocation(trackProg.getHandle(), "Ttrack");
 	m_distThresh_t = glGetUniformLocation(trackProg.getHandle(), "dist_threshold");
 	m_normThresh_t = glGetUniformLocation(trackProg.getHandle(), "normal_threshold");
-
+	m_numberOfCamerasID_tr = glGetUniformLocation(trackProg.getHandle(), "numberOfCameras");
+	m_cameraPosesID_tr = glGetUniformLocation(trackProg.getHandle(), "cameraPoses");
+	m_inverseCameraPosesID_tr = glGetUniformLocation(trackProg.getHandle(), "inverseCameraPoses");
 	//std::cout << "view " << m_viewID_t << std::endl;
 	//std::cout << "Ttrack " << m_TtrackID << std::endl;
 	//std::cout << "dist_threshold " << m_distThresh_t << std::endl;
@@ -176,12 +178,11 @@ void gFusion::setLocations()
 	m_epsID = glGetUniformLocation(trackSDFProg.getHandle(), "eps");
 	m_dMaxID_t = glGetUniformLocation(trackSDFProg.getHandle(), "dMax");
 	m_dMinID_t = glGetUniformLocation(trackSDFProg.getHandle(), "dMin");
-	m_imageSizeID_t_sdf = glGetUniformLocation(trackSDFProg.getHandle(), "imageSize");
 	m_devNumberTrackSdfID = glGetUniformLocation(trackSDFProg.getHandle(), "devNumber");
 
 	m_numberOfCamerasID_t = glGetUniformLocation(trackSDFProg.getHandle(), "numberOfCameras");
 	m_mipLayerID_t = glGetUniformLocation(trackSDFProg.getHandle(), "mip");
-
+	m_cameraPosesID_tsdf = glGetUniformLocation(trackSDFProg.getHandle(), "cameraPoses");
 
 	// REDUCE SDF
 	reduceSDFProg.use();
@@ -307,8 +308,8 @@ void gFusion::initTextures()
 	//
 	
 	m_textureColor = createTexture(GL_TEXTURE_2D, 1, m_color_width, m_color_height, 1, GL_RGBA8UI, GL_NEAREST, GL_NEAREST_MIPMAP_NEAREST);
-	m_textureReferenceVertex = createTexture(GL_TEXTURE_2D_ARRAY, 1, configuration.depthFrameSize.x, configuration.depthFrameSize.y, m_numberOfCameras, GL_RGBA32F, GL_LINEAR, GL_LINEAR_MIPMAP_NEAREST);
-	m_textureReferenceNormal = createTexture(GL_TEXTURE_2D_ARRAY, 1, configuration.depthFrameSize.x, configuration.depthFrameSize.y, m_numberOfCameras, GL_RGBA32F, GL_LINEAR, GL_LINEAR_MIPMAP_NEAREST);
+	m_textureReferenceVertexArray = createTexture(GL_TEXTURE_2D_ARRAY, 1, configuration.depthFrameSize.x, configuration.depthFrameSize.y, m_numberOfCameras, GL_RGBA32F, GL_LINEAR, GL_LINEAR_MIPMAP_NEAREST);
+	m_textureReferenceNormalArray = createTexture(GL_TEXTURE_2D_ARRAY, 1, configuration.depthFrameSize.x, configuration.depthFrameSize.y, m_numberOfCameras, GL_RGBA32F, GL_LINEAR, GL_LINEAR_MIPMAP_NEAREST);
 	m_textureDifferenceVertex = createTexture(GL_TEXTURE_2D, 1, configuration.depthFrameSize.x, configuration.depthFrameSize.y, 1, GL_R32F, GL_LINEAR, GL_LINEAR_MIPMAP_NEAREST);
 	m_textureTestImage = createTexture(GL_TEXTURE_2D, 1, configuration.depthFrameSize.x, configuration.depthFrameSize.y, 1, GL_RGBA32F, GL_LINEAR, GL_LINEAR_MIPMAP_NEAREST);
 	//m_textureTrackImage = createTexture(GL_TEXTURE_2D, 1, configuration.depthFrameSize.x, configuration.depthFrameSize.y, 1, GL_RGBA32F);
@@ -872,47 +873,60 @@ bool gFusion::Track()
 void gFusion::track(int devNumber, int layer)
 {
 
-	//glm::mat4 invK = GLHelper::getInverseCameraMatrix(m_camPamsDepth[devNumber]);
-	//glm::mat4 oldPose = pose;
-	//glm::mat4 projectReference = GLHelper::getCameraMatrix(m_camPamsDepth[devNumber]) * glm::inverse(m_pose);
+	glm::mat4 invK = GLHelper::getInverseCameraMatrix(m_camPamsDepth[devNumber]);
+	glm::mat4 oldPose = pose;
+	glm::mat4 projectReference = GLHelper::getCameraMatrix(m_camPamsDepth[devNumber]) * glm::inverse(m_pose);
 
-	//int compWidth;
-	//int compHeight;
+	int compWidth;
+	int compHeight;
 
-	//trackProg.use();
+	trackProg.use();
 
-	//glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, m_buffer_reduction);
+	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, m_buffer_reduction);
+
+	glm::mat4 cameraPoses[4];
+	cameraPoses[0] = m_pose;
+	cameraPoses[1] = m_pose * m_depthToDepth;
+
+	glm::mat4 inverseCameraPoses[4];
+	for (int i = 0; i < m_numberOfCameras; i++)
+	{
+		inverseCameraPoses[i] = GLHelper::getCameraMatrix(m_camPamsDepth[i]) * glm::inverse(cameraPoses[i]);
+	}
+
+	glProgramUniformMatrix4fv(trackProg.getHandle(), m_cameraPosesID_tr, 4, GL_FALSE, glm::value_ptr(cameraPoses[0]));
+	glProgramUniformMatrix4fv(trackProg.getHandle(), m_inverseCameraPosesID_tr, 4, GL_FALSE, glm::value_ptr(inverseCameraPoses[0]));
+
+	glUniformMatrix4fv(m_viewID_t, 1, GL_FALSE, glm::value_ptr(projectReference));
+	glUniformMatrix4fv(m_TtrackID, 1, GL_FALSE, glm::value_ptr(m_pose));
+	glUniform1f(m_distThresh_t, configuration.dist_threshold);
+	glUniform1f(m_normThresh_t, configuration.normal_threshold);
+	glUniform1i(m_numberOfCamerasID_tr, m_numberOfCameras);
+
+	glBindImageTexture(0, m_textureVertexArray, layer, GL_TRUE, 0, GL_READ_WRITE, GL_RGBA32F);
+	glBindImageTexture(1, m_textureNormalArray, layer, GL_TRUE, 0, GL_READ_WRITE, GL_RGBA32F);
+
+	glBindImageTexture(2, m_textureReferenceVertexArray, 0, GL_TRUE, 0, GL_READ_WRITE, GL_RGBA32F); // the raycasted images do not need to be scaled, since the mipmaped verts are projected back to 512*424 image space resolution in the shader
+	glBindImageTexture(3, m_textureReferenceNormalArray, 0, GL_TRUE, 0, GL_READ_WRITE, GL_RGBA32F);
+	
+	glBindImageTexture(4, m_textureDifferenceVertex, 0, GL_FALSE, 0, GL_READ_WRITE, GL_R32F);
+	glBindImageTexture(5, m_textureTrackImage, 0, GL_TRUE, 0, GL_READ_WRITE, GL_RGBA32F);
+
+	
+	compWidth = divup((int)configuration.depthFrameSize.x >> layer, 32); // right bitshift does division by powers of 2
+	compHeight = divup((int)configuration.depthFrameSize.y >> layer, 32);
+
+	glDispatchCompute(compWidth, compHeight, 1);
+	glMemoryBarrier(GL_ALL_BARRIER_BITS);
+
+	//std::vector<float> testvec(480 * 848*4, 10);
 
 
-	//glUniformMatrix4fv(m_viewID_t, 1, GL_FALSE, glm::value_ptr(projectReference));
-	//glUniformMatrix4fv(m_TtrackID, 1, GL_FALSE, glm::value_ptr(m_pose));
-	//glUniform1f(m_distThresh_t, configuration.dist_threshold);
-	//glUniform1f(m_normThresh_t, configuration.normal_threshold);
-
-	//glBindImageTexture(0, m_textureVertex[devNumber], layer, GL_FALSE, 0, GL_READ_WRITE, GL_RGBA32F);
-	//glBindImageTexture(1, m_textureNormal[devNumber], layer, GL_FALSE, 0, GL_READ_WRITE, GL_RGBA32F);
-
-	//glBindImageTexture(2, m_textureReferenceVertex, 0, GL_FALSE, 0, GL_READ_WRITE, GL_RGBA32F); // the raycasted images do not need to be scaled, since the mipmaped verts are projected back to 512*424 image space resolution in the shader
-	//glBindImageTexture(3, m_textureReferenceNormal, 0, GL_FALSE, 0, GL_READ_WRITE, GL_RGBA32F);
+	//glActiveTexture(GL_TEXTURE0);
+	//glBindTexture(GL_TEXTURE_2D, m_textureReferenceVertex);
+	//glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_FLOAT, testvec.data());
+	//glBindTexture(GL_TEXTURE_2D, 0);
 	//
-	//glBindImageTexture(4, m_textureDifferenceVertex, 0, GL_FALSE, 0, GL_READ_WRITE, GL_R32F);
-	//glBindImageTexture(5, m_textureTrackImage, 0, GL_FALSE, 0, GL_READ_WRITE, GL_RGBA32F);
-
-	//
-	//compWidth = divup((int)configuration.depthFrameSize.x >> layer, 32); // right bitshift does division by powers of 2
-	//compHeight = divup((int)configuration.depthFrameSize.y >> layer, 32);
-
-	//glDispatchCompute(compWidth, compHeight, 1);
-	//glMemoryBarrier(GL_ALL_BARRIER_BITS);
-
-	////std::vector<float> testvec(480 * 848*4, 10);
-
-
-	////glActiveTexture(GL_TEXTURE0);
-	////glBindTexture(GL_TEXTURE_2D, m_textureReferenceVertex);
-	////glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_FLOAT, testvec.data());
-	////glBindTexture(GL_TEXTURE_2D, 0);
-	////
 
 
 
@@ -1217,9 +1231,9 @@ void gFusion::trackSDF(int layer, Eigen::Matrix4f camToWorld)
 	glBindTexture(GL_TEXTURE_2D_ARRAY, m_textureNormalArray);
 
 	// bind images
-	glBindImageTexture(0, m_textureVolume, 0, GL_FALSE, 0, GL_READ_ONLY, GL_RGBA16F);
-	glBindImageTexture(1, m_textureSDFImage, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA32F);
-	glBindImageTexture(2, m_textureTrackImage, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA32F);
+	glBindImageTexture(0, m_textureVolume, 0, GL_TRUE, 0, GL_READ_ONLY, GL_RGBA16F);
+	glBindImageTexture(1, m_textureSDFImage, 0, GL_TRUE, 0, GL_WRITE_ONLY, GL_RGBA32F);
+	glBindImageTexture(2, m_textureTrackImage, 0, GL_TRUE, 0, GL_WRITE_ONLY, GL_RGBA32F);
 	
 	// bind buffers
 	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 12, m_bufferSDFReduction);
@@ -1231,10 +1245,9 @@ void gFusion::trackSDF(int layer, Eigen::Matrix4f camToWorld)
 	cameraPoses[0] = trackPose;
 	cameraPoses[1] = trackPose * m_depthToDepth;
 
-	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 4, m_bufferCameraData); // this could just be uniform buffer rather than shader storage bufer
-	glBufferData(GL_SHADER_STORAGE_BUFFER, 4 * sizeof(glm::mat4), glm::value_ptr(cameraPoses[0]), GL_DYNAMIC_READ); // 4 x mat4
+	glProgramUniformMatrix4fv(trackSDFProg.getHandle(), m_cameraPosesID_tsdf, 4, GL_FALSE, glm::value_ptr(cameraPoses[0]));
 
-	glUniform2iv(m_imageSizeID_t_sdf, 1, glm::value_ptr(imageSize));
+	
 
 	glUniform1f(m_dMaxID_t, configuration.dMax);
 	glUniform1f(m_dMinID_t, configuration.dMin);
@@ -1702,8 +1715,8 @@ void gFusion::raycast(int devNumber)
 
 	//bind image textures
 	glBindImageTexture(0, m_textureVolume, 0, GL_FALSE, 0, GL_READ_ONLY, GL_RGBA16F);
-	glBindImageTexture(1, m_textureReferenceVertex, 0, GL_TRUE, 0, GL_WRITE_ONLY, GL_RGBA32F);
-	glBindImageTexture(2, m_textureReferenceNormal, 0, GL_TRUE, 0, GL_WRITE_ONLY, GL_RGBA32F);
+	glBindImageTexture(1, m_textureReferenceVertexArray, 0, GL_TRUE, 0, GL_WRITE_ONLY, GL_RGBA32F);
+	glBindImageTexture(2, m_textureReferenceNormalArray, 0, GL_TRUE, 0, GL_WRITE_ONLY, GL_RGBA32F);
 
 
 

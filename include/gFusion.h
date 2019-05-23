@@ -323,7 +323,7 @@ public:
 	}
 	GLuint getPVPNorms()
 	{
-		return m_textureReferenceNormal;
+		return m_textureReferenceNormalArray;
 	}
 	GLuint getPVDNorms()
 	{
@@ -428,6 +428,9 @@ private:
 	GLuint m_normThresh_t;
 	GLuint m_dMaxID_t;
 	GLuint m_dMinID_t;
+	GLuint m_numberOfCamerasID_tr;
+	GLuint m_cameraPosesID_tr;
+	GLuint m_inverseCameraPosesID_tr;
 	
 	// reduce
 	GLuint m_imageSizeID;
@@ -512,6 +515,7 @@ private:
 	GLuint m_imageSizeID_t_sdf;
 	//reduce sdf
 	GLuint m_imageSizeID_sdf; 
+	GLuint m_cameraPosesID_tsdf;
 
 	// intensity propjection
 	GLuint m_viewID_m;
@@ -534,8 +538,8 @@ private:
 	GLuint m_textureSDFImage;
 	GLuint m_textureTrackImage;
 
-	GLuint m_textureReferenceVertex;
-	GLuint m_textureReferenceNormal;
+	GLuint m_textureReferenceVertexArray;
+	GLuint m_textureReferenceNormalArray;
 	GLuint m_textureOutputData;
 	GLuint m_textureDifferenceVertex;
 	GLuint m_textureTestImage;
