@@ -8,11 +8,17 @@ layout(binding = 1) uniform sampler3D volumeFloodSDF;
 //layout(binding= 2) uniform sampler2D currentTextureColor;
      
 layout(binding = 0, rgba16f) uniform image3D volumeData; // Gimage3D, where G = i, u, or blank, for int, u int, and floats respectively
-layout(binding = 1, rgba32f) uniform image2D refVertex;
-layout(binding = 2, rgba32f) uniform image2D refNormal;
+layout(binding = 1, rgba32f) uniform image2DArray refVertex;
+layout(binding = 2, rgba32f) uniform image2DArray refNormal;
+
+uniform mat4 cameraPoses[4];
+uniform int numberOfCameras;
+
+
+
     //layout(binding = 1, r32f) uniform image2D volumeSlice;
-//layout(binding = 3, rgba32f) uniform image2D volumeSliceNorm;
-//layout(binding = 2, rgba32f) uniform image3D volumeColor;
+    //layout(binding = 3, rgba32f) uniform image2D volumeSliceNorm;
+    //layout(binding = 2, rgba32f) uniform image3D volumeColor;
 
 
 
@@ -130,11 +136,11 @@ float interpDistance(vec3 pos, inout bool interpolated)
     return sum_d / w_sum;
 }
 
-vec4 raycast(uvec2 pos)
+vec4 raycast(uvec2 pos, int camera)
 {
-    vec3 origin = vec3(view[3][0], view[3][1], view[3][2]);
+    vec3 origin = vec3(cameraPoses[camera][3][0], cameraPoses[camera][3][1], cameraPoses[camera][3][2]);
     //vec3 direction = rotate(view, vec3(pos.x, pos.y, 1.0f));
-    vec3 direction = vec3((view * vec4(pos.x, pos.y, 1.0f, 0.0f)).xyz);
+    vec3 direction = vec3((cameraPoses[camera] * vec4(pos.x, pos.y, 1.0f, 0.0f)).xyz);
 
     // intersect ray with a box
     // http://www.siggraph.org/education/materials/HyperGraph/raytrace/rtinter3.htm
@@ -282,43 +288,47 @@ void main()
 
     uvec2 pix = gl_GlobalInvocationID.xy;
 
-    vec4 hit = raycast(pix);
-
-
-    if (hit.w > 0)
+    for (int camera = 0; camera < numberOfCameras; camera++)
     {
-        // vec4 currentColor = texture(currentTextureColor, vec2(pix.x / 1920.0f, pix.y / 1080.0f));
+        vec4 hit = raycast(pix, camera);
 
-        // imageStore(volumeColor, ivec3(hit.xyz), currentColor);
-        //imageStore(volumeSlice, ivec2(pix), vec4(mod(hit.w * 10.f, 1.0f), 0, 0, 0));
-        // PositionTSDF[(pix.y * depthSize.x) + pix.x] = vec4(hit.xyz, 1.0f); // hit.w = hit.z + zshift
-        imageStore(refVertex, ivec2(pix), vec4(hit.xyz, 1.0f));
-        vec3 surfNorm = getGradient(hit);// volume.grad(make_float3(hit));
-        if (length(surfNorm) == 0)
+
+        if (hit.w > 0)
         {
-            //imageStore(volumeSliceNorm, ivec2(pix), vec4(0, 0, 0, 0));
-            imageStore(refNormal, ivec2(pix), vec4(0.0f));
-                      //  NormalTSDF[(pix.y * depthSize.x) + pix.x] = vec4(0);
+            // vec4 currentColor = texture(currentTextureColor, vec2(pix.x / 1920.0f, pix.y / 1080.0f));
+
+            // imageStore(volumeColor, ivec3(hit.xyz), currentColor);
+            //imageStore(volumeSlice, ivec2(pix), vec4(mod(hit.w * 10.f, 1.0f), 0, 0, 0));
+            // PositionTSDF[(pix.y * depthSize.x) + pix.x] = vec4(hit.xyz, 1.0f); // hit.w = hit.z + zshift
+            imageStore(refVertex, ivec3(pix, camera), vec4(hit.xyz, 1.0f));
+            vec3 surfNorm = getGradient(hit);// volume.grad(make_float3(hit));
+            if (length(surfNorm) == 0)
+            {
+                //imageStore(volumeSliceNorm, ivec2(pix), vec4(0, 0, 0, 0));
+                imageStore(refNormal, ivec3(pix, camera), vec4(0.0f));
+                //  NormalTSDF[(pix.y * depthSize.x) + pix.x] = vec4(0);
+            }
+            else
+            {
+                //imageStore(volumeSliceNorm, ivec2(pix), currentColor);
+
+                //imageStore(volumeSliceNorm, ivec2(pix), vec4(normalize(surfNorm), 0.0f));
+                // NormalTSDF[(pix.y * depthSize.x) + pix.x] = vec4(normalize(surfNorm), 0.0f);
+                imageStore(refNormal, ivec3(pix, camera), vec4(normalize(surfNorm), 1.0f));
+
+            }
         }
         else
         {
-            //imageStore(volumeSliceNorm, ivec2(pix), currentColor);
+            //imageStore(volumeSlice, ivec2(pix), vec4(hit.z / 2.0f, 0, 0, 0));
+            //imageStore(volumeSliceNorm, ivec2(pix), vec4(0, 0, 0, 0));
+            imageStore(refVertex, ivec3(pix, camera), vec4(0.0f));
+            imageStore(refNormal, ivec3(pix, camera), vec4(0.0f));
 
-            //imageStore(volumeSliceNorm, ivec2(pix), vec4(normalize(surfNorm), 0.0f));
-           // NormalTSDF[(pix.y * depthSize.x) + pix.x] = vec4(normalize(surfNorm), 0.0f);
-            imageStore(refNormal, ivec2(pix), vec4(normalize(surfNorm), 1.0f));
-
+            //PositionTSDF[(pix.y * depthSize.x) + pix.x] = vec4(0);
+            // NormalTSDF[(pix.y * depthSize.x) + pix.x] = vec4(0, 0, 0, 0); // set x = 2??
         }
-    }
-    else
-    {
-        //imageStore(volumeSlice, ivec2(pix), vec4(hit.z / 2.0f, 0, 0, 0));
-        //imageStore(volumeSliceNorm, ivec2(pix), vec4(0, 0, 0, 0));
-        imageStore(refVertex, ivec2(pix), vec4(0.0f));
-        imageStore(refNormal, ivec2(pix), vec4(0.0f));
 
-        //PositionTSDF[(pix.y * depthSize.x) + pix.x] = vec4(0);
-       // NormalTSDF[(pix.y * depthSize.x) + pix.x] = vec4(0, 0, 0, 0); // set x = 2??
     }
 
 

@@ -130,6 +130,8 @@ void gFusion::setLocations()
 	m_largeStepID = glGetUniformLocation(raycastProg.getHandle(), "largeStep");
 	m_volDimID_r = glGetUniformLocation(raycastProg.getHandle(), "volDim");
 	m_volSizeID_r = glGetUniformLocation(raycastProg.getHandle(), "volSize");
+	m_cameraPosesID_r = glGetUniformLocation(raycastProg.getHandle(), "cameraPoses");
+	m_numberOfCamerasID_r = glGetUniformLocation(raycastProg.getHandle(), "numberOfCameras");
 
 	//HELPERS
 	helpersProg.use();
@@ -305,8 +307,8 @@ void gFusion::initTextures()
 	//
 	
 	m_textureColor = createTexture(GL_TEXTURE_2D, 1, m_color_width, m_color_height, 1, GL_RGBA8UI, GL_NEAREST, GL_NEAREST_MIPMAP_NEAREST);
-	m_textureReferenceVertex = createTexture(GL_TEXTURE_2D, 1, configuration.depthFrameSize.x, configuration.depthFrameSize.y, 1, GL_RGBA32F, GL_LINEAR, GL_LINEAR_MIPMAP_NEAREST);
-	m_textureReferenceNormal = createTexture(GL_TEXTURE_2D, 1, configuration.depthFrameSize.x, configuration.depthFrameSize.y, 1, GL_RGBA32F, GL_LINEAR, GL_LINEAR_MIPMAP_NEAREST);
+	m_textureReferenceVertex = createTexture(GL_TEXTURE_2D_ARRAY, 1, configuration.depthFrameSize.x, configuration.depthFrameSize.y, m_numberOfCameras, GL_RGBA32F, GL_LINEAR, GL_LINEAR_MIPMAP_NEAREST);
+	m_textureReferenceNormal = createTexture(GL_TEXTURE_2D_ARRAY, 1, configuration.depthFrameSize.x, configuration.depthFrameSize.y, m_numberOfCameras, GL_RGBA32F, GL_LINEAR, GL_LINEAR_MIPMAP_NEAREST);
 	m_textureDifferenceVertex = createTexture(GL_TEXTURE_2D, 1, configuration.depthFrameSize.x, configuration.depthFrameSize.y, 1, GL_R32F, GL_LINEAR, GL_LINEAR_MIPMAP_NEAREST);
 	m_textureTestImage = createTexture(GL_TEXTURE_2D, 1, configuration.depthFrameSize.x, configuration.depthFrameSize.y, 1, GL_RGBA32F, GL_LINEAR, GL_LINEAR_MIPMAP_NEAREST);
 	//m_textureTrackImage = createTexture(GL_TEXTURE_2D, 1, configuration.depthFrameSize.x, configuration.depthFrameSize.y, 1, GL_RGBA32F);
@@ -1683,6 +1685,11 @@ void gFusion::raycast(int devNumber)
 
 	float step = configuration.stepSize();
 
+	glm::mat4 cameraPoses[4];
+	cameraPoses[0] = m_pose * invK;
+	cameraPoses[1] = m_pose * m_depthToDepth * invK;
+	glProgramUniformMatrix4fv(raycastProg.getHandle(), m_cameraPosesID_r, 4, GL_FALSE, glm::value_ptr(cameraPoses[0]));
+
 	// bind uniforms
 	glUniformMatrix4fv(m_viewID_r, 1, GL_FALSE, glm::value_ptr(view));
 	glUniform1f(m_nearPlaneID, configuration.nearPlane);
@@ -1691,11 +1698,12 @@ void gFusion::raycast(int devNumber)
 	glUniform1f(m_largeStepID, 0.75f * configuration.mu);
 	glUniform3fv(m_volDimID_r, 1, glm::value_ptr(configuration.volumeDimensions));
 	glUniform3fv(m_volSizeID_r, 1, glm::value_ptr(configuration.volumeSize));
+	glUniform1i(m_numberOfCamerasID_r, m_numberOfCameras);
 
 	//bind image textures
 	glBindImageTexture(0, m_textureVolume, 0, GL_FALSE, 0, GL_READ_ONLY, GL_RGBA16F);
-	glBindImageTexture(1, m_textureReferenceVertex, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA32F);
-	glBindImageTexture(2, m_textureReferenceNormal, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA32F);
+	glBindImageTexture(1, m_textureReferenceVertex, 0, GL_TRUE, 0, GL_WRITE_ONLY, GL_RGBA32F);
+	glBindImageTexture(2, m_textureReferenceNormal, 0, GL_TRUE, 0, GL_WRITE_ONLY, GL_RGBA32F);
 
 
 

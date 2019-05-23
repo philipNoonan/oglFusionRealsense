@@ -81,7 +81,7 @@ struct gFusionConfig
 		iterations.push_back(6);
 		track_threshold = 0.5f;
 		depthFrameSize = glm::vec2(848, 480);
-		dMax = 0.025f;
+		dMax = 0.05f;
 		dMin = -0.024f;
 	}
 
@@ -468,6 +468,8 @@ private:
 	GLuint m_volDimID_r;
 	GLuint m_volSizeID_r;
 	GLuint m_helpersSubroutineID;
+	GLuint m_cameraPosesID_r;
+	GLuint m_numberOfCamerasID_r;
 
 	// Helpers
 	GLuint m_resetVolumeID;

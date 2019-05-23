@@ -1320,6 +1320,8 @@ int main(int, char**)
 			if (trackDepthToVolume)
 			{
 				tracked = gfusion.TrackSDF();
+				gfusion.raycast(cameraDevice);
+
 			}
 
 
