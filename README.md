@@ -24,10 +24,10 @@ Close the Admin Command Prompt window to flush the newly set variables.
 
 Go to your vcpkg.exe installed location and open another command prompt.
 
-Then we install the various libraries needed for this project.
+Then we install the various libraries needed for this project. The ARUCO portfile and CONTROL file can be found in the aruco.7z zip file in the vcpkgDeps folder. This should be extracted to your vcpkg/ports/ directory.
 
 ```
-vcpkg install glew glfw3 glm imgui eigen3 dirent realsense2 opencv
+vcpkg install glew glfw3 glm imgui eigen3 dirent realsense2 opencv aruco
 ```
 This should take 3-4 minutes.
 
@@ -52,3 +52,8 @@ Press "Configure"
 Press "Generate"
 
 Press "Open Project"
+
+<h3> Using oglFusion </h3>
+
+By default, the streams are set up as 848x480 90Hz depth and 90Hz IR, and 1920x1080 6Hz colour. These streams are grabbed using the low level realsense2 api on different threads so they should not cause the main program to lag. 
+
