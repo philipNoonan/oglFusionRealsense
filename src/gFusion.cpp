@@ -652,13 +652,18 @@ void gFusion::depthToVertex(std::vector<rs2::frame_queue> depthQ, int devNumber,
 		{
 			if (depthFrame[camNumber].supports_frame_metadata(RS2_FRAME_METADATA_SENSOR_TIMESTAMP))
 			{
-				m_sensorsTimestamps[camNumber] = depthFrame[camNumber].get_frame_metadata(RS2_FRAME_METADATA_SENSOR_TIMESTAMP);
-				uint64_t currentTime = depthFrame[camNumber].get_frame_metadata(RS2_FRAME_METADATA_SENSOR_TIMESTAMP);
+				uint64_t currentTime = depthFrame[camNumber].get_frame_metadata(RS2_FRAME_METADATA_SENSOR_TIMESTAMP) + (timeShiftOffsets * (2 ^ 32));
 				uint64_t deltaTime = currentTime - previousTime;
-				//if (deltaTime > (1e6f / (float)m_depthRate) * 1.5f) // if greater than 1.5 frame duration in microseconds
-				//{
-				//std::cout << m_frameArrivalTime << " : " << deltaTime << std::endl;
-				//}
+				if (deltaTime < 0)
+				{
+					timeShiftOffsets++;
+					m_sensorsTimestamps[camNumber] = currentTime + (timeShiftOffsets * (2 ^ 32));
+				}
+				else
+				{
+					m_sensorsTimestamps[camNumber] = currentTime;
+				}
+
 				previousTime = currentTime;
 			}
 

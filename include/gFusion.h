@@ -770,4 +770,5 @@ private:
 	uint64_t previousTime = 0;
 	std::vector<uint64_t> m_sensorsTimestamps;
 	int m_numberOfCameras;
+	uint64_t timeShiftOffsets = 0;
 };

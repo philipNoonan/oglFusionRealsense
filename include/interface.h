@@ -108,6 +108,9 @@ private:
 	std::vector<rs2::frame_queue> m_colorQueues;
 	std::vector<rs2::frame_queue> m_infraQueues;
 
+	int timeShiftCounter = 0;
+	int m_previousTime;
+
 
 };
 

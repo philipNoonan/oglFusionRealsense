@@ -1,0 +1,4 @@
+Source: aruco
+Version: 3.1.2
+Build-Depends: opencv
+Description: ArUco is an easy-to-use C++ library for detection of squared planar markers based on OpenCv. It can detect markers from a variety of ditionaries ARUCO, APRILTAGS, ARTAG and ARTOOLKIT+. It is a library, to rule them all ;)
