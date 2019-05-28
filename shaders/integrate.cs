@@ -5,6 +5,7 @@ layout(local_size_x = 32, local_size_y = 32) in;
 layout(binding = 0, rgba16f) uniform image3D volumeData; // Gimage3D, where G = i, u, or blank, for int, u int, and floats respectively
 
 layout(binding = 0) uniform sampler2DArray depthTextureArray; // 
+layout(binding = 1) uniform sampler2DArray trackTextureArray; // 
 
 layout(std140) uniform Configs
 {
@@ -17,6 +18,7 @@ layout(std140) uniform Configs
     float volSize; // voxel grid size of the volume 
 };
 
+uniform int forceIntegrate;
 
 
 uniform mat4 cameraPoses[4];
@@ -52,6 +54,8 @@ void integrateExperimental()
     mat4 trackMat;// = cameraMat[0];
     float diff[4]; // max number of cameras on one system
     //imageStore(volumeData, ivec3(pix), vec4(0.1f));
+    vec4 track[4];
+    int bestTrack;
 
     for (pix.z = 0; pix.z < volSize; pix.z++)
     {
@@ -78,6 +82,12 @@ void integrateExperimental()
                 continue;
             }
             //imageStore(volumeData, ivec3(pix), vec4(volDim, volSize, volSize, volDim));
+            track[cameraDevice] = texelFetch(trackTextureArray, ivec3(pixel.x, pixel.y, cameraDevice), 0); // this may be 6553
+
+            //if (track == vec4(1.0f, 1.0f, 0.0f, 1.0f) && forceIntegrate == 0)
+            //{
+            //    continue;
+            //}
 
             float depth = float(texelFetch(depthTextureArray, ivec3(pixel.x, pixel.y, cameraDevice), 0).x) * 65535.0f * depthScale; // this may be 65535
 
@@ -106,15 +116,33 @@ void integrateExperimental()
         {
             if (diff[cameraDevice] != 10000.0f)
             {
+                if (abs(diff[cameraDevice]) < abs(finalDiff))
+                {
+                    bestTrack = cameraDevice;
+                    finalDiff = diff[cameraDevice];
+                }
+
                 // closest takes all
-                finalDiff = abs(diff[cameraDevice]) < abs(finalDiff) ? diff[cameraDevice] : finalDiff;
+                 //   finalDiff = abs(diff[cameraDevice]) < abs(finalDiff) ? diff[cameraDevice] : finalDiff;
                 // merge data from both cameras
                 //finalDiff += diff[cameraDevice];
                 //validCameras++;
             }
         }
         //finalDiff /= validCameras;
-        float ctfo = 0.1f;
+        float ctfo;
+        if (track[bestTrack] == vec4(0.5f, 0.5f, 0.5f, 1.0 ))
+        {
+            ctfo = 0.1f;
+        }
+        else if (track[bestTrack] == vec4(1.0f, 1.0f, 0.0f, 1.0))
+        {
+            ctfo = 0.01f;
+        }
+        else if (track[bestTrack] == vec4(1.0f, 0.0f, 0.0f, 1.0))
+        {
+            ctfo = 0.01f;
+        }
         // if diff within TSDF range, write to volume
         if (finalDiff < dMax && finalDiff > dMin)
         {

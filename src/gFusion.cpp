@@ -122,6 +122,7 @@ void gFusion::setLocations()
 	m_cameraPosesID_i = glGetUniformLocation(integrateProg.getHandle(), "cameraPoses");
 	m_cameraIntrinsicsID_i = glGetUniformLocation(integrateProg.getHandle(), "cameraIntrinsics");
 	m_inverseCameraIntrinsicsID_i = glGetUniformLocation(integrateProg.getHandle(), "inverseCameraIntrinsics");
+	m_forceIntegrateID = glGetUniformLocation(integrateProg.getHandle(), "forceIntegrate");
 
 
 	raycastProg.use();
@@ -1441,6 +1442,9 @@ void gFusion::integrate(bool forceIntegrate)
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D_ARRAY, m_textureDepthArray);
 
+	glActiveTexture(GL_TEXTURE1);
+	glBindTexture(GL_TEXTURE_2D_ARRAY, m_textureTrackImage);
+
 	glBindImageTexture(0, m_textureVolume, 0, GL_FALSE, 0, GL_READ_WRITE, GL_RGBA16F);
 
 	// bind uniforms
@@ -1461,7 +1465,8 @@ void gFusion::integrate(bool forceIntegrate)
 	glBufferData(GL_UNIFORM_BUFFER, sizeof(integrateShaderConfigs), &shaderConfigs, GL_DYNAMIC_DRAW);
 	glBindBuffer(GL_UNIFORM_BUFFER, 0);
 
-	//glProgramUniform1i(integrateProg.getHandle(), m_numberOfCamerasID_i, m_numberOfCameras);
+	glProgramUniform1i(integrateProg.getHandle(), m_forceIntegrateID, forceIntegrate);
+
 	//glProgramUniform1f(integrateProg.getHandle(), m_dMaxID_i, configuration.dMax);
 	//glProgramUniform1f(integrateProg.getHandle(), m_dMinID_i, configuration.dMin);
 	//glProgramUniform1f(integrateProg.getHandle(), m_maxWeightID, configuration.maxWeight);
