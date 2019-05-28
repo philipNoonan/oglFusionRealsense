@@ -24,7 +24,7 @@ Close the Admin Command Prompt window to flush the newly set variables.
 
 Go to your vcpkg.exe installed location and open another command prompt.
 
-Then we install the various libraries needed for this project. The ARUCO portfile and CONTROL file can be found in the aruco.7z zip file in the vcpkgDeps folder. This should be extracted to your vcpkg/ports/ directory.
+Then we install the various libraries needed for this project. The ARUCO portfile and CONTROL file can be found in the aruco folder in the vcpkgDeps folder. This directpry and the two files it contains should be copied to your vcpkg/ports/ directory.
 
 ```
 vcpkg install glew glfw3 glm imgui eigen3 dirent realsense2 opencv aruco
