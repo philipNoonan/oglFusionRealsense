@@ -232,6 +232,11 @@ public:
 	bool Track();
 	bool TrackSDF();
 
+	std::vector<uint64_t> getFrameTime()
+	{
+		return m_sensorsTimestamps;
+	}
+
 	// volume functions
 	void integrate(bool forceIntegrate);
 	void integrate(int devNumber);
@@ -762,5 +767,7 @@ private:
 	glm::mat4 m_colorToColor;
 	glm::mat4 m_depthToDepth = glm::mat4(1.0f);
 
+	uint64_t previousTime = 0;
+	std::vector<uint64_t> m_sensorsTimestamps;
 	int m_numberOfCameras;
 };

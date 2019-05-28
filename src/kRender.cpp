@@ -629,9 +629,9 @@ void kRender::bindTexturesForRendering()
 		else if (m_usePVD)
 		{
 			glActiveTexture(GL_TEXTURE1);
-			glBindTexture(GL_TEXTURE_2D_ARRAY, m_texturePVPNormal);
+			//glBindTexture(GL_TEXTURE_2D_ARRAY, m_texturePVPNormal);
 
-			//glBindTexture(GL_TEXTURE_2D_ARRAY, m_texturePVDNormal);
+			glBindTexture(GL_TEXTURE_2D_ARRAY, m_texturePVDNormal);
 		}
 		else
 		{

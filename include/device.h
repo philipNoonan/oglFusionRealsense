@@ -88,6 +88,8 @@ public:
 	void setColorProperties(int profileChoice);
 	void getColorProperties(int &width, int &height, int &rate);
 
+	int readTemperature();
+
 	bool start();
 	bool startFromFile();
 	bool stop();

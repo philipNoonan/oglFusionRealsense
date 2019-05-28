@@ -252,61 +252,57 @@ GLuint gFusion::createTexture(GLenum target, int levels, int w, int h, int d, GL
 
 void gFusion::initTextures()
 {
-	if (m_usingFloatDepth)
+
+	m_sensorsTimestamps.resize(m_numberOfCameras);
+	//m_textureDepth.resize(m_numberOfCameras);
+	//m_textureVertex.resize(m_numberOfCameras);
+	//m_textureNormal.resize(m_numberOfCameras);
+	//m_textureSDFImage.resize(m_numberOfCameras);
+	//m_textureTrackImage.resize(m_numberOfCameras);
+	// make these a 3d texture of depth
+	for (int i = 0; i < m_numberOfCameras; i++)
 	{
-		//m_textureDepth = createTexture(GL_TEXTURE_2D, 3, configuration.depthFrameSize.x, configuration.depthFrameSize.y, 1, GL_R32F);
-	}
-	else
-	{
-		//m_textureDepth.resize(m_numberOfCameras);
-		//m_textureVertex.resize(m_numberOfCameras);
-		//m_textureNormal.resize(m_numberOfCameras);
-		//m_textureSDFImage.resize(m_numberOfCameras);
-		//m_textureTrackImage.resize(m_numberOfCameras);
-		// make these a 3d texture of depth
-		for (int i = 0; i < m_numberOfCameras; i++)
-		{
-			//m_textureDepth[i] = createTexture(GL_TEXTURE_2D, 3, configuration.depthFrameSize.x, configuration.depthFrameSize.y, 1, GL_R16);
-			//m_textureVertex[i] = createTexture(GL_TEXTURE_2D, 3, configuration.depthFrameSize.x, configuration.depthFrameSize.y, 1, GL_RGBA32F);
-			//m_textureNormal[i] = createTexture(GL_TEXTURE_2D, 3, configuration.depthFrameSize.x, configuration.depthFrameSize.y, 1, GL_RGBA32F);
+		//m_textureDepth[i] = createTexture(GL_TEXTURE_2D, 3, configuration.depthFrameSize.x, configuration.depthFrameSize.y, 1, GL_R16);
+		//m_textureVertex[i] = createTexture(GL_TEXTURE_2D, 3, configuration.depthFrameSize.x, configuration.depthFrameSize.y, 1, GL_RGBA32F);
+		//m_textureNormal[i] = createTexture(GL_TEXTURE_2D, 3, configuration.depthFrameSize.x, configuration.depthFrameSize.y, 1, GL_RGBA32F);
 
-			//m_textureSDFImage[i] = createTexture(GL_TEXTURE_2D, 1, configuration.depthFrameSize.x, configuration.depthFrameSize.y, 1, GL_RGBA32F, GL_LINEAR, GL_LINEAR_MIPMAP_NEAREST);
-			//m_textureTrackImage[i] = createTexture(GL_TEXTURE_2D, 1, configuration.depthFrameSize.x, configuration.depthFrameSize.y, 1, GL_RGBA32F, GL_LINEAR, GL_LINEAR_MIPMAP_NEAREST);
+		//m_textureSDFImage[i] = createTexture(GL_TEXTURE_2D, 1, configuration.depthFrameSize.x, configuration.depthFrameSize.y, 1, GL_RGBA32F, GL_LINEAR, GL_LINEAR_MIPMAP_NEAREST);
+		//m_textureTrackImage[i] = createTexture(GL_TEXTURE_2D, 1, configuration.depthFrameSize.x, configuration.depthFrameSize.y, 1, GL_RGBA32F, GL_LINEAR, GL_LINEAR_MIPMAP_NEAREST);
 
-		}
-
-		m_textureDepthArray = createTexture(GL_TEXTURE_2D_ARRAY, 3, configuration.depthFrameSize.x, configuration.depthFrameSize.y, m_numberOfCameras, GL_R16, GL_NEAREST, GL_NEAREST_MIPMAP_NEAREST);
-		m_textureVertexArray = createTexture(GL_TEXTURE_2D_ARRAY, 3, configuration.depthFrameSize.x, configuration.depthFrameSize.y, m_numberOfCameras, GL_RGBA32F, GL_LINEAR, GL_LINEAR_MIPMAP_NEAREST);
-		m_textureNormalArray = createTexture(GL_TEXTURE_2D_ARRAY, 3, configuration.depthFrameSize.x, configuration.depthFrameSize.y, m_numberOfCameras, GL_RGBA32F, GL_LINEAR, GL_LINEAR_MIPMAP_NEAREST);
-
-		m_textureSDFImage = createTexture(GL_TEXTURE_2D_ARRAY, 1, configuration.depthFrameSize.x, configuration.depthFrameSize.y, m_numberOfCameras, GL_RGBA32F, GL_LINEAR, GL_LINEAR_MIPMAP_NEAREST);
-		m_textureTrackImage = createTexture(GL_TEXTURE_2D_ARRAY, 1, configuration.depthFrameSize.x, configuration.depthFrameSize.y, m_numberOfCameras, GL_RGBA32F, GL_LINEAR, GL_LINEAR_MIPMAP_NEAREST);
-
-
-		// https://www.khronos.org/opengl/wiki/Normalized_Integer
-		// I think that we have to use normailsed images here, because we cannot use ints for mip maps, they just dont work
 	}
 
-	//////////////////
-	//   look at normailsed integers and https://www.opengl.org/discussion_boards/showthread.php/165655-Question-about-texture-using-glsl
-	//////////////////
-	//GLuint m_textureDepthTest;
-	//m_textureDepthTest = createTexture(GL_TEXTURE_2D, 3, 64, 64, 1, GL_R16);
-	//glBindTexture(GL_TEXTURE_2D, m_textureDepthTest);
+	m_textureDepthArray = createTexture(GL_TEXTURE_2D_ARRAY, 3, configuration.depthFrameSize.x, configuration.depthFrameSize.y, m_numberOfCameras, GL_R16, GL_NEAREST, GL_NEAREST_MIPMAP_NEAREST);
+	m_textureVertexArray = createTexture(GL_TEXTURE_2D_ARRAY, 3, configuration.depthFrameSize.x, configuration.depthFrameSize.y, m_numberOfCameras, GL_RGBA32F, GL_LINEAR, GL_LINEAR_MIPMAP_NEAREST);
+	m_textureNormalArray = createTexture(GL_TEXTURE_2D_ARRAY, 3, configuration.depthFrameSize.x, configuration.depthFrameSize.y, m_numberOfCameras, GL_RGBA32F, GL_LINEAR, GL_LINEAR_MIPMAP_NEAREST);
 
-	//std::vector<uint16_t> initData(64 * 64, 2);
-	//std::vector<uint16_t> outData(16 * 16, 1);
-
-	//glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, 64, 64, GL_RED_INTEGER, GL_UNSIGNED_SHORT, initData.data());
-	//glGenerateMipmap(GL_TEXTURE_2D);
+	m_textureSDFImage = createTexture(GL_TEXTURE_2D_ARRAY, 1, configuration.depthFrameSize.x, configuration.depthFrameSize.y, m_numberOfCameras, GL_RGBA32F, GL_LINEAR, GL_LINEAR_MIPMAP_NEAREST);
+	m_textureTrackImage = createTexture(GL_TEXTURE_2D_ARRAY, 1, configuration.depthFrameSize.x, configuration.depthFrameSize.y, m_numberOfCameras, GL_RGBA32F, GL_LINEAR, GL_LINEAR_MIPMAP_NEAREST);
 
 
-	//glActiveTexture(GL_TEXTURE0);
-	//glBindTexture(GL_TEXTURE_2D, m_textureDepthTest);
-	//glGetTexImage(GL_TEXTURE_2D, 1, GL_RED_INTEGER, GL_UNSIGNED_SHORT, outData.data());
-	//glBindTexture(GL_TEXTURE_2D, 0);
-	//
-	
+	// https://www.khronos.org/opengl/wiki/Normalized_Integer
+	// I think that we have to use normailsed images here, because we cannot use ints for mip maps, they just dont work
+
+
+//////////////////
+//   look at normailsed integers and https://www.opengl.org/discussion_boards/showthread.php/165655-Question-about-texture-using-glsl
+//////////////////
+//GLuint m_textureDepthTest;
+//m_textureDepthTest = createTexture(GL_TEXTURE_2D, 3, 64, 64, 1, GL_R16);
+//glBindTexture(GL_TEXTURE_2D, m_textureDepthTest);
+
+//std::vector<uint16_t> initData(64 * 64, 2);
+//std::vector<uint16_t> outData(16 * 16, 1);
+
+//glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, 64, 64, GL_RED_INTEGER, GL_UNSIGNED_SHORT, initData.data());
+//glGenerateMipmap(GL_TEXTURE_2D);
+
+
+//glActiveTexture(GL_TEXTURE0);
+//glBindTexture(GL_TEXTURE_2D, m_textureDepthTest);
+//glGetTexImage(GL_TEXTURE_2D, 1, GL_RED_INTEGER, GL_UNSIGNED_SHORT, outData.data());
+//glBindTexture(GL_TEXTURE_2D, 0);
+//
+
 	m_textureColor = createTexture(GL_TEXTURE_2D, 1, m_color_width, m_color_height, 1, GL_RGBA8UI, GL_NEAREST, GL_NEAREST_MIPMAP_NEAREST);
 	m_textureReferenceVertexArray = createTexture(GL_TEXTURE_2D_ARRAY, 1, configuration.depthFrameSize.x, configuration.depthFrameSize.y, m_numberOfCameras, GL_RGBA32F, GL_LINEAR, GL_LINEAR_MIPMAP_NEAREST);
 	m_textureReferenceNormalArray = createTexture(GL_TEXTURE_2D_ARRAY, 1, configuration.depthFrameSize.x, configuration.depthFrameSize.y, m_numberOfCameras, GL_RGBA32F, GL_LINEAR, GL_LINEAR_MIPMAP_NEAREST);
@@ -654,6 +650,19 @@ void gFusion::depthToVertex(std::vector<rs2::frame_queue> depthQ, int devNumber,
 		depthQ[camNumber].poll_for_frame(&depthFrame[camNumber]);
 		if (depthFrame[camNumber] != NULL)
 		{
+			if (depthFrame[camNumber].supports_frame_metadata(RS2_FRAME_METADATA_SENSOR_TIMESTAMP))
+			{
+				m_sensorsTimestamps[camNumber] = depthFrame[camNumber].get_frame_metadata(RS2_FRAME_METADATA_SENSOR_TIMESTAMP);
+				uint64_t currentTime = depthFrame[camNumber].get_frame_metadata(RS2_FRAME_METADATA_SENSOR_TIMESTAMP);
+				uint64_t deltaTime = currentTime - previousTime;
+				//if (deltaTime > (1e6f / (float)m_depthRate) * 1.5f) // if greater than 1.5 frame duration in microseconds
+				//{
+				//std::cout << m_frameArrivalTime << " : " << deltaTime << std::endl;
+				//}
+				previousTime = currentTime;
+			}
+
+
 			glActiveTexture(GL_TEXTURE0);
 			glBindTexture(GL_TEXTURE_2D_ARRAY, m_textureDepthArray);
 			glTexSubImage3D(GL_TEXTURE_2D_ARRAY, 0, 0, 0, camNumber, configuration.depthFrameSize.x, configuration.depthFrameSize.y, 1, GL_RED, GL_UNSIGNED_SHORT, depthFrame[camNumber].get_data());
@@ -1055,7 +1064,7 @@ bool gFusion::TrackSDF() {
 			dC_icp *= scaling;
 			db_icp *= scaling;
 
-			dC_icp = dC_icp + (double(iteration))*Eigen::MatrixXd::Identity(6, 6);
+			dC_icp = dC_icp + (double(iteration)*1.0)*Eigen::MatrixXd::Identity(6, 6);
 
 			//Eigen::JacobiSVD<Eigen::MatrixXd> svd(dC_icp, Eigen::ComputeFullU | Eigen::ComputeFullV);
 			//result = svd.solve(db_icp); // TODO CHECK THIS WORKS, SHOULD WE MAKE A BACK SUB SOLVER?
@@ -1073,7 +1082,7 @@ bool gFusion::TrackSDF() {
 			//std::cout << "AE: " << alignmentEnergy << " snorm : " << Cnorm << " vec " << result.transpose() << std::endl;
 
 			//std::cout << "cnrom :" << Cnorm << std::endl;
-			if (alignmentEnergy != 0 && alignmentEnergy < 1e-3 || Cnorm < 1e-3)
+			if (alignmentEnergy != 0 && alignmentEnergy < 5e-5 || Cnorm < 5e-5)
 			{
 				//std::cout << "tracked!!! iteration " << iteration << " level " << level << " AE: " << alignmentEnergy << " snorm : " << Cnorm << " vec " << result.transpose() << std::endl;
 

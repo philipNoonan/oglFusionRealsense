@@ -947,7 +947,7 @@ void setUI()
 			ImGui::SameLine(); 
 			if (ImGui::Button("Volume")) showVolumeFlag ^= 1; ImGui::SameLine(); ImGui::Checkbox("", &showVolumeFlag);
 
-			if (ImGui::Button("Track")) showTrackFlag ^= 1; ImGui::SameLine(); ImGui::Checkbox("", &showTrackFlag);
+			if (ImGui::Button("Track##show")) showTrackFlag ^= 1; ImGui::SameLine(); ImGui::Checkbox("", &showTrackFlag);
 			ImGui::SameLine();
 			if (ImGui::Button("Marker")) showMarkerFlag ^= 1; ImGui::SameLine(); ImGui::Checkbox("", &showMarkerFlag);
 
@@ -1320,7 +1320,7 @@ int main(int, char**)
 			if (trackDepthToVolume)
 			{
 				tracked = gfusion.TrackSDF();
-				gfusion.raycast(cameraDevice);
+				//gfusion.raycast(cameraDevice);
 
 			}
 
@@ -1350,7 +1350,9 @@ int main(int, char**)
 				counter++;
 			}
 
-			//outputFile << std::to_string(previousTime) << " " << gfusion.alignmentEnergy() << " " << kcamera.getTemperature();
+			//FOR ONE CAMERA ONLY
+			outputFile << std::to_string(gfusion.getFrameTime()[0]) << " " << gfusion.alignmentEnergy() << " " << cameraInterface.getTemperature()[0];
+			
 			outputFile << " " << gfusion.getPose()[0].x << " " << gfusion.getPose()[0].y << " " << gfusion.getPose()[0].z << " " << gfusion.getPose()[0].w << \
 				" " << gfusion.getPose()[1].x << " " << gfusion.getPose()[1].y << " " << gfusion.getPose()[1].z << " " << gfusion.getPose()[1].w << \
 				" " << gfusion.getPose()[2].x << " " << gfusion.getPose()[2].y << " " << gfusion.getPose()[2].z << " " << gfusion.getPose()[2].w << \

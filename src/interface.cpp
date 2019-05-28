@@ -332,6 +332,16 @@ std::vector<rs2::frame_queue> Realsense2Interface::getInfraQueues()
 	return m_infraQueues;
 }
 
+std::vector<int> Realsense2Interface::getTemperature()
+{
+	std::vector<int> temps(m_cameras.size());
+	for (int i = 0; i < m_cameras.size(); i++)
+	{
+		temps[i] = m_cameras[i].readTemperature();
+	}
+	return temps;
+}
+
 bool Realsense2Interface::collateFrames()
 {
 	bool frameReady = false;

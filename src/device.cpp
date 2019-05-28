@@ -252,6 +252,14 @@ Realsense2Camera::Status Realsense2Camera::getStatus()
 	return m_status;
 }
 
+int Realsense2Camera::readTemperature()
+{
+	auto dbg0 = m_dev.as<rs2::debug_protocol>();
+	std::vector<uint8_t> cmd = { 0x14, 0, 0xab, 0xcd, 0x2a, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+	auto res = dbg0.send_and_receive_raw_data(cmd);
+	return res[4];
+}
+
 void Realsense2Camera::capture()
 {
 	auto advanced = m_dev.as<rs400::advanced_mode>(); // NOTE rs400 namespace!

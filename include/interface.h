@@ -63,6 +63,7 @@ public:
 
 	void setEmitterOptions(int devNumber, bool status, float power);
 
+	std::vector<int> getTemperature();
 
 	std::vector<rs2::frame_queue> getDepthQueues();
 	std::vector<rs2::frame_queue> getColorQueues();

@@ -500,6 +500,7 @@ bool MarkerTracker::detect()
 			else
 				FDetector[m_cameraDevice].draw2d(outMat); //Ok, show me at least the inner corners!
 
+			cv::cvtColor(outMat, outMat, cv::COLOR_RGB2BGR);
 			cv::imshow("FD", outMat);
 			cv::waitKey(1);
 
