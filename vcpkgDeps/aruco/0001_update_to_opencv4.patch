@@ -1,0 +1,22 @@
+diff --git a/utils/aruco_test.cpp b/utils/aruco_test.cpp
+index 5ef5475..3cd694f 100644
+--- a/utils/aruco_test.cpp
++++ b/utils/aruco_test.cpp
+@@ -236,7 +236,7 @@ int main(int argc, char** argv)
+             TheVideoCapturer.open(TheInputVideo);
+             if ( TheVideoCapturer.get(CV_CAP_PROP_FRAME_COUNT)>=2) isVideo=true;
+             if(cml["-skip"])
+-                TheVideoCapturer.set(CV_CAP_PROP_POS_FRAMES,stoi(cml("-skip")));
++                TheVideoCapturer.set(cv::CAP_PROP_POS_FRAMES,stoi(cml("-skip")));
+ 
+         }
+         // check video is open
+@@ -291,7 +291,7 @@ int main(int argc, char** argv)
+         {
+ 
+             TheVideoCapturer.retrieve(TheInputImage);
+-             std::cout<<"Frame:"<<TheVideoCapturer.get(CV_CAP_PROP_POS_FRAMES)<<std::endl;
++             std::cout<<"Frame:"<<TheVideoCapturer.get(cv::CAP_PROP_POS_FRAMES)<<std::endl;
+             TheInputImage=resizeImage(TheInputImage,resizeFactor);
+             // copy image
+             Fps.start();

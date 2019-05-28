@@ -16,7 +16,7 @@ vcpkg_extract_source_archive_ex(
 		#0003_and_or_fix.patch
 		#0004_windows_export_symbols.patch
 		#0005_debug_vector_size_fix.patch
-		#0006_remove_cout.patch
+		0006_remove_cout.patch
 )
 
 vcpkg_configure_cmake(

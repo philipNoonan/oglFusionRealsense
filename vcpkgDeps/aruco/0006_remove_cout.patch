@@ -1,0 +1,31 @@
+diff --git a/src/fractallabelers/fractalposetracker.cpp b/src/fractallabelers/fractalposetracker.cpp
+index 7f8150a..e879d41 100644
+--- a/src/fractallabelers/fractalposetracker.cpp
++++ b/src/fractallabelers/fractalposetracker.cpp
+@@ -242,7 +242,7 @@ namespace aruco {
+ 
+             float ratio = float(imagePyramid[imgPyrIdx].cols)/float(imagePyramid[0].cols);
+ 
+-            std::cout << "REFINE["<< id_marker.first <<"], imgPyrId:"<<imgPyrIdx << ", ratio:"<< ratio<<std::endl;
++            //std::cout << "REFINE["<< id_marker.first <<"], imgPyrId:"<<imgPyrIdx << ", ratio:"<< ratio<<std::endl;
+ 
+             std::vector<double> _inners2d_error;
+             if (ratio == 1 && area >= desiredarea){
+@@ -387,7 +387,7 @@ namespace aruco {
+         {
+             ScopedTimerEvents Timer("pnp");
+ 
+-            std::cout << "[Case 1]"<< std::endl;
++            //::cout << "[Case 1]"<< std::endl;
+             std::vector<cv::Point2f> p2d;
+             std::vector<cv::Point3f> p3d;
+             for (auto marker : vmarkers)
+@@ -421,7 +421,7 @@ namespace aruco {
+         {
+             if(!_rvec.empty())
+             {
+-                std::cout << "[Case 2]"<< std::endl;
++               // std::cout << "[Case 2]"<< std::endl;
+ 
+                 ScopedTimerEvents Timer("ransac");
+ 
