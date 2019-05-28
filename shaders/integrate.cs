@@ -105,9 +105,9 @@ void integrateExperimental()
 
             // if we get here, then the voxel is seen by this cameraDevice
             // determin best cameraDevice
-            vec3 shiftVec = depthPoint.xyz - worldPos;
+            vec3 shiftVec = worldPos - depthPoint.xyz;
             float tdiff = length(shiftVec);
-            diff[cameraDevice] = shiftVec.z > 0.0 ? tdiff : -tdiff;
+            diff[cameraDevice] = shiftVec.z < 0.0 ? tdiff : -tdiff;
         }
 
         float finalDiff = 10000.0f;
@@ -165,7 +165,7 @@ void integrateExperimental()
         else
         {
             //pix.z += 50; // need to be clever here, but this could work nicely woudl like to jump to just before the 
-            imageStore(volumeData, ivec3(pix), vec4(0.0f));
+            //imageStore(volumeData, ivec3(pix), vec4(0.0f));
         }
     }
 
