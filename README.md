@@ -27,7 +27,7 @@ Go to your vcpkg.exe installed location and open another command prompt.
 Then we install the various libraries needed for this project.
 
 ```
-vcpkg install glew glfw3 glm imgui eigen3 dirent realsense2
+vcpkg install glew glfw3 glm imgui eigen3 dirent realsense2 opencv
 ```
 This should take 3-4 minutes.
 
