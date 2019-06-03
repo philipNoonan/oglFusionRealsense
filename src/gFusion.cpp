@@ -255,6 +255,8 @@ void gFusion::initTextures()
 {
 
 	m_sensorsTimestamps.resize(m_numberOfCameras);
+	m_previousTime.resize(m_numberOfCameras);
+
 	//m_textureDepth.resize(m_numberOfCameras);
 	//m_textureVertex.resize(m_numberOfCameras);
 	//m_textureNormal.resize(m_numberOfCameras);
@@ -653,19 +655,15 @@ void gFusion::depthToVertex(std::vector<rs2::frame_queue> depthQ, int devNumber,
 		{
 			if (depthFrame[camNumber].supports_frame_metadata(RS2_FRAME_METADATA_SENSOR_TIMESTAMP))
 			{
-				uint64_t currentTime = depthFrame[camNumber].get_frame_metadata(RS2_FRAME_METADATA_SENSOR_TIMESTAMP) + (timeShiftOffsets * (2 ^ 32));
-				uint64_t deltaTime = currentTime - previousTime;
+				auto currentTime = depthFrame[camNumber].get_frame_metadata(RS2_FRAME_METADATA_SENSOR_TIMESTAMP);
+				auto deltaTime = currentTime - m_previousTime[camNumber];
 				if (deltaTime < 0)
 				{
 					timeShiftOffsets++;
-					m_sensorsTimestamps[camNumber] = currentTime + (timeShiftOffsets * (2 ^ 32));
-				}
-				else
-				{
-					m_sensorsTimestamps[camNumber] = currentTime;
 				}
 
-				previousTime = currentTime;
+				m_sensorsTimestamps[camNumber] = currentTime + (timeShiftOffsets * (2 ^ 32));
+				m_previousTime[camNumber] = m_sensorsTimestamps[camNumber];
 			}
 
 

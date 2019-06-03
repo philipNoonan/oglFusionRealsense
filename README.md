@@ -31,6 +31,9 @@ vcpkg install glew glfw3 glm imgui eigen3 dirent realsense2 opencv aruco
 ```
 This should take 3-4 minutes.
 
+<h3> REQUIRED FOR GETTING TIMESTAMPS ON WINDOWS </h3>
+To get timestamps from the realsense camera itself, rather than the time at which the host computer receives the frame we need to follow the steps described in <a href="https://github.com/IntelRealSense/librealsense/blob/c3c758d18c585a237bb5b635927797aa69996391/doc/installation_windows.md">these intel instructions</a> under the section labeled "Enabling metadata on Windows"
+
 <h3> Installing oglFusion </h3>
 
 We use <a href="https://www.visualstudio.com/downloads/">visual studio 2017</a> since it is the most readily available MSVC these days, support for c++17 features, and the hope that it will be useable with cuda 9.2.

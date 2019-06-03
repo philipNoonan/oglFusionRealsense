@@ -767,7 +767,7 @@ private:
 	glm::mat4 m_colorToColor;
 	glm::mat4 m_depthToDepth = glm::mat4(1.0f);
 
-	uint64_t previousTime = 0;
+	std::vector<uint64_t> m_previousTime;
 	std::vector<uint64_t> m_sensorsTimestamps;
 	int m_numberOfCameras;
 	uint64_t timeShiftOffsets = 0;
