@@ -7,8 +7,7 @@ An openGL GLSL implementation of KinectFusion for the Intel Realsense running on
 
 <h3>Dependencies</h2>
 
-
-glew glfw3 glm imgui eigen3 realsense2 opencv aruco
+cmake and git are required.
 
 sudo apt-get install libglew-dev libglfw3 libglfw3-dev libglm-dev libeigen3-dev
 
@@ -21,8 +20,6 @@ opencv was built and installed from source (version 4.1.0).
 aruco was built and installed from source (version 1.3.2).
 
 <h3> Installing oglFusion </h3>
-
-We use <a href="https://cmake.org/download/">cmake</a> . Please use the latest version available.
 
 Pull the latest version of oglFusion
 
