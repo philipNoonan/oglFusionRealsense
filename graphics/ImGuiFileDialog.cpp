@@ -6,7 +6,9 @@
 //#include "imgui_internal.h"
 
 #include <algorithm>
+#ifdef WIN32
 #include <filesystem>
+#endif
 
 inline bool ReplaceString(std::string& str, const std::string& oldStr, const std::string& newStr)
 {
@@ -92,6 +94,7 @@ static bool stringComparator(FileInfoStruct a, FileInfoStruct b)
 
 void ImGuiFileDialog::ScanDir(std::string vPath)
 {
+/*
 	struct dirent **files = 0;
 	int i = 0;
 	int n = 0;
@@ -121,7 +124,7 @@ void ImGuiFileDialog::ScanDir(std::string vPath)
 		}
 	}
 	
-	/* Scan files in directory */
+	// Scan files in directory
 	n = scandir(vPath.c_str(), &files, NULL, alphaSort);
 	if (n >= 0)
 	{
@@ -161,11 +164,12 @@ void ImGuiFileDialog::ScanDir(std::string vPath)
 	}
 
 	std::sort(m_FileList.begin(), m_FileList.end(), stringComparator);
+*/
 }
 
 void ImGuiFileDialog::SetCurrentDir(std::string vPath)
 {
-	DIR *dir = opendir(vPath.c_str());
+	/*DIR *dir = opendir(vPath.c_str());
 	if (dir == 0)
 	{
 		vPath = ".";
@@ -178,7 +182,7 @@ void ImGuiFileDialog::SetCurrentDir(std::string vPath)
 		ReplaceString(m_CurrentPath, "\\*", "");
 		closedir(dir);
 		m_CurrentPath_Decomposition = splitStringVector(m_CurrentPath, '\\');
-	}
+	}*/
 }
 
 void ImGuiFileDialog::ComposeNewPath(std::vector<std::string>::iterator vIter)

@@ -13,7 +13,9 @@
 #include <iostream>
 #include <fstream>
 #include <vector>
+#ifdef WIN32
 #include <Windows.h>
+#endif
 #include <algorithm>
 
 class gFlood

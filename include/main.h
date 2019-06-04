@@ -227,7 +227,7 @@ bool calibratingFlag = false;
 
 // FUSION STUFF
 bool trackDepthToPoint = false;
-bool trackDepthToVolume = true;
+bool trackDepthToVolume = false;
 bool useMultipleFusion = false;
 bool performFlood = false;
 bool performFlow = false;

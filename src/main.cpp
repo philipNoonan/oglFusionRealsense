@@ -306,7 +306,7 @@ void startRealsense()
 		{
 			
 			depthProfiles.resize(numberOfCameras, 71); // 71 on 435, 211 on 415
-			colorProfiles.resize(numberOfCameras, 13); // 0 1920x1080x30 rgb8 // 13 1920x1080x6 rgb8
+			colorProfiles.resize(numberOfCameras, 12); // 0 1920x1080x30 rgb8 // 13 on 435 12 on 415 1920x1080x6 rgb8 
 			infraProfiles.resize(numberOfCameras, 15); // 15 on 435 35 on 415
 
 			depthFrameSize.resize(numberOfCameras);
@@ -1035,91 +1035,6 @@ void setUpGPU()
 
 int main(int, char**)
 {
-	// chess
-	// mat4x4((0.838242, -0.270351, 0.473562, 0.000000), 
-	//        (0.294389, 0.955376, 0.024323, 0.000000), 
-	//        (-0.459006, 0.119023, 0.880424, 0.000000), 
-
-	//        (-0.088125, 0.082131, 0.043788, 1.000000))
-
-	// paired
-	// mat4x4((0.838231, -0.287631, -0.463120, 0.000000), 
-	//        (0.309347, 0.950437, -0.030405, 0.000000), 
-	//        (0.448905, -0.117851, 0.885711, 0.000000), 
-
-	//        (0.065176, -0.106710, -0.002620, 1.000000))
-
-	// inverted  
-	// mat4x4((0.838363, 0.309386, 0.448983, -0.000000), 
-	//        (-0.287687, 0.950478, -0.117797, 0.000000), 
-	//        (-0.463187, -0.030338, 0.885804, -0.000000), 
-
-	//        (-0.086553, 0.081181, -0.039512, 1.000000))
-
-
-	// mat4x4((0.936391, -0.146397,  0.318967, 0.000000), 
-	//        (0.236582,  0.934613, -0.265572, 0.000000),
-	//       (-0.259231,  0.324141,  0.909798, 0.000000), 
-	//       (-0.109869,  0.085190,  0.030209, 1.000000))
-
-
-	//glm::mat4 test0 = glm::mat4(0.936391, -0.146397, 0.318967, 0.000000,
-	//	        0.236582,  0.934613, -0.265572, 0.000000,
-	//	       -0.259231,  0.324141,  0.909798, 0.000000, 
-	//	       -0.109869,  0.085190,  0.030209, 1.000000);//
-
-	//std::cout << glm::to_string(glm::inverse(test0)) << std::endl;
-
-
-	//       0.935       -0.1469     0.321      0, 
-	//       0.240        0.931     -0.2738     0, 
-	//	    -0.259051     0.3334     0.90646    0,
-	//   	 0.0901      -0.10769    0.0325     1.0 
-
-
-	//glm::mat4 testA(1.0f);
-	//testA[0] = glm::vec4(0.91, -0.23, 0.33, 0.0);
-	//testA[1] = glm::vec4(0.25, 0.96, -0.02, 0);
-	//testA[2] = glm::vec4(-0.32, 0.10, 0.94, 0.0);
-	////testA[3] = glm::vec4(-0.11, 0.07, 0.04, 1.0);
-
-	//glm::mat4 testB(1.0f);
-	//testB[0] = glm::vec4(0.91, -0.23, -0.33, 0);
-	//testB[1] = glm::vec4(0.26, 0.96, 0.03, 0);
-	//testB[2] = glm::vec4(0.31, -0.118, 0.94, 0);
-	////testB[3] = glm::vec4();
-
-	//glm::mat4 outAB = testA * glm::transpose(testB);
-
-	//std::cout << glm::to_string(outAB) << std::endl;
-
-	//glm::mat4 flipXYZ(1.0f);
-	//flipXYZ[0][0] *= -1.0f;
-	//flipXYZ[1][1] *= -1.0f;
-	//flipXYZ[2][2] *= -1.0f;
-
-	//glm::mat4 flipZ(1.0f);
-	//flipZ[2][2] *= -1.0f;
-
-	//glm::mat4 outMat = flipZ * flipXYZ * testA;
-
-	//std::cout << glm::to_string(flipZ * testA) << std::endl;
-
-
-	//std::cout << glm::to_string(outMat) << std::endl;
-
-	//glm::mat4 d2d(0.705696, 0.110563, 0.699675, 0.000000,
-	//	0.135722, 0.948362, -0.286617, 0.000000,
-	//	-0.695233, 0.297230, 0.654249, 0.000000,
-	//	0.145772, -0.098724, -0.054113, 1.000000);
-
-	//glm::vec4 point0(-0.05745, 0.0849, 0.21629, 1.0);
-	//glm::vec4 point1(0.0681, 0.0708, 0.3702, 1.0);
-
-	//std::cout << "d2d * 1 : " << glm::to_string(d2d * point1) << std::endl;
-
-	//std::cout << "inv d2d * 0 " << glm::to_string(glm::inverse(d2d) * point0) << std::endl;
-
 
 
 	int display_w, display_h;
@@ -1140,18 +1055,7 @@ int main(int, char**)
 	setImguiWindows();
 
 
-	//cv::Ptr<cv::DenseOpticalFlow> algorithm = cv::optflow::createOptFlow_DIS(cv::optflow::DISOpticalFlow::PRESET_MEDIUM);
-	
-	//cv::Mat prevgray, gray, graySmall, rgb, frame;
-	//cv::Mat I0x = cv::Mat(1080, 1920, CV_16SC1);
-	//cv::Mat I0y = cv::Mat(1080, 1920, CV_16SC1);
-	//cv::Mat flow, flow_uv[2];
-	//cv::Mat mag, ang;
-	//cv::Mat hsv_split[3], hsv;
-	//char ret;
 
-	//cv::namedWindow("flow", 1);
-	//cv::namedWindow("orig", 1);
 
 	const int samples = 50;
 	float time[samples];
@@ -1204,19 +1108,10 @@ int main(int, char**)
 			// THIS SHOULD ONLY BE COPIED WHENEVER THERES A NEW COLOR FRAME, NOT EVERY DEPTH FRAME
 			krender.setColorFrame(cameraInterface.getColorQueues(), cameraDevice, colMat);
 
-			krender.setInfraFrame(cameraInterface.getInfraQueues(), cameraDevice, infraMat);
+			//krender.setInfraFrame(cameraInterface.getInfraQueues(), cameraDevice, infraMat);
 
-			//rs2::frame infraFrame;
-			//if (cameraInterface.getInfraQueues()[cameraDevice].poll_for_frame(&infraFrame))
-			//{
-			//
-			//	if (infraFrame != NULL)
-			//	{
-			//		cv::Mat infraMat = cv::Mat(depthFrameSize[0].y, depthFrameSize[0].x, CV_8UC1, (void*)infraFrame.get_data());
-			//		cv::imshow("col", infraMat);
-			//		cv::waitKey(1);
-			//	}
-			//}
+
+
 			if (!colMat.empty() && performAruco)
 			{
 				//cv::imshow("!", colMat);
@@ -1239,15 +1134,9 @@ int main(int, char**)
 
 				if (markerMats.size() > 0)
 				{
-					//if (mTracker.gemStatus == gemStatus::TRACKING)
-					//{
-					//	krender.setMarkerData(tMat);
 
-					//}
-					//else
-					//{
 						krender.setMarkerData(markerMats);
-					//}
+					
 				}
 				
 			}
@@ -1257,16 +1146,7 @@ int main(int, char**)
 				cam2camTrans = mTracker.getCam2CamTransform();
 
 				glm::mat4 test0 = colorToDepth[0] * cam2camTrans * depthToColor[1];
-				//glm::mat4 test1 = colorToDepth[1] * cam2camTrans * depthToColor[0];
-				//glm::mat4 test01 = colorToDepth[0] * glm::inverse(cam2camTrans) * depthToColor[1];
-				//glm::mat4 test11 = colorToDepth[1] * glm::inverse(cam2camTrans) * depthToColor[0];
 
-				//std::cout << glm::to_string(test0) << std::endl;
-				//std::cout << glm::to_string(test1) << std::endl;
-				//std::cout << glm::to_string(test01) << std::endl;
-				//std::cout << glm::to_string(test11) << std::endl;
-
-				//gfusion.setColorToColor(cam2camTrans);
 				gfusion.setDepthToDepth(test0);
 				krender.setDepthToDepth(test0);
 				if (cameraDevice == 0)
@@ -1279,7 +1159,7 @@ int main(int, char**)
 			double currentTime = epchTime();
 			double deltaTime = currentTime - previousTime;
 			previousTime = currentTime;
-			//std::cout << (int)(deltaTime) << std::endl;
+			std::cout << (int)(deltaTime) << std::endl;
 
 			if (performFlow)
 			{
@@ -1350,13 +1230,13 @@ int main(int, char**)
 				counter++;
 			}
 
-			//FOR ONE CAMERA ONLY
-			outputFile << std::to_string(gfusion.getFrameTime()[0]) << " " << gfusion.alignmentEnergy() << " " << cameraInterface.getTemperature()[0];
+			////FOR ONE CAMERA ONLY
+			// outputFile << std::to_string(gfusion.getFrameTime()[0]) << " " << gfusion.alignmentEnergy() << " " << cameraInterface.getTemperature()[0];
 			
-			outputFile << " " << gfusion.getPose()[0].x << " " << gfusion.getPose()[0].y << " " << gfusion.getPose()[0].z << " " << gfusion.getPose()[0].w << \
-				" " << gfusion.getPose()[1].x << " " << gfusion.getPose()[1].y << " " << gfusion.getPose()[1].z << " " << gfusion.getPose()[1].w << \
-				" " << gfusion.getPose()[2].x << " " << gfusion.getPose()[2].y << " " << gfusion.getPose()[2].z << " " << gfusion.getPose()[2].w << \
-				" " << gfusion.getPose()[3].x << " " << gfusion.getPose()[3].y << " " << gfusion.getPose()[3].z << " " << gfusion.getPose()[3].w << std::endl;
+			// outputFile << " " << gfusion.getPose()[0].x << " " << gfusion.getPose()[0].y << " " << gfusion.getPose()[0].z << " " << gfusion.getPose()[0].w << \
+			// 	" " << gfusion.getPose()[1].x << " " << gfusion.getPose()[1].y << " " << gfusion.getPose()[1].z << " " << gfusion.getPose()[1].w << \
+			// 	" " << gfusion.getPose()[2].x << " " << gfusion.getPose()[2].y << " " << gfusion.getPose()[2].z << " " << gfusion.getPose()[2].w << \
+			// 	" " << gfusion.getPose()[3].x << " " << gfusion.getPose()[3].y << " " << gfusion.getPose()[3].z << " " << gfusion.getPose()[3].w << std::endl;
 
 			//graphPoints.push_back(gfusion.getTransPose());
 			glm::vec4 transformedInitOff = gfusion.getPose() * glm::vec4(iOff, 1.0f);
@@ -1388,7 +1268,8 @@ int main(int, char**)
 				arrayZ[idx] = i.z;
 
 				idx++;
-			}
+			 }
+
 
 		}
 

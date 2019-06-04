@@ -225,7 +225,7 @@ public:
 
 		glBindBuffer(GL_SHADER_STORAGE_BUFFER, m_bufferTrackedPoints);
 		void *ptr = glMapBuffer(GL_SHADER_STORAGE_BUFFER, GL_READ_ONLY);
-		memcpy_s(outputSDFData.data(), outputSDFData.size() * sizeof(float), ptr, outputSDFData.size() * sizeof(float));
+		memcpy(outputSDFData.data(), ptr, outputSDFData.size() * sizeof(float));
 		glUnmapBuffer(GL_SHADER_STORAGE_BUFFER);
 
 

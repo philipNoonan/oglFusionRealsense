@@ -137,7 +137,7 @@ GLuint MCubes::prefixSum(GLuint inputBuffer, GLuint outputBuffer)
 
 	glBindBuffer(GL_SHADER_STORAGE_BUFFER, m_bufferPrefixSumByGroup);
 	void *ptrp0 = glMapBuffer(GL_SHADER_STORAGE_BUFFER, GL_READ_ONLY);
-	memcpy_s(prefixsumgrp0.data(), prefixsumgrp0.size() * sizeof(uint32_t), ptrp0, prefixsumgrp0.size() * sizeof(uint32_t));
+	memcpy(prefixsumgrp0.data(), ptrp0, prefixsumgrp0.size() * sizeof(uint32_t));
 	glUnmapBuffer(GL_SHADER_STORAGE_BUFFER);
 
 	int xthreads2 = GLHelper::divup(xthreads, 1024);
@@ -343,7 +343,7 @@ void MCubes::exportPointCloud()
 
 	glBindBuffer(GL_SHADER_STORAGE_BUFFER, m_bufferPos);
 	void *ptr = glMapBuffer(GL_SHADER_STORAGE_BUFFER, GL_READ_ONLY);
-	memcpy_s(posData.data(), posData.size() * sizeof(float), ptr, posData.size() * sizeof(float));
+	memcpy(posData.data(), ptr, posData.size() * sizeof(float));
 	glUnmapBuffer(GL_SHADER_STORAGE_BUFFER);
 
 	std::string modelFileName = "data/meshes/marchingCubesBin.ply";
@@ -382,7 +382,7 @@ void MCubes::exportMesh()
 
 	glBindBuffer(GL_SHADER_STORAGE_BUFFER, m_bufferPos);
 	void *ptr = glMapBuffer(GL_SHADER_STORAGE_BUFFER, GL_READ_ONLY);
-	memcpy_s(posData.data(), posData.size() * sizeof(float), ptr, posData.size() * sizeof(float));
+	memcpy(posData.data(), ptr, posData.size() * sizeof(float));
 	glUnmapBuffer(GL_SHADER_STORAGE_BUFFER);
 
 	std::string modelFileName = "data/meshes/marchingCubesBin.stl";

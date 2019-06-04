@@ -1,5 +1,6 @@
 cmake_minimum_required(VERSION 3.9)
 
+if (WIN32)
 # Toolchain file needs to be set before project() 
 ### FIND VCPKG
 if(DEFINED ENV{VCPKG_ROOT} AND NOT DEFINED CMAKE_TOOLCHAIN_FILE)
@@ -9,6 +10,7 @@ else()
 	message(STATUS "VCPKG_ROOT not set in environment variables")	  
 endif()
 
+endif()
 
 project(oglFusionRS)
 
@@ -25,15 +27,8 @@ endif()
 # Save the command line compile commands in the build output
 set(CMAKE_EXPORT_COMPILE_COMMANDS 1)
 
-include(CheckCXXCompilerFlag)
-CHECK_CXX_COMPILER_FLAG("-std=c++11" COMPILER_SUPPORTS_CXX11)
-CHECK_CXX_COMPILER_FLAG("-std=c++0x" COMPILER_SUPPORTS_CXX0X)
-if(COMPILER_SUPPORTS_CXX11)
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=c11")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
-elseif(COMPILER_SUPPORTS_CXX0X)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x")
-endif()
+#set(CMAKE_CXX_STANDARD 17)
+#set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 
 
@@ -48,12 +43,12 @@ find_package(OpenGL REQUIRED)
 find_package(GLEW REQUIRED)
 find_package(glfw3 REQUIRED)
 find_package(glm REQUIRED)
-find_package(imgui REQUIRED)
-find_package(eigen3 REQUIRED)
+#find_package(imgui REQUIRED)
+#find_package(eigen3 REQUIRED)
 find_package(realsense2 REQUIRED)
 
 # header only
-find_path (DIRENT_INCLUDE_DIR dirent.h)
+#find_path (DIRENT_INCLUDE_DIR dirent.h)
 
 
 file(GLOB_RECURSE SRC "src/*")
@@ -61,13 +56,13 @@ file(GLOB_RECURSE GFX "graphics/*")
 file(GLOB_RECURSE SHD "shaders/*")
 file(GLOB_RECURSE HDR "include/*")
 file(GLOB_RECURSE RES "resources/*")
-
+file(GLOB_RECURSE IMG "imgui/*")
 
 list(APPEND SRC ${SHD})
 list(APPEND SRC ${GFX})
 list(APPEND SRC ${HDR})
 list(APPEND SRC ${RES})
-
+list(APPEND SRC ${IMG})
 
 ### COPY SHADER FILES TO BUILD AND BINARY LOCATIONS IF THEY HAVE BEEN CHANGED ###
 add_custom_target(
@@ -131,22 +126,27 @@ add_dependencies(${PROJECT_NAME} shaders resources)
 
 set_target_properties(${PROJECT_NAME} PROPERTIES COMPILE_PDB_NAME_DEBUG "${PROJECT_NAME}${CMAKE_DEBUG_POSTFIX}")
 
+#target_compile_features(${PROJECT_NAME} PRIVATE cxx_std_17)
+
 #set_target_properties(${PROJECT_NAME} PROPERTIES LINK_FLAGS "/SUBSYSTEM:WINDOWS")
 #ADD_DEFINITIONS(-DUNICODE)
 #ADD_DEFINITIONS(-D_UNICODE)
 
 target_include_directories(${PROJECT_NAME} PUBLIC "include")
 target_include_directories(${PROJECT_NAME} PUBLIC "graphics")
+target_include_directories(${PROJECT_NAME} PUBLIC "imgui")
+
 target_include_directories(${PROJECT_NAME} PUBLIC ${OpenCV_INCLUDE_DIRS})
+target_include_directories(${PROJECT_NAME} PUBLIC "/usr/include/eigen3/")
 # header only
-include_directories(${DIRENT_INCLUDE_DIR})
+#include_directories(${DIRENT_INCLUDE_DIR})
 
 target_link_libraries(${PROJECT_NAME} ${OPENGL_gl_LIBRARY})
 target_link_libraries(${PROJECT_NAME} GLEW::GLEW)
 target_link_libraries(${PROJECT_NAME} glfw)
 target_link_libraries(${PROJECT_NAME} glm)
-target_link_libraries(${PROJECT_NAME} imgui::imgui)
-target_link_libraries(${PROJECT_NAME} Eigen3::Eigen)
+#target_link_libraries(${PROJECT_NAME} imgui::imgui)
+#target_link_libraries(${PROJECT_NAME} Eigen3::Eigen)
 target_link_libraries(${PROJECT_NAME} realsense2::realsense-file realsense2::realsense2)
 target_link_libraries(${PROJECT_NAME} ${OpenCV_LIBS})
 target_link_libraries(${PROJECT_NAME} ${aruco_LIBS})

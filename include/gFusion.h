@@ -76,9 +76,9 @@ struct gFusionConfig
 		farPlane = 3.0f;
 		dist_threshold = 0.05f;
 		normal_threshold = 0.8f;
-		iterations.push_back(2);
-		iterations.push_back(4);
-		iterations.push_back(6);
+		iterations.push_back(1);
+		iterations.push_back(1);
+		iterations.push_back(1);
 		track_threshold = 0.5f;
 		depthFrameSize = glm::vec2(848, 480);
 		dMax = 0.05f;

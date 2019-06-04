@@ -4,7 +4,7 @@
 #include <stdio.h>
 #include <iostream>
 #include <fstream>
-
+#include <thread>
 
 #include "opencv2/core/utility.hpp"
 #include "opencv2/opencv.hpp"
@@ -14,43 +14,8 @@
 #include <librealsense2/rs.hpp> // Include RealSense Cross Platform API
 #include <librealsense2/rs_advanced_mode.hpp>
 
-#include "frameGrabber.h"
 
-class frameViewer
-{
-public:
-	frameViewer(const std::string& windowTitle) :
-		m_windowTitle(windowTitle),
-		m_thread(new std::thread(&frameViewer::run, this))
-	{
-	}
-	~frameViewer()
-	{
-		if (m_thread && m_thread->joinable())
-		{
-			m_thread->join();
-		}
-	}
-	void operator()(rs2::frame f)
-	{
-		m_frames.enqueue(f);
-	}
-	void wait()
-	{
-		if (m_thread)
-		{
-			m_thread->join();
-		}
-	}
-private:
-	void run()
-	{
 
-	}
-	std::unique_ptr<std::thread> m_thread;
-	std::string m_windowTitle;
-	rs2::frame_queue m_frames;
-};
 
 class Realsense2Camera
 {
@@ -104,10 +69,10 @@ public:
 	rs2_extrinsics getColorToDepthExtrinsics();
 
 	void capture();
-	void colorThread(rs2::sensor& sens);
+	const void colorThread(rs2::sensor& sens);
 	void capturingColor(rs2::frame &f);
 
-	void depthThread(rs2::sensor& sens);
+	const void depthThread(rs2::sensor& sens);
 	void capturingDepth(rs2::frame &f);
 
 	void infraThread(rs2::sensor& sens);

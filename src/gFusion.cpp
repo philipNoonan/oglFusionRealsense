@@ -546,15 +546,14 @@ void gFusion::testPrefixSum()
 
 	glBindBuffer(GL_SHADER_STORAGE_BUFFER, m_buffer_testOutput);
 	void *ptr = glMapBuffer(GL_SHADER_STORAGE_BUFFER, GL_READ_ONLY);
-	memcpy_s(outputPrefixSum.data(), outputPrefixSum.size() * sizeof(uint32_t), ptr, outputPrefixSum.size() * sizeof(uint32_t));
-
+	memcpy(outputPrefixSum.data(), ptr, outputPrefixSum.size() * sizeof(uint32_t));
 	glUnmapBuffer(GL_SHADER_STORAGE_BUFFER);
 
 
 
 	glBindBuffer(GL_SHADER_STORAGE_BUFFER, m_buffer_testMidput);
 	void *ptr1 = glMapBuffer(GL_SHADER_STORAGE_BUFFER, GL_READ_ONLY);
-	memcpy_s(midPrefixSum.data(), midPrefixSum.size() * sizeof(uint32_t), ptr1, midPrefixSum.size() * sizeof(uint32_t));
+	memcpy(midPrefixSum.data(), ptr1, midPrefixSum.size() * sizeof(uint32_t));
 
 	glUnmapBuffer(GL_SHADER_STORAGE_BUFFER);
 
@@ -1088,7 +1087,7 @@ bool gFusion::TrackSDF() {
 			//std::cout << "AE: " << alignmentEnergy << " snorm : " << Cnorm << " vec " << result.transpose() << std::endl;
 
 			//std::cout << "cnrom :" << Cnorm << std::endl;
-			if (alignmentEnergy != 0 && alignmentEnergy < 5e-5 || Cnorm < 5e-5)
+			if (alignmentEnergy != 0 && alignmentEnergy < 1e-4 || Cnorm < 1e-4)
 			{
 				//std::cout << "tracked!!! iteration " << iteration << " level " << level << " AE: " << alignmentEnergy << " snorm : " << Cnorm << " vec " << result.transpose() << std::endl;
 
@@ -1306,7 +1305,7 @@ void gFusion::getReduction(std::vector<float>& b, std::vector<float>& C, float &
 
 	glBindBuffer(GL_SHADER_STORAGE_BUFFER, m_buffer_outputdata);
 	void *ptr = glMapBuffer(GL_SHADER_STORAGE_BUFFER, GL_READ_ONLY);
-	memcpy_s(outputData.data(), outputData.size() * sizeof(float), ptr, outputData.size() * sizeof(float));
+	memcpy(outputData.data(), ptr, outputData.size() * sizeof(float));
 	glUnmapBuffer(GL_SHADER_STORAGE_BUFFER);
 
 	//for (auto i : outputData)
@@ -1350,7 +1349,7 @@ void gFusion::getPreRedu(Eigen::Matrix<double, 6, 6> &A, Eigen::Matrix<double, 6
 	outputSDFData.resize(reductionSDFSize);
 	glBindBuffer(GL_SHADER_STORAGE_BUFFER, m_bufferSDFReduction);
 	void *ptr = glMapBuffer(GL_SHADER_STORAGE_BUFFER, GL_READ_ONLY);
-	memcpy_s(outputSDFData.data(), reductionSDFSize * sizeof(GLfloat), ptr, reductionSDFSize * sizeof(GLfloat));
+	memcpy(outputSDFData.data(), ptr, reductionSDFSize * sizeof(GLfloat));
 	glUnmapBuffer(GL_SHADER_STORAGE_BUFFER);
 
 	//Eigen::Matrix<double, 6, 6> A = Eigen::Matrix<double, 6, 6>::Zero();
@@ -1375,7 +1374,7 @@ void gFusion::getSDFReduction(std::vector<float>& b, std::vector<float>& C, floa
 
 	glBindBuffer(GL_SHADER_STORAGE_BUFFER, m_bufferSDFoutputdata);
 	void *ptr = glMapBuffer(GL_SHADER_STORAGE_BUFFER, GL_READ_ONLY);
-	memcpy_s(outputSDFData.data(), outputSDFData.size() * sizeof(float), ptr, outputSDFData.size() * sizeof(float));
+	memcpy(outputSDFData.data(), ptr, outputSDFData.size() * sizeof(float));
 	glUnmapBuffer(GL_SHADER_STORAGE_BUFFER);
 
 

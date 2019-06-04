@@ -74,5 +74,5 @@ endif(MSVC)
 #------------------------------------------------------------------------------
 # enabling C++ 11 support for gcc
 if(CMAKE_COMPILER_IS_GNUCXX)
-  list( APPEND CMAKE_CXX_FLAGS "-std=c++11 ${CMAKE_CXX_FLAGS} -O3")
+  list( APPEND CMAKE_CXX_FLAGS "-std=c++11 ${CMAKE_CXX_FLAGS} -pthread -O3")
 endif()

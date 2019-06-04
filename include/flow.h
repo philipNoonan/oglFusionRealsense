@@ -23,7 +23,9 @@
 
 #include "opencv2/highgui/highgui.hpp"
 #include "opencv2/video/tracking.hpp"
+#ifdef WIN32
 #include <Windows.h>
+#endif
 
 #define drawCross( center, color, d )                                 \
 line( img, Point( center.x - d, center.y - d ), Point( center.x + d, center.y + d ), color, 2, CV_AA, 0); \
@@ -379,9 +381,9 @@ private:
 
 	//ekf stuff
 	vector<KalmanFilter> KF;// (4, 2, 0);
-	vector<POINT> mousePos;
+	vector<cv::Point2f> mousePos;
 	Mat_<float> measurement;// (2, 1); measurement.setTo(Scalar(0));
 	Mat img;// (600, 800, CV_8UC3);
-	vector<vector<Point> >mousev, kalmanv;
+	vector<vector<cv::Point2f> >mousev, kalmanv;
 
 };
