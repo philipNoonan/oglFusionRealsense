@@ -1023,11 +1023,11 @@ void setUpGPU()
 	//mCubeInit();
 	//krender.setBuffersFromMarchingCubes(gfusion.getVertsMC(), gfusion.getNormsMC(), gfusion.getNumVerts());
 
-	gDisOptFlowInit();
+	//gDisOptFlowInit();
 
 	kRenderInit();
 
-	gFloodInit();
+	//gFloodInit();
 
 }
 
@@ -1035,92 +1035,9 @@ void setUpGPU()
 
 int main(int, char**)
 {
-	// chess
-	// mat4x4((0.838242, -0.270351, 0.473562, 0.000000), 
-	//        (0.294389, 0.955376, 0.024323, 0.000000), 
-	//        (-0.459006, 0.119023, 0.880424, 0.000000), 
 
-	//        (-0.088125, 0.082131, 0.043788, 1.000000))
-
-	// paired
-	// mat4x4((0.838231, -0.287631, -0.463120, 0.000000), 
-	//        (0.309347, 0.950437, -0.030405, 0.000000), 
-	//        (0.448905, -0.117851, 0.885711, 0.000000), 
-
-	//        (0.065176, -0.106710, -0.002620, 1.000000))
-
-	// inverted  
-	// mat4x4((0.838363, 0.309386, 0.448983, -0.000000), 
-	//        (-0.287687, 0.950478, -0.117797, 0.000000), 
-	//        (-0.463187, -0.030338, 0.885804, -0.000000), 
-
-	//        (-0.086553, 0.081181, -0.039512, 1.000000))
-
-
-	// mat4x4((0.936391, -0.146397,  0.318967, 0.000000), 
-	//        (0.236582,  0.934613, -0.265572, 0.000000),
-	//       (-0.259231,  0.324141,  0.909798, 0.000000), 
-	//       (-0.109869,  0.085190,  0.030209, 1.000000))
-
-
-	//glm::mat4 test0 = glm::mat4(0.936391, -0.146397, 0.318967, 0.000000,
-	//	        0.236582,  0.934613, -0.265572, 0.000000,
-	//	       -0.259231,  0.324141,  0.909798, 0.000000, 
-	//	       -0.109869,  0.085190,  0.030209, 1.000000);//
-
-	//std::cout << glm::to_string(glm::inverse(test0)) << std::endl;
-
-
-	//       0.935       -0.1469     0.321      0, 
-	//       0.240        0.931     -0.2738     0, 
-	//	    -0.259051     0.3334     0.90646    0,
-	//   	 0.0901      -0.10769    0.0325     1.0 
-
-
-	//glm::mat4 testA(1.0f);
-	//testA[0] = glm::vec4(0.91, -0.23, 0.33, 0.0);
-	//testA[1] = glm::vec4(0.25, 0.96, -0.02, 0);
-	//testA[2] = glm::vec4(-0.32, 0.10, 0.94, 0.0);
-	////testA[3] = glm::vec4(-0.11, 0.07, 0.04, 1.0);
-
-	//glm::mat4 testB(1.0f);
-	//testB[0] = glm::vec4(0.91, -0.23, -0.33, 0);
-	//testB[1] = glm::vec4(0.26, 0.96, 0.03, 0);
-	//testB[2] = glm::vec4(0.31, -0.118, 0.94, 0);
-	////testB[3] = glm::vec4();
-
-	//glm::mat4 outAB = testA * glm::transpose(testB);
-
-	//std::cout << glm::to_string(outAB) << std::endl;
-
-	//glm::mat4 flipXYZ(1.0f);
-	//flipXYZ[0][0] *= -1.0f;
-	//flipXYZ[1][1] *= -1.0f;
-	//flipXYZ[2][2] *= -1.0f;
-
-	//glm::mat4 flipZ(1.0f);
-	//flipZ[2][2] *= -1.0f;
-
-	//glm::mat4 outMat = flipZ * flipXYZ * testA;
-
-	//std::cout << glm::to_string(flipZ * testA) << std::endl;
-
-
-	//std::cout << glm::to_string(outMat) << std::endl;
-
-	//glm::mat4 d2d(0.705696, 0.110563, 0.699675, 0.000000,
-	//	0.135722, 0.948362, -0.286617, 0.000000,
-	//	-0.695233, 0.297230, 0.654249, 0.000000,
-	//	0.145772, -0.098724, -0.054113, 1.000000);
-
-	//glm::vec4 point0(-0.05745, 0.0849, 0.21629, 1.0);
-	//glm::vec4 point1(0.0681, 0.0708, 0.3702, 1.0);
-
-	//std::cout << "d2d * 1 : " << glm::to_string(d2d * point1) << std::endl;
-
-	//std::cout << "inv d2d * 0 " << glm::to_string(glm::inverse(d2d) * point0) << std::endl;
-
-
+	torch::Tensor tensor = torch::rand({ 2, 3 });
+	std::cout << "my first c++ torch tensor " << tensor << std::endl;
 
 	int display_w, display_h;
 	// load openGL window
@@ -1183,6 +1100,12 @@ int main(int, char**)
 		glViewport(0, 0, display_w, display_h);
 		glClearColor(clear_color.x, clear_color.y, clear_color.z, clear_color.w);
 		glClear(GL_COLOR_BUFFER_BIT);
+
+
+
+
+
+
 
 
 		if (usingDataFromFile)

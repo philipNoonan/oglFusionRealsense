@@ -9,6 +9,7 @@ else()
 	message(STATUS "VCPKG_ROOT not set in environment variables")	  
 endif()
 
+set(CMAKE_PREFIX_PATH "C:/Code/pytorch")
 
 project(oglFusionRS)
 
@@ -51,6 +52,8 @@ find_package(glm REQUIRED)
 find_package(imgui REQUIRED)
 find_package(eigen3 REQUIRED)
 find_package(realsense2 REQUIRED)
+
+find_package(Torch REQUIRED)
 
 # header only
 find_path (DIRENT_INCLUDE_DIR dirent.h)
@@ -140,6 +143,9 @@ target_include_directories(${PROJECT_NAME} PUBLIC "graphics")
 target_include_directories(${PROJECT_NAME} PUBLIC ${OpenCV_INCLUDE_DIRS})
 # header only
 include_directories(${DIRENT_INCLUDE_DIR})
+
+target_link_libraries(${PROJECT_NAME} ${TORCH_LIBRARIES})
+	message(STATUS "torch libs : " ${TORCH_LIBRARIES})	  
 
 target_link_libraries(${PROJECT_NAME} ${OPENGL_gl_LIBRARY})
 target_link_libraries(${PROJECT_NAME} GLEW::GLEW)

@@ -1894,7 +1894,7 @@ bool gFlow::calc(bool useInfrared)
 			glGetTexImage(GL_TEXTURE_2D, level, GL_RED, GL_FLOAT, ssdMat.data);
 			glBindTexture(GL_TEXTURE_2D, 0);
 
-			cv::namedWindow("ssd", WINDOW_NORMAL);
+			cv::namedWindow("ssd", cv::WINDOW_NORMAL);
 			cv::imshow("ssd", ssdMat);
 			cv::waitKey(1);
 		}
@@ -1955,7 +1955,7 @@ void gFlow::setupEKF()
 	KF.resize(18);
 	mousev.resize(18);
 	kalmanv.resize(18);
-	measurement = cv::Mat(2, 1, CV_32FC1); measurement.setTo(Scalar(0));
+	measurement = cv::Mat(2, 1, CV_32FC1); measurement.setTo(cv::Scalar(0));
 
 	for (int i = 0; i < KF.size(); i++)
 	{
@@ -1963,16 +1963,16 @@ void gFlow::setupEKF()
 
 
 		// intialization of KF...
-		KF[i].transitionMatrix = (Mat_<float>(4, 4) << 1, 0, 1, 0, 0, 1, 0, 1, 0, 0, 1, 0, 0, 0, 0, 1);
+		KF[i].transitionMatrix = (cv::Mat_<float>(4, 4) << 1, 0, 1, 0, 0, 1, 0, 1, 0, 0, 1, 0, 0, 0, 0, 1);
 
 		KF[i].statePre.at<float>(0) = 0;
 		KF[i].statePre.at<float>(1) = 0;
 		KF[i].statePre.at<float>(2) = 0;
 		KF[i].statePre.at<float>(3) = 0;
 		setIdentity(KF[i].measurementMatrix); // 4 cols 2 rows
-		setIdentity(KF[i].processNoiseCov, Scalar::all(1)); // 4 cols 4 rows
-		setIdentity(KF[i].measurementNoiseCov, Scalar::all(1)); // 2 cols 2 rows
-		setIdentity(KF[i].errorCovPost, Scalar::all(.1)); // 4 cols 4 rows
+		setIdentity(KF[i].processNoiseCov, cv::Scalar::all(1)); // 4 cols 4 rows
+		setIdentity(KF[i].measurementNoiseCov, cv::Scalar::all(1)); // 2 cols 2 rows
+		setIdentity(KF[i].errorCovPost, cv::Scalar::all(.1)); // 4 cols 4 rows
 													   // Image to show mouse tracking
 
 		mousev[i].clear();

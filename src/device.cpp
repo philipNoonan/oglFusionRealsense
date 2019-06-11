@@ -175,14 +175,14 @@ void Realsense2Camera::setEmitterOptions(float status, float power)
 bool Realsense2Camera::start()
 {
 		m_sensors[1].open(m_stream_profiles_color[m_colorStreamChoice]); //848 480 60fps rgb8
-		std::thread colThread = std::thread(&Realsense2Camera::colorThread, this, m_sensors[1]);
+		std::thread colThread = std::thread(&Realsense2Camera::colorThread, this, std::ref(m_sensors[1]));
 		colThread.detach();
 
 		std::vector<rs2::stream_profile> sp = { m_stream_profiles_depthIR[15], m_stream_profiles_depthIR[m_depthStreamChoice] };
 		//std::vector<rs2::stream_profile> sp = { m_stream_profiles_depthIR[35], m_stream_profiles_depthIR[m_depthStreamChoice] };
 
 		m_sensors[0].open(sp); // depth 848*480@90
-		std::thread depThread = std::thread(&Realsense2Camera::depthThread, this, m_sensors[0]);
+		std::thread depThread = std::thread(&Realsense2Camera::depthThread, this, std::ref(m_sensors[0]));
 		depThread.detach();
 
 		

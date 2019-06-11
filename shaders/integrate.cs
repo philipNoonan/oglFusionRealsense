@@ -38,13 +38,11 @@ vec4 getSDF(uvec3 pos)
     return imageLoad(volumeData, ivec3(pos));
 }
 
-
 bool inFrustrum(in vec4 pClip)
 {
     return abs(pClip.x) < pClip.w &&
            abs(pClip.y) < pClip.w; 
 }
-
 
 void integrateExperimental()
 {

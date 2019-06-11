@@ -29,8 +29,8 @@
 line( img, Point( center.x - d, center.y - d ), Point( center.x + d, center.y + d ), color, 2, CV_AA, 0); \
 line( img, Point( center.x + d, center.y - d ), Point( center.x - d, center.y + d ), color, 2, CV_AA, 0 )
 
-using namespace cv;
-using namespace std;
+//using namespace cv;
+//using namespace std;
 
 
 class gFlow
@@ -378,10 +378,10 @@ private:
 
 
 	//ekf stuff
-	vector<KalmanFilter> KF;// (4, 2, 0);
-	vector<POINT> mousePos;
-	Mat_<float> measurement;// (2, 1); measurement.setTo(Scalar(0));
-	Mat img;// (600, 800, CV_8UC3);
-	vector<vector<Point> >mousev, kalmanv;
+	std::vector<cv::KalmanFilter> KF;// (4, 2, 0);
+	std::vector<cv::Point2f> mousePos;
+	cv::Mat_<float> measurement;// (2, 1); measurement.setTo(Scalar(0));
+	cv::Mat img;// (600, 800, CV_8UC3);
+	std::vector<std::vector<cv::Point> >mousev, kalmanv;
 
 };

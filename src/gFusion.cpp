@@ -682,7 +682,7 @@ void gFusion::depthToVertex(std::vector<rs2::frame_queue> depthQ, int devNumber,
 
 	if (m_clickedPoint)
 	{
-		std::cout << "clicky pointy" << std::endl;
+		//std::cout << "clicky pointy" << std::endl;
 		if (depthFrame[0] != NULL)
 		{
 			const uint16_t* p_depth_frame = reinterpret_cast<const uint16_t*>(depthFrame[0].get_data()); // FIXME SPECIFIC TO CAMERA 0
@@ -692,7 +692,7 @@ void gFusion::depthToVertex(std::vector<rs2::frame_queue> depthQ, int devNumber,
 			glm::vec4 tempPoint(0.0f, 0.0f, 0.0f, 1.0f);
 
 			tempPoint.z = p_depth_frame[depth_pixel_index] * (float)m_depthUnit / 1000000.0f;
-			std::cout << tempPoint.z << std::endl;
+			//std::cout << tempPoint.z << std::endl;
 
 
 
@@ -722,13 +722,7 @@ void gFusion::depthToVertex(std::vector<rs2::frame_queue> depthQ, int devNumber,
 		else
 		{
 			m_clickedPoint = true;
-
 		}
-
-
-
-
-
 	}
 
 	depthToVertProg.use();
@@ -1304,7 +1298,9 @@ void gFusion::getReduction(std::vector<float>& b, std::vector<float>& C, float &
 
 	glBindBuffer(GL_SHADER_STORAGE_BUFFER, m_buffer_outputdata);
 	void *ptr = glMapBuffer(GL_SHADER_STORAGE_BUFFER, GL_READ_ONLY);
-	memcpy_s(outputData.data(), outputData.size() * sizeof(float), ptr, outputData.size() * sizeof(float));
+	//memcpy_s(outputData.data(), outputData.size() * sizeof(float), ptr, outputData.size() * sizeof(float));
+	memcpy(outputData.data(), ptr, outputData.size() * sizeof(float));
+
 	glUnmapBuffer(GL_SHADER_STORAGE_BUFFER);
 
 	//for (auto i : outputData)
@@ -1961,6 +1957,11 @@ void gFusion::updatePoseFinder()
 
 void gFusion::addPoseToLibrary()
 {
+	// we mask the incoming infrared and/or depth and/or color depending on the track texture
+	// we combine these images with the current transformation
+
+
+
 
 	/*gPosePair newPose;
 	GLuint new_textureID;
