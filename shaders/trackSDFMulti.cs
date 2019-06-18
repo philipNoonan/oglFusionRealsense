@@ -234,14 +234,14 @@ void main()
 
                 vec3 rotatedNormal = vec3(cameraPoses[camera] * vec4(normals.xyz, 0.0f)).xyz;
 
-                if (dot(dSDF_dx, rotatedNormal) < 0.5 && !any(equal(dSDF_dx, vec3(0.0f))))
-                {
-                    imageStore(trackImage, ivec3(pix, camera), vec4(1.0f, 1.0f, 0, 1.0f));
+                //if (dot(dSDF_dx, rotatedNormal) < 0.5 && !any(equal(dSDF_dx, vec3(0.0f))))
+                //{
+                //    imageStore(trackImage, ivec3(pix, camera), vec4(1.0f, 1.0f, 0, 1.0f));
 
-                    trackOutput[offset].result = -4;
+                //    trackOutput[offset].result = -4;
 
-                    continue;
-                }
+                //    continue;
+                //}
 
                 //if (any(greaterThan(rotatedNormal, vec3(1.0f))))
                 //{

@@ -140,9 +140,25 @@ void MarkerTracker::stereoCalibrate(glm::mat4 &cam2cam)
 }
 
 
-void MarkerTracker::setMat(cv::Mat input)
+void MarkerTracker::setMats(std::vector<rs2::frame_queue> fQueue)
 {
-	m_targetMat = input;
+	rs2::frame colorFrame;
+
+	for (int i = 0; i < m_numberOfCameras; i++) 
+	{
+		if (fQueue[i].poll_for_frame(&colorFrame))
+		{
+
+
+				m_targetMat[i] = cv::Mat(m_camPams[i].CamSize.height, m_camPams[i].CamSize.width, CV_8UC3, (void*)colorFrame.get_data());
+
+
+			
+
+		}
+	}
+	
+
 }
 
 void MarkerTracker::setGemOption(int option)
@@ -362,6 +378,7 @@ void MarkerTracker::setupAruco()
 	m_markers.resize(m_numberOfCameras);
 	m_calibrationSamples.resize(m_numberOfCameras);
 	FDetector.resize(m_numberOfCameras);
+	m_targetMat.resize(m_numberOfCameras);
 
 	for (int i = 0; i < m_numberOfCameras; i++)
 	{
@@ -380,17 +397,7 @@ void MarkerTracker::setupAruco()
 
 void MarkerTracker::collectSamples()
 {
-	if (!m_markers.empty())
-	{
-		m_calibrationSamples.push_back(m_markers);
-		m_samplingCount++;
-		if (m_samplingCount % 10 == 0)
-		{
-			m_calibrationSamples.push_back(m_markers);
-			std::cout << "Captured " << m_samplingCount / 10 << " samples." << std::endl;
-		}
-
-	}
+	m_calibrationSamples.push_back(m_markers);
 }
 
 void MarkerTracker::autoCalibrate()
@@ -477,60 +484,47 @@ bool MarkerTracker::detect()
 	//cv::Mat greyIm;// (480, 848, CV_8UC3);
 	//colMat.copyTo(greyIm);
 	//cv::cvtColor(colMat, greyIm, cv::COLOR_RGBA2BGR, 3);
-	if (m_status[m_cameraDevice] == arucoStatus::TRACKING)
+	std::vector<cv::Mat> outMat(m_numberOfCameras);
+
+	for (int camDev = 0; camDev < m_numberOfCameras; camDev++)
 	{
-		if (!m_targetMat.empty())
+		if (m_status[camDev] == arucoStatus::TRACKING)
 		{
-
-			cv::Mat outMat;
-			m_targetMat.copyTo(outMat);
-
-
-			if (FDetector[m_cameraDevice].detect(outMat))
+			if (!m_targetMat[camDev].empty())
 			{
-				FDetector[m_cameraDevice].drawMarkers(outMat);
+
+				m_targetMat[camDev].copyTo(outMat[camDev]);
+
+
+				if (FDetector[camDev].detect(outMat[camDev]))
+				{
+					FDetector[camDev].drawMarkers(outMat[camDev]);
+				}
+				if (FDetector[camDev].poseEstimation()) {
+
+					FDetector[camDev].draw3d(outMat[camDev]); //3d
+					cv::Mat tvec = FDetector[camDev].getTvec();
+
+					//std::cout << tvec.at<double>(2, 0) * (0.112 / 2.0) << std::endl;
+				}
+				else
+					FDetector[camDev].draw2d(outMat[camDev]); //Ok, show me at least the inner corners!
+
+
+
+
 			}
-			if (FDetector[m_cameraDevice].poseEstimation()) {
-
-				FDetector[m_cameraDevice].draw3d(outMat); //3d
-				cv::Mat tvec = FDetector[m_cameraDevice].getTvec();
-
-				//std::cout << tvec.at<double>(2, 0) * (0.112 / 2.0) << std::endl;
-			}
-			else
-				FDetector[m_cameraDevice].draw2d(outMat); //Ok, show me at least the inner corners!
-
-			cv::cvtColor(outMat, outMat, cv::COLOR_RGB2BGR);
-			cv::imshow("FD", outMat);
-			cv::waitKey(1);
-
-			//m_markers[m_cameraDevice] = FDetector.getMarkers();
-
-			
-
-
-
-
-
-
-
-
-
-			////std::cout << "inside second loop" << std::endl;
-			////m_mtx.lock();
-
-			//auto markers = m_MDetector[m_cameraDevice].detect(m_targetMat, m_camPams[m_cameraDevice], 0.036f);
-			////std::lock_guard<std::shared_timed_mutex> lk(m_shared_mtx);
-			////m_mtx.lock();
-			//m_markers[m_cameraDevice] = markers;
-			//
-			////m_mtx.unlock();
-
-			////std::cout << "marker size : " << m_markers.size() << std::endl;
 
 		}
-
 	}
+	if (outMat[m_cameraDevice].data != NULL)
+	{
+		cv::cvtColor(outMat[m_cameraDevice], outMat[m_cameraDevice], cv::COLOR_RGB2BGR);
+		cv::imshow("FD", outMat[m_cameraDevice]);
+
+		cv::waitKey(1);
+	}
+
 	return false;
 }
 
@@ -635,7 +629,7 @@ void MarkerTracker::draw()
 	// this causes it to crash because opencv doesnt like drawing off main thread, i think
 	//m_mtx.lock();
 	cv::Mat outputImage;
-	m_targetMat.copyTo(outputImage);
+	m_targetMat[m_cameraDevice].copyTo(outputImage);
 
 
 		for (unsigned int i = 0; i < m_markers[m_cameraDevice].size(); i++)

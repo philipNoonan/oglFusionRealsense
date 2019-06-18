@@ -21,6 +21,8 @@
 #include <mutex>
 #include <shared_mutex>
 
+#include <librealsense2/rs.hpp> // Include RealSense Cross Platform API
+
 //#include "gem.h"
 
 namespace arucoStatus
@@ -93,7 +95,7 @@ public:
 
 	void draw();
 	void setCamPams(int camDev, float fx, float fy, float cx, float cy, int width, int height);
-	void setMat(cv::Mat);
+	void setMats(std::vector<rs2::frame_queue> fQueue);
 	void startTracking();
 	void stopTracking();
 	void calibrate();
@@ -129,7 +131,7 @@ private:
 	std::vector<aruco::MarkerDetector> m_MDetector;
 	std::vector<aruco::CameraParameters> m_camPams;
 
-	cv::Mat m_targetMat;
+	std::vector<cv::Mat> m_targetMat;
 	//std::thread *m_thread;
 	//std::mutex m_mtx;
 	//std::shared_timed_mutex m_shared_mtx;

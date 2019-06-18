@@ -1151,6 +1151,13 @@ void kRender::renderLiveVideoWindow(bool useInfrared, int devNumber)
 	glUniformSubroutinesuiv(GL_FRAGMENT_SHADER, 1, &m_fromStandardFragmentID);
 	glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 
+
+
+
+
+
+
+
 	if (m_showMarkersFlag)
 	{
 

@@ -321,7 +321,7 @@ void startRealsense()
 			for (int camera = 0; camera < numberOfCameras; camera++)
 			{
 				cameraInterface.startDevice(camera, depthProfiles[camera], colorProfiles[camera]);
-				cameraInterface.setDepthTable(camera, 10000, 0, 100, 0, 0);
+				cameraInterface.setDepthTable(camera, 50000, 0, 100, 0, 0);
 
 				int wd, hd, rd;
 				int wc, hc, rc;
@@ -1145,7 +1145,7 @@ int main(int, char**)
 				//cv::imshow("!", colMat);
 				//cv::waitKey(1);
 				mTracker.setCameraDevice(cameraDevice);
-				mTracker.setMat(colMat);
+				mTracker.setMats(cameraInterface.getColorQueues());
 				mTracker.detect();
 				//mTracker.draw();
 

@@ -84,10 +84,10 @@ vec4 fromStandardFragment()
 		{
 			outColor = vec4(tCol.xyz, 1.0f);
 
-			if (tCol.x == 0.5f)
-			{
-					outColor = vec4(textureLod(currentTextureInfra, vec2(TexCoord),0).xxx, 1.0f);
-			}
+			//if (tCol.x == 0.5f)
+			//{
+				//outColor = vec4(textureLod(currentTextureInfra, vec2(TexCoord),0).xxx, 1.0f);
+			//}
 		}
 	}
 
