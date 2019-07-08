@@ -44,10 +44,14 @@ public:
 	void setDepthTable(STDepthTableControl dTable);
 	void setSensorOptions();
 	void setEmitterOptions(float status, float power);
-	void setDepthProperties(int profileChoice);
+
+	void setDepthProperties(std::tuple<int, int, int, rs2_format> profileChoice);
 	void getDepthProperties(int &width, int &height, int &rate);
 
-	void setColorProperties(int profileChoice);
+	void setInfraProperties(std::tuple<int, int, int, rs2_format> profileChoice);
+	void getInfraProperties(int &width, int &height, int &rate);
+
+	void setColorProperties(std::tuple<int, int, int, rs2_format> profileChoice);
 	void getColorProperties(int &width, int &height, int &rate);
 
 	int readTemperature();
@@ -113,10 +117,16 @@ private:
 	rs2::sensor m_depthSensor;
 	rs2::sensor m_colorSensor;
 
-	int m_depthStreamChoice; //435I
+	std::tuple<int, int, int, rs2_format> m_depthStreamChoice;
+	std::tuple<int, int, int, rs2_format> m_infraStreamChoice;
+
 	//int m_depthStreamChoice = 211; // 415
 	//int m_colorStreamChoice = 61; //435I 848 480 60hz rgb8
-	int m_colorStreamChoice; //435I 848 480 30hz rgb8
+	std::tuple<int, int, int, rs2_format> m_colorStreamChoice; //435I 848 480 30hz rgb8
+
+	int m_depthStreamID;
+	int m_infraStreamID;
+	int m_colorStreamID;
 
 	std::vector<rs2::sensor> m_sensors;
 

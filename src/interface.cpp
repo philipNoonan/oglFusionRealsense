@@ -119,14 +119,16 @@ void Realsense2Interface::setDepthTable(int devNumber, int depthMax, int depthMi
 
 }
 
-void Realsense2Interface::startDevice(int devNumber, int depthProfile, int colorProfile)
+void Realsense2Interface::startDevice(int devNumber, std::tuple<int, int, int, rs2_format> depthProfile, std::tuple<int, int, int, rs2_format> infraProfile, std::tuple<int, int, int, rs2_format> colorProfile)
 {
 	//Realsense2Camera camera;
 	m_cameras[devNumber].setDev(m_devices[devNumber]);
+	m_cameras[devNumber].setDepthProperties(depthProfile);
+	m_cameras[devNumber].setInfraProperties(infraProfile);
+	m_cameras[devNumber].setColorProperties(colorProfile);
 	m_cameras[devNumber].setStreams();
 	m_cameras[devNumber].setSensorOptions();
-	m_cameras[devNumber].setDepthProperties(depthProfile);
-	m_cameras[devNumber].setColorProperties(colorProfile);
+
 
 	//m_cameras[devNumber].start();
 

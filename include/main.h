@@ -19,6 +19,8 @@
 #include "kRender.h"
 #include "renderHelpers.h"
 
+#include "openPoseWrapper.h"
+
 #include "interface.h"
 //#include "openCVStuff.h"
 #include "gFusion.h"
@@ -44,7 +46,6 @@
 #include <sstream> // stringstream
 #include <iomanip> 
 
-#include <torch/torch.h>
 
 
 //const std::string currentDateTime();
@@ -105,9 +106,9 @@ kRender krender;
 //Realsense2Camera kcamera;
 Realsense2Interface cameraInterface;
 int cameraDevice = 0;
-std::vector<int> depthProfiles;
-std::vector<int> colorProfiles;
-std::vector<int> infraProfiles;
+std::vector<std::tuple<int, int, int, rs2_format>> depthProfiles;
+std::vector<std::tuple<int, int, int, rs2_format>> colorProfiles;
+std::vector<std::tuple<int, int, int, rs2_format>> infraProfiles;
 
 
 static bool cameraRunning = false;
@@ -333,3 +334,10 @@ bool performStereo = false;
 bool pairFromFile = false;
 // GEM STUFF
 
+int desiredWidth = 848;
+int desiredHeight = 480;
+int desiredRate = 90;
+
+int desiredColorWidth = 1920;
+int desiredColorHeight = 1080;
+int desiredColorRate = 6;

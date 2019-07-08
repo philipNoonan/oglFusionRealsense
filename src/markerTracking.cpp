@@ -28,7 +28,8 @@ void MarkerTracker::setCamPams(int camDev, float fx, float fy, float cx, float c
 	//m_camPams[0].glGetProjectionMatrix(cv::Size(848, 480), cv::Size(848, 480), projMat, 0.1, 10.0, true);
 	FDetector[camDev].setConfiguration("FRACTAL_3L_6");
 
-	FDetector[camDev].setParams(m_camPams[camDev], 0.112f);
+	//FDetector[camDev].setParams(m_camPams[camDev], 0.112f);
+	FDetector[camDev].setParams(m_camPams[camDev], 0.2f);
 
 	//FDetector[camDev].conver
 
@@ -225,9 +226,14 @@ glm::mat4 MarkerTracker::getMatrixFromFractal(int devNumber)
 
 	glm::mat4 rotMat = glm::toMat4(rotQuat);
 
-	rotMat[3][0] = tvec.at<double>(0, 0) *  (0.112 / 2.0);
-	rotMat[3][1] = tvec.at<double>(1, 0) *  (0.112 / 2.0);
-	rotMat[3][2] = tvec.at<double>(2, 0) *  (0.112 / 2.0);
+	//rotMat[3][0] = tvec.at<double>(0, 0) *  (0.112 / 2.0);
+	//rotMat[3][1] = tvec.at<double>(1, 0) *  (0.112 / 2.0);
+	//rotMat[3][2] = tvec.at<double>(2, 0) *  (0.112 / 2.0);
+
+	rotMat[3][0] = tvec.at<double>(0, 0) *  (0.2 / 2.0);
+	rotMat[3][1] = tvec.at<double>(1, 0) *  (0.2 / 2.0);
+	rotMat[3][2] = tvec.at<double>(2, 0) *  (0.2 / 2.0);
+
 
 	return rotMat;
 }

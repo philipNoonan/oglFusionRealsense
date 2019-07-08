@@ -1,41 +1,16 @@
 #include "main.h"
 
+#define USE_TORCH
 //#define USEINFRARED
 //#define USEWEBCAM
 //#define USEIMAGES
 //#define USEVIDEO
 //#define USETESTIMAGE
 
-//
-//#include "opencv2/core/utility.hpp"
-//#include "opencv2/opencv.hpp"
-//#include "opencv2/imgproc/imgproc.hpp"
-//#include "opencv2/highgui/highgui.hpp"
 
-// To split this up we will have just rendering calls in 
-// kRender - rendering calls
-// gFusion - raycasting, integrating, set, reset, getPose, setPose, depth to vert, vert to normals, 
-
-// memory bank
-// volume - 3D Texture short2 RG16I, 256x256x256
-// depth - 2D Texture float RED, 512x424 mipmapped
-// color - 2D Texture unsigned byte RGBA, 1920x1080
-// vertex - 2D Texture float RGBA32F, vector of textures mipmapped
-// normal - 2D Texture float RGBA32F, vector of textures mipmapped
-
-
-
-// Doesnt work :( cant seem to easily get laptop to use integrated GPU from openGL context. 
-//#include <windows.h>
-//extern "C" {
-//	_declspec(dllexport) DWORD NvOptimusEnablement = 0x00000000;
-//}
-
-
-
-
-
-
+#ifdef USE_TORCH
+#include <torch/torch.h>
+#endif
 
 static void error_callback(int error, const char* description)
 {
@@ -286,14 +261,14 @@ void startRealsense()
 {
 
 
-	int prevERate = eRate;
-	int prevERes = eRes;
+	//int prevERate = eRate;
+	//int prevERes = eRes;
 
-	if (cameraRunning) eRate = prevERate;
-	if (eRate == 90) eRes = 0;
+	//if (cameraRunning) eRate = prevERate;
+	//if (eRate == 90) eRes = 0;
 
-	if (cameraRunning) eRes = prevERes;
-	if (eRes == 1) eRate = 30;
+	//if (cameraRunning) eRes = prevERes;
+	//if (eRes == 1) eRate = 30;
 
 
 	if (cameraRunning == false)
@@ -304,10 +279,12 @@ void startRealsense()
 
 		if (numberOfCameras > 0)
 		{
-			
-			depthProfiles.resize(numberOfCameras, 71); // 71 on 435, 211 on 415
-			colorProfiles.resize(numberOfCameras, 13); // 0 1920x1080x30 rgb8 // 13 1920x1080x6 rgb8
-			infraProfiles.resize(numberOfCameras, 15); // 15 on 435 35 on 415
+			// need to send target refresh rate, and target horizontal resolution, vertical also perhaps
+			// datatype should be fxed to Y8 IR, Y16 depth, and RGB color
+
+			infraProfiles.resize(numberOfCameras, std::make_tuple(desiredWidth, desiredHeight, desiredRate, RS2_FORMAT_Y8)); 
+			depthProfiles.resize(numberOfCameras, std::make_tuple(desiredWidth, desiredHeight, desiredRate, RS2_FORMAT_Z16));
+			colorProfiles.resize(numberOfCameras, std::make_tuple(desiredColorWidth, desiredColorHeight, desiredColorRate, RS2_FORMAT_RGB8));
 
 			depthFrameSize.resize(numberOfCameras);
 			colorFrameSize.resize(numberOfCameras);
@@ -320,7 +297,7 @@ void startRealsense()
 
 			for (int camera = 0; camera < numberOfCameras; camera++)
 			{
-				cameraInterface.startDevice(camera, depthProfiles[camera], colorProfiles[camera]);
+				cameraInterface.startDevice(camera, depthProfiles[camera], infraProfiles[camera], colorProfiles[camera]);
 				cameraInterface.setDepthTable(camera, 50000, 0, 100, 0, 0);
 
 				int wd, hd, rd;
@@ -631,12 +608,83 @@ void setUI()
 		if (ImGui::CollapsingHeader("Camera"))
 		{
 			
+			ImGui::Text("Depth and Infrared");
+			if (ImGui::Button("30 Hz"))
+			{
+				desiredRate = 30;
+			}
+			ImGui::SameLine();
+			if (ImGui::Button("60 Hz"))
+			{
+				desiredRate = 60;
+			}
+			ImGui::SameLine();
+			if (ImGui::Button("90 Hz"))
+			{
+				desiredRate = 90;
+			}
+			ImGui::SameLine();
 
-			/*ImGui::RadioButton("30 Hz", &eRate, 30); ImGui::SameLine();
-			ImGui::RadioButton("90 Hz", &eRate, 30); ImGui::SameLine();
 
-			ImGui::RadioButton("848x480", &eRes, 0); ImGui::SameLine();
-			ImGui::RadioButton("1280x720", &eRes, 1);*/
+			if (ImGui::Button("848x480"))
+			{
+				desiredWidth = 848;
+				desiredHeight = 480;
+			}
+			ImGui::SameLine();
+			if (ImGui::Button("1280x720"))
+			{
+				desiredWidth = 1280;
+				desiredHeight = 720;
+				desiredRate = 30;
+			}
+
+			auto textSelection = "Selected Width : " + std::to_string(desiredWidth) + " height : " + std::to_string(desiredHeight) + " rate : " + std::to_string(desiredRate);
+			ImGui::Text(textSelection.c_str());
+
+			ImGui::Text("Color");
+			if (ImGui::Button("6 Hz ##Color"))
+			{
+
+				desiredColorRate = 6;
+			}
+			ImGui::SameLine();
+			if (ImGui::Button("30 Hz ##Color"))
+			{
+				desiredColorRate = 30;
+			}
+			ImGui::SameLine();
+			if (ImGui::Button("60 Hz ##Color"))
+			{
+				desiredColorRate = 60;
+				if (desiredColorWidth == 1920)
+				{
+					desiredColorWidth == 848;
+					desiredColorHeight == 480;
+				}
+			}
+			ImGui::SameLine();
+
+
+			if (ImGui::Button("848x480 ##Color"))
+			{
+				desiredColorWidth = 848;
+				desiredColorHeight = 480;
+			}
+			ImGui::SameLine();
+			if (ImGui::Button("1920x1080 ##Color"))
+			{
+				desiredColorWidth = 1920;
+				desiredColorHeight = 1080;
+				if (desiredColorRate == 60)
+				{
+					desiredColorRate = 30;
+				}
+			}
+
+			auto textColorSelection = "Selected Width : " + std::to_string(desiredColorWidth) + " height : " + std::to_string(desiredColorHeight) + " rate : " + std::to_string(desiredColorRate);
+			ImGui::Text(textColorSelection.c_str());
+
 
 			if (ImGui::Button("Emitter"))
 			{
@@ -1036,9 +1084,10 @@ void setUpGPU()
 int main(int, char**)
 {
 
+#ifdef USE_TORCH
 	torch::Tensor tensor = torch::rand({ 2, 3 });
 	std::cout << "my first c++ torch tensor " << tensor << std::endl;
-
+#endif
 	int display_w, display_h;
 	// load openGL window
 	window = krender.loadGLFWWindow();

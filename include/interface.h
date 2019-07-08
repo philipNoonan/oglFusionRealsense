@@ -54,7 +54,7 @@ public:
 
 	void setDepthTable(int devNumber, int depthMax, int depthMin, int depthUnit, int disparityMode, int disparity);
 
-	void startDevice(int devNumber, int depthProfile, int colorProfile);
+	void startDevice(int devNumber, std::tuple<int, int, int, rs2_format> depthProfile, std::tuple<int, int, int, rs2_format> infraProfile, std::tuple<int, int, int, rs2_format> colorProfile);
 	void startDeviceFromFile(std::string filename, int depthProfile, int colorProfile);
 	void stopDevice(int devNumber);
 	void stopDevices();
