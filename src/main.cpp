@@ -1,6 +1,6 @@
 #include "main.h"
 
-#define USE_TORCH
+//#define USE_TORCH
 //#define USEINFRARED
 //#define USEWEBCAM
 //#define USEIMAGES
