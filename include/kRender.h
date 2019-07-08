@@ -559,7 +559,7 @@ private:
 	glm::vec3 m_volume_size = glm::vec3(128.0f, 128.0f, 128.0f);
 
 
-	int getRenderOptions(bool depth, bool infra, bool color, bool norm, bool track, bool flood);
+	int getRenderOptions(bool depth, bool infra, bool color, bool norm, bool track, bool flood, bool volume);
 
 	bool m_showDepthFlag = false;
 	bool m_showNormalFlag = false;

@@ -9,7 +9,7 @@ layout (binding=4) uniform sampler2D currentTextureColor;
 layout (binding=5) uniform sampler2D currentTextureInfra;
 
 //layout (binding=5) uniform isampler3D currentTextureVolume; 
-layout (binding=6) uniform isampler3D currentTextureVolume; 
+layout (binding=6) uniform sampler3D currentTextureVolume; 
 layout (binding=7) uniform usampler3D currentTextureSDF; 
 
 
@@ -47,6 +47,7 @@ vec4 fromStandardFragment()
 	uint renderNormals = (renderOptions & 8) >> 3; 
 	uint renderTrack =   (renderOptions & 16) >> 4; 
 	uint renderFlood =   (renderOptions & 32) >> 5;
+	uint renderVolume =  (renderOptions & 64) >> 6;
 
 	vec4 outColor = vec4(0.0f);
 
@@ -101,6 +102,13 @@ vec4 fromStandardFragment()
 		float distCol = distance(vec3(TexCoord.xy, slice), SDF.xyz / texSize.x);
 		float ssDist = smoothstep(0.0f, 0.5f, distCol);
 		outColor = vec4(ssDist.xxx, 1.0f);
+	}
+
+	if (renderVolume == 1)
+	{
+		 vec4 tData = texture(currentTextureVolume, vec3(TexCoord, slice) );
+	     outColor = vec4(1.0f * float(tData.x) *100.0f, 1.0f * float(tData.x) * -100.0f, 0.0, 1.0f);
+
 	}
 
 	return outColor;

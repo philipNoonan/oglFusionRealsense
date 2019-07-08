@@ -1096,14 +1096,15 @@ void kRender::setViewport(int x, int y, int w, int h)
 	glViewport(x, y, w, h);
 }
 
-int kRender::getRenderOptions(bool depth, bool infra, bool color, bool norms, bool track, bool flood)
+int kRender::getRenderOptions(bool depth, bool infra, bool color, bool norms, bool track, bool flood, bool volume)
 {
 	int opts = depth << 0 |
 		       infra << 1 |
-			   color << 2 | // dont show color here
+			   color << 2 |
 		       norms << 3 |
 		       track << 4 |
-		       flood << 5;
+		       flood << 5 |
+			  volume << 6;
 
 	return opts;
 }
@@ -1118,7 +1119,7 @@ void kRender::renderLiveVideoWindow(bool useInfrared, int devNumber)
 
 
 	//// RENDER LEFT WINDOW
-	int leftRenderOptions = getRenderOptions(m_showDepthFlag, m_showInfraFlag, 0, m_showNormalFlag, m_showTrackFlag, 0);
+	int leftRenderOptions = getRenderOptions(m_showDepthFlag, m_showInfraFlag, 0, m_showNormalFlag, m_showTrackFlag, 0, 0);
 
 
 	glm::vec2 imageSize(848.0f, 480.0f);
@@ -1136,7 +1137,7 @@ void kRender::renderLiveVideoWindow(bool useInfrared, int devNumber)
 	glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 
 	//// RENDER RIGHT WINDOW
-	int rightRenderOptions = getRenderOptions(0, 0, m_showColorFlag, 0, 0, m_showVolumeSDFFlag);
+	int rightRenderOptions = getRenderOptions(0, 0, m_showColorFlag, 0, 0, m_showVolumeSDFFlag, m_showVolumeFlag);
 
 
 	setViewport(m_display3DPos.x, m_display3DPos.y, m_display3DSize.x, m_display3DSize.y);
