@@ -81,8 +81,8 @@ struct gFusionConfig
 		iterations.push_back(6);
 		track_threshold = 0.5f;
 		depthFrameSize = glm::vec2(848, 480);
-		dMax = 0.05f;
-		dMin = -0.024f;
+		dMax = 0.01f;
+		dMin = -0.004f;
 	}
 
 	float stepSize()
@@ -218,12 +218,14 @@ public:
 	void resetVolume();
 	void resetPose(glm::mat4 pose);
 	void allocateBuffers();
+	void initSplatterVAO();
 	// depth functions
-	void depthToVertex();
 	// combine multiple depth into one buffer of verts
 	//void depthToVertex(std::vector<rs2::frame_queue> depthQ, glm::vec3 &point);
 	// backproject depth frame into vertex image
-	void depthToVertex(std::vector<rs2::frame_queue> depthQ, int devNumber, glm::vec3 &point);
+	void uploadDepth(std::vector<rs2::frame_queue> depthQ, int devNumber, glm::vec3 &point);
+	void splatterDepth(std::vector<rs2::frame_queue> depthQ);
+	void depthToVertex();
 	void depthToVertex(float * depthArray);
 	void depthToVertex(uint16_t * depthArray);
 
@@ -258,7 +260,8 @@ public:
 	// tracking lost functions
 	void updatePoseFinder();
 	void addPoseToLibrary();
-	bool recoverPose();
+	bool recoverPose(glm::mat4 recoveryPose);
+	void checkDepthToDepth();
 
 	void trackPoints3D(GLuint trackedPoints2D);
 
@@ -400,6 +403,7 @@ public:
 private:
 
 	// PROGRAMS
+	GLSLProgram splatterProg;
 	GLSLProgram depthToVertProg;
 	GLSLProgram vertToNormProg;
 	GLSLProgram raycastProg;
@@ -596,6 +600,13 @@ private:
 	// TRACKED POINTS
 	std::vector<float> m_trackedPoints3D;
 	GLuint m_trackedPoints3DBuffer;
+
+
+	// SPLATTERING
+	GLuint m_VAO;
+	GLuint m_FBO;
+	GLuint m_VBO;
+	GLuint m_textureSplatteredModel;
 
 
 	// POSE RECOVERY

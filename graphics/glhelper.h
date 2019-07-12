@@ -17,7 +17,7 @@
 
 namespace GLHelper
 {
-	GLuint createTexture(GLuint ID, GLenum target, int levels, int w, int h, int d, GLuint internalformat);
+	GLuint createTexture(GLuint ID, GLenum target, int levels, int w, int h, int d, GLuint internalformat, GLenum magFilter, GLenum minFilter);
 	glm::mat4 getInverseCameraMatrix(const glm::vec4 & k);
 	glm::mat4 getCameraMatrix(const glm::vec4 & k);
 	

@@ -128,18 +128,18 @@ void integrateExperimental()
             }
         }
         //finalDiff /= validCameras;
-        float ctfo;
+        float ctfo = 0.0f;
         if (track[bestTrack] == vec4(0.5f, 0.5f, 0.5f, 1.0 ))
         {
             ctfo = 0.1f;
         }
         else if (track[bestTrack] == vec4(1.0f, 1.0f, 0.0f, 1.0))
         {
-            ctfo = 0.01f;
+            ctfo = 0.001f;
         }
         else if (track[bestTrack] == vec4(1.0f, 0.0f, 0.0f, 1.0))
         {
-            ctfo = 0.01f;
+            ctfo = 0.001f;
         }
         // if diff within TSDF range, write to volume
         if (finalDiff < dMax && finalDiff > dMin)

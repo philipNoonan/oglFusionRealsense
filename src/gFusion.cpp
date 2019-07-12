@@ -67,6 +67,9 @@ void gFusion::compileAndLinkShader()
 		helpersProg.compileShader("shaders/helpers.cs");
 		helpersProg.link();
 
+		splatterProg.compileShader("shaders/splatter.vs");
+		splatterProg.compileShader("shaders/splatter.fs");
+		splatterProg.link();
 
 		
 	}
@@ -386,7 +389,6 @@ void gFusion::resetPose(glm::mat4 pose)
 
 }
 
-
 void gFusion::allocateBuffers()
 {
 	// REDUCTION BUFFER OBJECT
@@ -465,6 +467,47 @@ void gFusion::allocateBuffers()
 	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 14, m_trackedPoints3DBuffer);
 }
 
+void gFusion::initSplatterVAO()
+{
+
+	//glGenFramebuffers(1, &m_FBO);
+	//glBindFramebuffer(GL_FRAMEBUFFER, m_FBO);
+
+	//m_textureSplatteredModel = GLHelper::createTexture(m_textureSplatteredModel, GL_TEXTURE_2D_ARRAY, 3, configuration.depthFrameSize.x, configuration.depthFrameSize.y, m_numberOfCameras, GL_R16, GL_NEAREST, GL_NEAREST_MIPMAP_NEAREST);
+	//glGenTextures(1, &m_textureSplatteredModel);
+	//glBindTexture(GL_TEXTURE_2D, m_textureSplatteredModel);
+	//glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, configuration.depthFrameSize.x, configuration.depthFrameSize.y, 0, GL_RGBA, GL_FLOAT, NULL);
+	//glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	//glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+	//glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, m_textureSplatteredModel, 0);
+
+	//// tell OpenGL which color attachments we'll use (of this framebuffer) for rendering 
+	//unsigned int attachments[] = { GL_COLOR_ATTACHMENT0,
+	//							   GL_COLOR_ATTACHMENT1	};
+	//glDrawBuffers(2, attachments);
+
+	//glGenRenderbuffers(1, &m_RBO);
+	//glBindRenderbuffer(GL_RENDERBUFFER, m_RBO);
+	//glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, m_texture_width, m_texture_height); // use a single renderbuffer object for both a depth AND stencil buffer.
+	//glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, m_RBO); // now actually attach it
+	//// now that we actually created the framebuffer and added all attachments we want to check if it is actually complete now
+	//if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+	//	std::cout << "ERROR::FRAMEBUFFER:: Framebuffer is not complete!" << std::endl;
+	//glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+	//glGenVertexArrays(1, &m_VAO);
+	//glBindVertexArray(m_VAO);
+	//glGenBuffers(1, &m_VBO);
+
+
+
+
+	//glBindVertexArray(0);
+
+
+}
+
 void gFusion::resetTimes()
 {
 	raycastTime = 0.0;
@@ -499,8 +542,6 @@ void gFusion::printTimes()
 	std::cout << "integrate " << integrateTime << " ms " << std::endl;
 
 }
-
-
 
 void gFusion::testPrefixSum()
 {
@@ -589,6 +630,96 @@ void gFusion::testPrefixSum()
 
 }
 
+void gFusion::uploadDepth(std::vector<rs2::frame_queue> depthQ, int devNumber, glm::vec3 &point)
+{
+
+
+	std::vector<rs2::frame> depthFrame(m_numberOfCameras);
+
+
+	for (int camNumber = 0; camNumber < m_numberOfCameras; camNumber++)
+	{
+		//std::cout << "cam number : " << camNumber << std::endl;
+		depthQ[camNumber].poll_for_frame(&depthFrame[camNumber]);
+		if (depthFrame[camNumber] != NULL)
+		{
+			if (depthFrame[camNumber].supports_frame_metadata(RS2_FRAME_METADATA_SENSOR_TIMESTAMP))
+			{
+				auto currentTime = depthFrame[camNumber].get_frame_metadata(RS2_FRAME_METADATA_SENSOR_TIMESTAMP);
+				auto deltaTime = currentTime - m_previousTime[camNumber];
+				if (deltaTime < 0)
+				{
+					timeShiftOffsets++;
+				}
+
+				m_sensorsTimestamps[camNumber] = currentTime + (timeShiftOffsets * (2 ^ 32));
+				m_previousTime[camNumber] = m_sensorsTimestamps[camNumber];
+			}
+
+
+			glActiveTexture(GL_TEXTURE0);
+			glBindTexture(GL_TEXTURE_2D_ARRAY, m_textureDepthArray);
+			glTexSubImage3D(GL_TEXTURE_2D_ARRAY, 0, 0, 0, camNumber, configuration.depthFrameSize.x, configuration.depthFrameSize.y, 1, GL_RED, GL_UNSIGNED_SHORT, depthFrame[camNumber].get_data());
+		}
+		else
+		{
+			//std::cout << "cam number : " << camNumber << " : was null" << std::endl;
+		}
+
+	}
+
+	glGenerateMipmap(GL_TEXTURE_2D_ARRAY);
+
+	if (1)
+	{
+		//std::cout << "clicky pointy" << std::endl;
+		if (depthFrame[devNumber] != NULL)
+		{
+			const uint16_t* p_depth_frame = reinterpret_cast<const uint16_t*>(depthFrame[devNumber].get_data()); 
+//float z = float(depthArray[pointY * depthWidth + pointX]) * (float)cameraInterface.getDepthUnit(cameraDevice) / 1000000.0f;
+			int depth_pixel_index = (m_pointY * configuration.depthFrameSize.x + m_pointX);
+
+			glm::vec4 tempPoint(0.0f, 0.0f, 0.0f, 1.0f);
+
+			tempPoint.z = p_depth_frame[depth_pixel_index] * (float)m_depthUnit / 1000000.0f;
+			//std::cout << tempPoint.z << std::endl;
+			
+
+
+			//kcamera.fx(), kcamera.fx(), kcamera.ppx(), kcamera.ppy()
+			//std::cout << z << std::endl;
+
+			tempPoint.x = (m_pointX - m_camPamsDepth[devNumber].z) * (1.0f / m_camPamsDepth[devNumber].x) * tempPoint.z;
+			tempPoint.y = (m_pointY - m_camPamsDepth[devNumber].w) * (1.0f / m_camPamsDepth[devNumber].y) * tempPoint.z;
+
+			m_clickedPoint = false;
+
+			if (devNumber == 0)
+			{
+				point.x = tempPoint.x;
+				point.y = tempPoint.y;
+				point.z = tempPoint.z;
+			}
+			else
+			{
+				glm::vec4 toutput = m_depthToDepth * tempPoint;
+				point.x = toutput.x;
+				point.y = toutput.y;
+				point.z = toutput.z;
+			}
+
+		}
+		else
+		{
+			m_clickedPoint = true;
+		}
+	}
+}
+void gFusion::splatterDepth(std::vector<rs2::frame_queue> depthQ)
+{
+	splatterProg.use();
+}
+
 void gFusion::depthToVertex(float * depthArray)
 {
 	//int compWidth;
@@ -639,91 +770,10 @@ void gFusion::depthToVertex(float * depthArray)
 
 }
 
-void gFusion::depthToVertex(std::vector<rs2::frame_queue> depthQ, int devNumber, glm::vec3 &point)
+void gFusion::depthToVertex()
 {
 	int compWidth;
 	int compHeight;
-
-	std::vector<rs2::frame> depthFrame(m_numberOfCameras);
-
-
-	for (int camNumber = 0; camNumber < m_numberOfCameras; camNumber++)
-	{
-		//std::cout << "cam number : " << camNumber << std::endl;
-		depthQ[camNumber].poll_for_frame(&depthFrame[camNumber]);
-		if (depthFrame[camNumber] != NULL)
-		{
-			if (depthFrame[camNumber].supports_frame_metadata(RS2_FRAME_METADATA_SENSOR_TIMESTAMP))
-			{
-				auto currentTime = depthFrame[camNumber].get_frame_metadata(RS2_FRAME_METADATA_SENSOR_TIMESTAMP);
-				auto deltaTime = currentTime - m_previousTime[camNumber];
-				if (deltaTime < 0)
-				{
-					timeShiftOffsets++;
-				}
-
-				m_sensorsTimestamps[camNumber] = currentTime + (timeShiftOffsets * (2 ^ 32));
-				m_previousTime[camNumber] = m_sensorsTimestamps[camNumber];
-			}
-
-
-			glActiveTexture(GL_TEXTURE0);
-			glBindTexture(GL_TEXTURE_2D_ARRAY, m_textureDepthArray);
-			glTexSubImage3D(GL_TEXTURE_2D_ARRAY, 0, 0, 0, camNumber, configuration.depthFrameSize.x, configuration.depthFrameSize.y, 1, GL_RED, GL_UNSIGNED_SHORT, depthFrame[camNumber].get_data());
-		}
-		else
-		{
-			//std::cout << "cam number : " << camNumber << " : was null" << std::endl;
-		}
-
-	}
-
-	glGenerateMipmap(GL_TEXTURE_2D_ARRAY);
-
-	if (m_clickedPoint)
-	{
-		//std::cout << "clicky pointy" << std::endl;
-		if (depthFrame[0] != NULL)
-		{
-			const uint16_t* p_depth_frame = reinterpret_cast<const uint16_t*>(depthFrame[0].get_data()); // FIXME SPECIFIC TO CAMERA 0
-//float z = float(depthArray[pointY * depthWidth + pointX]) * (float)cameraInterface.getDepthUnit(cameraDevice) / 1000000.0f;
-			int depth_pixel_index = (m_pointY * configuration.depthFrameSize.x + m_pointX);
-
-			glm::vec4 tempPoint(0.0f, 0.0f, 0.0f, 1.0f);
-
-			tempPoint.z = p_depth_frame[depth_pixel_index] * (float)m_depthUnit / 1000000.0f;
-			//std::cout << tempPoint.z << std::endl;
-
-
-
-			//kcamera.fx(), kcamera.fx(), kcamera.ppx(), kcamera.ppy()
-			//std::cout << z << std::endl;
-
-			tempPoint.x = (m_pointX - m_camPamsDepth[devNumber].z) * (1.0f / m_camPamsDepth[devNumber].x) * tempPoint.z; // HERE WE ONKLY ALLOW RESETNIG ON THE 0 camera
-			tempPoint.y = (m_pointY - m_camPamsDepth[devNumber].w) * (1.0f / m_camPamsDepth[devNumber].y) * tempPoint.z;
-
-			m_clickedPoint = false;
-
-			if (devNumber == 0)
-			{
-				point.x = tempPoint.x;
-				point.y = tempPoint.y;
-				point.z = tempPoint.z;
-			}
-			else
-			{
-				glm::vec4 toutput = m_depthToDepth * tempPoint;
-				point.x = toutput.x;
-				point.y = toutput.y;
-				point.z = toutput.z;
-			}
-
-		}
-		else
-		{
-			m_clickedPoint = true;
-		}
-	}
 
 	depthToVertProg.use();
 
@@ -731,7 +781,11 @@ void gFusion::depthToVertex(std::vector<rs2::frame_queue> depthQ, int devNumber,
 	compWidth = divup((int)configuration.depthFrameSize.x, 32);
 	compHeight = divup((int)configuration.depthFrameSize.y, 32);
 
-	glm::mat4 invK = GLHelper::getInverseCameraMatrix(m_camPamsDepth[0]); // FIXME TO BE SPECIFIC TO THE CAMERA
+	glm::mat4 invK[4];
+	for (int i = 0; i < m_numberOfCameras; i++)
+	{
+		invK[i] = GLHelper::getInverseCameraMatrix(m_camPamsDepth[i]); 
+	}
 	//glm::mat4 colorK = GLHelper::getCameraMatrix(m_camPamsColor[0]);
 	// invK can be sent to the shader, and only the m[0][0] and m[1][1] need to be divided by their mip level (1 << i)
 
@@ -742,7 +796,7 @@ void gFusion::depthToVertex(std::vector<rs2::frame_queue> depthQ, int devNumber,
 	glBindImageTexture(1, m_textureVertexArray, 1, GL_TRUE, 0, GL_WRITE_ONLY, GL_RGBA32F);
 	glBindImageTexture(2, m_textureVertexArray, 2, GL_TRUE, 0, GL_WRITE_ONLY, GL_RGBA32F);
 
-	glUniformMatrix4fv(m_invkID, 1, GL_FALSE, glm::value_ptr(invK));
+	glUniformMatrix4fv(m_invkID, 4, GL_FALSE, glm::value_ptr(invK[0]));
 
 	//glUniformMatrix4fv(m_colorKID, 1, GL_FALSE, glm::value_ptr(colorK));
 
@@ -755,8 +809,6 @@ void gFusion::depthToVertex(std::vector<rs2::frame_queue> depthQ, int devNumber,
 
 
 }
-
-
 
 void gFusion::vertexToNormal()
 {
@@ -994,6 +1046,65 @@ Eigen::Matrix4f Twist(const Eigen::Matrix<double, 6, 1> &xi)
 	return M;
 };
 
+
+void gFusion::checkDepthToDepth()
+{
+
+	// loop through multiple trackSDF untill the error drops below thresh
+	// keep trackPose [0] the same, just modify trackPose[1] ... i.e. find depthToDepth
+	// instead of just doing fusion 1x per camera per frame, use the combined texture arrays to read into the shader all the images from all the cameras to output to the reduction buffer a combined reduction which has buffer size relative to number of cameras
+	trackSDFProg.use();
+
+	int xthreads, ythreads;
+	xthreads = divup((int)configuration.depthFrameSize.x, 32); // right bitshift does division by powers of 2
+	ythreads = divup((int)configuration.depthFrameSize.y, 32);
+	glm::ivec2 imageSize = glm::ivec2((int)configuration.depthFrameSize.x, (int)configuration.depthFrameSize.y);
+
+	// bind textures
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_3D, m_textureVolume);
+	//glActiveTexture(GL_TEXTURE1);
+	//glBindTexture(GL_TEXTURE_2D_ARRAY, m_textureDepthArray);
+	glActiveTexture(GL_TEXTURE1);
+	glBindTexture(GL_TEXTURE_2D_ARRAY, m_textureVertexArray);
+	glActiveTexture(GL_TEXTURE2);
+	glBindTexture(GL_TEXTURE_2D_ARRAY, m_textureNormalArray);
+
+	// bind images
+	glBindImageTexture(0, m_textureVolume, 0, GL_TRUE, 0, GL_READ_ONLY, GL_RGBA16F);
+	glBindImageTexture(1, m_textureSDFImage, 0, GL_TRUE, 0, GL_WRITE_ONLY, GL_RGBA32F);
+	glBindImageTexture(2, m_textureTrackImage, 0, GL_TRUE, 0, GL_WRITE_ONLY, GL_RGBA32F);
+
+	// bind buffers
+	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 12, m_bufferSDFReduction);
+
+	glm::mat4 trackPose;
+	std::memcpy(glm::value_ptr(trackPose), m_pose_eig.data(), 16 * sizeof(float));
+
+	glm::mat4 cameraPoses[4];
+	cameraPoses[0] = trackPose;
+	cameraPoses[1] = trackPose * m_depthToDepth;
+
+	glProgramUniformMatrix4fv(trackSDFProg.getHandle(), m_cameraPosesID_tsdf, 4, GL_FALSE, glm::value_ptr(cameraPoses[0]));
+
+
+
+	glUniform1f(m_dMaxID_t, configuration.dMax);
+	glUniform1f(m_dMinID_t, configuration.dMin);
+	glUniform1i(m_numberOfCamerasID_t, m_numberOfCameras);
+
+	glUniform1i(m_mipLayerID_t, 0);
+
+	glUniform1f(m_cID, 0.02f * 0.1f);
+	glUniform1f(m_epsID, 10e-9);
+	glUniform3fv(m_volDimID_t, 1, glm::value_ptr(configuration.volumeDimensions));
+	glUniform3fv(m_volSizeID_t, 1, glm::value_ptr(configuration.volumeSize));
+
+	glDispatchCompute(xthreads, ythreads, 1);
+	glMemoryBarrier(GL_ALL_BARRIER_BITS);
+}
+
+
 bool gFusion::TrackSDF() {
 
 	glBeginQuery(GL_TIME_ELAPSED, query[5]);
@@ -1010,13 +1121,15 @@ bool gFusion::TrackSDF() {
 	Eigen::Matrix3d rot;
 
 	float alignmentEnergy;
-
+	double Cnorm;
 	Eigen::Matrix<double, 6, 1> result;
 	result << 0.0, 0.0, 0.0, 0.0, 0.0, 0.0;
 	//glm::mat4 twistMat = Twist(result);
 	Eigen::Matrix<double, 6, 1> result_prev = result;
 	//Eigen::Matrix4d twistMat = Twist(result);
 
+	glm::vec3 AEVec;
+	glm::dvec3 cNvec;
 
 	// here we will loop through the layers and number of iterations per layer
 	for (int level = configuration.iterations.size() - 1; level >= 0; --level)
@@ -1074,27 +1187,33 @@ bool gFusion::TrackSDF() {
 			//std::cout  std::endl;
 
 			Eigen::Matrix<double, 6, 1> Change = result - result_prev;
-			double Cnorm = Change.norm();
+			Cnorm = Change.norm();
 
 			result_prev = result;
 			//std::cout << "AE: " << alignmentEnergy << " snorm : " << Cnorm << " vec " << result.transpose() << std::endl;
 
-			//std::cout << "cnrom :" << Cnorm << std::endl;
-			if (alignmentEnergy != 0 && alignmentEnergy < 5e-5 || Cnorm < 5e-5)
+			//std::cout << " cnrom : " << Cnorm;
+			if (alignmentEnergy != 0 && Cnorm < 1e-4)
 			{
+				//std::cout << " break " << iteration << " " << level << std::endl;
 				//std::cout << "tracked!!! iteration " << iteration << " level " << level << " AE: " << alignmentEnergy << " snorm : " << Cnorm << " vec " << result.transpose() << std::endl;
 
 				//std::cout << "tracked!!! iteration " << iteration << std::endl;
 				tracked = true;
 				break;
 			}
-
+			else
+			{
+				tracked = false;
 			}
 
 		}
 
+	}
+
 		if (std::isnan(result.sum())) result << 0.0, 0.0, 0.0, 0.0, 0.0, 0.0;
 
+		//std::cout << "AE: " << alignmentEnergy << " snorm : " << Cnorm << std::endl;
 
 		if (tracked)
 		{
@@ -1111,10 +1230,12 @@ bool gFusion::TrackSDF() {
 		else
 		{
 
-			m_pose_eig = m_pose_eig_prev;
-			m_pose = oldPose;
-		}
 
+		}
+		if (std::isnan(result.sum())) result << 0.0, 0.0, 0.0, 0.0, 0.0, 0.0;
+		m_pose_eig = Twist(result).exp() * m_pose_eig_prev;
+
+		std::memcpy(glm::value_ptr(m_pose), m_pose_eig.data(), 16 * sizeof(float));
 		m_alignmentEnergy = alignmentEnergy;
 
 	//std::cout << " sdf " << std::endl;
@@ -1808,11 +1929,6 @@ void gFusion::intensityProjection()
 //void gFusion::marchingCubes()
 //{
 
-
-	//glBeginQuery(GL_TIME_ELAPSED, query[4]);
-
-	//int threads = 128;
-
 	//// CLASSIFY VOXEL
 	//marchingCubesProg.use();
 	//// BIND TEXTURES
@@ -1919,12 +2035,6 @@ void gFusion::intensityProjection()
 	//GLuint64 elapsed;
 	//glGetQueryObjectui64vEXT(query[4], GL_QUERY_RESULT, &elapsed);
 
-	////marchingCubesTime = elapsed / 1000000.0;
-
-	//std::cout << "time elapsed " << marchingCubesTime << " ms" << std::endl;
-
-
-//}
 
 void gFusion::updatePoseFinder()
 {
@@ -1977,9 +2087,22 @@ void gFusion::addPoseToLibrary()
 
 }
 /// Function called when tracking is lost
-bool gFusion::recoverPose()
+bool gFusion::recoverPose(glm::mat4 recoveryPose)
 {
 	bool foundPose = false;
+
+	auto oldPose = m_pose;
+
+	m_pose = recoveryPose;
+	std::memcpy(m_pose_eig.data(), glm::value_ptr(m_pose), 16 * sizeof(float));
+
+
+	//std::cout << glm::to_string(m_pose) << std::endl;
+	foundPose = TrackSDF();
+
+
+
+
 	//int currentLibrarySize = poseLibrary.size();
 	//std::cout << "lib size : " << currentLibrarySize << std::endl;
 	//if (currentLibrarySize == 0)
@@ -2061,10 +2184,6 @@ void gFusion::trackPoints3D(GLuint trackedPoints2Dbuffer)
 //
 
 }
-
-
-
-
 
 void gFusion::exportSurfaceAsStlBinary()
 {

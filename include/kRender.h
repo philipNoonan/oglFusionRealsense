@@ -32,6 +32,7 @@
 #include <vector>
 #include <list>
 #include <numeric>
+#include <valarray>
 
 #include "glutils.h"
 #include "glslprogram.h"
@@ -136,6 +137,14 @@ public:
 	//	return m_graph_vector_x;
 	//}
 
+	void setBodyPosePoints(std::vector<std::valarray<float>> bpp)
+	{
+		m_bodyPosePoints.resize(bpp.size());
+		for (int person = 0; person < bpp.size(); person++)
+		{
+			m_bodyPosePoints[person].assign(std::begin(bpp[person]), std::end(bpp[person]));
+		}
+	}
 
 	std::pair<int, int> guiPadding()
 	{
@@ -382,6 +391,10 @@ private:
 
 	GLuint m_VAO_Markers;
 
+	GLuint m_poseVAO;
+	GLuint m_poseVBO;
+	GLuint m_poseEBO;
+
 	GLuint m_programID;
 	GLuint m_ProjectionID;
 	GLuint m_MvpID;
@@ -412,6 +425,8 @@ private:
 	GLuint m_fromVolumeSDFID;
 	GLuint m_fromTrackID;
 	GLuint m_fromFlowID;
+	GLuint m_fromPosePoints2DID;
+
 
 	GLuint m_fromMarkersVerticesID;
 	GLuint m_fromMarkersID;
@@ -615,4 +630,8 @@ private:
 	glm::mat4 m_colorToDepth;
 	glm::mat4 m_depthToColor;
 	glm::mat4 m_depthToDepth;
+
+
+	std::vector<std::vector<float>> m_bodyPosePoints;
+
 };

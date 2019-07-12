@@ -84,13 +84,13 @@ void MCubes::allocateTextures()
 	// MARCHING CUBES TEXTURES
 	// SHOULD WE PAD TO POWERS OF TWO TEXTURE SIZES?
 	int numLevels = std::ceil(std::log2(m_mcubeConfiguration.gridSize.x)) + 1;
-	m_textureHistoPyramid = GLHelper::createTexture(m_textureHistoPyramid, GL_TEXTURE_3D, numLevels, m_mcubeConfiguration.gridSize.x, m_mcubeConfiguration.gridSize.y, m_mcubeConfiguration.gridSize.z, GL_R32UI); // texture is define as R32UI however level 0 will be read in shader as rg16ui https://www.khronos.org/opengl/wiki/Image_Load_Store#Format_conversion
-	m_textureEdgeTable = GLHelper::createTexture(m_textureEdgeTable, GL_TEXTURE_1D, 1, 256, 1, 1, GL_R16UI);
-	m_textureTriTable = GLHelper::createTexture(m_textureTriTable, GL_TEXTURE_1D, 1, 256 * 16, 1, 1, GL_R16UI);
-	m_textureNumVertsTable = GLHelper::createTexture(m_textureNumVertsTable, GL_TEXTURE_1D, 1, 256, 1, 1, GL_R16UI);
+	m_textureHistoPyramid = GLHelper::createTexture(m_textureHistoPyramid, GL_TEXTURE_3D, numLevels, m_mcubeConfiguration.gridSize.x, m_mcubeConfiguration.gridSize.y, m_mcubeConfiguration.gridSize.z, GL_R32UI, GL_LINEAR, GL_LINEAR_MIPMAP_NEAREST); // texture is define as R32UI however level 0 will be read in shader as rg16ui https://www.khronos.org/opengl/wiki/Image_Load_Store#Format_conversion
+	m_textureEdgeTable = GLHelper::createTexture(m_textureEdgeTable, GL_TEXTURE_1D, 1, 256, 1, 1, GL_R16UI, GL_LINEAR, GL_LINEAR_MIPMAP_NEAREST);
+	m_textureTriTable = GLHelper::createTexture(m_textureTriTable, GL_TEXTURE_1D, 1, 256 * 16, 1, 1, GL_R16UI, GL_LINEAR, GL_LINEAR_MIPMAP_NEAREST);
+	m_textureNumVertsTable = GLHelper::createTexture(m_textureNumVertsTable, GL_TEXTURE_1D, 1, 256, 1, 1, GL_R16UI, GL_LINEAR, GL_LINEAR_MIPMAP_NEAREST);
 
-	m_textureNrOfTriangles = GLHelper::createTexture(m_textureNrOfTriangles, GL_TEXTURE_1D, 1, 256, 1, 1, GL_R8UI);
-	m_textureOffsets3 = GLHelper::createTexture(m_textureOffsets3, GL_TEXTURE_1D, 1, 72, 1, 1, GL_R8UI);
+	m_textureNrOfTriangles = GLHelper::createTexture(m_textureNrOfTriangles, GL_TEXTURE_1D, 1, 256, 1, 1, GL_R8UI, GL_LINEAR, GL_LINEAR_MIPMAP_NEAREST);
+	m_textureOffsets3 = GLHelper::createTexture(m_textureOffsets3, GL_TEXTURE_1D, 1, 72, 1, 1, GL_R8UI, GL_LINEAR, GL_LINEAR_MIPMAP_NEAREST);
 
 
 

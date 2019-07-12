@@ -8,6 +8,7 @@ layout (location = 6) in vec4 position4D;
 
 layout (location = 7) in vec2 trackedPoints; 
 
+layout (location = 9) in vec3 posePoints; 
 
 //layout (std430, binding = 7) buffer trackedPoints; 
 
@@ -19,6 +20,7 @@ uniform vec2 imSize;
 
 out vec2 TexCoord;
 out float zDepth;
+out float dropVertex;
 
 subroutine vec4 getPosition();
 subroutine uniform getPosition getPositionSubroutine;
@@ -65,7 +67,25 @@ vec4 fromMarkersVertices()
 
 }
 
+subroutine(getPosition)
+vec4 fromPosePoints2D()
+{
 
+
+    gl_PointSize = 10;//
+	//zDepth = posePoints.z;
+	if (posePoints.x == 0 || posePoints.y == 0 || posePoints.z < 0.05f)
+	{
+		dropVertex = 1.0f;
+	}
+	else
+	{
+		dropVertex = 0.0f;
+	}
+
+	return vec4(vec4(posePoints.x / (imSize.x / 2) - 1.0, 1.0f - posePoints.y / (imSize.y / 2), -0.4f, 1.0f));
+
+}
 subroutine(getPosition)
 vec4 fromPosition4D()
 {

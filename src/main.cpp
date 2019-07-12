@@ -10,6 +10,7 @@
 
 #ifdef USE_TORCH
 #include <torch/torch.h>
+#include <torchvision/vision.h>
 #endif
 
 static void error_callback(int error, const char* description)
@@ -45,7 +46,7 @@ void kRenderInit()
 
 	krender.setFusionType(trackDepthToPoint, trackDepthToVolume);
 
-	gflow.setColorTexture(krender.getColorTexture());
+	gflow.setColorTexture(cameraInterface.getColorQueues(), col);
 	krender.setDepthMinMax(depthMin, depthMax);
 
 }
@@ -165,18 +166,27 @@ void resetVolume()
 
 	gconfig.volumeSize = glm::vec3(std::stoi(sizes[sizeX]), std::stoi(sizes[sizeY]), std::stoi(sizes[sizeZ]));
 	gconfig.volumeDimensions = glm::vec3(dimension);
+	gconfig.dMax = dimension / 10.0f;
+	gconfig.dMin = -dimension / 20.0f;
 
 	gfusion.setConfig(gconfig);
 
-	//iOff = initOffset(devNumber, mousePos.x - controlPoint0.x, controlPoint0.y - mousePos.y);
+	initOff = iOff;
 
 	//std::cout << "lalala " << mousePos.x - controlPoint0.x << " " << controlPoint0.y - mousePos.y<< std::endl;
+
+	//std::cout << glm::to_string(iOff) << std::endl;
+
 
 	glm::mat4 initPose = glm::translate(glm::mat4(1.0f), glm::vec3(-iOff.x + gconfig.volumeDimensions.x / 2.0f, -iOff.y + gconfig.volumeDimensions.y / 2.0f, -iOff.z + dimension / 2.0));
 
 	volSlice = gconfig.volumeSize.z / 2.0f;
 
 	krender.setVolumeSize(gconfig.volumeSize);
+
+
+
+
 
 	gfusion.Reset(initPose, deleteFlag);
 	reset = true;
@@ -804,6 +814,19 @@ void setUI()
 		{
 			ImGui::Text("Image Processing");
 
+			if (ImGui::Button("Pose"))
+			{
+				if (cameraRunning)
+				{
+					opwrapper.start();
+				}
+				else
+				{
+					// make a popup?
+				}
+
+			}
+
 			if (ImGui::Button("Flood"))
 			{
 				performFlood ^= 1;
@@ -999,6 +1022,8 @@ void setUI()
 			ImGui::SameLine();
 			if (ImGui::Button("Marker")) showMarkerFlag ^= 1; ImGui::SameLine(); ImGui::Checkbox("", &showMarkerFlag);
 
+			if (ImGui::Button("Points")) showPointFlag ^= 1; ImGui::SameLine(); ImGui::Checkbox("", &showPointFlag);
+
 			ImGui::Text("slice");
 			ImGui::PushItemWidth(-1);
 			ImGui::SliderFloat("slice", &volSlice, 0, gconfig.volumeSize.z - 1);
@@ -1087,7 +1112,28 @@ int main(int, char**)
 #ifdef USE_TORCH
 	torch::Tensor tensor = torch::rand({ 2, 3 });
 	std::cout << "my first c++ torch tensor " << tensor << std::endl;
+
+	vision::models::ResNet18 network;
+	torch::load(network, "./resources/resnet18_python.pt");
+
+	torch::save(network, "./resources/resnet18_cpp_NEW.pt");
+
+	torch::Tensor inputs;
+	inputs = torch::rand({ 1, 3, 224, 224 });
+
+	std::vector<torch::jit::IValue> input;
+	input.push_back(inputs);
+	network->forward(inputs);
+
+	//std::cout << "my second c++ torch tensor " << outputs << std::endl;
+
 #endif
+
+
+
+
+
+
 	int display_w, display_h;
 	// load openGL window
 	window = krender.loadGLFWWindow();
@@ -1200,6 +1246,11 @@ int main(int, char**)
 
 			}
 
+			if (!infraMat.empty())
+			{
+				opwrapper.setImage(infraMat, 0);
+			}
+
 			if (performAruco)
 			{
 				mTracker.useGEM();
@@ -1255,7 +1306,8 @@ int main(int, char**)
 
 			if (performFlow)
 			{
-				gflow.setTexture();
+				//gflow.setTexture();
+				gflow.setColorTexture(cameraInterface.getColorQueues(), col);
 
 				gflow.calc(false);
 			}		   
@@ -1264,8 +1316,121 @@ int main(int, char**)
 			//{
 				//for (int i = 0; i < numberOfCameras; i++)
 				//{
-					gfusion.depthToVertex(cameraInterface.getDepthQueues(), cameraDevice, iOff);
-					gfusion.vertexToNormal();
+
+			cv::Mat poses;
+			cv::Mat faces;
+			std::vector<int> poseIds;
+			opwrapper.getPoses(poses, faces, poseIds);
+
+
+			if (!poses.empty())
+			{
+				int person = 0;
+				int part = 0; // head/nose?
+				if (poses.at<cv::Vec3f>(person, part)[2] > 0)
+				{
+					//std::cout << poses.at<cv::Vec3f>(person, part)[0] << " " << poses.at<cv::Vec3f>(person, part)[1] << std::endl;
+					gfusion.setClickedPoint(poses.at<cv::Vec3f>(person, part)[0], poses.at<cv::Vec3f>(person, part)[1]);
+				}
+
+				cv::Size poseSize = poses.size();
+				cv::Size faceSize = faces.size();
+
+				std::vector<std::valarray<float>> bpp(poseSize.height, std::valarray<float>(poseSize.width * 3));
+				std::vector<std::valarray<float>> RA(poseSize.height, std::valarray<float>(poseSize.width * 3));
+				std::vector<std::valarray<float>> faceVec(faceSize.height, std::valarray<float>(faceSize.width * 3));
+
+				std::vector<glm::vec2> neckPos(poseSize.height);
+
+				for (int person = 0; person < poseSize.height; person++)
+				{
+					//std::cout << "id : " << poseIds[person] << std::endl;
+					for (int part = 0; part < poseSize.width; part++)
+					{
+						if (poses.at<cv::Vec3f>(person, part)[2] > 0)
+						{
+							bpp[person][part * 3] = poses.at<cv::Vec3f>(person, part)[0];
+							bpp[person][part * 3 + 1] = poses.at<cv::Vec3f>(person, part)[1];
+							bpp[person][part * 3 + 2] = poses.at<cv::Vec3f>(person, part)[2];
+						}
+						else // get the last frames position
+						{
+							auto it = rollingAverage.find(poseIds[person]);
+							if (it != rollingAverage.end())
+							{
+								bpp[person][part * 3] = it->second[0][part * 3];
+								bpp[person][part * 3 + 1] = it->second[0][part * 3 + 1];
+								bpp[person][part * 3 + 2] = 0; // reduce the weighting of these points
+							}
+							else
+							{
+								bpp[person][part * 3] = 0;
+								bpp[person][part * 3 + 1] = 0;
+								bpp[person][part * 3 + 2] = 0;
+							}
+
+						}
+
+						//std::cout << "x : " << x << " y : " << y << std::endl;
+
+					}
+
+					auto it = rollingAverage.find(poseIds[person]);
+					// person already in map
+					if (it != rollingAverage.end())
+					{
+						it->second.push_front(bpp[person]);
+						if (it->second.size() > windowWidth)
+						{
+							it->second.pop_back();
+						}
+
+						for (std::deque<std::valarray<float>>::iterator dit = it->second.begin(); dit != it->second.end(); dit++)
+						{
+							RA[person] += *dit;
+						}
+
+						RA[person] /= windowWidth;
+
+						neckPos[person] = glm::vec2(RA[person][1 * 3], RA[person][1 * 3 + 1] + 50.0f);
+
+
+					}
+					else // add person to map
+					{
+						std::deque<std::valarray<float>> tempbpp(windowWidth, bpp[person]);
+						rollingAverage.insert(std::pair<int, std::deque<std::valarray<float>>>(poseIds[person], tempbpp));
+					}
+					//rollingAverage[poseIDs[person]].push_front(bpp[person]);
+
+					// [person][frame][part]
+
+					//faces
+					for (int facePart = 0; facePart < faceSize.width; facePart++)
+					{
+						if (faces.at<cv::Vec3f>(person, facePart)[2] > 0)
+						{
+							faceVec[person][facePart * 3] = faces.at<cv::Vec3f>(person, facePart)[0];
+							faceVec[person][facePart * 3 + 1] = faces.at<cv::Vec3f>(person, facePart)[1];
+							faceVec[person][facePart * 3 + 2] = faces.at<cv::Vec3f>(person, facePart)[2];
+						}
+
+
+						//std::cout << "x : " << x << " y : " << y << std::endl;
+
+					}
+
+
+				}
+
+				krender.setBodyPosePoints(RA);
+
+
+			}
+
+			gfusion.uploadDepth(cameraInterface.getDepthQueues(), cameraDevice, iOff);
+			gfusion.depthToVertex();
+			gfusion.vertexToNormal();
 				//}
 			//
 			//else
@@ -1314,7 +1479,13 @@ int main(int, char**)
 
 			if (!tracked)
 			{
-				//gfusion.recoverPose();
+				if (!poses.empty())
+				{
+					glm::mat4 recoveryPose = glm::translate(glm::mat4(1.0f), glm::vec3(-iOff.x + gconfig.volumeDimensions.x / 2.0f, -iOff.y + gconfig.volumeDimensions.y / 2.0f, -iOff.z + dimension / 2.0));
+
+
+					tracked = gfusion.recoverPose(recoveryPose);
+				}
 			}
 
 			if (counter <= 2)
@@ -1331,7 +1502,7 @@ int main(int, char**)
 				" " << gfusion.getPose()[3].x << " " << gfusion.getPose()[3].y << " " << gfusion.getPose()[3].z << " " << gfusion.getPose()[3].w << std::endl;
 
 			//graphPoints.push_back(gfusion.getTransPose());
-			glm::vec4 transformedInitOff = gfusion.getPose() * glm::vec4(iOff, 1.0f);
+			glm::vec4 transformedInitOff = gfusion.getPose() * glm::vec4(initOff, 1.0f);
 
 			graphPoints.push_back(transformedInitOff);
 			if (graphPoints.size() > graphWindow.w)

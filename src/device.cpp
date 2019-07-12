@@ -193,9 +193,32 @@ void Realsense2Camera::setStreams()
 
 void Realsense2Camera::setSensorOptions()
 {
-	// depth
-	m_sensors[0].set_option(RS2_OPTION_EXPOSURE, 4000);
-	m_sensors[0].set_option(RS2_OPTION_ENABLE_AUTO_EXPOSURE, 0);
+	std::string name = "Unknown Device";
+	if (m_dev.supports(RS2_CAMERA_INFO_NAME))
+		name = m_dev.get_info(RS2_CAMERA_INFO_NAME);
+
+	std::vector<std::string> tokens = Helper::split(name, " ");
+
+	if (tokens[2] == "D415")
+	{
+		// depth
+		m_sensors[0].set_option(RS2_OPTION_EXPOSURE, 20000);
+		m_sensors[0].set_option(RS2_OPTION_ENABLE_AUTO_EXPOSURE, 0);
+		m_sensors[0].set_option(RS2_OPTION_GAIN, 70);
+	}
+	else if (tokens[2] == "D435" || tokens[2] == "D435i")
+	{
+		// depth
+		m_sensors[0].set_option(RS2_OPTION_EXPOSURE, 4000);
+		m_sensors[0].set_option(RS2_OPTION_ENABLE_AUTO_EXPOSURE, 0);
+	}
+	else
+	{
+		// depth
+		m_sensors[0].set_option(RS2_OPTION_ENABLE_AUTO_EXPOSURE, 1);
+	}
+
+
 	// rcolor
 	m_sensors[1].set_option(RS2_OPTION_EXPOSURE, 200);
 	m_sensors[1].set_option(RS2_OPTION_ENABLE_AUTO_EXPOSURE, 0);

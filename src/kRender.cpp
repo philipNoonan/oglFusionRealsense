@@ -220,6 +220,7 @@ void kRender::setLocations()
 	m_fromTextureID = glGetSubroutineIndex(renderProg.getHandle(), GL_VERTEX_SHADER, "fromTexture");
 	m_fromPosition4DID = glGetSubroutineIndex(renderProg.getHandle(), GL_VERTEX_SHADER, "fromPosition4D");
 	m_fromPosition2DID = glGetSubroutineIndex(renderProg.getHandle(), GL_VERTEX_SHADER, "fromPosition2D");
+	m_fromPosePoints2DID = glGetSubroutineIndex(renderProg.getHandle(), GL_VERTEX_SHADER, "fromPosePoints2D");
 
 	m_fromStandardTextureID = glGetSubroutineIndex(renderProg.getHandle(), GL_VERTEX_SHADER, "fromStandardTexture");
 	m_fromMarkersVerticesID = glGetSubroutineIndex(renderProg.getHandle(), GL_VERTEX_SHADER, "fromMarkersVertices");
@@ -323,8 +324,8 @@ void kRender::allocateTextures()
 {
 	int patch_size = 8;
 	int numLevels = (int)(log((2 * m_color_width) / (4.0 * patch_size)) / log(2.0) + 0.5) + 1; ;// 1 + floor(std::log2(std::max(m_color_width, m_color_height)));
-	m_textureColor = GLHelper::createTexture(m_textureColor, GL_TEXTURE_2D, numLevels, m_color_width, m_color_height, 0, GL_RGB8);
-	m_textureInfra = GLHelper::createTexture(m_textureInfra, GL_TEXTURE_2D, numLevels, m_depth_width, m_depth_height, 0, GL_R8);
+	m_textureColor = GLHelper::createTexture(m_textureColor, GL_TEXTURE_2D, numLevels, m_color_width, m_color_height, 0, GL_RGB8, GL_LINEAR, GL_LINEAR_MIPMAP_NEAREST);
+	m_textureInfra = GLHelper::createTexture(m_textureInfra, GL_TEXTURE_2D, numLevels, m_depth_width, m_depth_height, 0, GL_R8, GL_LINEAR, GL_LINEAR_MIPMAP_NEAREST);
 
 }
 
@@ -514,6 +515,40 @@ void kRender::allocateBuffers()
 	glVertexAttribDivisor(3, 1);
 	glVertexAttribDivisor(4, 1);
 	glVertexAttribDivisor(5, 1);
+
+	glBindVertexArray(0);
+
+
+
+
+
+	std::vector<float> bodyPosePoints(21 * 3, 0.75);
+
+	std::vector<uint32_t> bodyPosePairs = { 1, 8, 1, 2, 1,
+								5, 2, 3, 3, 4,
+								5, 6, 6, 7, 8,
+								9, 9, 10, 10, 11,
+								8, 12, 12, 13, 13,
+								14, 1, 0, 0, 15,
+								15, 17, 0, 16, 16,
+								18, 1, 19, 19, 20,
+								2, 9, 5, 12 };
+
+	glGenVertexArrays(1, &m_poseVAO);
+	glGenBuffers(1, &m_poseVBO);
+	glGenBuffers(1, &m_poseEBO);
+
+	glBindVertexArray(m_poseVAO);
+
+	//// standard verts
+	glBindBuffer(GL_ARRAY_BUFFER, m_poseVBO);
+	glBufferData(GL_ARRAY_BUFFER, 21 * 3 * sizeof(float), NULL, GL_DYNAMIC_DRAW);
+	//// EBO
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_poseEBO);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, bodyPosePairs.size() * sizeof(unsigned int), &bodyPosePairs[0], GL_DYNAMIC_DRAW);
+	//
+	glVertexAttribPointer(9, 3, GL_FLOAT, GL_FALSE, 0, (GLvoid*)0);
+	glEnableVertexAttribArray(9);
 
 	glBindVertexArray(0);
 
@@ -1233,9 +1268,37 @@ void kRender::renderLiveVideoWindow(bool useInfrared, int devNumber)
 			glBindVertexArray(0);
 		}
 
+
+
 	}
 
-	
+	if (m_showPointFlag)
+	{
+		glBindVertexArray(m_poseVAO);
+		//glBindVertexArray(m_VAO);
+		glm::vec2 imageSize(848.0f, 480.0f);
+		setViewport(m_display2DPos.x, m_display2DPos.y, m_display2DSize.x, m_display2DSize.y);
+		glEnable(GL_VERTEX_PROGRAM_POINT_SIZE);
+
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_poseEBO);
+		glUniformSubroutinesuiv(GL_VERTEX_SHADER, 1, &m_fromPosePoints2DID);
+		glUniformSubroutinesuiv(GL_FRAGMENT_SHADER, 1, &m_fromPointsID);
+
+		//imageSize = glm::vec2(m_color_width, m_color_height);
+		for (int person = 0; person < m_bodyPosePoints.size(); person++)
+		{
+			glUniform2fv(m_imSizeID, 1, glm::value_ptr(imageSize));
+
+			glBindBuffer(GL_ARRAY_BUFFER, m_poseVBO);
+			glBufferSubData(GL_ARRAY_BUFFER, 0, m_bodyPosePoints[person].size() * sizeof(float), m_bodyPosePoints[person].data());
+			glDrawElements(GL_LINES, 44, GL_UNSIGNED_INT, 0);
+			glDrawArrays(GL_POINTS, 0, m_bodyPosePoints[person].size() / 3);
+
+		}
+
+
+
+	}
 	//if (m_showVolumeSDFFlag)
 	//{
 	//	// change verts for size of texture

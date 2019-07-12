@@ -103,6 +103,10 @@ GLFWwindow *window;
 
 kRender krender;
 
+//OPENPOSE WRAPPER
+OPWrapper opwrapper;
+
+
 //Realsense2Camera kcamera;
 Realsense2Interface cameraInterface;
 int cameraDevice = 0;
@@ -249,7 +253,7 @@ static int sizeZ = 2;
 float dimension = 1.0f;
 float volSlice = 0.0f;
 
-glm::vec3 iOff;
+glm::vec3 iOff, initOff;
 
 glm::vec3 initOffset(int devNumber, int pixX, int pixY)
 {
@@ -341,3 +345,8 @@ int desiredRate = 90;
 int desiredColorWidth = 1920;
 int desiredColorHeight = 1080;
 int desiredColorRate = 6;
+
+cv::Mat col;
+
+float windowWidth = 5.0f;
+std::map<int, std::deque<std::valarray<float>>> rollingAverage;

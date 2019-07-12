@@ -2,7 +2,7 @@
 
 layout (local_size_x = 32, local_size_y = 32) in;
 
-uniform mat4 invK;
+uniform mat4 invK[4];
 //uniform mat4 colorK;
 
 //uniform mat4 colorIntrinsics;
@@ -61,7 +61,7 @@ void main()
                     continue;
                 }
 
-                mat4 modInvK = invK;
+                mat4 modInvK = invK[camera];
                 modInvK[0][0] *= float(1 << mip);
                 modInvK[1][1] *= float(1 << mip);
 

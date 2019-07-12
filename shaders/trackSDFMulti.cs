@@ -174,6 +174,7 @@ void main()
         imageStore(trackImage, ivec3(pix, camera), vec4(0.0f, 0.0, 0.0, 1.0));
 
         uint offset = uint(camera * imSize.x * imSize.y) + ((pix.y * imSize.x) + pix.x);
+        trackOutput[offset].result = -4;
 
 
         //if (pix.x >= 0 && pix.x < imageSize.x - 1 && pix.y >= 0 && pix.y < imageSize.y)
@@ -231,8 +232,9 @@ void main()
                 vec3 dSDF_dx = vec3(SDFGradient(cvp, vec3(1, 0, 0), 1), SDFGradient(cvp, vec3(0, 1, 0), 1), SDFGradient(cvp, vec3(0, 0, 1), 1));
 
 
+                //vec3 rotatedNormal = vec3(cameraPoses[camera] * vec4(normals.xyz, 0.0f)).xyz;
 
-                vec3 rotatedNormal = vec3(cameraPoses[camera] * vec4(normals.xyz, 0.0f)).xyz;
+                ////vec3 rotatedNormal = vec3(transpose(inverse(cameraPoses[camera])) * vec4(normals.xyz, 0.0f)).xyz;
 
                 //if (dot(dSDF_dx, rotatedNormal) < 0.5 && !any(equal(dSDF_dx, vec3(0.0f))))
                 //{
@@ -246,11 +248,11 @@ void main()
                 //if (any(greaterThan(rotatedNormal, vec3(1.0f))))
                 //{
                 //    //imageStore(testImage, ivec2(pix), vec4(0.5f));
-                //    imageStore(trackImage, ivec2(pix), vec4(1.0f, 0.0f, 0, 1.0f));
+                //    imageStore(trackImage, ivec3(pix, camera), vec4(1.0f, 0.0f, 0, 1.0f));
 
                 //    trackOutput[(pix.y * imageSize.x) + pix.x].result = -4;
 
-                //    return;
+                //    continue;
                 //}
 
                 if (any(equal(dSDF_dx, vec3(-2.0f))))
@@ -274,46 +276,61 @@ void main()
                     // 3 cols 6 rows 
                     float dx_dxi[3][6];
 
-                dx_dxi[0][0] = 0;                   dx_dxi[1][0] = -projectedVertex.z;  dx_dxi[2][0] = projectedVertex.y;    
-                dx_dxi[0][1] = projectedVertex.z;   dx_dxi[1][1] = 0;                   dx_dxi[2][1] = -projectedVertex.x; 
-	            dx_dxi[0][2] = -projectedVertex.y;  dx_dxi[1][2] = projectedVertex.x;   dx_dxi[2][2] = 0;  
-                dx_dxi[0][3] = 1;	                dx_dxi[1][3] = 0;                   dx_dxi[2][3] = 0;
-                dx_dxi[0][4] = 0;	                dx_dxi[1][4] = 1;                   dx_dxi[2][4] = 0;
-                dx_dxi[0][5] = 0;	                dx_dxi[1][5] = 0;                   dx_dxi[2][5] = 1;
+                    dx_dxi[0][0] = 0;                   dx_dxi[1][0] = -projectedVertex.z;  dx_dxi[2][0] = projectedVertex.y;    
+                    dx_dxi[0][1] = projectedVertex.z;   dx_dxi[1][1] = 0;                   dx_dxi[2][1] = -projectedVertex.x; 
+	                dx_dxi[0][2] = -projectedVertex.y;  dx_dxi[1][2] = projectedVertex.x;   dx_dxi[2][2] = 0;  
+                    dx_dxi[0][3] = 1;	                dx_dxi[1][3] = 0;                   dx_dxi[2][3] = 0;
+                    dx_dxi[0][4] = 0;	                dx_dxi[1][4] = 1;                   dx_dxi[2][4] = 0;
+                    dx_dxi[0][5] = 0;	                dx_dxi[1][5] = 0;                   dx_dxi[2][5] = 1;
 
-                float J[6] = getJ(dSDF_dx, dx_dxi);
+                    float J[6] = getJ(dSDF_dx, dx_dxi);
 
-                float huber = absD < 0.003f ? 1.0f : 0.003f / absD;
+                    float huber = absD < 0.003f ? 1.0f : 0.003f / absD;
 
-                trackOutput[offset].result = 1;
+                    trackOutput[offset].result = 1;
 
-                trackOutput[offset].h = huber;
-                trackOutput[offset].D = D;
-                trackOutput[offset].J = J;
+                    trackOutput[offset].h = huber;
+                    trackOutput[offset].D = D;
+                    trackOutput[offset].J = J;
 
-                imageStore(trackImage, ivec3(pix, camera), vec4(0.5f, 0.5f, 0.5f, 1.0f));
+                    imageStore(trackImage, ivec3(pix, camera), vec4(0.5f, 0.5f, 0.5f, 1.0f));
 
                
+                }
+                else
+                {
+                      // imageStore(testImage, ivec2(pix), vec4(0,0,0, 1.0f));
+
+                   // imageStore(testImage, ivec2(pix), vec4(0.0f, 1.0f, 0.0f, 1.0f));
+                    imageStore(trackImage, ivec3(pix, camera), vec4(0.0, 0.0, 0.0f, 1.0f));
+
+                    float J0[6] = { 0, 0, 0, 0, 0, 0 };
+                    trackOutput[offset].result = -4;
+                    trackOutput[offset].h = 0;
+                    trackOutput[offset].D = 0;
+                    trackOutput[offset].J = J0;
+                }
             }
-            else
-            {
-                  // imageStore(testImage, ivec2(pix), vec4(0,0,0, 1.0f));
+            
+        }
+        //else
+        //{
+        //      // imageStore(testImage, ivec2(pix), vec4(0,0,0, 1.0f));
 
-               // imageStore(testImage, ivec2(pix), vec4(0.0f, 1.0f, 0.0f, 1.0f));
-                imageStore(trackImage, ivec3(pix, camera), vec4(0.0, 0.0, 0.0f, 1.0f));
+        //    // imageStore(testImage, ivec2(pix), vec4(0.0f, 1.0f, 0.0f, 1.0f));
+        //    imageStore(trackImage, ivec3(pix, camera), vec4(0.0, 0.0, 1.0f, 1.0f));
 
-                float J0[6] = { 0, 0, 0, 0, 0, 0 };
-                trackOutput[offset].result = -4;
-                trackOutput[offset].h = 0;
-                trackOutput[offset].D = 0;
-                trackOutput[offset].J = J0;
-            }
-        } 
+        //    float J0[6] = { 0, 0, 0, 0, 0, 0 };
+        //    trackOutput[offset].result = -4;
+        //    trackOutput[offset].h = 0;
+        //    trackOutput[offset].D = 0;
+        //    trackOutput[offset].J = J0;
+        //}
     }
-    }
-
-
 }
+
+
+
 
 
 

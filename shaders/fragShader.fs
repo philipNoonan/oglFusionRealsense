@@ -18,6 +18,9 @@ layout (binding=7) uniform usampler3D currentTextureSDF;
 
 in vec2 TexCoord;
 in float zDepth;
+in float dropVertex;
+
+
 layout(location = 0) out vec4 color;
 
 uniform mat4 model;
@@ -141,7 +144,14 @@ vec4 fromColor()
 subroutine(getColor)
 vec4 fromPoints()
 {
-	return vec4(0.03f, 1.0f, 0.02f, 1.0f);
+	if (dropVertex != 0.0f)
+	{
+		discard;
+	}
+	else
+	{
+		return vec4(0.03f, 0.98, 0.02f, 1.0);
+	}
 }
 
 subroutine(getColor)

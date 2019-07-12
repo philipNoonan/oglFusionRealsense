@@ -54,12 +54,12 @@ void main()
 
             if (row.result < 1)
             {
-                if (row.result == -4)
-                {
+                //if (row.result == -4)
+                //{
                     sums[28] += 1;
                     continue;
 
-                }
+                //}
 
             }
 
