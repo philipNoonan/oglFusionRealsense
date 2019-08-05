@@ -206,7 +206,7 @@ public:
 
 	void setInfraFrame(std::vector<rs2::frame_queue> infraQ, int devNumber, cv::Mat &infraMat);
 
-	void setTextures(GLuint depthTex, GLuint colorTex, GLuint vertexTex, GLuint normalTex, GLuint volumeTex, GLuint trackTex, GLuint pvpNormTex, GLuint pvdNormTex);
+	void setTextures(GLuint depthTex, GLuint colorTex, GLuint vertexTex, GLuint normalTex, GLuint volumeTex, GLuint trackTex, GLuint pvpNormTex, GLuint pvdNormTex, GLuint splatterDepth);
 	void setFlowTexture(GLuint flowTex);
 	void setBuffersFromMarchingCubes(GLuint posBuf, GLuint normBuf, size_t numVerts)
 	{
@@ -359,10 +359,11 @@ public:
 		return m_center_pixY;
 	}
 
-	void setFusionType(bool usePVP, bool usePVD)
+	void setFusionType(bool usePVP, bool usePVD, bool useSplatter)
 	{
 		m_usePVP = usePVP;
 		m_usePVD = usePVD;
+		m_useSplatter = useSplatter;
 	}
 
 	void setDepthToDepth(glm::mat4 dep2dep)
@@ -454,6 +455,7 @@ private:
 	GLuint m_textureFlow;
 	GLuint m_texturePVPNormal;
 	GLuint m_texturePVDNormal;
+	GLuint m_textureSplatterDepth;
 
 	GLuint m_textureFlood;
 
@@ -574,7 +576,7 @@ private:
 	glm::vec3 m_volume_size = glm::vec3(128.0f, 128.0f, 128.0f);
 
 
-	int getRenderOptions(bool depth, bool infra, bool color, bool norm, bool track, bool flood, bool volume);
+	int getRenderOptions(bool depth, bool infra, bool color, bool norm, bool track, bool flood, bool volume, bool splatter);
 
 	bool m_showDepthFlag = false;
 	bool m_showNormalFlag = false;
@@ -594,6 +596,7 @@ private:
 
 	bool m_usePVP;
 	bool m_usePVD;
+	bool m_useSplatter;
 
 
 	const GLint tcOffsetColumns = 5;

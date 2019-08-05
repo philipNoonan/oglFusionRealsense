@@ -60,8 +60,8 @@ find_package(protobuf REQUIRED)
 find_package(hdf5 REQUIRED)
 find_package(gflags REQUIRED)
 
-find_package(Torch REQUIRED)
-find_package(torchvision REQUIRED)
+#find_package(Torch REQUIRED)
+#find_package(torchvision REQUIRED)
 
 # header only
 find_path (DIRENT_INCLUDE_DIR dirent.h)
@@ -153,8 +153,8 @@ target_include_directories(${PROJECT_NAME} PUBLIC ${torchvision_INCLUDE_DIRS})
 # header only
 include_directories(${DIRENT_INCLUDE_DIR})
 
-target_link_libraries(${PROJECT_NAME} ${TORCH_LIBRARIES})
-target_link_libraries(${PROJECT_NAME} ${torchvision_LIBS})
+#target_link_libraries(${PROJECT_NAME} ${TORCH_LIBRARIES})
+#target_link_libraries(${PROJECT_NAME} ${torchvision_LIBS})
 
 target_link_libraries(${PROJECT_NAME} ${OPENGL_gl_LIBRARY})
 target_link_libraries(${PROJECT_NAME} GLEW::GLEW)

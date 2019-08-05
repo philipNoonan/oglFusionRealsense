@@ -625,7 +625,7 @@ void kRender::setRenderingOptions(bool showDepthFlag, bool showBigDepthFlag, boo
 					  
 }
 
-void kRender::setTextures(GLuint depthTex, GLuint colorTex, GLuint vertexTex, GLuint normalTex, GLuint volumeTex, GLuint trackTex, GLuint pvpNormTex, GLuint pvdNormTex)
+void kRender::setTextures(GLuint depthTex, GLuint colorTex, GLuint vertexTex, GLuint normalTex, GLuint volumeTex, GLuint trackTex, GLuint pvpNormTex, GLuint pvdNormTex, GLuint splatterDepthTex)
 {
 
 	m_textureDepth = depthTex;
@@ -636,6 +636,7 @@ void kRender::setTextures(GLuint depthTex, GLuint colorTex, GLuint vertexTex, GL
 	m_textureTrack = trackTex;
 	m_texturePVPNormal = pvpNormTex;
 	m_texturePVDNormal = pvdNormTex;
+	m_textureSplatterDepth = splatterDepthTex;
 
 }
 void kRender::setFlowTexture(GLuint flowTex)
@@ -673,6 +674,8 @@ void kRender::bindTexturesForRendering()
 			glActiveTexture(GL_TEXTURE1);
 			glBindTexture(GL_TEXTURE_2D_ARRAY, m_textureNormal);
 		}
+
+
 
 	}
 	
@@ -719,7 +722,11 @@ void kRender::bindTexturesForRendering()
 
 	}
 
-
+	if (m_useSplatter)
+	{
+		glActiveTexture(GL_TEXTURE8);
+		glBindTexture(GL_TEXTURE_2D, m_textureSplatterDepth);
+	}
 
 
 
@@ -1131,7 +1138,7 @@ void kRender::setViewport(int x, int y, int w, int h)
 	glViewport(x, y, w, h);
 }
 
-int kRender::getRenderOptions(bool depth, bool infra, bool color, bool norms, bool track, bool flood, bool volume)
+int kRender::getRenderOptions(bool depth, bool infra, bool color, bool norms, bool track, bool flood, bool volume, bool splatterDepth)
 {
 	int opts = depth << 0 |
 		       infra << 1 |
@@ -1139,7 +1146,8 @@ int kRender::getRenderOptions(bool depth, bool infra, bool color, bool norms, bo
 		       norms << 3 |
 		       track << 4 |
 		       flood << 5 |
-			  volume << 6;
+			  volume << 6 |
+	   splatterDepth << 7;
 
 	return opts;
 }
@@ -1154,7 +1162,7 @@ void kRender::renderLiveVideoWindow(bool useInfrared, int devNumber)
 
 
 	//// RENDER LEFT WINDOW
-	int leftRenderOptions = getRenderOptions(m_showDepthFlag, m_showInfraFlag, 0, m_showNormalFlag, m_showTrackFlag, 0, 0);
+	int leftRenderOptions = getRenderOptions(m_showDepthFlag, m_showInfraFlag, 0, m_showNormalFlag, m_showTrackFlag, 0, 0, m_useSplatter);
 
 
 	glm::vec2 imageSize(848.0f, 480.0f);
@@ -1172,7 +1180,7 @@ void kRender::renderLiveVideoWindow(bool useInfrared, int devNumber)
 	glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 
 	//// RENDER RIGHT WINDOW
-	int rightRenderOptions = getRenderOptions(0, 0, m_showColorFlag, 0, 0, m_showVolumeSDFFlag, m_showVolumeFlag);
+	int rightRenderOptions = getRenderOptions(0, 0, m_showColorFlag, 0, 0, m_showVolumeSDFFlag, m_showVolumeFlag, 0);
 
 
 	setViewport(m_display3DPos.x, m_display3DPos.y, m_display3DSize.x, m_display3DSize.y);

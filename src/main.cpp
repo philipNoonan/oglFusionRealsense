@@ -41,10 +41,10 @@ void kRenderInit()
 	krender.setLocations();
 	krender.setVertPositions();
 	krender.allocateBuffers();
-	krender.setTextures(gfusion.getDepthImage(), gflow.getColorTexture(), gfusion.getVerts(), gfusion.getNorms(), gfusion.getVolume(), gfusion.getTrackImage(), gfusion.getPVPNorms(), gfusion.getPVDNorms()); //needs texture uints from gfusion init
+	krender.setTextures(gfusion.getDepthImage(), gflow.getColorTexture(), gfusion.getVerts(), gfusion.getNorms(), gfusion.getVolume(), gfusion.getTrackImage(), gfusion.getPVPNorms(), gfusion.getPVDNorms(), gfusion.getSplatterDepth()); //needs texture uints from gfusion init
 	krender.anchorMW(std::make_pair<int, int>(1920 - 512 - krender.guiPadding().first, krender.guiPadding().second));
 
-	krender.setFusionType(trackDepthToPoint, trackDepthToVolume);
+	krender.setFusionType(trackDepthToPoint, trackDepthToVolume, useSplatter);
 
 	gflow.setColorTexture(cameraInterface.getColorQueues(), col);
 	krender.setDepthMinMax(depthMin, depthMax);
@@ -67,9 +67,9 @@ void gFusionInit()
 	gconfig.depthFrameSize = glm::vec2(depthFrameSize[devNumber]);
 	gconfig.mu = 0.05f;
 	gconfig.maxWeight = 100.0f;
-	gconfig.iterations[0] = 2;
-	gconfig.iterations[1] = 4;
-	gconfig.iterations[2] = 6;
+	gconfig.iterations[0] = 4;
+	gconfig.iterations[1] = 0;
+	gconfig.iterations[2] = 0;
 	
 	for (int i = 0; i < numberOfCameras; i++)
 	{
@@ -99,6 +99,9 @@ void gFusionInit()
 
 
 	volSlice = gconfig.volumeSize.z / 2.0f;
+
+
+	gfusion.initSplatterVAO();
 
 
 }
@@ -766,7 +769,7 @@ void setUI()
 
 			if (ImGui::Button("P2P")) trackDepthToPoint ^= 1; ImGui::SameLine(); ImGui::Checkbox("", &trackDepthToPoint); ImGui::SameLine();
 			if (ImGui::Button("P2V")) trackDepthToVolume ^= 1; ImGui::SameLine(); ImGui::Checkbox("", &trackDepthToVolume);
-			//if (ImGui::Button("Multi")) useMultipleFusion ^= 1; ImGui::SameLine(); ImGui::Checkbox("", &useMultipleFusion);
+			if (ImGui::Button("Splat")) useSplatter ^= 1; ImGui::SameLine(); ImGui::Checkbox("", &useSplatter);
 
 
 			ImGui::Text("Resolution");
@@ -1202,7 +1205,6 @@ int main(int, char**)
 
 
 
-
 		if (usingDataFromFile)
 		{
 			frameReady = cameraInterface.collateFramesFromFile();
@@ -1215,6 +1217,7 @@ int main(int, char**)
 		if (frameReady)
 		{
 			
+			gfusion.splatterModel();
 
 			gfusion.resetTimes();
 
@@ -1428,7 +1431,8 @@ int main(int, char**)
 
 			}
 
-			gfusion.uploadDepth(cameraInterface.getDepthQueues(), cameraDevice, iOff);
+			gfusion.uploadDepthToBuffer(cameraInterface.getDepthQueues(), cameraDevice, iOff);
+			//gfusion.uploadDepth(cameraInterface.getDepthQueues(), cameraDevice, iOff);
 			gfusion.depthToVertex();
 			gfusion.vertexToNormal();
 				//}
@@ -1544,7 +1548,7 @@ int main(int, char**)
 
 
 		krender.setRenderingOptions(showDepthFlag, showBigDepthFlag, showInfraFlag, showColorFlag, showLightFlag, showPointFlag, showFlowFlag, showEdgesFlag, showNormalFlag, showVolumeFlag, showTrackFlag, showSDFVolume, showMarkerFlag);
-		krender.setFusionType(trackDepthToPoint, trackDepthToVolume);
+		krender.setFusionType(trackDepthToPoint, trackDepthToVolume, useSplatter);
 
 
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -1577,7 +1581,7 @@ int main(int, char**)
 		if (cameraRunning)
 		{
 			krender.setProjectionMatrix(cameraDevice);
-			krender.setTextures(gfusion.getDepthImage(), gflow.getColorTexture(), gfusion.getVerts(), gfusion.getNorms(), gfusion.getVolume(), gfusion.getTrackImage(), gfusion.getPVPNorms(), gfusion.getPVDNorms()); //needs texture uints from gfusion init
+			krender.setTextures(gfusion.getDepthImage(), gflow.getColorTexture(), gfusion.getVerts(), gfusion.getNorms(), gfusion.getVolume(), gfusion.getTrackImage(), gfusion.getPVPNorms(), gfusion.getPVDNorms(), gfusion.getSplatterDepth()); //needs texture uints from gfusion init
 
 			krender.setDisplayOriSize(display2DWindow.x, display_h - display2DWindow.y - display2DWindow.h, display2DWindow.w, display2DWindow.h);
 			krender.set3DDisplayOriSize(display3DWindow.x, display_h - display3DWindow.y - display3DWindow.h, display3DWindow.w, display3DWindow.h);

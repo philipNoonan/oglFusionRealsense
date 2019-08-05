@@ -67,9 +67,23 @@ void gFusion::compileAndLinkShader()
 		helpersProg.compileShader("shaders/helpers.cs");
 		helpersProg.link();
 
-		splatterProg.compileShader("shaders/splatter.vs");
-		splatterProg.compileShader("shaders/splatter.fs");
+		depthToBufferProg.compileShader("shaders/depthToBuffer.vs");
+		depthToBufferProg.compileShader("shaders/depthToBuffer.gs");
+
+		const GLchar* feedbackOutput[] = { "outVertexPositionConfidence", 
+											"outVertexNormalRadius" };
+		glTransformFeedbackVaryings(depthToBufferProg.getHandle(), 2, feedbackOutput, GL_INTERLEAVED_ATTRIBS);
+		depthToBufferProg.link();
+
+
+		splatterProg.compileShader("shaders/splatterDepth.vs");
+		splatterProg.compileShader("shaders/splatterDepth.fs");
 		splatterProg.link();
+
+		splatterGlobalProg.compileShader("shaders/splatterGlobal.vs");
+		splatterGlobalProg.compileShader("shaders/splatterGlobal.gs");
+		splatterGlobalProg.compileShader("shaders/splatterGlobal.fs");
+		splatterGlobalProg.link();
 
 		
 	}
@@ -202,6 +216,16 @@ void gFusion::setLocations()
 	m_largeStepID_m = glGetUniformLocation(mipProg.getHandle(), "largeStep");
 	m_volDimID_m = glGetUniformLocation(mipProg.getHandle(), "volDim");
 	m_volSizeID_m = glGetUniformLocation(mipProg.getHandle(), "volSize");
+
+	splatterProg.use();
+	m_splatterModelID = glGetUniformLocation(splatterProg.getHandle(), "model");
+	m_splatterCamPamID = glGetUniformLocation(splatterProg.getHandle(), "camPam");
+	m_splatterMaxDepthID = glGetUniformLocation(splatterProg.getHandle(), "maxDepth");
+	m_splatterImSizeID = glGetUniformLocation(splatterProg.getHandle(), "imSize");
+
+	depthToBufferProg.use();
+	m_camPamID = glGetUniformLocation(depthToBufferProg.getHandle(), "camPam");
+
 
 	//listmode.resize(402653184, 0);
 	//glGenBuffers(1, &m_lmbuff_0);
@@ -465,45 +489,35 @@ void gFusion::allocateBuffers()
 	glBindBuffer(GL_SHADER_STORAGE_BUFFER, m_trackedPoints3DBuffer);
 	glBufferData(GL_SHADER_STORAGE_BUFFER, m_trackedPoints3D.size() * sizeof(float), m_trackedPoints3D.data(), GL_DYNAMIC_DRAW);
 	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 14, m_trackedPoints3DBuffer);
-}
 
-void gFusion::initSplatterVAO()
-{
+	// DEPTH TO BUFFER
 
-	//glGenFramebuffers(1, &m_FBO);
-	//glBindFramebuffer(GL_FRAMEBUFFER, m_FBO);
-
-	//m_textureSplatteredModel = GLHelper::createTexture(m_textureSplatteredModel, GL_TEXTURE_2D_ARRAY, 3, configuration.depthFrameSize.x, configuration.depthFrameSize.y, m_numberOfCameras, GL_R16, GL_NEAREST, GL_NEAREST_MIPMAP_NEAREST);
-	//glGenTextures(1, &m_textureSplatteredModel);
-	//glBindTexture(GL_TEXTURE_2D, m_textureSplatteredModel);
-	//glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, configuration.depthFrameSize.x, configuration.depthFrameSize.y, 0, GL_RGBA, GL_FLOAT, NULL);
-	//glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-	//glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-
-	//glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, m_textureSplatteredModel, 0);
-
-	//// tell OpenGL which color attachments we'll use (of this framebuffer) for rendering 
-	//unsigned int attachments[] = { GL_COLOR_ATTACHMENT0,
-	//							   GL_COLOR_ATTACHMENT1	};
-	//glDrawBuffers(2, attachments);
-
-	//glGenRenderbuffers(1, &m_RBO);
-	//glBindRenderbuffer(GL_RENDERBUFFER, m_RBO);
-	//glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, m_texture_width, m_texture_height); // use a single renderbuffer object for both a depth AND stencil buffer.
-	//glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, m_RBO); // now actually attach it
-	//// now that we actually created the framebuffer and added all attachments we want to check if it is actually complete now
-	//if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
-	//	std::cout << "ERROR::FRAMEBUFFER:: Framebuffer is not complete!" << std::endl;
-	//glBindFramebuffer(GL_FRAMEBUFFER, 0);
-
-	//glGenVertexArrays(1, &m_VAO);
-	//glBindVertexArray(m_VAO);
-	//glGenBuffers(1, &m_VBO);
+	glGenVertexArrays(1, &m_d2b_VAO);
+	glBindVertexArray(m_d2b_VAO);
 
 
+	// test data
+	//GLfloat data[] = { 1.0f, 2.0f, 3.0f, 4.0f, 5.0f };
+	//glGenBuffers(1, &m_d2b_VBO);
+	//glBindBuffer(GL_ARRAY_BUFFER, m_d2b_VBO);
+	//glBufferData(GL_ARRAY_BUFFER, sizeof(glm::vec4), NULL, GL_STATIC_DRAW);
 
+	//GLint inputAttrib = glGetAttribLocation(depthToBufferProg.getHandle(), "inValue");
+	//glEnableVertexAttribArray(inputAttrib);
+	//glVertexAttribPointer(inputAttrib, 1, GL_FLOAT, GL_FALSE, 0, 0);
 
-	//glBindVertexArray(0);
+	// m_d2b_VBO contains the interleaved buffer containing position confidence normal radius, all floats
+	// posX, posY, posZ, conf, normX, normY, normZ, radi
+
+	glGenTransformFeedbacks(1, &m_d2b_TFO);
+
+	glGenBuffers(1, &m_d2b_VBO);
+	glBindBuffer(GL_ARRAY_BUFFER, m_d2b_VBO);
+	glBufferData(GL_ARRAY_BUFFER, m_numberOfCameras * configuration.depthFrameSize.x * configuration.depthFrameSize.y * sizeof(glm::vec4) * 2, NULL, GL_DYNAMIC_COPY);
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
+	//glGenBuffers(1, &m_d2b_norRad);
+	//glBindBuffer(GL_ARRAY_BUFFER, m_d2b_norRad);
+	//glBufferData(GL_ARRAY_BUFFER, m_numberOfCameras * configuration.depthFrameSize.x * configuration.depthFrameSize.y * sizeof(glm::vec4), NULL, GL_DYNAMIC_COPY);
 
 
 }
@@ -715,10 +729,313 @@ void gFusion::uploadDepth(std::vector<rs2::frame_queue> depthQ, int devNumber, g
 		}
 	}
 }
-void gFusion::splatterDepth(std::vector<rs2::frame_queue> depthQ)
+
+void gFusion::uploadDepthToBuffer(std::vector<rs2::frame_queue> depthQ, int devNumber, glm::vec3 &point)
 {
-	splatterProg.use();
+
+
+	std::vector<rs2::frame> depthFrame(m_numberOfCameras);
+
+
+	for (int camNumber = 0; camNumber < m_numberOfCameras; camNumber++)
+	{
+		//std::cout << "cam number : " << camNumber << std::endl;
+		depthQ[camNumber].poll_for_frame(&depthFrame[camNumber]);
+		if (depthFrame[camNumber] != NULL)
+		{
+			if (depthFrame[camNumber].supports_frame_metadata(RS2_FRAME_METADATA_SENSOR_TIMESTAMP))
+			{
+				auto currentTime = depthFrame[camNumber].get_frame_metadata(RS2_FRAME_METADATA_SENSOR_TIMESTAMP);
+				auto deltaTime = currentTime - m_previousTime[camNumber];
+				if (deltaTime < 0)
+				{
+					timeShiftOffsets++;
+				}
+
+				m_sensorsTimestamps[camNumber] = currentTime + (timeShiftOffsets * (2 ^ 32));
+				m_previousTime[camNumber] = m_sensorsTimestamps[camNumber];
+			}
+
+
+			glActiveTexture(GL_TEXTURE0);
+			glBindTexture(GL_TEXTURE_2D_ARRAY, m_textureDepthArray);
+			glTexSubImage3D(GL_TEXTURE_2D_ARRAY, 0, 0, 0, camNumber, configuration.depthFrameSize.x, configuration.depthFrameSize.y, 1, GL_RED, GL_UNSIGNED_SHORT, depthFrame[camNumber].get_data());
+		}
+		else
+		{
+			//std::cout << "cam number : " << camNumber << " : was null" << std::endl;
+		}
+
+	}
+
+	glGenerateMipmap(GL_TEXTURE_2D_ARRAY);
+
+	if (1)
+	{
+		//std::cout << "clicky pointy" << std::endl;
+		if (depthFrame[devNumber] != NULL)
+		{
+			const uint16_t* p_depth_frame = reinterpret_cast<const uint16_t*>(depthFrame[devNumber].get_data());
+			//float z = float(depthArray[pointY * depthWidth + pointX]) * (float)cameraInterface.getDepthUnit(cameraDevice) / 1000000.0f;
+			int depth_pixel_index = (m_pointY * configuration.depthFrameSize.x + m_pointX);
+
+			glm::vec4 tempPoint(0.0f, 0.0f, 0.0f, 1.0f);
+
+			tempPoint.z = p_depth_frame[depth_pixel_index] * (float)m_depthUnit / 1000000.0f;
+			//std::cout << tempPoint.z << std::endl;
+
+
+
+			//kcamera.fx(), kcamera.fx(), kcamera.ppx(), kcamera.ppy()
+			//std::cout << z << std::endl;
+
+			tempPoint.x = (m_pointX - m_camPamsDepth[devNumber].z) * (1.0f / m_camPamsDepth[devNumber].x) * tempPoint.z;
+			tempPoint.y = (m_pointY - m_camPamsDepth[devNumber].w) * (1.0f / m_camPamsDepth[devNumber].y) * tempPoint.z;
+
+			m_clickedPoint = false;
+
+			if (devNumber == 0)
+			{
+				point.x = tempPoint.x;
+				point.y = tempPoint.y;
+				point.z = tempPoint.z;
+			}
+			else
+			{
+				glm::vec4 toutput = m_depthToDepth * tempPoint;
+				point.x = toutput.x;
+				point.y = toutput.y;
+				point.z = toutput.z;
+			}
+
+
+			// use transform feedback to write verts to buffer rather than sparse image array
+
+			depthToBufferProg.use();
+			
+			glActiveTexture(GL_TEXTURE0);
+			glBindTexture(GL_TEXTURE_2D_ARRAY, m_textureDepthArray);
+			
+			glm::vec4 camPam[4];
+
+			for (int i = 0; i < m_numberOfCameras; i++)
+			{
+				camPam[i] = m_camPamsDepth[i];
+				camPam[i].z = 1.0f / camPam[i].z;
+				camPam[i].w = 1.0f / camPam[i].w;
+			}
+
+			glUniform4fv(m_camPamID, 4, glm::value_ptr(camPam[0])); 
+
+			glBindVertexArray(m_d2b_VAO);
+
+			//glBindBuffer(GL_ARRAY_BUFFER, m_d2b_VBO);
+			glEnable(GL_RASTERIZER_DISCARD);
+			glBindTransformFeedback(GL_TRANSFORM_FEEDBACK, m_d2b_TFO);
+			glBindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER, 0, m_d2b_VBO);
+			glBeginTransformFeedback(GL_POINTS);
+
+			glDrawArrays(GL_POINTS, 0, m_numberOfCameras * configuration.depthFrameSize.x * configuration.depthFrameSize.y); // multiply this by number of cameras
+
+			glBindTexture(GL_TEXTURE_2D, 0);
+
+			glActiveTexture(GL_TEXTURE0);
+			glEndTransformFeedback();
+			glFlush();
+			
+
+			glDisable(GL_RASTERIZER_DISCARD);
+			glBindBuffer(GL_ARRAY_BUFFER, 0);
+			glBindTransformFeedback(GL_TRANSFORM_FEEDBACK, 0);
+
+		}
+		else
+		{
+			m_clickedPoint = true;
+		}
+	}
 }
+
+void gFusion::initSplatterVAO()
+{
+	// we splat the unordered surfel array to a supersampled texture of 4x depth map size. 
+	// this is due to the possibility of multiple surfels being active on the same pixel.
+	// having 4x sampling means we can choose the best surfel for the depth element, filtering by distance, lifetime of surface, normals, etc
+
+
+	glGenFramebuffers(1, &m_FBO);
+	glBindFramebuffer(GL_FRAMEBUFFER, m_FBO);
+
+	//m_textureSplatteredModel = GLHelper::createTexture(m_textureSplatteredModel, GL_TEXTURE_2D, 1, configuration.depthFrameSize.x, configuration.depthFrameSize.y, 1, GL_R32UI, GL_NEAREST, GL_NEAREST_MIPMAP_NEAREST);
+	glGenTextures(1, &m_textureSplatteredDepth);
+
+	glBindTexture(GL_TEXTURE_2D, m_textureSplatteredDepth);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, configuration.depthFrameSize.x*4, configuration.depthFrameSize.y*4, 0, GL_RGBA, GL_FLOAT, NULL);
+
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
+	
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, m_textureSplatteredDepth, 0);
+
+
+	GLenum attachments[] = { GL_COLOR_ATTACHMENT0 };
+	glDrawBuffers(1, attachments);
+
+
+	glGenRenderbuffers(1, &m_RBO);
+	glBindRenderbuffer(GL_RENDERBUFFER, m_RBO);
+	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, configuration.depthFrameSize.x*4, configuration.depthFrameSize.y*4); // use a single renderbuffer object for both a depth AND stencil buffer.
+	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, m_RBO); // now actually attach it
+	// now that we actually created the framebuffer and added all attachments we want to check if it is actually complete now
+	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+		std::cout << "ERROR::FRAMEBUFFER:: Framebuffer is not complete!" << std::endl;
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+	glGenVertexArrays(1, &m_VAO);
+	glBindVertexArray(m_VAO);
+	glBindBuffer(GL_ARRAY_BUFFER, m_d2b_VBO);
+
+	// vertex confidence
+	glEnableVertexAttribArray(0);
+	glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, sizeof(glm::vec4) * 2, (GLvoid*)0);
+
+	// normal radius
+	glEnableVertexAttribArray(1);
+	glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, sizeof(glm::vec4) * 2, (GLvoid*)sizeof(glm::vec4));
+	//// color time
+	//glVertexAttribPointer(2, 4, GL_FLOAT, GL_FALSE, 0, (GLvoid*)0);
+	//glEnableVertexAttribArray(2);
+
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
+	glBindVertexArray(0);
+
+}
+
+
+void gFusion::splatterDepth()
+{
+	glBindVertexArray(m_d2b_VAO);
+
+	glBindFramebuffer(GL_FRAMEBUFFER, m_FBO);
+
+	glEnable(GL_DEPTH_TEST);
+	glViewport(0, 0, configuration.depthFrameSize.x, configuration.depthFrameSize.y);
+			// make sure we clear the framebuffer's content
+	glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	splatterProg.use();
+	glm::mat4 model[4];
+
+	for (int i = 0; i < m_numberOfCameras; i++)
+	{
+		//model[i] = glm::inverse(m_pose);
+		model[i] = glm::mat4(1.0f);
+	}
+
+
+	glm::vec4 camPam[4];
+
+	for (int i = 0; i < m_numberOfCameras; i++)
+	{
+		camPam[i] = m_camPamsDepth[i];
+	}
+
+	glUniformMatrix4fv(m_splatterModelID, 4, GL_FALSE, glm::value_ptr(model[0]));
+	glUniform4fv(m_splatterCamPamID, 4, glm::value_ptr(camPam[0]));
+	glUniform2fv(m_splatterImSizeID, 1, glm::value_ptr(configuration.depthFrameSize));
+	glUniform1f(m_splatterMaxDepthID, 1.0f);
+
+	glBindBuffer(GL_ARRAY_BUFFER, m_d2b_VBO);
+
+	// vertex confidence
+	glEnableVertexAttribArray(0);
+	glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, sizeof(glm::vec4) * 2, (GLvoid*)0);
+
+	// normal radius
+	glEnableVertexAttribArray(1);
+	glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, sizeof(glm::vec4) * 2, (GLvoid*)sizeof(glm::vec4));
+
+	glEnable(GL_VERTEX_PROGRAM_POINT_SIZE);
+
+	//glDrawArrays(GL_POINTS, 0, 3);
+	glDrawTransformFeedback(GL_POINTS, m_d2b_TFO);
+	glBindVertexArray(0);
+
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+
+//
+//	std::vector<float> testvec(480 * 848 * 4, 10);
+//
+//
+//glActiveTexture(GL_TEXTURE0);
+//glBindTexture(GL_TEXTURE_2D, m_textureSplatteredModel);
+//glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_FLOAT, testvec.data());
+//glBindTexture(GL_TEXTURE_2D, 0);
+//
+//
+//cv::Mat lvl1d = cv::Mat(480, 848, CV_32FC4, testvec.data());
+//
+//cv::imshow("lvl1!d", lvl1d);
+
+}
+
+
+void gFusion::splatterModel()
+{
+	glBindVertexArray(m_d2b_VAO);
+
+	glBindFramebuffer(GL_FRAMEBUFFER, m_FBO);
+
+	glEnable(GL_DEPTH_TEST);
+	glViewport(0, 0, configuration.depthFrameSize.x*4, configuration.depthFrameSize.y*4);
+	// make sure we clear the framebuffer's content
+	glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	splatterProg.use();
+	glm::mat4 model[4];
+
+	for (int i = 0; i < m_numberOfCameras; i++)
+	{
+		//model[i] = glm::inverse(m_pose);
+		model[i] = glm::mat4(1.0f);
+	}
+
+
+	glm::vec4 camPam[4];
+
+	for (int i = 0; i < m_numberOfCameras; i++)
+	{
+		camPam[i] = m_camPamsDepth[i];
+	}
+
+	glUniformMatrix4fv(m_splatterModelID, 4, GL_FALSE, glm::value_ptr(model[0]));
+	glUniform4fv(m_splatterCamPamID, 4, glm::value_ptr(camPam[0]*4.0f));
+	glUniform2fv(m_splatterImSizeID, 1, glm::value_ptr((glm::vec2(configuration.depthFrameSize*4.0f))));
+	glUniform1f(m_splatterMaxDepthID, 1.0f);
+
+	glBindBuffer(GL_ARRAY_BUFFER, m_d2b_VBO);
+
+	// vertex confidence
+	glEnableVertexAttribArray(0);
+	glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, sizeof(glm::vec4) * 2, (GLvoid*)0);
+
+	// normal radius
+	glEnableVertexAttribArray(1);
+	glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, sizeof(glm::vec4) * 2, (GLvoid*)sizeof(glm::vec4));
+
+	glEnable(GL_VERTEX_PROGRAM_POINT_SIZE);
+
+	//glDrawArrays(GL_POINTS, 0, 3);
+	glDrawTransformFeedback(GL_POINTS, m_d2b_TFO);
+	glBindVertexArray(0);
+
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+}
+
 
 void gFusion::depthToVertex(float * depthArray)
 {
@@ -1548,8 +1865,8 @@ void gFusion::integrate(bool forceIntegrate)
 
 	for (int i = 0; i < m_numberOfCameras; i++)
 	{
-		cameraIntrinsics[i] = GLHelper::getCameraMatrix(m_camPamsDepth[i]);;
-		inverseCameraIntrinsics[i] = GLHelper::getInverseCameraMatrix(m_camPamsDepth[i]);;
+		cameraIntrinsics[i] = GLHelper::getCameraMatrix(m_camPamsDepth[i]);
+		inverseCameraIntrinsics[i] = GLHelper::getInverseCameraMatrix(m_camPamsDepth[i]);
 	}
 	glm::vec4 vDim = glm::vec4(configuration.volumeDimensions, 0.0f);
 	glm::vec4 vSize = glm::vec4(configuration.volumeSize, 0.0f);

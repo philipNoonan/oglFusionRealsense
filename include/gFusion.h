@@ -224,7 +224,9 @@ public:
 	//void depthToVertex(std::vector<rs2::frame_queue> depthQ, glm::vec3 &point);
 	// backproject depth frame into vertex image
 	void uploadDepth(std::vector<rs2::frame_queue> depthQ, int devNumber, glm::vec3 &point);
-	void splatterDepth(std::vector<rs2::frame_queue> depthQ);
+	void uploadDepthToBuffer(std::vector<rs2::frame_queue> depthQ, int devNumber, glm::vec3 &point);
+	void splatterDepth();
+	void splatterModel();
 	void depthToVertex();
 	void depthToVertex(float * depthArray);
 	void depthToVertex(uint16_t * depthArray);
@@ -324,6 +326,14 @@ public:
 		//return m_textureReferenceVertex;
 
 	}
+	GLuint getSplatterDepth()
+	{
+		return m_textureSplatteredDepth;
+	}
+	GLuint getSplatterModel()
+	{
+		return m_textureSplatteredModel;
+	}
 	GLuint getNorms()
 	{
 		return m_textureNormalArray;
@@ -403,7 +413,10 @@ public:
 private:
 
 	// PROGRAMS
+	GLSLProgram depthToBufferProg;
 	GLSLProgram splatterProg;
+	GLSLProgram splatterGlobalProg;
+
 	GLSLProgram depthToVertProg;
 	GLSLProgram vertToNormProg;
 	GLSLProgram raycastProg;
@@ -535,6 +548,11 @@ private:
 	GLuint m_volDimID_m;
 	GLuint m_volSizeID_m;
 
+	// depth to buffer 
+	GLuint m_camPamID;
+
+
+
 	// TEXTURES
 	GLuint createTexture(GLenum target, int levels, int w, int h, int d, GLint internalformat, GLenum magFilter, GLenum minFilter);
 	GLuint m_textureColor;
@@ -605,8 +623,23 @@ private:
 	// SPLATTERING
 	GLuint m_VAO;
 	GLuint m_FBO;
-	GLuint m_VBO;
+	GLuint m_RBO;
+	GLuint m_modelVBO;
 	GLuint m_textureSplatteredModel;
+	GLuint m_textureSplatteredDepth;
+
+	GLuint m_splatterMVPID;
+	GLuint m_splatterModelID;
+	GLuint m_splatterCamPamID;
+	GLuint m_splatterMaxDepthID;
+	GLuint m_splatterImSizeID;
+
+	// Depth to Vertex Buffering
+	GLuint m_d2b_VAO;
+	GLuint m_d2b_VBO;
+	GLuint m_d2b_TFO;
+	GLuint m_d2b_posCon;
+	GLuint m_d2b_norRad;
 
 
 	// POSE RECOVERY

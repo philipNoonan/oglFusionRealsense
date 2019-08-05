@@ -229,31 +229,22 @@ void main()
 
 
 
-                vec3 dSDF_dx = vec3(SDFGradient(cvp, vec3(1, 0, 0), 1), SDFGradient(cvp, vec3(0, 1, 0), 1), SDFGradient(cvp, vec3(0, 0, 1), 1));
+                vec3 dSDF_dx = vec3(SDFGradient(cvp, vec3(2, 0, 0), 2), SDFGradient(cvp, vec3(0, 2, 0), 2), SDFGradient(cvp, vec3(0, 0, 2), 2));
+
+                vec3 rotatedNormal = vec3(cameraPoses[camera] * vec4(normals.xyz, 0.0f)).xyz;
+
+                //vec3 rotatedNormal = vec3(transpose(inverse(cameraPoses[camera])) * vec4(normals.xyz, 0.0f)).xyz;
+
+                if (dot(dSDF_dx, rotatedNormal) < 0.8 && !any(equal(dSDF_dx, vec3(0.0f))))
+                {
+                    imageStore(trackImage, ivec3(pix, camera), vec4(1.0f, 1.0f, 0, 1.0f));
+
+                    trackOutput[offset].result = -4;
+
+                    continue;
+                }
 
 
-                //vec3 rotatedNormal = vec3(cameraPoses[camera] * vec4(normals.xyz, 0.0f)).xyz;
-
-                ////vec3 rotatedNormal = vec3(transpose(inverse(cameraPoses[camera])) * vec4(normals.xyz, 0.0f)).xyz;
-
-                //if (dot(dSDF_dx, rotatedNormal) < 0.5 && !any(equal(dSDF_dx, vec3(0.0f))))
-                //{
-                //    imageStore(trackImage, ivec3(pix, camera), vec4(1.0f, 1.0f, 0, 1.0f));
-
-                //    trackOutput[offset].result = -4;
-
-                //    continue;
-                //}
-
-                //if (any(greaterThan(rotatedNormal, vec3(1.0f))))
-                //{
-                //    //imageStore(testImage, ivec2(pix), vec4(0.5f));
-                //    imageStore(trackImage, ivec3(pix, camera), vec4(1.0f, 0.0f, 0, 1.0f));
-
-                //    trackOutput[(pix.y * imageSize.x) + pix.x].result = -4;
-
-                //    continue;
-                //}
 
                 if (any(equal(dSDF_dx, vec3(-2.0f))))
                 {
