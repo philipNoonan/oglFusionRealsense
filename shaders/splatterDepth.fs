@@ -2,6 +2,7 @@
 
 in vec3 positions;
 in vec3 normals;
+in vec4 colTimDev;
 
 layout(location = 0) out vec4 fragment_color;
 

@@ -74,6 +74,6 @@ void main()
 
 	geoVertexNormalRadius.w = getRadi(geoVertexPositionConfidence.z, geoVertexNormalRadius.z, texelCoord.z);
 
-	geoVertexColorTimeDevice= vec4(1.0, 1.0, time, texelCoord.z);
+	geoVertexColorTimeDevice= vec4(0.2, 0.6, time, texelCoord.z);
 
 }

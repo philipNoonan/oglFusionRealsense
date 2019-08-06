@@ -70,9 +70,10 @@ void gFusion::compileAndLinkShader()
 		depthToBufferProg.compileShader("shaders/depthToBuffer.vs");
 		depthToBufferProg.compileShader("shaders/depthToBuffer.gs");
 
-		const GLchar* feedbackOutput[] = { "outVertexPositionConfidence", 
-											"outVertexNormalRadius" };
-		glTransformFeedbackVaryings(depthToBufferProg.getHandle(), 2, feedbackOutput, GL_INTERLEAVED_ATTRIBS);
+		const GLchar* feedbackOutput[] = { "outVertPosConf",
+											"outVertNormRadi",
+											 "outVertColTimDev"};
+		glTransformFeedbackVaryings(depthToBufferProg.getHandle(), 3, feedbackOutput, GL_INTERLEAVED_ATTRIBS);
 		depthToBufferProg.link();
 
 
@@ -495,30 +496,13 @@ void gFusion::allocateBuffers()
 	glGenVertexArrays(1, &m_d2b_VAO);
 	glBindVertexArray(m_d2b_VAO);
 
-
-	// test data
-	//GLfloat data[] = { 1.0f, 2.0f, 3.0f, 4.0f, 5.0f };
-	//glGenBuffers(1, &m_d2b_VBO);
-	//glBindBuffer(GL_ARRAY_BUFFER, m_d2b_VBO);
-	//glBufferData(GL_ARRAY_BUFFER, sizeof(glm::vec4), NULL, GL_STATIC_DRAW);
-
-	//GLint inputAttrib = glGetAttribLocation(depthToBufferProg.getHandle(), "inValue");
-	//glEnableVertexAttribArray(inputAttrib);
-	//glVertexAttribPointer(inputAttrib, 1, GL_FLOAT, GL_FALSE, 0, 0);
-
-	// m_d2b_VBO contains the interleaved buffer containing position confidence normal radius, all floats
-	// posX, posY, posZ, conf, normX, normY, normZ, radi
-
 	glGenTransformFeedbacks(1, &m_d2b_TFO);
 
 	glGenBuffers(1, &m_d2b_VBO);
 	glBindBuffer(GL_ARRAY_BUFFER, m_d2b_VBO);
-	glBufferData(GL_ARRAY_BUFFER, m_numberOfCameras * configuration.depthFrameSize.x * configuration.depthFrameSize.y * sizeof(glm::vec4) * 2, NULL, GL_DYNAMIC_COPY);
+	glBufferData(GL_ARRAY_BUFFER, m_numberOfCameras * configuration.depthFrameSize.x * configuration.depthFrameSize.y * sizeof(glm::vec4) * 3, NULL, GL_DYNAMIC_COPY);
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
-	//glGenBuffers(1, &m_d2b_norRad);
-	//glBindBuffer(GL_ARRAY_BUFFER, m_d2b_norRad);
-	//glBufferData(GL_ARRAY_BUFFER, m_numberOfCameras * configuration.depthFrameSize.x * configuration.depthFrameSize.y * sizeof(glm::vec4), NULL, GL_DYNAMIC_COPY);
-
+	
 
 }
 
@@ -862,6 +846,8 @@ void gFusion::initSplatterVAO()
 	// this is due to the possibility of multiple surfels being active on the same pixel.
 	// having 4x sampling means we can choose the best surfel for the depth element, filtering by distance, lifetime of surface, normals, etc
 
+	//GLint maxNumber;
+	//glGetIntegerv(GL_MAX_TRANSFORM_FEEDBACK_INTERLEAVED_COMPONENTS, &maxNumber);
 
 	glGenFramebuffers(1, &m_FBO);
 	glBindFramebuffer(GL_FRAMEBUFFER, m_FBO);
@@ -899,14 +885,13 @@ void gFusion::initSplatterVAO()
 
 	// vertex confidence
 	glEnableVertexAttribArray(0);
-	glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, sizeof(glm::vec4) * 2, (GLvoid*)0);
-
+	glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, sizeof(glm::vec4) * 3, (GLvoid*)0);
 	// normal radius
 	glEnableVertexAttribArray(1);
-	glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, sizeof(glm::vec4) * 2, (GLvoid*)sizeof(glm::vec4));
-	//// color time
-	//glVertexAttribPointer(2, 4, GL_FLOAT, GL_FALSE, 0, (GLvoid*)0);
-	//glEnableVertexAttribArray(2);
+	glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, sizeof(glm::vec4) * 3, (GLvoid*)(sizeof(glm::vec4)));
+	//// color time device
+	glEnableVertexAttribArray(2);
+	glVertexAttribPointer(2, 4, GL_FLOAT, GL_FALSE, sizeof(glm::vec4) * 2, (GLvoid*)(sizeof(glm::vec4)*2));
 
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 	glBindVertexArray(0);
@@ -985,7 +970,8 @@ void gFusion::splatterDepth()
 
 void gFusion::splatterModel()
 {
-	glBindVertexArray(m_d2b_VAO);
+
+	glBindVertexArray(m_VAO);
 
 	glBindFramebuffer(GL_FRAMEBUFFER, m_FBO);
 
@@ -1019,12 +1005,16 @@ void gFusion::splatterModel()
 	glBindBuffer(GL_ARRAY_BUFFER, m_d2b_VBO);
 
 	// vertex confidence
-	glEnableVertexAttribArray(0);
-	glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, sizeof(glm::vec4) * 2, (GLvoid*)0);
+	//glEnableVertexAttribArray(0);
+	//glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, sizeof(glm::vec4) * 2, (GLvoid*)0);
 
 	// normal radius
-	glEnableVertexAttribArray(1);
-	glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, sizeof(glm::vec4) * 2, (GLvoid*)sizeof(glm::vec4));
+	//glEnableVertexAttribArray(1);
+	//glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, sizeof(glm::vec4) * 2, (GLvoid*)sizeof(glm::vec4));
+
+	// color time device
+	//glEnableVertexAttribArray(2);
+	//glVertexAttribPointer(2, 4, GL_FLOAT, GL_FALSE, sizeof(glm::vec4) * 2, (GLvoid*)(sizeof(glm::vec4)));
 
 	glEnable(GL_VERTEX_PROGRAM_POINT_SIZE);
 

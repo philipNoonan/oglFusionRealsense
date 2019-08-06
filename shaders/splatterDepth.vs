@@ -2,6 +2,7 @@
 
 layout(location = 0) in vec4 vertexConfidence;
 layout(location = 1) in vec4 normalRadius;
+layout(location = 2) in vec4 colorTimeDevice;
 
 uniform mat4 model[4];
 uniform vec4 camPam[4]; // cx cy fx fy
@@ -10,7 +11,7 @@ uniform float maxDepth;
 
 out vec3 positions;
 out vec3 normals;
-
+out vec4 colTimDev;
 
 vec3 projectPoint(vec3 p)
 {
@@ -40,9 +41,10 @@ void main()
    // {
 
    gl_Position = vec4(projectPoint(pos.xyz), 1.0f);
-   gl_PointSize = normalRadius.w;
+   gl_PointSize = normalRadius.w*10000.0f;
    normals = vec3(normalRadius.x * -1.0, normalRadius.y * -1.0, normalRadius.z);
    positions = gl_Position.xyz;
+   colTimDev = colorTimeDevice;
 	//}
 	//gl_Position = MVP[0] * vec4(vertex_confidence.xyz,1.0f);
 	//UV = normal_radius.xy;

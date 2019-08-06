@@ -6,6 +6,7 @@ uniform float signMult;
 
 in vec4 vVertConf[];
 in vec4 vNormRadi[];
+in vec4 vColTimDev[];
 in int vTime[];
 in int vVertexType[];
 in mat4 vMVP[];
