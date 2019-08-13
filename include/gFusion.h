@@ -218,13 +218,19 @@ public:
 	void resetVolume();
 	void resetPose(glm::mat4 pose);
 	void allocateBuffers();
-	void initSplatterVAO();
+	void initSplatterVAOs();
+	void initSplatterFBOs();
 	// depth functions
 	// combine multiple depth into one buffer of verts
 	//void depthToVertex(std::vector<rs2::frame_queue> depthQ, glm::vec3 &point);
 	// backproject depth frame into vertex image
 	void uploadDepth(std::vector<rs2::frame_queue> depthQ, int devNumber, glm::vec3 &point);
 	void uploadDepthToBuffer(std::vector<rs2::frame_queue> depthQ, int devNumber, glm::vec3 &point);
+	void allocateTransformFeedbackBuffers();
+	void initSplatterFusion();
+	void combinedPredict();
+	void predictIndices();
+	void fuse();
 	void splatterDepth();
 	void splatterModel();
 	void depthToVertex();
@@ -414,8 +420,14 @@ private:
 
 	// PROGRAMS
 	GLSLProgram depthToBufferProg;
+	GLSLProgram updateGlobalModelProg;
+	GLSLProgram dataProg;
+	GLSLProgram unstableProg;
+	GLSLProgram initUnstableProg;
 	GLSLProgram splatterProg;
 	GLSLProgram splatterGlobalProg;
+	GLSLProgram createIndexMapProg;
+	GLSLProgram combinedPredictProg;
 
 	GLSLProgram depthToVertProg;
 	GLSLProgram vertToNormProg;
@@ -551,11 +563,45 @@ private:
 	// depth to buffer 
 	GLuint m_camPamID;
 
+	// index map
+	GLuint m_indexInversePoseID;
+	GLuint m_indexCamPamID; 
+	GLuint m_indexImSizeID;
+	GLuint m_indexMaxDepthID;
+	GLuint m_indexTimeID;
 
+	// init unstable 
+	GLuint m_InitUnstableMaxNumVertsID;
+
+	// combined predict
+	GLuint m_cpMaxNumVertsID;
+	GLuint m_cpInversePoseID;
+	GLuint m_cpCamPamID;
+	GLuint m_cpImSizeID;
+	GLuint m_cpMaxDepthID;
+	GLuint m_cpConfThresholdID;
+	GLuint m_cpTimeID;
+	GLuint m_cpMaxTimeID;
+	GLuint m_cpTimeDeltaID;
+
+	// data fusion
+	GLuint m_dpCamPamID;
+	GLuint m_dpImSizeID;
+	GLuint m_dpScaleID;
+	GLuint m_dpTexDimID;
+	GLuint m_dpPoseID;
+	GLuint m_dpMaxDepthID;
+	GLuint m_dpTimeID;
+	GLuint m_dpWeightingID;
+
+	// update global model
+	GLuint m_ugmTimeID;
+	GLuint m_ugmTexDimID;
 
 	// TEXTURES
 	GLuint createTexture(GLenum target, int levels, int w, int h, int d, GLint internalformat, GLenum magFilter, GLenum minFilter);
 	GLuint m_textureColor;
+	GLuint m_textureColorArray; // EMPTY AT THE MOMENT
 	GLuint m_textureDepthArray;
 	GLuint m_textureVertexArray;
 	GLuint m_textureNormalArray;
@@ -571,6 +617,10 @@ private:
 	GLuint m_textureDifferenceVertex;
 	GLuint m_textureTestImage;
 	GLuint m_textureFloodSDF;
+
+
+
+
 
 	//GLuint m_textureEdgeTable;
 	//GLuint m_textureTriTex;
@@ -622,11 +672,32 @@ private:
 
 	// SPLATTERING
 	GLuint m_VAO;
-	GLuint m_FBO;
-	GLuint m_RBO;
+	GLuint m_global_FBO;
+	GLuint m_global_RBO;
+
+	GLuint m_depth_FBO;
+	GLuint m_depth_RBO;
+
+	GLuint m_updateMapIndex_FBO;
+	GLuint m_updateMapIndex_RBO;
+
 	GLuint m_modelVBO;
 	GLuint m_textureSplatteredModel;
 	GLuint m_textureSplatteredDepth;
+
+	GLuint m_textureGlobalIndexVertConf;
+	GLuint m_textureGlobalIndexNormRadi;
+	GLuint m_textureGlobalIndexColTimDev;
+	GLuint m_textureVertexID;
+
+	GLuint m_textureDepthIndexVertConf;
+	GLuint m_textureDepthIndexNormRadi;
+	GLuint m_textureDepthIndexColTimDev;
+	GLuint m_textureDepthTime;
+
+	GLuint m_textureUpdateMapIndexVertConf;
+	GLuint m_textureUpdateMapIndexNormRadi;
+	GLuint m_textureUpdateMapIndexColTimDev;
 
 	GLuint m_splatterMVPID;
 	GLuint m_splatterModelID;
@@ -635,11 +706,28 @@ private:
 	GLuint m_splatterImSizeID;
 
 	// Depth to Vertex Buffering
-	GLuint m_d2b_VAO;
-	GLuint m_d2b_VBO;
-	GLuint m_d2b_TFO;
-	GLuint m_d2b_posCon;
-	GLuint m_d2b_norRad;
+	GLuint m_depth_VAO;
+	GLuint m_global_VAO;
+
+	GLuint m_depth_VBO;
+	GLuint m_depth_TFO;
+
+	GLuint m_data_VAO;
+
+
+	GLuint m_globalTarget_VBO;
+	GLuint m_globalTarget_TFO;
+
+	GLuint m_globalRender_VBO;
+	GLuint m_globalRender_TFO;
+
+	GLuint m_unstable_VBO;
+	GLuint m_unstable_TFO;
+
+	GLuint m_updateIndex_VBO;
+
+	GLuint countQuery;
+	GLuint count;
 
 
 	// POSE RECOVERY
@@ -815,4 +903,9 @@ private:
 	std::vector<uint64_t> m_sensorsTimestamps;
 	int m_numberOfCameras;
 	uint64_t timeShiftOffsets = 0;
+	float indexMapScaleFactor = 4.0f;
+	uint32_t textureDimension = 3072; // but why?
+	GLuint inputDepthCount;
+	GLuint fuseCount;
+
 };

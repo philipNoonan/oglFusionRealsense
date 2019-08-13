@@ -1,27 +1,19 @@
 #version 430 core
 
-in vec2 texCoord;
-in float radi;
-flat in int unstablePoint;
+in vec4 vVertConf;
+in vec4 vNormRadi;
+in vec4 vColTimDev;
+flat in int vVertexId;
 
-layout(location = 0) out vec4 fragmentColor;
+layout(location = 0) out vec4 outVertConf;
+layout(location = 1) out vec4 outNormRadi;
+layout(location = 2) out vec4 outColTimDev;
+layout(location = 3) out int outVertID;
 
-void main() {
-
-	if (dot(texCoord, texCoord) > 1.0f)
-	{
-		discard;
-	}
-
-	fragmentColor = vec4(texCoord.xy, 0.0f, 1.0f);
-
-	if (unstablePoint == 1)
-	{
-		gl_FragDepth = gl_FragCoord.z + radi;
-	}
-	else
-	{
-		gl_FragDepth = gl_FragCoord.z;
-	}
-
+void main() 
+{
+	outVertID = vVertexId;
+	outVertConf = vVertConf;
+	outNormRadi = vNormRadi;
+	outColTimDev = vColTimDev;
 }

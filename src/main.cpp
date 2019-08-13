@@ -92,7 +92,7 @@ void gFusionInit()
 	gfusion.initTextures();
 	gfusion.initVolume();
 	gfusion.allocateBuffers();
-
+	gfusion.allocateTransformFeedbackBuffers();
 
 	gfusion.setUsingDepthFloat(false);
 
@@ -101,8 +101,8 @@ void gFusionInit()
 	volSlice = gconfig.volumeSize.z / 2.0f;
 
 
-	gfusion.initSplatterVAO();
-
+	gfusion.initSplatterVAOs();
+	gfusion.initSplatterFBOs();
 
 }
 
@@ -1217,7 +1217,7 @@ int main(int, char**)
 		if (frameReady)
 		{
 			
-			gfusion.splatterModel();
+			//gfusion.splatterModel();
 
 			gfusion.resetTimes();
 
@@ -1492,6 +1492,20 @@ int main(int, char**)
 				}
 			}
 
+			if (counter == 1)
+			{
+				gfusion.initSplatterFusion(); // this passes the current frame depth buffer to the global model buffer
+			}
+			else
+			{
+		
+				gfusion.predictIndices(); // 4x map from global
+
+				gfusion.combinedPredict(); // 1x map from global
+
+				gfusion.fuse(); // 
+			}
+			
 			if (counter <= 2)
 			{
 				counter++;

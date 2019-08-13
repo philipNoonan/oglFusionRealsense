@@ -1154,7 +1154,7 @@ int kRender::getRenderOptions(bool depth, bool infra, bool color, bool norms, bo
 
 void kRender::renderLiveVideoWindow(bool useInfrared, int devNumber)
 {
-	//glBindFramebuffer(GL_FRAMEBUFFER, 0);
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	renderProg.use();
 	glm::mat4 MVP;
 
