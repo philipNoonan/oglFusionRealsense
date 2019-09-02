@@ -5,6 +5,7 @@ in vec4 outVertNormRadi;
 in vec4 outVertColTimDev;
 flat in int outUpdateId;
 
+// this framebuffer contains the values for a point in the global model that is to be updated
 layout(location = 0) out vec4 fragVertPosConf;
 layout(location = 1) out vec4 fragVertNormRadi;
 layout(location = 2) out vec4 fragVertColTimDev;

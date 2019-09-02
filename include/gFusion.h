@@ -100,6 +100,8 @@ struct gFusionConfig
 struct integrateShaderConfigs
 {
 	int numberOfCameras;
+	int d2p;
+	int d2v;
 	float dMax;
 	float dMin;
 	float maxWeight;
@@ -229,10 +231,15 @@ public:
 	void allocateTransformFeedbackBuffers();
 	void initSplatterFusion();
 	void combinedPredict();
+	//void makeImagePyramids();
 	void predictIndices();
 	void fuse();
 	void splatterDepth();
 	void splatterModel();
+	void makeImagePyramids();
+	bool TrackSplat();
+	void trackSplat(int level);
+	void reduceSplat(int level);
 	void depthToVertex();
 	void depthToVertex(float * depthArray);
 	void depthToVertex(uint16_t * depthArray);
@@ -442,6 +449,9 @@ private:
 	GLSLProgram reduceSDFProg;
 	GLSLProgram mipProg;
 
+	GLSLProgram trackSplatProg;
+	GLSLProgram reduceSplatProg;
+
 	// LOCATIONS ID
 	// depthtovert
 	GLuint m_invkID;
@@ -468,6 +478,18 @@ private:
 	
 	// reduce
 	GLuint m_imageSizeID;
+
+
+	GLuint m_viewID_tsp;
+	GLuint m_TtrackID_tsp;
+	GLuint m_distThresh_tsp;
+	GLuint m_normThresh_tsp;
+	GLuint m_numberOfCamerasID_tsp;
+	GLuint m_cameraPosesID_tsp;
+	GLuint m_inverseVPID_tsp;
+	GLuint m_imageSizeID_rsp;
+
+
 	// integrate
 	GLuint m_integrateSubroutineID;
 	GLuint m_integrateStandardID;
@@ -490,6 +512,12 @@ private:
 	GLuint m_cameraPosesID_i;
 	GLuint m_cameraIntrinsicsID_i;
 	GLuint m_inverseCameraIntrinsicsID_i;
+
+	GLuint m_d2pID_i;
+	GLuint m_d2vID_i;
+
+	integrateShaderConfigs shaderConfigs;
+
 
 
 	// INTEGRTATE UB
@@ -678,6 +706,9 @@ private:
 	GLuint m_depth_FBO;
 	GLuint m_depth_RBO;
 
+	GLuint m_combined_FBO;
+	GLuint m_combined_RBO;
+
 	GLuint m_updateMapIndex_FBO;
 	GLuint m_updateMapIndex_RBO;
 
@@ -694,6 +725,11 @@ private:
 	GLuint m_textureDepthIndexNormRadi;
 	GLuint m_textureDepthIndexColTimDev;
 	GLuint m_textureDepthTime;
+
+	GLuint m_textureCombinedIndexVertConf;
+	GLuint m_textureCombinedIndexNormRadi;
+	GLuint m_textureCombinedIndexColTimDev;
+	GLuint m_textureCombinedTime;
 
 	GLuint m_textureUpdateMapIndexVertConf;
 	GLuint m_textureUpdateMapIndexNormRadi;
@@ -907,5 +943,6 @@ private:
 	uint32_t textureDimension = 3072; // but why?
 	GLuint inputDepthCount;
 	GLuint fuseCount;
+	GLuint globalVertCount = 0;
 
 };

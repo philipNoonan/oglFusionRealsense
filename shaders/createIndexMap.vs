@@ -11,10 +11,10 @@ uniform float maxDepth;
 uniform int time;
 
 
-out vec4 vVertConf;
-out vec4 vNormRadi;
-out vec4 vColTimDev;
-flat out int vVertexId;
+flat out vec4 geoVertConf;
+flat out vec4 geoNormRadi;
+flat out vec4 geoColTimDev;
+flat out int geoVertexID;
 
 
 void main()
@@ -24,23 +24,30 @@ void main()
     float x = 0;
     float y = 0;
         
-    if(vCurrentPosition.z > maxDepth || vCurrentPosition.z < 0)// || time - colorTimeDevice.w > timeDelta)
+    if(vCurrentPosition.z > maxDepth || vCurrentPosition.z < 0) // || time - colorTimeDevice.w > timeDelta)
     {
         x = -10;
         y = -10;
-        vVertexId = 0;
+        geoVertexID = 0;
     }
     else
     {
         x = ((((camPam[0].z * vCurrentPosition.x) / vCurrentPosition.z) + camPam[0].x) - (imSize.x * 0.5)) / (imSize.x * 0.5);
         y = ((((camPam[0].w * vCurrentPosition.y) / vCurrentPosition.z) + camPam[0].y) - (imSize.y * 0.5)) / (imSize.y * 0.5);
-        vVertexId = gl_VertexID;
+        geoVertexID = gl_VertexID;
     }
     
-    gl_Position = vec4(x, y, vCurrentPosition.z / maxDepth, 1.0);
+	//if (x < -1.0f || x > 1.0f || y < -1.0f || y > 1.0f)
+	//{
+	//    geoVertexID = 0;
+	//}
 
-    vVertConf = vec4(vCurrentPosition.xyz, vertexConfidence.w);
-    vNormRadi = vec4(normalize(mat3(inversePose[0]) * normalRadius.xyz), normalRadius.w);
-	vColTimDev = colorTimeDevice;
+
+    gl_Position = vec4(x, y, vCurrentPosition.z / maxDepth, 1.0);
+	gl_PointSize = 1.0f;
+
+    geoVertConf = vec4(vCurrentPosition.xyz, vertexConfidence.w);
+    geoNormRadi = vec4(normalize(mat3(inversePose[0]) * normalRadius.xyz), normalRadius.w);
+	geoColTimDev = colorTimeDevice;
 
 }

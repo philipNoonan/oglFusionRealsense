@@ -9,17 +9,18 @@ layout(std430, binding = 0) buffer feedbackBuffer
     vec4 interleavedData [];
 };
 
-layout(std430, binding = 1) buffer outputBuffer
+layout(std430, binding = 1) buffer updateIndexMapBuffer
+{
+    vec4 updateIndexInterleaved [];
+};
+
+layout(std430, binding = 2) buffer outputBuffer
 {
     vec4 outputInterleavedData [];
 };
 
 uniform float texDim;
 uniform int time;
-
-layout(binding = 0, rgba32f) uniform image2D imVertConf; // ARE THESE JUST BUFFERS THAT ARE BEING READ FROM
-layout(binding = 1, rgba32f) uniform image2D imNormRadi;
-layout(binding = 2, rgba32f) uniform image2D imColTimDev;
 
 float encodeColor(vec3 c)
 {
@@ -40,26 +41,29 @@ vec3 decodeColor(float c)
 
 void main()
 {
+    // this gets run for every vertex in the global model
+
     // data is vec4 vec4 vec4
-    vec2 imSize = vec2(imageSize(imVertConf));
+    //vec2 imSize = vec2(imageSize(imVertConf));
 
     int vertID = int(gl_GlobalInvocationID.x);
 
-    ivec2 pix;
-    pix.y = vertID / int(texDim);
-    pix.x = vertID - (pix.y * int(texDim));
+    //ivec2 pix;
+    //pix.y = vertID / int(texDim);
+    //pix.x = vertID - (pix.y * int(texDim));
 
-    vec4 newColor = imageLoad(imColTimDev, pix);
+
+    vec4 newColor = updateIndexInterleaved[(vertID * 3) + 2];
 
     //Do averaging here
-    if(newColor.w == -1)
+    if (newColor.w == -1)
     {
         vec4 vertexConfidence = interleavedData[(vertID * 3)];
         vec4 normalRadius = interleavedData[(vertID * 3) + 1];
         vec4 colorTimeDevice = interleavedData[(vertID * 3) + 2];
 
-        vec4 newPos = imageLoad(imVertConf, pix);
-        vec4 newNorm = imageLoad(imNormRadi, pix);
+        vec4 newPos = updateIndexInterleaved[(vertID * 3)];
+        vec4 newNorm = updateIndexInterleaved[(vertID * 3) + 1];
 
         float c_k = vertexConfidence.w;
         vec3 v_k = vertexConfidence.xyz;
@@ -99,4 +103,11 @@ void main()
         outputInterleavedData[(vertID * 3) + 1] = interleavedData[(vertID * 3) + 1];
         outputInterleavedData[(vertID * 3) + 2] = interleavedData[(vertID * 3) + 2];
     }
+
+
+    // need to wipe the update buffer after every update, this should always ensure that the active buffer values are set off after use
+    updateIndexInterleaved[(vertID * 3)] = vec4(0.0f);
+    updateIndexInterleaved[(vertID * 3) + 1] = vec4(0.0f);
+    updateIndexInterleaved[(vertID * 3) + 2] = vec4(0.0f);
+
 }

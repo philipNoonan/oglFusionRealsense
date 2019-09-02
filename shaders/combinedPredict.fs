@@ -55,14 +55,11 @@ void main()
     
     outVertConf = vec4((gl_FragCoord.x - camPam[0].x) * z * (1.f / camPam[0].z), (gl_FragCoord.y - camPam[0].y) * z * (1.f / camPam[0].w), z, fragVertConf.w);
     
-    outNormRadi = fragNormRadi;
+    outNormRadi = vec4(fragNormRadi.xyz, 1.0f);
     
     outTime = uint(fragColTimDev.z);
     
     gl_FragDepth = (corrected_pos.z / (2 * maxDepth)) + 0.5f;
-
-	
-
 
 
 }

@@ -10,6 +10,8 @@ layout(binding = 1) uniform sampler2DArray trackTextureArray; //
 layout(std140) uniform Configs
 {
     int numberOfCameras;
+    int d2p;
+    int d2v;
     float dMax;
     float dMin;
     float maxWeight;
@@ -19,6 +21,7 @@ layout(std140) uniform Configs
 };
 
 uniform int forceIntegrate;
+
 
 
 uniform mat4 cameraPoses[4];
@@ -145,7 +148,15 @@ void integrateExperimental()
         if (finalDiff < dMax && finalDiff > dMin)
         {
             vec4 data = getSDF(pix);
-            float weightedDistance = (data.y * data.x + ctfo * finalDiff) / (data.y + ctfo);
+            float weightedDistance = 0.0f;
+            if (d2p == 1)
+            {
+                weightedDistance = (data.y * data.x + finalDiff) / (data.y + 1);
+            }
+            else if (d2v == 1)
+            {
+                weightedDistance = (data.y * data.x + ctfo * finalDiff) / (data.y + ctfo);
+            }
 
             if (weightedDistance < dMax)
             {

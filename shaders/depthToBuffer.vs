@@ -1,8 +1,13 @@
 #version 430 core
 
+layout(binding = 0, rgba32f) uniform image2D outImagePC;
+layout(binding = 1, rgba32f) uniform image2D outImageNR;
+
 out vec4 geoVertexPositionConfidence;
 out vec4 geoVertexNormalRadius;
 out vec4 geoVertexColorTimeDevice;
+
+flat out ivec2 imageCoord;
 
 uniform usampler2DArray depthTexture;
 
@@ -61,6 +66,8 @@ float getConf(vec3 texelCoord, float weighting)
 
 void main()
 {
+
+
     // Components of a texture coordinate that reference an array layer are not normalized to the number of layers. They specify a layer by index.
 	ivec3 texSize = textureSize(depthTexture, 0);
 	int vertID = gl_VertexID;
@@ -75,5 +82,11 @@ void main()
 	geoVertexNormalRadius.w = getRadi(geoVertexPositionConfidence.z, geoVertexNormalRadius.z, texelCoord.z);
 
 	geoVertexColorTimeDevice= vec4(0.2, 0.6, time, texelCoord.z);
+
+	imageCoord = texelCoord.xy;
+
+		// wipe previous frame
+	imageStore(outImagePC, imageCoord, vec4(0.0f));
+	imageStore(outImageNR, imageCoord, vec4(0.0f));
 
 }

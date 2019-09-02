@@ -170,7 +170,7 @@ void main()
 
     for (int camera = 0; camera < numberOfCameras; camera++)
     { 
-        imageStore(SDFImage, ivec3(pix, camera), vec4(0.0f, 0.0f, 0.0, 1.0));
+        imageStore(SDFImage, ivec3(pix, camera), vec4(0.0f, 0.0f, 0.0, 0.0));
         imageStore(trackImage, ivec3(pix, camera), vec4(0.0f, 0.0, 0.0, 1.0));
 
         uint offset = uint(camera * imSize.x * imSize.y) + ((pix.y * imSize.x) + pix.x);
@@ -293,7 +293,7 @@ void main()
                       // imageStore(testImage, ivec2(pix), vec4(0,0,0, 1.0f));
 
                    // imageStore(testImage, ivec2(pix), vec4(0.0f, 1.0f, 0.0f, 1.0f));
-                    imageStore(trackImage, ivec3(pix, camera), vec4(0.0, 0.0, 0.0f, 1.0f));
+                    imageStore(trackImage, ivec3(pix, camera), vec4(0.0, 0.0, 0.0f, 0.0f));
 
                     float J0[6] = { 0, 0, 0, 0, 0, 0 };
                     trackOutput[offset].result = -4;
