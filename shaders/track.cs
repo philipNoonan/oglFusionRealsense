@@ -76,73 +76,73 @@ void main()
 
                 vec4 projectedPos = inverseCameraPoses[camera] * projectedVertex;
                 //vec3 projectedPos = opMul(view, projectedVertex);
-                //imageStore(trackImage, ivec3(pix, camera), vec4(projectedPos.xyz, 0.323f));
+                imageStore(trackImage, ivec3(pix, camera), vec4(projectedPos.xyz, 0.323f));
 
 
-                vec2 projPixel = vec2(projectedPos.x / projectedPos.z, projectedPos.y / projectedPos.z);
+                //vec2 projPixel = vec2(projectedPos.x / projectedPos.z, projectedPos.y / projectedPos.z);
 
 
 
-                // vec2 projPixel = vec2(pix.x * 2, pix.y * 2);
+                //// vec2 projPixel = vec2(pix.x * 2, pix.y * 2);
 
 
-                if (projPixel.x < 0 || projPixel.x > refSize.x - 1 || projPixel.y < 0 || projPixel.y > refSize.y - 1)
-                {
-                    trackOutput[offset].result = -2;
-                    imageStore(trackImage, ivec3(pix, camera), vec4(1.0f, 0, 0, 1.0f));
+                //if (projPixel.x < 0 || projPixel.x > refSize.x - 1 || projPixel.y < 0 || projPixel.y > refSize.y - 1)
+                //{
+                //    trackOutput[offset].result = -2;
+                //    imageStore(trackImage, ivec3(pix, camera), vec4(1.0f, 0, 0, 1.0f));
 
-                }
-                else
-                {
-                    ivec3 refPixel = ivec3(projPixel.x, projPixel.y, camera);
-                    vec3 referenceNormal = imageLoad(refNormal, refPixel).xyz;
-                    vec3 tmp = imageLoad(refVertex, refPixel).xyz;
-                    //imageStore(differenceImage, ivec2(projPixel), vec4(tmp.z, 0.0f, 0.0f, 1.0f));
-
-
-                    if (referenceNormal.x == -2)
-                    {
-                        trackOutput[offset].result = -3;
-                        imageStore(trackImage, ivec3(pix, camera), vec4(0, 1.0f, 0, 1.0f));
-
-                    }
-                    else
-                    {
-                        vec3 diff = imageLoad(refVertex, refPixel).xyz - projectedVertex.xyz;
-                        vec4 currNormal = imageLoad(inNormal, ivec3(pix, camera));
-                        vec3 projectedNormal = vec3((cameraPoses[camera] * vec4(currNormal.xyz, 0.0f)).xyz); // input mipmap sized pixel
-
-                        if (length(diff) > dist_threshold)
-                        {
-                            trackOutput[offset].result = -4;
-                            imageStore(trackImage, ivec3(pix, camera), vec4(0, 0, 1.0f, 1.0f));
-
-                        }
-                        else if (dot(projectedNormal, referenceNormal) < normal_threshold)
-                        {
-                            trackOutput[offset].result = -5;
-                            imageStore(trackImage, ivec3(pix, camera), vec4(1.0f, 1.0f, 0, 1.0f));
-
-                        }
-                        else
-                        {
-                            imageStore(trackImage, ivec3(pix, camera), vec4(0.5f, 0.5f, 0.5f, 1.0f));
+                //}
+                //else
+                //{
+                //    ivec3 refPixel = ivec3(projPixel.x, projPixel.y, camera);
+                //    vec3 referenceNormal = imageLoad(refNormal, refPixel).xyz;
+                //    vec3 tmp = imageLoad(refVertex, refPixel).xyz;
+                //    //imageStore(differenceImage, ivec2(projPixel), vec4(tmp.z, 0.0f, 0.0f, 1.0f));
 
 
-                            trackOutput[offset].result = 1;
-                            trackOutput[offset].error = dot(referenceNormal, diff);
+                //    if (referenceNormal.x == -2)
+                //    {
+                //        trackOutput[offset].result = -3;
+                //        imageStore(trackImage, ivec3(pix, camera), vec4(0, 1.0f, 0, 1.0f));
 
-                            trackOutput[offset].J[0] = referenceNormal.x;
-                            trackOutput[offset].J[1] = referenceNormal.y;
-                            trackOutput[offset].J[2] = referenceNormal.z;
+                //    }
+                //    else
+                //    {
+                //        vec3 diff = imageLoad(refVertex, refPixel).xyz - projectedVertex.xyz;
+                //        vec4 currNormal = imageLoad(inNormal, ivec3(pix, camera));
+                //        vec3 projectedNormal = vec3((cameraPoses[camera] * vec4(currNormal.xyz, 0.0f)).xyz); // input mipmap sized pixel
 
-                            vec3 crossProjVertRefNorm = cross(projectedVertex.xyz, referenceNormal);
-                            trackOutput[offset].J[3] = crossProjVertRefNorm.x;
-                            trackOutput[offset].J[4] = crossProjVertRefNorm.y;
-                            trackOutput[offset].J[5] = crossProjVertRefNorm.z;
-                        }
-                    }
-                }
+                //        if (length(diff) > dist_threshold)
+                //        {
+                //            trackOutput[offset].result = -4;
+                //            imageStore(trackImage, ivec3(pix, camera), vec4(0, 0, 1.0f, 1.0f));
+
+                //        }
+                //        else if (dot(projectedNormal, referenceNormal) < normal_threshold)
+                //        {
+                //            trackOutput[offset].result = -5;
+                //            imageStore(trackImage, ivec3(pix, camera), vec4(1.0f, 1.0f, 0, 1.0f));
+
+                //        }
+                //        else
+                //        {
+                //            imageStore(trackImage, ivec3(pix, camera), vec4(0.5f, 0.5f, 0.5f, 1.0f));
+
+
+                //            trackOutput[offset].result = 1;
+                //            trackOutput[offset].error = dot(referenceNormal, diff);
+
+                //            trackOutput[offset].J[0] = referenceNormal.x;
+                //            trackOutput[offset].J[1] = referenceNormal.y;
+                //            trackOutput[offset].J[2] = referenceNormal.z;
+
+                //            vec3 crossProjVertRefNorm = cross(projectedVertex.xyz, referenceNormal);
+                //            trackOutput[offset].J[3] = crossProjVertRefNorm.x;
+                //            trackOutput[offset].J[4] = crossProjVertRefNorm.y;
+                //            trackOutput[offset].J[5] = crossProjVertRefNorm.z;
+                //        }
+                //    }
+                //}
             }
         }
     }

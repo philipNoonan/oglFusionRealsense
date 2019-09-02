@@ -18,6 +18,9 @@ layout(binding = 5, rgba32f) uniform image2DArray trackImage;
 uniform int numberOfCameras;
 uniform mat4 cameraPoses[4];
 uniform mat4 inverseVP[4];
+uniform vec4 camPam[4]; // cx cy fx fy
+vec2 imSize;
+uniform float maxDepth = 3.0f;
 
 struct reduType
 {
@@ -48,15 +51,29 @@ layout(std430, binding = 0) buffer TrackData
 
 // int oneDindex = (row * length_of_row) + column; // Indexes
 
+vec3 projectPoint(vec3 p)
+{
+    return vec3(((((camPam[0].z * p.x) / p.z) + camPam[0].x) - (imSize.x * 0.5)) / (imSize.x * 0.5),
+                ((((camPam[0].w * p.y) / p.z) + camPam[0].y) - (imSize.y * 0.5)) / (imSize.y * 0.5),
+                p.z / maxDepth);
+}
+
+vec3 projectPointImage(vec3 p)
+{
+    return vec3(((camPam[0].z * p.x) / p.z) + camPam[0].x,
+                ((camPam[0].w * p.y) / p.z) + camPam[0].y,
+                p.z);
+}
+
 void main()
 {
     ivec2 pix = ivec2(gl_GlobalInvocationID.xy);
-    ivec2 imSize = imageSize(inVertex); // mipmapped sizes
+    imSize = imageSize(inVertex); // mipmapped sizes
     ivec2 refSize = imageSize(refVertex); // full depth size
 
     for (int camera = 0; camera < numberOfCameras; camera++)
     {
-        uint offset = uint(camera * imSize.x * imSize.y) + ((pix.y * imSize.x) + pix.x);
+        uint offset = uint(camera * uint(imSize.x * imSize.y)) + ((pix.y * uint(imSize.x)) + pix.x);
 
 
         if (pix.x < imSize.x && pix.y < imSize.y)
@@ -72,27 +89,28 @@ void main()
             else
             {
                 vec4 inputVertex = vec4(imageLoad(inVertex, pix).xyz, 1.0f);
-                vec4 projectedVertex = cameraPoses[camera] * inputVertex; 
-                                                                                                                      //vec3 projectedVertex = opMul(Ttrack, imageLoad(inVertex, ivec2(pix)).xyz); // CHECK ME AGAINT THE OLD CRAPPY OPMUL
+                //vec4 projectedVertex = cameraPoses[camera] * inputVertex; 
+                //vec3 projectedVertex = opMul(Ttrack, imageLoad(inVertex, ivec2(pix)).xyz); // CHECK ME AGAINT THE OLD CRAPPY OPMUL
 
-                vec4 projectedPos = inverseVP[camera] * projectedVertex;
+                vec4 projectedPos = vec4(projectPointImage(inputVertex.xyz), 1.0f);
+                //vec4 projectedPos = inverseVP[camera] * inputVertex;
                 //vec3 projectedPos = opMul(view, projectedVertex);
                 imageStore(trackImage, ivec3(pix, camera), vec4(projectedPos.xyz, 0.323f));
 
 
-                vec2 projPixel = vec2(projectedPos.x / projectedPos.z, projectedPos.y / projectedPos.z);
+                vec2 projPixel = vec2(inputVertex.x / inputVertex.z, inputVertex.y / inputVertex.z);
 
 
 
                 // vec2 projPixel = vec2(pix.x * 2, pix.y * 2);
 
 
-                if (projPixel.x < 0 || projPixel.x > refSize.x - 1 || projPixel.y < 0 || projPixel.y > refSize.y - 1)
-                {
-                    trackOutput[offset].result = -2;
-                    imageStore(trackImage, ivec3(pix, camera), vec4(1.0f, 0.0f, 0, 1.0f));
+                //if (projPixel.x < 0 || projPixel.x > refSize.x - 1 || projPixel.y < 0 || projPixel.y > refSize.y - 1)
+                //{
+                //    trackOutput[offset].result = -2;
+                //    imageStore(trackImage, ivec3(pix, camera), vec4(1.0f, 0.0f, 0, 1.0f));
 
-                }
+                //}
                 //else
                 //{
                 //    ivec2 refPixel = ivec2(projPixel.x, projPixel.y);

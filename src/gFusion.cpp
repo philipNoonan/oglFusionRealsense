@@ -185,7 +185,7 @@ void gFusion::setLocations()
 	m_numberOfCamerasID_tsp = glGetUniformLocation(trackSplatProg.getHandle(), "numberOfCameras");
 	m_cameraPosesID_tsp = glGetUniformLocation(trackSplatProg.getHandle(), "cameraPoses");
 	m_inverseVPID_tsp = glGetUniformLocation(trackSplatProg.getHandle(), "inverseVP");
-
+	m_camPamID_tsp = glGetUniformLocation(trackSplatProg.getHandle(), "camPam");
 	reduceSplatProg.use();
 	m_imageSizeID_rsp = glGetUniformLocation(reduceSplatProg.getHandle(), "imageSize");
 
@@ -1753,6 +1753,14 @@ void gFusion::trackSplat(int level)
 	glm::mat4 oldPose = pose;
 	glm::mat4 projectReference = GLHelper::getCameraMatrix(m_camPamsDepth[devNumber]) * glm::inverse(m_pose);
 
+	glm::vec4 camPam[4];
+	for (int i = 0; i < m_numberOfCameras; i++)
+	{
+		camPam[i] = m_camPamsDepth[i];
+	}
+
+
+
 	int compWidth;
 	int compHeight;
 
@@ -1767,8 +1775,9 @@ void gFusion::trackSplat(int level)
 	glm::mat4 inverseVP[4];
 	for (int i = 0; i < m_numberOfCameras; i++)
 	{
-		inverseVP[i] = GLHelper::getCameraMatrix(m_camPamsDepth[i]) * glm::inverse(cameraPoses[i]);
+		inverseVP[i] = GLHelper::getCameraMatrix(m_camPamsDepth[i]);
 	}
+	glUniform4fv(m_camPamID_tsp, 4, glm::value_ptr(camPam[0]));
 
 	glProgramUniformMatrix4fv(trackSplatProg.getHandle(), m_cameraPosesID_tsp, 4, GL_FALSE, glm::value_ptr(cameraPoses[0]));
 	glProgramUniformMatrix4fv(trackSplatProg.getHandle(), m_inverseVPID_tsp, 4, GL_FALSE, glm::value_ptr(inverseVP[0]));

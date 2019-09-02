@@ -1460,30 +1460,30 @@ int main(int, char**)
 
 			if (trackDepthToVolume)
 			{
-				tracked = gfusion.TrackSDF();
-				gfusion.raycast(cameraDevice);
+				//tracked = gfusion.TrackSDF();
+				//gfusion.raycast(cameraDevice);
 
-				//if (counter < 10) // the first frame seems garbage
-				//{
-				//	gfusion.initSplatterFusion(); // this passes the current frame depth buffer to the global model buffer
-				//}
-				//else
-				//{
+				if (counter < 10) // the first frame seems garbage
+				{
+					gfusion.initSplatterFusion(); // this passes the current frame depth buffer to the global model buffer
+				}
+				else
+				{
 
-				//	//gfusion.predictIndices(); // 4x map from global
+					//gfusion.predictIndices(); // 4x map from global
 
-				//	gfusion.combinedPredict(); // 1x map from global, to get sent to the ICP thingy
+					gfusion.combinedPredict(); // 1x map from global, to get sent to the ICP thingy
 
-				//	// we should now have a current view of the global model with maps of verts and normals
+					// we should now have a current view of the global model with maps of verts and normals
 
-				//	// call mipmap on them?
+					// call mipmap on them?
 
-				//	//gfusion.makeImagePyramids();
+					//gfusion.makeImagePyramids();
 
-				//	gfusion.TrackSplat();
+					gfusion.TrackSplat();
 
-				//	//gfusion.fuse(); // 
-				//}
+					//gfusion.fuse(); // 
+				}
 
 			}
 

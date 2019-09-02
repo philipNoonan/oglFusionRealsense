@@ -486,8 +486,11 @@ private:
 	GLuint m_normThresh_tsp;
 	GLuint m_numberOfCamerasID_tsp;
 	GLuint m_cameraPosesID_tsp;
+	GLuint m_camPamID_tsp;
 	GLuint m_inverseVPID_tsp;
+	
 	GLuint m_imageSizeID_rsp;
+
 
 
 	// integrate
