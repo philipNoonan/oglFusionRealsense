@@ -4,7 +4,7 @@ in vec4 fragVertConf;
 in vec4 fragNormRadi;
 in vec4 fragColTimDev;
 
-uniform vec4 camPam[4];
+uniform vec4 camPam;
 uniform float maxDepth;
 
 layout(location = 0) out vec4 outVertConf;
@@ -36,7 +36,7 @@ vec3 decodeColor(float c)
 
 void main()
 {
-    vec3 l = normalize(vec3((vec2(gl_FragCoord) - camPam[0].xy) / camPam[0].zw, 1.0f));
+    vec3 l = normalize(vec3((vec2(gl_FragCoord) - camPam.xy) / camPam.zw, 1.0f));
     
     vec3 corrected_pos = (dot(fragVertConf.xyz, fragNormRadi.xyz) / dot(l, fragNormRadi.xyz)) * l; 
 
@@ -52,8 +52,9 @@ void main()
     outColTimDev = vec4(decodeColor(fragColTimDev.x), 1);
     
     float z = corrected_pos.z;
-    
-    outVertConf = vec4((gl_FragCoord.x - camPam[0].x) * z * (1.f / camPam[0].z), (gl_FragCoord.y - camPam[0].y) * z * (1.f / camPam[0].w), z, fragVertConf.w);
+	// is this S.O. relevent?
+    // https://stackoverflow.com/questions/701504/perspective-projection-determine-the-2d-screen-coordinates-x-y-of-points-in-3/701978#701978
+    outVertConf = vec4((gl_FragCoord.x - camPam.x) * z * (1.f / camPam.z), (gl_FragCoord.y - camPam.y) * z * (1.f / camPam.w), z, fragVertConf.w);
     
     outNormRadi = vec4(fragNormRadi.xyz, 1.0f);
     

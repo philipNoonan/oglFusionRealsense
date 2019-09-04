@@ -264,7 +264,7 @@ public:
 	// fusion functions
 	void track(int devNumber, int layer);
 	void reduce(int devNumber, int layer);
-	void getReduction(std::vector<float>& b, std::vector<float>& C, float & alignmentEnergy);
+	void getReduction(std::vector<float>& b, std::vector<float>& C, float & alignmentEnergy, float &lastICPCount);
 
 	// fusion sdf functions
 	void trackSDF(int devNumber, int layer, Eigen::Matrix4f camToWorld);
@@ -592,7 +592,9 @@ private:
 	GLuint m_volSizeID_m;
 
 	// depth to buffer 
-	GLuint m_camPamID;
+	GLuint m_camPamID_d2b;
+	GLuint m_depthScaleID_d2b;
+	GLuint m_invKID_d2b;
 
 	// index map
 	GLuint m_indexInversePoseID;
@@ -614,6 +616,7 @@ private:
 	GLuint m_cpTimeID;
 	GLuint m_cpMaxTimeID;
 	GLuint m_cpTimeDeltaID;
+	GLuint m_cpKMatID;
 
 	// data fusion
 	GLuint m_dpCamPamID;

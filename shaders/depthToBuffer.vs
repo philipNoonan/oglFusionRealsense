@@ -9,18 +9,25 @@ out vec4 geoVertexColorTimeDevice;
 
 flat out ivec2 imageCoord;
 
-uniform usampler2DArray depthTexture;
+uniform sampler2DArray depthTexture;
 
 uniform vec4 camPam[4]; // cx, cy, 1 / fx, 1 / fy
+uniform mat4 invK[4];
+
 uniform uint time;
+uniform float depthScale;
 
 vec3 getVert(sampler2DArray depthTex, vec3 textureCoord, ivec3 texelCoord)
 {
-	float z = float(textureLod(depthTex, textureCoord, 0.0f).x); // SINGLE CAMERA MODE
+	//float z = float(textureLod(depthTex, textureCoord, 0.0f).x); // SINGLE CAMERA MODE
+	float z = float(texelFetch(depthTex, ivec3(texelCoord.xy, 0), 0).x) * 65535.0f * depthScale; // this may be 65535
+	vec4 tPos = z * (invK[0] * vec4(texelCoord.xy, 1.0f, 0.0f));
 
-	return vec3((texelCoord.x - camPam[texelCoord.z].x) * z * camPam[texelCoord.z].z,
-			    (texelCoord.y - camPam[texelCoord.z].y) * z * camPam[texelCoord.z].w, 
-			     z);
+					return tPos.xyz;
+
+	//return vec3((float(texelCoord.x) - camPam[texelCoord.z].x) * z * camPam[texelCoord.z].z,
+	//		    (float(texelCoord.y) - camPam[texelCoord.z].y) * z * camPam[texelCoord.z].w, 
+	//		     z);
 }
 
 vec3 getNorm(sampler2DArray depthTex, vec4 centreVertexPosition, vec3 textureCoord, vec3 textureShift, ivec3 texelCoord)
@@ -34,7 +41,7 @@ vec3 getNorm(sampler2DArray depthTex, vec4 centreVertexPosition, vec3 textureCoo
 	vec3 dX = ((posXB + centreVertexPosition.xyz) / 2.0) - ((posXF + centreVertexPosition.xyz) / 2.0);
     vec3 dY = ((posYB + centreVertexPosition.xyz) / 2.0) - ((posYF + centreVertexPosition.xyz) / 2.0);
     
-    return normalize(cross(dX, dY));
+    return normalize(cross(dY, dX));
 }
 
 float getRadi(float depth, float normZ, int camNumber)
@@ -75,6 +82,7 @@ void main()
 	vec3 textureCoord = vec3(float(texelCoord.x + 0.5f) / float(texSize.x), float(texelCoord.y + 0.5) / float(texSize.y), float(texelCoord.z + 0.5f));
 
 	geoVertexPositionConfidence.xyz = getVert(depthTexture, textureCoord, texelCoord);
+
 	geoVertexNormalRadius.xyz = getNorm(depthTexture, geoVertexPositionConfidence, textureCoord, 1.0f / vec3(texSize.xyz), texelCoord);
 	
 	geoVertexPositionConfidence.w = getConf(texelCoord, 1.0f);
@@ -87,6 +95,6 @@ void main()
 
 		// wipe previous frame
 	imageStore(outImagePC, imageCoord, vec4(0.0f));
-	imageStore(outImageNR, imageCoord, vec4(0.0f));
+	imageStore(outImageNR, imageCoord, vec4(2.0f, 0.0f, 0.0f, 0.0f));
 
 }

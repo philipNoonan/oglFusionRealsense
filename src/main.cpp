@@ -83,7 +83,7 @@ void gFusionInit()
 				cameraInterface.getColorIntrinsics(i).cy));
 	}
 
-	glm::mat4 initPose = glm::translate(glm::mat4(1.0f), glm::vec3(gconfig.volumeDimensions.x / 2.0f, gconfig.volumeDimensions.y / 2.0f, 0.0f));
+	glm::mat4 initPose = glm::mat4(1.0f);// glm::translate(glm::mat4(1.0f), glm::vec3(gconfig.volumeDimensions.x / 2.0f, gconfig.volumeDimensions.y / 2.0f, 0.0f));
 
 	gfusion.setConfig(gconfig);
 	gfusion.setPose(initPose);
@@ -181,7 +181,7 @@ void resetVolume()
 	//std::cout << glm::to_string(iOff) << std::endl;
 
 
-	glm::mat4 initPose = glm::translate(glm::mat4(1.0f), glm::vec3(-iOff.x + gconfig.volumeDimensions.x / 2.0f, -iOff.y + gconfig.volumeDimensions.y / 2.0f, -iOff.z + dimension / 2.0));
+	glm::mat4 initPose = glm::mat4(1.0f);// glm::translate(glm::mat4(1.0f), glm::vec3(-iOff.x + gconfig.volumeDimensions.x / 2.0f, -iOff.y + gconfig.volumeDimensions.y / 2.0f, -iOff.z + dimension / 2.0));
 
 	volSlice = gconfig.volumeSize.z / 2.0f;
 

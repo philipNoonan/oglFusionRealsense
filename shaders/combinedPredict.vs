@@ -5,7 +5,8 @@ layout(location = 1) in vec4 normalRadius;
 layout(location = 2) in vec4 colorTimeDevice;
 
 uniform mat4 inversePose[4];
-uniform vec4 camPam[4]; // cx cy fx fy
+uniform vec4 camPam; // cx cy fx fy
+uniform mat4 kMat[4];
 uniform vec2 imSize;
 uniform float maxDepth;
 uniform float confThreshold;
@@ -20,31 +21,35 @@ out vec4 fragColTimDev;
 
 vec3 projectPoint(vec3 p)
 {
-    return vec3(((((camPam[0].z * p.x) / p.z) + camPam[0].x) - (imSize.x * 0.5)) / (imSize.x * 0.5),
-                ((((camPam[0].w * p.y) / p.z) + camPam[0].y) - (imSize.y * 0.5)) / (imSize.y * 0.5),
+    return vec3(((((camPam.z * p.x) / p.z) + camPam.x) - (imSize.x * 0.5)) / (imSize.x * 0.5),
+                ((((camPam.w * p.y) / p.z) + camPam.y) - (imSize.y * 0.5)) / (imSize.y * 0.5),
                 p.z / maxDepth);
 }
 
 vec3 projectPointImage(vec3 p)
 {
-    return vec3(((camPam[0].z * p.x) / p.z) + camPam[0].x,
-                ((camPam[0].w * p.y) / p.z) + camPam[0].y,
+    return vec3(((camPam.z * p.x) / p.z) + camPam.x,
+                ((camPam.w * p.y) / p.z) + camPam.y,
                 p.z);
 }
 
 void main()
 {
+   // get the position of the global vert in the current estimated camera position fov
     vec4 vPosHome = inversePose[0] * vec4(vertexConfidence.xyz, 1.0);
     
-  //  if(vPosHome.z > maxDepth || vPosHome.z < 0 || vertexConfidence.w < confThreshold || time - colorTimeDevice.w > timeDelta || colorTimeDevice.w > maxTime)
-  //  {
- //       gl_Position = vec4(1000.0f, 1000.0f, 1000.0f, 1000.0f);
-  //      gl_PointSize = 0;
- //   }
- //   else
- //   {
+    if(vPosHome.z > maxDepth || vPosHome.z < 0)// || vertexConfidence.w < confThreshold || time - colorTimeDevice.w > timeDelta || colorTimeDevice.w > maxTime)
+    {
+        gl_Position = vec4(1000.0f, 1000.0f, 1000.0f, 1000.0f);
+        gl_PointSize = 0;
+    }
+    else
+    {
+		// project the current view global point to opengl image space (-1 to 1)
 	    gl_Position = vec4(projectPoint(vPosHome.xyz), 1.0);
-	    
+
+
+
         fragColTimDev = colorTimeDevice;
 	    fragVertConf = vec4(vPosHome.xyz, vertexConfidence.w);
 	    fragNormRadi = vec4(normalize(mat3(inversePose[0]) * normalRadius.xyz), normalRadius.w);
@@ -66,5 +71,5 @@ void main()
 	
 	    gl_PointSize = max(0, max(xDiff, yDiff));
 
-  //  }
+    }
 }

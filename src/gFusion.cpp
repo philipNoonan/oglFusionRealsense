@@ -282,7 +282,9 @@ void gFusion::setLocations()
 	m_splatterImSizeID = glGetUniformLocation(splatterProg.getHandle(), "imSize");
 
 	depthToBufferProg.use();
-	m_camPamID = glGetUniformLocation(depthToBufferProg.getHandle(), "camPam");
+	m_camPamID_d2b = glGetUniformLocation(depthToBufferProg.getHandle(), "camPam");
+	m_depthScaleID_d2b = glGetUniformLocation(depthToBufferProg.getHandle(), "depthScale");
+	m_invKID_d2b = glGetUniformLocation(depthToBufferProg.getHandle(), "invK");
 
 	createIndexMapProg.use();
 	m_indexInversePoseID = glGetUniformLocation(createIndexMapProg.getHandle(), "inversePose");
@@ -303,6 +305,7 @@ void gFusion::setLocations()
 	m_cpConfThresholdID = glGetUniformLocation(combinedPredictProg.getHandle(), "confThreshold");
 	m_cpMaxTimeID = glGetUniformLocation(combinedPredictProg.getHandle(), "maxTime");
 	m_cpTimeDeltaID = glGetUniformLocation(combinedPredictProg.getHandle(), "timeDelta");
+	m_cpKMatID = glGetUniformLocation(combinedPredictProg.getHandle(), "kMat");
 
 	m_dpCamPamID = glGetUniformLocation(dataProg.getHandle(), "camPam");
 	m_dpImSizeID = glGetUniformLocation(dataProg.getHandle(), "imSize");
@@ -863,9 +866,9 @@ void gFusion::initSplatterFBOs()
 	glGenFramebuffers(1, &m_combined_FBO);
 	glBindFramebuffer(GL_FRAMEBUFFER, m_combined_FBO);
 
-	m_textureCombinedIndexVertConf = GLHelper::createTexture(m_textureCombinedIndexVertConf, GL_TEXTURE_2D, configuration.iterations.size(), configuration.depthFrameSize.x, configuration.depthFrameSize.y, 1, GL_RGBA32F, GL_NEAREST, GL_NEAREST_MIPMAP_NEAREST);
-	m_textureCombinedIndexNormRadi = GLHelper::createTexture(m_textureCombinedIndexNormRadi, GL_TEXTURE_2D, configuration.iterations.size(), configuration.depthFrameSize.x, configuration.depthFrameSize.y, 1, GL_RGBA32F, GL_NEAREST, GL_NEAREST_MIPMAP_NEAREST);
-	m_textureCombinedIndexColTimDev = GLHelper::createTexture(m_textureCombinedIndexColTimDev, GL_TEXTURE_2D, configuration.iterations.size(), configuration.depthFrameSize.x, configuration.depthFrameSize.y, 1, GL_RGBA32F, GL_NEAREST, GL_NEAREST_MIPMAP_NEAREST);
+	m_textureCombinedIndexVertConf = GLHelper::createTexture(m_textureCombinedIndexVertConf, GL_TEXTURE_2D, 1, configuration.depthFrameSize.x, configuration.depthFrameSize.y, 1, GL_RGBA32F, GL_NEAREST, GL_NEAREST_MIPMAP_NEAREST);
+	m_textureCombinedIndexNormRadi = GLHelper::createTexture(m_textureCombinedIndexNormRadi, GL_TEXTURE_2D, 1, configuration.depthFrameSize.x, configuration.depthFrameSize.y, 1, GL_RGBA32F, GL_NEAREST, GL_NEAREST_MIPMAP_NEAREST);
+	m_textureCombinedIndexColTimDev = GLHelper::createTexture(m_textureCombinedIndexColTimDev, GL_TEXTURE_2D, 1, configuration.depthFrameSize.x, configuration.depthFrameSize.y, 1, GL_RGBA32F, GL_NEAREST, GL_NEAREST_MIPMAP_NEAREST);
 	m_textureCombinedTime = GLHelper::createTexture(m_textureDepthTime, GL_TEXTURE_2D, 1, configuration.depthFrameSize.x, configuration.depthFrameSize.y, 1, GL_R32UI, GL_NEAREST, GL_NEAREST_MIPMAP_NEAREST);
 
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, m_textureCombinedIndexVertConf, 0);
@@ -1120,7 +1123,15 @@ void gFusion::uploadDepthToBuffer(std::vector<rs2::frame_queue> depthQ, int devN
 				camPam[i].w = 1.0f / camPam[i].w;
 			}
 
-			glUniform4fv(m_camPamID, 4, glm::value_ptr(camPam[0])); 
+			glm::mat4 invK[4];
+			for (int i = 0; i < m_numberOfCameras; i++)
+			{
+				invK[i] = GLHelper::getInverseCameraMatrix(m_camPamsDepth[i]);
+			}
+
+			glUniform4fv(m_camPamID_d2b, 4, glm::value_ptr(camPam[0])); 
+			glUniform1f(m_depthScaleID_d2b, m_depthUnit / 1000000.0f); // 1000 == each depth unit == 1 mm
+			glUniformMatrix4fv(m_invKID_d2b, 4, GL_FALSE, glm::value_ptr(invK[0]));
 
 			glBindVertexArray(m_depth_VAO);
 
@@ -1218,7 +1229,7 @@ void gFusion::initSplatterFusion()
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 	glBindTransformFeedback(GL_TRANSFORM_FEEDBACK, 0);
 
-	//std::cout << "county : " << count << std::endl;
+	std::cout << "county : " << count << std::endl;
 }
 
 void gFusion::predictIndices()
@@ -1327,33 +1338,45 @@ void gFusion::makeImagePyramids()
 void gFusion::combinedPredict()
 {
 
+	combinedPredictProg.use();
+
 	glBindVertexArray(m_global_VAO);
 
 	glBindFramebuffer(GL_FRAMEBUFFER, m_combined_FBO);
 
 	glViewport(0, 0, configuration.depthFrameSize.x, configuration.depthFrameSize.y);
-	glClearColor(0, 0, 0, 0);
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+	GLfloat black[] = { 0, 0, 0, 1 };
+	GLfloat red[] = { 1, 0, 0, 1 };
+
+	glClearTexImage(m_textureCombinedIndexVertConf, 0, GL_RGBA, GL_FLOAT, black);
+	glClearTexImage(m_textureCombinedIndexNormRadi, 0, GL_RGBA, GL_FLOAT, red);
+
+	glClear(GL_DEPTH_BUFFER_BIT);
 	glEnable(GL_DEPTH_TEST);
 
 	glm::mat4 inversePose[4];
 	for (int i = 0; i < m_numberOfCameras; i++)
 	{
 		//model[i] = glm::inverse(m_pose);
-		inversePose[i] = glm::mat4(1.0f);
+		inversePose[i] = glm::inverse(m_pose);
 	}
 	glm::vec4 camPam[4];
 	for (int i = 0; i < m_numberOfCameras; i++)
 	{
-		camPam[i] = m_camPamsDepth[i];
+		camPam[i] = vec4(m_camPamsDepth[i].z, m_camPamsDepth[i].w, m_camPamsDepth[i].x, m_camPamsDepth[i].y);
+	}
+	glm::mat4 kMat[4];
+	for (int i = 0; i < m_numberOfCameras; i++)
+	{
+		kMat[i] = GLHelper::getCameraMatrix(m_camPamsDepth[i]);
 	}
 
-	combinedPredictProg.use();
-
 	glUniformMatrix4fv(m_cpInversePoseID, 4, GL_FALSE, glm::value_ptr(inversePose[0]));
-	glUniform4fv(m_cpCamPamID, 4, glm::value_ptr(camPam[0]));
+	glUniform4fv(m_cpCamPamID, 1, glm::value_ptr(camPam[0]));
+	glUniform4fv(m_cpKMatID, 4, glm::value_ptr(kMat[0]));
 	glUniform2fv(m_cpImSizeID, 1, glm::value_ptr(configuration.depthFrameSize));
-	glUniform1f(m_cpMaxDepthID, 1.0f); // NOT YET SET
+	glUniform1f(m_cpMaxDepthID,10.0f); // NOT YET SET
 	glUniform1i(m_cpTimeID, 1);
 	glUniform1f(m_cpConfThresholdID, 100.0f); // NOT YET SET
 	glUniform1i(m_cpMaxTimeID, 100); // NOT YET SET
@@ -1370,8 +1393,8 @@ void gFusion::combinedPredict()
 
 
 
-	//glDrawArrays(GL_POINTS, 0, inputDepthCount);
-	glDrawTransformFeedback(GL_POINTS, m_globalTarget_TFO);
+	glDrawArrays(GL_POINTS, 0, count);
+	//glDrawTransformFeedback(GL_POINTS, m_globalTarget_TFO);
 
 	glFinish();
 
@@ -1661,11 +1684,11 @@ void gFusion::splatterModel()
 bool gFusion::TrackSplat()
 {
 	//glBeginQuery(GL_TIME_ELAPSED, query[0]);
-
 	bool tracked = false;
 	glm::mat4 oldPose = m_pose;
 
 	float alignmentEnergy;
+	float lastICPCount;
 
 	// here we will loop through the layers and number of iterations per layer
 	for (int level = configuration.iterations.size() - 1; level >= 0; --level)
@@ -1685,7 +1708,7 @@ bool gFusion::TrackSplat()
 			for (int i = 0; i < m_numberOfCameras; i++)
 			{
 			}
-			getReduction(b, C, alignmentEnergy);
+			getReduction(b, C, alignmentEnergy, lastICPCount);
 
 
 			//std::cout << "level " << level << " iteration " << iteration << " AE:" << alignmentEnergy << std::endl;
@@ -1719,8 +1742,8 @@ bool gFusion::TrackSplat()
 
 
 
-	////std::cout << alignmentEnergy << std::endl;
-	if (alignmentEnergy > 1.0e-3f || alignmentEnergy == 0)
+	std::cout << alignmentEnergy << " " << lastICPCount << " ";
+	if (alignmentEnergy > 1.0e-2f || alignmentEnergy == 0)
 	{
 		m_pose = oldPose;
 	}
@@ -1732,6 +1755,7 @@ bool gFusion::TrackSplat()
 
 	m_alignmentEnergy = alignmentEnergy;
 
+	std::cout << glm::to_string(m_pose) << std::endl;
 
 	//glEndQuery(GL_TIME_ELAPSED);
 	//GLuint available = 0;
@@ -1756,7 +1780,7 @@ void gFusion::trackSplat(int level)
 	glm::vec4 camPam[4];
 	for (int i = 0; i < m_numberOfCameras; i++)
 	{
-		camPam[i] = m_camPamsDepth[i];
+		camPam[i] = vec4(m_camPamsDepth[i].z, m_camPamsDepth[i].w, m_camPamsDepth[i].x, m_camPamsDepth[i].y);
 	}
 
 
@@ -1775,9 +1799,9 @@ void gFusion::trackSplat(int level)
 	glm::mat4 inverseVP[4];
 	for (int i = 0; i < m_numberOfCameras; i++)
 	{
-		inverseVP[i] = GLHelper::getCameraMatrix(m_camPamsDepth[i]);
+		inverseVP[i] = GLHelper::getCameraMatrix(m_camPamsDepth[i]) * glm::inverse(cameraPoses[i]);
 	}
-	glUniform4fv(m_camPamID_tsp, 4, glm::value_ptr(camPam[0]));
+	glUniform4fv(m_camPamID_tsp, 1, glm::value_ptr(camPam[0]));
 
 	glProgramUniformMatrix4fv(trackSplatProg.getHandle(), m_cameraPosesID_tsp, 4, GL_FALSE, glm::value_ptr(cameraPoses[0]));
 	glProgramUniformMatrix4fv(trackSplatProg.getHandle(), m_inverseVPID_tsp, 4, GL_FALSE, glm::value_ptr(inverseVP[0]));
@@ -1943,6 +1967,8 @@ void gFusion::vertexToNormal()
 
 bool gFusion::Track()
 {
+
+
 	shaderConfigs.d2p = 1;
 	shaderConfigs.d2v = 0;
 
@@ -1952,6 +1978,7 @@ bool gFusion::Track()
 	glm::mat4 oldPose = m_pose;
 
 	float alignmentEnergy;
+	float lastICPCount;
 
 	// here we will loop through the layers and number of iterations per layer
 	for (int level = configuration.iterations.size() - 1; level >= 0; --level)
@@ -1971,7 +1998,7 @@ bool gFusion::Track()
 			for (int i = 0; i < m_numberOfCameras; i++)
 			{
 			}
-			getReduction(b, C, alignmentEnergy);
+			getReduction(b, C, alignmentEnergy, lastICPCount);
 
 
 			//std::cout << "level " << level << " iteration " << iteration << " AE:" << alignmentEnergy << std::endl;
@@ -2527,7 +2554,7 @@ void gFusion::reduceSDF(int layer)
 
 }
 
-void gFusion::getReduction(std::vector<float>& b, std::vector<float>& C, float &alignmentEnergy)
+void gFusion::getReduction(std::vector<float>& b, std::vector<float>& C, float &alignmentEnergy, float &lastICPCount)
 {
 	outputData.resize(32 * 8);
 
@@ -2570,6 +2597,7 @@ void gFusion::getReduction(std::vector<float>& b, std::vector<float>& C, float &
 	C = Cee;
 
 	alignmentEnergy = sqrt(outputData[0] / outputData[28]);
+	lastICPCount = outputData[28];
 }
 
 void gFusion::getPreRedu(Eigen::Matrix<double, 6, 6> &A, Eigen::Matrix<double, 6, 1> &b)
