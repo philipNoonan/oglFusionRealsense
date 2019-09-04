@@ -5,7 +5,7 @@ layout(location = 1) in vec4 normalRadius;
 layout(location = 2) in vec4 colorTimeDevice;
 
 uniform mat4 inversePose[4];
-uniform vec4 camPam[4];
+uniform vec4 camPam; // cx, cy, fx, fy
 uniform vec2 imSize;
 uniform float maxDepth;
 uniform int time;
@@ -30,18 +30,13 @@ void main()
         y = -10;
         geoVertexID = 0;
     }
-    else
+    else // get projected image pixel point in 4x image
     {
-        x = ((((camPam[0].z * vCurrentPosition.x) / vCurrentPosition.z) + camPam[0].x) - (imSize.x * 0.5)) / (imSize.x * 0.5);
-        y = ((((camPam[0].w * vCurrentPosition.y) / vCurrentPosition.z) + camPam[0].y) - (imSize.y * 0.5)) / (imSize.y * 0.5);
+        x = ((((camPam.z * vCurrentPosition.x) / vCurrentPosition.z) + camPam.x) - (imSize.x * 0.5)) / (imSize.x * 0.5);
+        y = ((((camPam.w * vCurrentPosition.y) / vCurrentPosition.z) + camPam.y) - (imSize.y * 0.5)) / (imSize.y * 0.5);
         geoVertexID = gl_VertexID;
     }
     
-	//if (x < -1.0f || x > 1.0f || y < -1.0f || y > 1.0f)
-	//{
-	//    geoVertexID = 0;
-	//}
-
 
     gl_Position = vec4(x, y, vCurrentPosition.z / maxDepth, 1.0);
 	gl_PointSize = 1.0f;

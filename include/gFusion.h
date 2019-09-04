@@ -652,7 +652,7 @@ private:
 	GLuint m_textureTestImage;
 	GLuint m_textureFloodSDF;
 
-
+	GLuint m_textureDist;
 
 
 

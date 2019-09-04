@@ -6,7 +6,6 @@ layout(location = 2) in vec4 colorTimeDevice;
 
 uniform mat4 inversePose[4];
 uniform vec4 camPam; // cx cy fx fy
-uniform mat4 kMat[4];
 uniform vec2 imSize;
 uniform float maxDepth;
 uniform float confThreshold;
@@ -47,8 +46,6 @@ void main()
     {
 		// project the current view global point to opengl image space (-1 to 1)
 	    gl_Position = vec4(projectPoint(vPosHome.xyz), 1.0);
-
-
 
         fragColTimDev = colorTimeDevice;
 	    fragVertConf = vec4(vPosHome.xyz, vertexConfidence.w);

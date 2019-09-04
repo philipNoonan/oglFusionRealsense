@@ -40,10 +40,7 @@ void main()
 {
     // this gets run for every vertex in the global model
 
-
-
    toFuse = 0;
-
 
     vec4 newColor = updateIndexInterleaved[(gl_VertexID * 3) + 2];
 
@@ -94,12 +91,8 @@ void main()
         geoVertColTimDev = colorTimeDevice;
     }
 
-
     // need to wipe the update buffer after every update, this should always ensure that the active buffer values are set off after use
     updateIndexInterleaved[(gl_VertexID * 3)] = vec4(0.0f);
     updateIndexInterleaved[(gl_VertexID * 3) + 1] = vec4(0.0f);
     updateIndexInterleaved[(gl_VertexID * 3) + 2] = vec4(0.0f);
-
-	
-
 }

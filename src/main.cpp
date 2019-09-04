@@ -1470,9 +1470,10 @@ int main(int, char**)
 				else
 				{
 
-					//gfusion.predictIndices(); // 4x map from global
 
 					gfusion.combinedPredict(); // 1x map from global, to get sent to the ICP thingy
+
+					gfusion.predictIndices(); // 4x map from global
 
 					// we should now have a current view of the global model with maps of verts and normals
 
@@ -1480,9 +1481,14 @@ int main(int, char**)
 
 					//gfusion.makeImagePyramids();
 
-					gfusion.TrackSplat();
+					tracked = gfusion.TrackSplat();
 
 					//gfusion.fuse(); // 
+
+					if (tracked)
+					{
+						gfusion.fuse();
+					}
 				}
 
 			}
@@ -1492,6 +1498,8 @@ int main(int, char**)
 			{
 				//if (useMultipleFusion)
 				//{
+					
+
 					gfusion.integrate(reset);
 				//}
 				//else

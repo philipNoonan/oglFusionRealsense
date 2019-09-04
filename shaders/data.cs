@@ -16,15 +16,17 @@ layout(std430, binding = 1) buffer updateIndexMapBuffer
 };
 
 
+layout (binding = 0) uniform usampler2D indexSampler; // 4x
+layout (binding = 1) uniform sampler2D vertConfSampler; // 4x
+layout (binding = 2) uniform sampler2D normRadiSampler; // 4x
+layout (binding = 3) uniform sampler2D colTimDevSampler; // 4x
 
-layout (binding=2) uniform sampler2D vertConfSampler; // 4x
-layout (binding=3) uniform sampler2D colTimDevSampler; // 4x
-layout (binding=4) uniform sampler2D normRadiSampler; // 4x
-layout (binding=5) uniform usampler2D indexSampler; // 4x
+layout(binding = 0, rgba32f) uniform image2D outImagePC;
 
-uniform vec4 camPam[4]; //cx, cy, 1/fx, 1/fy
+
+uniform vec4 camPam; //cx, cy, fx, fy
 uniform float scale; // index map scale = 4.0f
-uniform mat4 pose;
+uniform mat4 pose[4];
 uniform float maxDepth;
 uniform float time;
 uniform float weighting;
@@ -35,8 +37,8 @@ vec3 getVert(sampler2DArray depthTex, vec3 textureCoord, ivec3 texelCoord)
 {
 	float z = float(textureLod(depthTex, textureCoord, 0.0f).x); // SINGLE CAMERA MODE
 
-	return vec3((texelCoord.x - camPam[texelCoord.z].x) * z * camPam[texelCoord.z].z,
-			    (texelCoord.y - camPam[texelCoord.z].y) * z * camPam[texelCoord.z].w, 
+	return vec3((texelCoord.x - camPam.x) * z * camPam.z,
+			    (texelCoord.y - camPam.y) * z * camPam.w, 
 			     z);
 }
 
@@ -56,7 +58,7 @@ vec3 getNorm(sampler2DArray depthTex, vec4 centreVertexPosition, vec3 textureCoo
 
 float getRadi(float depth, float normZ, int camNumber)
 {
-    float meanFocal = ((1.0 / abs(camPam[camNumber].z)) + (1.0 / abs(camPam[camNumber].w))) / 2.0;
+    float meanFocal = ((1.0 / abs(camPam.z)) + (1.0 / abs(camPam.w))) / 2.0;
     const float sqrt2 = 1.41421356237f;
     float radius = (depth / meanFocal) * sqrt2;
     
@@ -72,7 +74,7 @@ float getConf(vec3 texelCoord, float weighting)
     const float maxRadDist = 400; //sqrt((width * 0.5)^2 + (height * 0.5)^2)
     const float twoSigmaSquared = 0.72; //2*(0.6^2) from paper
     
-    vec2 pixelPosCentered = texelCoord.xy - camPam[int(texelCoord.z)].xy;
+    vec2 pixelPosCentered = texelCoord.xy - camPam.xy;
     
     float radialDist = sqrt(dot(pixelPosCentered, pixelPosCentered)) / maxRadDist;
     
@@ -129,15 +131,15 @@ vec3 decodeColor(float c)
 
 vec3 projectPoint(vec3 p)
 {
-    return vec3(((((camPam[0].z * p.x) / p.z) + camPam[0].x) - (imSize.x * 0.5)) / (imSize.x * 0.5),
-                ((((camPam[0].w * p.y) / p.z) + camPam[0].y) - (imSize.y * 0.5)) / (imSize.y * 0.5),
+    return vec3(((((camPam.z * p.x) / p.z) + camPam.x) - (imSize.x * 0.5)) / (imSize.x * 0.5),
+                ((((camPam.w * p.y) / p.z) + camPam.y) - (imSize.y * 0.5)) / (imSize.y * 0.5),
                 p.z / maxDepth);
 }
 
 vec3 projectPointImage(vec3 p)
 {
-    return vec3(((camPam[0].z * p.x) / p.z) + camPam[0].x,
-                ((camPam[0].w * p.y) / p.z) + camPam[0].y,
+    return vec3(((camPam.z * p.x) / p.z) + camPam.x,
+                ((camPam.w * p.y) / p.z) + camPam.y,
                 p.z);
 }
 
@@ -149,152 +151,160 @@ void main()
 
 	int vertID = int(gl_GlobalInvocationID.x); // 0 to max number of valid depth verts
 
-
 	//ivec2 texelCoord = ivec2(vertID % texSize.x, (vertID / texSize.x) % texSize.y);
 	//vec2 textureCoord = vec2(float(texelCoord.x + 0.5f) / float(texSize.x), float(texelCoord.y + 0.5) / float(texSize.y));
 
     //Vertex position integrated into model transformed to global coords
     vec4 vPosLocal = interleavedData[(vertID * 3)];
 
-    vec4 geoVertPosConf = pose * vec4(vPosLocal.xyz, 1);
+    vec4 geoVertPosConf = pose[0] * vec4(vPosLocal.xyz, 1);
     geoVertPosConf.w = vPosLocal.w;
-
-    vec4 geoColTimDev = interleavedData[(vertID * 3) + 1];
-
 
     //Normal and radius computed with filtered position / depth map transformed to global coords
     //vec3 vNormLocal = getNorm(depthSampler, geoVertPosConf, textureCoord, 1.0f / vec3(texSize.xyz), texelCoord);
-    vec4 vNormLocal = interleavedData[(vertID * 3) + 2];// vec4(mat3(pose) * vNormLocal, getRadi(geoVertPosConf.z, vNormLocal.z, texelCoord.z));
-    vec4 geoVertNormRadi = vec4(mat3(pose) * vNormLocal.xyz, vNormLocal.w);
+    vec4 vNormLocal = interleavedData[(vertID * 3) + 1];// vec4(mat3(pose) * vNormLocal, getRadi(geoVertPosConf.z, vNormLocal.z, texelCoord.z));
+    vec4 geoVertNormRadi = vec4(mat3(pose[0]) * vNormLocal.xyz, vNormLocal.w);
+
+
+
+    vec4 geoColTimDev = interleavedData[(vertID * 3) + 2];
+
+
+
+
+
 
     vec4 geoVertColTimDev;
 
     int updateId = 0;
 
-	uint best = 0U;
+    uint best = 0U;
 
 
-	//If this point is actually a valid vertex (i.e. has depth)
+    //If this point is actually a valid vertex (i.e. has depth)
     // this should now be valid depth since we TFBO'd it previously
     //if(texelCoord.x % 2 == int(time) % 2 && texelCoord.y % 2 == int(time) % 2 && 
     //   checkNeighboursFIXME(1) && 
-    if(vPosLocal.z > 0 && vPosLocal.z <= maxDepth) // only proceed if every other pixel, and every other frame, for some reason
-	{
+    if (vPosLocal.z > 0 && vPosLocal.z <= maxDepth) // only proceed if every other pixel, and every other frame, for some reason
+    {
+        ///// outputUpdateIndexInterleaved[(vertID * 3)] = interleavedData[(vertID * 3)];
+        ///// outputUpdateIndexInterleaved[(vertID * 3) + 1] = interleavedData[(vertID * 3) + 1];
 
-        // back project to get pixel coords in the 4x space so we can work out local area to search, ooo we could use local shared memory perhaps?
+        // project to 1x image space
+        vec3 pix = projectPointImage(geoVertPosConf.xyz);
 
-        vec3 pix = projectPoint(geoVertPosConf.xyz);
-        
+        int counter = 0;
 
-		int counter = 0;
+        float bestDist = 1000;
 
-	    float indexXStep = (1.0f / (imSize.x * scale)) * 0.5f; // this is a half pixel 
-	    float indexYStep = (1.0f / (imSize.y * scale)) * 0.5f;
+        float windowMultiplier = 2;
 
-	    float bestDist = 1000;
-	   
-	    float windowMultiplier = 2;   
+        // find the ray in the 1x image
+        float xl = ((pix.x - camPam.x) / camPam.z);
+        float yl = ((pix.y - camPam.y) / camPam.w);
 
-	    float xl = (pix.x - camPam[0].x) * camPam[0].z;
-        float yl = (pix.y - camPam[0].y) * camPam[0].w;
-	   
-	    float lambda = sqrt(xl * xl + yl * yl + 1);
+        float lambda = sqrt(xl * xl + yl * yl + 1);
 
-	    vec3 ray = vec3(xl, yl, 1);
+        //imageStore(outImagePC, ivec2(pix.xy), vec4(1, 0, 0, 1));
 
-	    // find best
+        vec3 ray = vec3(xl, yl, 1);
+        // ray is direction of ray in pixel space out from each pixel from camera centre
 
-		for(int i = int(pix.x - 2); i < int(pix.x + 2); i += 1)
-		{
-	        for(int j = int(pix.y - 2); j < int(pix.y + 2); j += 1)
-			{
-		       uint current = uint(texelFetch(indexSampler, ivec2(i, j), 0));
-			   if(current > 0U)
-				{
-			        vec4 vertConf = texelFetch(vertConfSampler, ivec2(i, j), 0);
-			        if(abs((vertConf.z * lambda) - (vPosLocal.z * lambda)) < 0.05)
-					{
-				        float dist = length(cross(ray, vertConf.xyz)) / length(ray);
-					    vec4 normRad = texelFetch(normRadiSampler, ivec2(i, j), 0);
+        // find best
+        for (int i = int((pix.x * 4) - 2); i < int((pix.x * 4) + 2); i += 1)
+        {
+            for (int j = int((pix.y * 4) - 2); j < int((pix.y * 4) + 2); j += 1)
+            {
+                uint current = uint(texelFetch(indexSampler, ivec2(i, j), 0));
+                if (current > 0U)
+                {
+                    vec4 vertConf = texelFetch(vertConfSampler, ivec2(i, j), 0);
+                    imageStore(outImagePC, ivec2(i / 4, j / 4), vec4((vertConf.z * lambda),(vPosLocal.z * lambda), 0, 0));
 
-					    if(dist < bestDist && (abs(normRad.z) < 0.75f || abs(angleBetween(normRad.xyz, vNormLocal.xyz)) < 0.5f))
-					    {
-						    counter++;
+                    // check to see if the camera space pixel ray that goes between each potential global pixel (vertConf) is in range of the current depth map (vposlocal)
+                    if (abs((vertConf.z * lambda) - (vPosLocal.z * lambda)) < 0.05)
+                    {
+                        //imageStore(outImagePC, ivec2(i / 4, j / 4), vec4(abs((vertConf.z * lambda) - (vPosLocal.z * lambda)) * 10, 0, 0, 1));
+
+                        float dist = length(cross(ray, vertConf.xyz)) / length(ray);
+                        vec4 normRad = texelFetch(normRadiSampler, ivec2(i, j), 0);
+
+                        if (dist < bestDist && (abs(normRad.z) < 0.75f || abs(angleBetween(normRad.xyz, vNormLocal.xyz)) < 0.5f))
+                        {
+                            counter++;
                             bestDist = dist;
-							best = current;
-						}
-					}
-				}
-			}
-		}
-		
-	    //We found a point to merge with
-	    //if(counter > 0)
-        if(false)
-	    {
-	       updateId = 1;
-	       geoVertColTimDev.w = -1;
-	    }
-	    else
-	    {
-	       //New unstable vertex
-	       updateId = 2;
-	       geoVertColTimDev.w = -2;
-	    }
+                            best = current;
+                        }
+                    }
+                }
+            }
+        }
+
+        //We found a point to merge with
+        if (counter > 0)
+        {
+            updateId = 1;
+            geoVertColTimDev.w = -1;
+        }
+        else
+        {
+            //New unstable vertex
+            updateId = 2;
+            geoVertColTimDev.w = -2;
+        }
 
 
-	}
+    }
 
-   // vec4 glPosition = vec4(-10, -10, 0, 1);
+    ////// vec4 glPosition = vec4(-10, -10, 0, 1);
 
-    ////Output vertex id of the existing point to update
-    //if (updateId == 1)
-    //{
-    //    // intX annd Y are just a 2D mapping of the index onto a 2D array of size 3072 * 3072
-	   // uint intY = best / uint(texDim);
-	   // uint intX = best - (intY * uint(texDim));
-	    
-	   // float halfPixel = 0.5 * (1.0f / texDim);
-	    
-	   // //should set gl_Position here to the 2D index for the updated vertex ID
-	   // glPosition = vec4(float(int(intX) - (int(texDim) / 2)) / (texDim / 2.0) + halfPixel, 
-	   //                    float(int(intY) - (int(texDim) / 2)) / (texDim / 2.0) + halfPixel, 
-	   //                    0, 
-	   //                    1.0);
-    //}
-    //else
-    //{
-    //    //Either don't render anything, or output a new unstable vertex offscreen
-    //    glPosition = vec4(-10, -10, 0, 1);
-    //}
+    ////////Output vertex id of the existing point to update
+    //////if (updateId == 1)
+    //////{
+    //////    // intX annd Y are just a 2D mapping of the index onto a 2D array of size 3072 * 3072
+    ////// uint intY = best / uint(texDim);
+    ////// uint intX = best - (intY * uint(texDim));
+
+    ////// float halfPixel = 0.5 * (1.0f / texDim);
+
+    ////// //should set gl_Position here to the 2D index for the updated vertex ID
+    ////// glPosition = vec4(float(int(intX) - (int(texDim) / 2)) / (texDim / 2.0) + halfPixel, 
+    //////                    float(int(intY) - (int(texDim) / 2)) / (texDim / 2.0) + halfPixel, 
+    //////                    0, 
+    //////                    1.0);
+    //////}
+    //////else
+    //////{
+    //////    //Either don't render anything, or output a new unstable vertex offscreen
+    //////    glPosition = vec4(-10, -10, 0, 1);
+    //////}
 
 
     //Emit a vertex if either we have an update to store, or a new unstable vertex to store
-    //if (updateId > 0) !!!!! USE THIS
-    if(true)
+    if (updateId > 0) //!!!!! USE THIS
     {
         // if stable vertex, then pass its details so that it can be found in the ICP algorithm
-        if (true)
+        if (updateId == 1)
         {
             // we want to store the stable vertices in some buffer/image 
             // old way is to add the vert info to a large sparse texture
             // we would have to use glClearTexImage after every frame, or directly set the value back to zeros after its used in the next shader! ooo efficient maybe otherwise we would have historics
 
-            outputUpdateIndexInterleaved[best * 3]       = geoVertPosConf;
+            outputUpdateIndexInterleaved[best * 3] = geoVertPosConf;
             outputUpdateIndexInterleaved[(best * 3) + 1] = geoVertNormRadi;
             outputUpdateIndexInterleaved[(best * 3) + 2] = geoVertColTimDev;
 
         }
-        else
+        else if (updateId == 2)
         {
             // unstable vertex doesnt get passed to the ICP algorithm, but it is not deleted from the global vbo
             // we can append unstable to the end of the vbo, since we know the county offset from the current global vert size
             // how about
             // index = county + current vertID (from depth ID, not global ID)
             // this will contain blanks for sure, but will pass all info without overwriting
-            outputUpdateIndexInterleaved[best * 3] = geoVertPosConf;
-            outputUpdateIndexInterleaved[(best * 3) + 1] = geoVertNormRadi;
-            outputUpdateIndexInterleaved[(best * 3) + 2] = geoVertColTimDev;
+            //outputUpdateIndexInterleaved[best * 3] = vec4(69);
+           // outputUpdateIndexInterleaved[(best * 3) + 1] = vec4(8.0);
+          //  outputUpdateIndexInterleaved[(best * 3) + 2] = vec4(0.8);
         }
 
 

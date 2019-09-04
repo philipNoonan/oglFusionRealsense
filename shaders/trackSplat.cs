@@ -129,7 +129,6 @@ void main()
                 {
                     trackOutput[offset].result = -2;
                     imageStore(trackImage, ivec3(pix, camera), vec4(1.0f, 0.0f, 0, 1.0f));
-
                 }
                 else
                 {
@@ -138,12 +137,10 @@ void main()
                     //vec3 tmp = imageLoad(refVertex, refPixel).xyz;
                     //imageStore(differenceImage, ivec2(projPixel), vec4(tmp.z, 0.0f, 0.0f, 1.0f));
 
-
                     if (referenceNormal.x == -2)
                     {
                         trackOutput[offset].result = -3;
                         imageStore(trackImage, ivec3(pix, camera), vec4(0, 1.0f, 0, 1.0f));
-
                     }
                     else
                     {
@@ -162,12 +159,10 @@ void main()
                         {
                             trackOutput[offset].result = -5;
                             imageStore(trackImage, ivec3(pix, camera), vec4(1.0f, 1.0f, 0, 1.0f));
-
                         }
                         else
                         {
                             imageStore(trackImage, ivec3(pix, camera), vec4(0.5f, 0.5f, 0.5f, 1.0f));
-
 
                             trackOutput[offset].result = 1;
                             trackOutput[offset].error = dot(referenceNormal, diff);
