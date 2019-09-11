@@ -4,15 +4,22 @@ layout(local_size_x = 1024) in;
 
 uint maxNumVerts;
 
+layout(binding = 0, offset = 0) uniform atomic_uint ac;
+
 // this is the buffer vec4 vec4 vec4 [vert conf][norm rad][col time dev] from the current depth frame from the previous depth to buffer call 
 layout(std430, binding = 0) buffer feedbackBuffer
 {
     vec4 interleavedData [];
 };
 
-layout(std430, binding = 1) buffer updateIndexMapBuffer
+//layout(std430, binding = 1) buffer updateIndexMapBuffer
+//{
+//    vec4 outputUpdateIndexInterleaved [];
+//};
+
+layout(std430, binding = 1) buffer indexMatchingBuffer
 {
-    vec4 outputUpdateIndexInterleaved [];
+    int outputIndexMatchingBuffer [];
 };
 
 
@@ -146,8 +153,8 @@ vec3 projectPointImage(vec3 p)
 // this gets run for every valid depth vertex from the depth TFO
 void main()
 {
-	ivec2 texSize = textureSize(vertConfSampler, 0); // this is the 4x size
-	imSize = vec2(texSize).xy / 4.0f;
+	ivec2 bigTexSize = textureSize(vertConfSampler, 0); // this is the 4x size
+	imSize = vec2(bigTexSize).xy / 4.0f;
 
 	int vertID = int(gl_GlobalInvocationID.x); // 0 to max number of valid depth verts
 
@@ -193,6 +200,9 @@ void main()
         // project to 1x image space
         vec3 pix = projectPointImage(geoVertPosConf.xyz);
 
+        //imageStore(outImagePC, ivec2(pix.xy), vec4(geoVertPosConf.xyz, 2.0f));
+
+
         int counter = 0;
 
         float bestDist = 1000;
@@ -219,18 +229,20 @@ void main()
                 if (current > 0U)
                 {
                     vec4 vertConf = texelFetch(vertConfSampler, ivec2(i, j), 0);
-                    imageStore(outImagePC, ivec2(i / 4, j / 4), vec4((vertConf.z * lambda),(vPosLocal.z * lambda), 0, 0));
+                    //imageStore(outImagePC, ivec2(i / 4, j / 4), vec4((vertConf.z * lambda) - (vPosLocal.z * lambda), 0, 0, 1));
 
                     // check to see if the camera space pixel ray that goes between each potential global pixel (vertConf) is in range of the current depth map (vposlocal)
                     if (abs((vertConf.z * lambda) - (vPosLocal.z * lambda)) < 0.05)
                     {
-                        //imageStore(outImagePC, ivec2(i / 4, j / 4), vec4(abs((vertConf.z * lambda) - (vPosLocal.z * lambda)) * 10, 0, 0, 1));
+                        //imageStore(outImagePC, ivec2(i / 4, j / 4), vec4(vertConf.z, vPosLocal.z, 0, 1));
 
                         float dist = length(cross(ray, vertConf.xyz)) / length(ray);
                         vec4 normRad = texelFetch(normRadiSampler, ivec2(i, j), 0);
 
                         if (dist < bestDist && (abs(normRad.z) < 0.75f || abs(angleBetween(normRad.xyz, vNormLocal.xyz)) < 0.5f))
                         {
+                            //imageStore(outImagePC, ivec2(i / 4, j / 4), vec4(dist, vertConf.z, vPosLocal.z, 1));
+
                             counter++;
                             bestDist = dist;
                             best = current;
@@ -256,60 +268,50 @@ void main()
 
     }
 
-    ////// vec4 glPosition = vec4(-10, -10, 0, 1);
-
-    ////////Output vertex id of the existing point to update
-    //////if (updateId == 1)
-    //////{
-    //////    // intX annd Y are just a 2D mapping of the index onto a 2D array of size 3072 * 3072
-    ////// uint intY = best / uint(texDim);
-    ////// uint intX = best - (intY * uint(texDim));
-
-    ////// float halfPixel = 0.5 * (1.0f / texDim);
-
-    ////// //should set gl_Position here to the 2D index for the updated vertex ID
-    ////// glPosition = vec4(float(int(intX) - (int(texDim) / 2)) / (texDim / 2.0) + halfPixel, 
-    //////                    float(int(intY) - (int(texDim) / 2)) / (texDim / 2.0) + halfPixel, 
-    //////                    0, 
-    //////                    1.0);
-    //////}
-    //////else
-    //////{
-    //////    //Either don't render anything, or output a new unstable vertex offscreen
-    //////    glPosition = vec4(-10, -10, 0, 1);
-    //////}
-
-
     //Emit a vertex if either we have an update to store, or a new unstable vertex to store
-    if (updateId > 0) //!!!!! USE THIS
+    //if (updateId == 1) //!!!!! USE THIS
+    //  {
+    // we want to store the stable vertices in some buffer/image 
+    // old way is to add the vert info to a large sparse texture
+    // we would have to use glClearTexImage after every frame, or directly set the value back to zeros after its used in the next shader! ooo efficient maybe otherwise we would have historics
+
+    // we dont actually need the 3x buffers here, all we need is an index buffer matching the size of the global buffer which tells us for each vertex in the global model should be updated with what index in the new depth fram edata
+    //outputUpdateIndexInterleaved[vertID * 3] = geoVertPosConf;
+    //outputUpdateIndexInterleaved[(vertID * 3) + 1] = geoVertNormRadi;
+    //outputUpdateIndexInterleaved[(vertID * 3) + 2] = vec4(geoVertColTimDev.xy, vertID, -1);
+
+    if (updateId > 0)
     {
-        // if stable vertex, then pass its details so that it can be found in the ICP algorithm
         if (updateId == 1)
         {
-            // we want to store the stable vertices in some buffer/image 
-            // old way is to add the vert info to a large sparse texture
-            // we would have to use glClearTexImage after every frame, or directly set the value back to zeros after its used in the next shader! ooo efficient maybe otherwise we would have historics
-
-            outputUpdateIndexInterleaved[best * 3] = geoVertPosConf;
-            outputUpdateIndexInterleaved[(best * 3) + 1] = geoVertNormRadi;
-            outputUpdateIndexInterleaved[(best * 3) + 2] = geoVertColTimDev;
-
+            outputIndexMatchingBuffer[best] = vertID;
         }
-        else if (updateId == 2)
+        else
         {
-            // unstable vertex doesnt get passed to the ICP algorithm, but it is not deleted from the global vbo
-            // we can append unstable to the end of the vbo, since we know the county offset from the current global vert size
-            // how about
-            // index = county + current vertID (from depth ID, not global ID)
-            // this will contain blanks for sure, but will pass all info without overwriting
-            //outputUpdateIndexInterleaved[best * 3] = vec4(69);
-           // outputUpdateIndexInterleaved[(best * 3) + 1] = vec4(8.0);
-          //  outputUpdateIndexInterleaved[(best * 3) + 2] = vec4(0.8);
+            uint appendedPosition = atomicCounterIncrement(ac);
+
+            outputIndexMatchingBuffer[appendedPosition] = -vertID;
         }
-
-
-
 
     }
+
+
+    // output the vertID of the new depth vert data in a buffer of size of the global array buffer at the index point of the vert where it matches
+    // or set a flag showing the vertID of the new depth vert in the global buffer itself, if space is available
+
+    // }
+    //else
+    // {
+    // unstable vertex doesnt get passed to the ICP algorithm, but it is not deleted from the global vbo
+    // we can append unstable to the end of the vbo, since we know the county offset from the current global vert size
+    // how about
+    // index = county + current vertID (from depth ID, not global ID)
+    // this will contain blanks for sure, but will pass all info without overwriting
+
+    //     outputUpdateIndexInterleaved[vertID * 3] = vec4(0);
+    //     outputUpdateIndexInterleaved[(vertID * 3) + 1] = vec4(0);
+    //     outputUpdateIndexInterleaved[(vertID * 3) + 2] = vec4(0.8);
+    // }
+
 
 }

@@ -2,6 +2,12 @@
 
 layout(binding = 0, rgba32f) uniform image2D outImagePC;
 layout(binding = 1, rgba32f) uniform image2D outImageNR;
+layout(binding = 2, rgba32f) uniform image2D outImageCTD;
+layout(binding = 3, rgba32f) uniform image2D combinedVertex;
+layout(binding = 4, rgba32f) uniform image2D combinedNormal;
+layout(binding = 5, rgba32f) uniform image2D combinedColTim;
+layout(binding = 6, rgba32f) uniform image2D combinedConRadDev;
+
 
 out vec4 geoVertexPositionConfidence;
 out vec4 geoVertexNormalRadius;
@@ -17,13 +23,25 @@ uniform mat4 invK[4];
 uniform uint time;
 uniform float depthScale;
 
+uniform int initUnstable;
+
+layout(std430, binding = 0) buffer depthBuffer
+{
+    vec4 interleavedDepthBuffer [];
+};
+
+layout(std430, binding = 1) buffer indexNewUnstableBuffer
+{
+    int updateIndexNewUnstableBuffer [];
+};
+
 vec3 getVert(sampler2DArray depthTex, vec3 textureCoord, ivec3 texelCoord)
 {
 	//float z = float(textureLod(depthTex, textureCoord, 0.0f).x); // SINGLE CAMERA MODE
 	float z = float(texelFetch(depthTex, ivec3(texelCoord.xy, 0), 0).x) * 65535.0f * depthScale; // this may be 65535
 	vec4 tPos = z * (invK[0] * vec4(texelCoord.xy, 1.0f, 0.0f));
 
-					return tPos.xyz;
+	return tPos.xyz;
 
 	//return vec3((float(texelCoord.x) - camPam[texelCoord.z].x) * z * camPam[texelCoord.z].z,
 	//		    (float(texelCoord.y) - camPam[texelCoord.z].y) * z * camPam[texelCoord.z].w, 
@@ -89,12 +107,33 @@ void main()
 
 	geoVertexNormalRadius.w = getRadi(geoVertexPositionConfidence.z, geoVertexNormalRadius.z, texelCoord.z);
 
-	geoVertexColorTimeDevice= vec4(0.2, 0.6, time, texelCoord.z);
+	if (initUnstable == 1)
+	{
+			geoVertexColorTimeDevice= vec4(0.2, 0.6, 1, texelCoord.z);
+	}
+	else
+	{
+		geoVertexColorTimeDevice= vec4(0.2, 0.6, 69, texelCoord.z);
+	}
 
 	imageCoord = texelCoord.xy;
 
-		// wipe previous frame
+	// wipe previous frame
 	imageStore(outImagePC, imageCoord, vec4(0.0f));
 	imageStore(outImageNR, imageCoord, vec4(2.0f, 0.0f, 0.0f, 0.0f));
+	imageStore(outImageCTD, imageCoord, vec4(0.0f, 0.0f, 0.0f, 0.0f));
+
+	imageStore(combinedVertex, imageCoord, vec4(0.0f, 0.0f, 0.0f, 1.0f));
+	imageStore(combinedNormal, imageCoord, vec4(2.0f, 0.0f, 0.0f, 1.0f));
+	imageStore(combinedColTim, imageCoord, vec4(0.0f, 0.0f, 0.0f, 0.0f));
+	imageStore(combinedConRadDev, imageCoord, vec4(0.0f, 0.0f, 0.0f, 0.0f));
+
+	// wipe the previous frames new unstable buffer since we have a invocation per depth pixel here
+	updateIndexNewUnstableBuffer[vertID] = 0;
+	// wipe previous depth frame buffer
+	interleavedDepthBuffer[(vertID * 3) + 0] = vec4(0);
+    interleavedDepthBuffer[(vertID * 3) + 1] = vec4(0);
+    interleavedDepthBuffer[(vertID * 3) + 2] = vec4(0);
+
 
 }

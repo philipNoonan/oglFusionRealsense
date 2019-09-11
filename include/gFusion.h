@@ -249,6 +249,11 @@ public:
 	bool Track();
 	bool TrackSDF();
 
+	void setInitUnstable(int val)
+	{
+		m_initUnstable = val;
+	}
+
 	std::vector<uint64_t> getFrameTime()
 	{
 		return m_sensorsTimestamps;
@@ -595,6 +600,7 @@ private:
 	GLuint m_camPamID_d2b;
 	GLuint m_depthScaleID_d2b;
 	GLuint m_invKID_d2b;
+	GLuint m_initUnstableID_d2b;
 
 	// index map
 	GLuint m_indexInversePoseID;
@@ -629,8 +635,10 @@ private:
 	GLuint m_dpWeightingID;
 
 	// update global model
+	GLuint m_ugmCamPamID;
 	GLuint m_ugmTimeID;
 	GLuint m_ugmTexDimID;
+	GLuint m_ugmCurrentGlobalNumberID;
 
 	// TEXTURES
 	GLuint createTexture(GLenum target, int levels, int w, int h, int d, GLint internalformat, GLenum magFilter, GLenum minFilter);
@@ -654,6 +662,7 @@ private:
 
 	GLuint m_textureDist;
 
+	GLuint m_atomicCounterTest;
 
 
 	//GLuint m_textureEdgeTable;
@@ -732,10 +741,10 @@ private:
 	GLuint m_textureDepthIndexColTimDev;
 	GLuint m_textureDepthTime;
 
-	GLuint m_textureCombinedIndexVertConf;
-	GLuint m_textureCombinedIndexNormRadi;
-	GLuint m_textureCombinedIndexColTimDev;
-	GLuint m_textureCombinedTime;
+	GLuint m_textureCombinedIndexVertex;
+	GLuint m_textureCombinedIndexNormal;
+	GLuint m_textureCombinedIndexColTim;
+	GLuint m_textureCombinedIndexConRadDev;
 
 	GLuint m_textureUpdateMapIndexVertConf;
 	GLuint m_textureUpdateMapIndexNormRadi;
@@ -767,6 +776,9 @@ private:
 	GLuint m_unstable_TFO;
 
 	GLuint m_updateIndex_VBO;
+
+	GLuint m_newUnstable_TFO;
+	GLuint m_newUnstableIndex_VBO;
 
 	GLuint countQuery;
 	GLuint count;
@@ -949,6 +961,9 @@ private:
 	uint32_t textureDimension = 3072; // but why?
 	GLuint inputDepthCount;
 	GLuint fuseCount;
+	GLuint newUnstableCount;
 	GLuint globalVertCount = 0;
+
+	int m_initUnstable;
 
 };

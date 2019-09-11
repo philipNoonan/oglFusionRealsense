@@ -13,9 +13,10 @@ uniform int time;
 uniform int maxTime;
 uniform int timeDelta;
 
+layout(binding = 0, rgba32f) uniform image2D outImagePC;
 
 out vec4 fragVertConf;
-out vec4 fragNormRadi;
+flat out vec4 fragNormRadi;
 out vec4 fragColTimDev;
 
 vec3 projectPoint(vec3 p)
@@ -46,11 +47,13 @@ void main()
     {
 		// project the current view global point to opengl image space (-1 to 1)
 	    gl_Position = vec4(projectPoint(vPosHome.xyz), 1.0);
-
+		vec3 pix = projectPointImage(vPosHome.xyz);
         fragColTimDev = colorTimeDevice;
 	    fragVertConf = vec4(vPosHome.xyz, vertexConfidence.w);
 	    fragNormRadi = vec4(normalize(mat3(inversePose[0]) * normalRadius.xyz), normalRadius.w);
-	    
+
+		imageStore(outImagePC, ivec2(pix.xy), vec4(fragNormRadi.xyz,1));
+
 	    vec3 x1 = normalize(vec3((fragNormRadi.y - fragNormRadi.z), -fragNormRadi.x, fragNormRadi.x)) * fragNormRadi.w * 1.41421356;
 	    
 	    vec3 y1 = cross(fragNormRadi.xyz, x1);

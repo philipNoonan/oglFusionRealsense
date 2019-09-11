@@ -1,3 +1,5 @@
+/*
+
 #version 430 core
 layout(points) in;
 layout(points, max_vertices = 1) out;
@@ -7,10 +9,12 @@ flat in vec4 geoNormRadi[];
 flat in vec4 geoColTimDev[];
 flat in int geoVertexID[];
 
-flat out vec4 fragVertConf;
-flat out vec4 fragNormRadi;
-flat out vec4 fragColTimDev;
-flat out int fragVertexID;
+
+
+//flat out vec4 fragVertConf;
+//flat out vec4 fragNormRadi;
+//flat out vec4 fragColTimDev;
+//flat out int fragVertexID;
 
 
 void main()
@@ -28,3 +32,5 @@ void main()
 	}
 
 }
+
+*/

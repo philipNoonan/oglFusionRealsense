@@ -83,7 +83,9 @@ void gFusionInit()
 				cameraInterface.getColorIntrinsics(i).cy));
 	}
 
+	// AND THE OTHER ONE
 	glm::mat4 initPose = glm::mat4(1.0f);// glm::translate(glm::mat4(1.0f), glm::vec3(gconfig.volumeDimensions.x / 2.0f, gconfig.volumeDimensions.y / 2.0f, 0.0f));
+	//glm::mat4 initPose = glm::translate(glm::mat4(1.0f), glm::vec3(gconfig.volumeDimensions.x / 2.0f, gconfig.volumeDimensions.y / 2.0f, 0.0f));
 
 	gfusion.setConfig(gconfig);
 	gfusion.setPose(initPose);
@@ -180,8 +182,9 @@ void resetVolume()
 
 	//std::cout << glm::to_string(iOff) << std::endl;
 
-
+	// AND THE OTHER ONE
 	glm::mat4 initPose = glm::mat4(1.0f);// glm::translate(glm::mat4(1.0f), glm::vec3(-iOff.x + gconfig.volumeDimensions.x / 2.0f, -iOff.y + gconfig.volumeDimensions.y / 2.0f, -iOff.z + dimension / 2.0));
+	//glm::mat4 initPose = glm::translate(glm::mat4(1.0f), glm::vec3(-iOff.x + gconfig.volumeDimensions.x / 2.0f, -iOff.y + gconfig.volumeDimensions.y / 2.0f, -iOff.z + dimension / 2.0));
 
 	volSlice = gconfig.volumeSize.z / 2.0f;
 
@@ -1463,17 +1466,28 @@ int main(int, char**)
 				//tracked = gfusion.TrackSDF();
 				//gfusion.raycast(cameraDevice);
 
-				if (counter < 10) // the first frame seems garbage
+				if (counter <= 10) // the first frame seems garbage
 				{
-					gfusion.initSplatterFusion(); // this passes the current frame depth buffer to the global model buffer
+					gfusion.setInitUnstable(1); 
+
+
+					gfusion.initSplatterFusion(); // simple copy // this passes the current frame depth buffer to the global model buffer
+				
+					if (counter == 10)
+					{
+						gfusion.combinedPredict(); // vs fs
+					}
 				}
 				else
 				{
+					gfusion.setInitUnstable(0);
 
+					// puting this here to make sure that combined predict and tracksplat give the same image projections - as they seemingly do not
+					//gfusion.initSplatterFusion(); // this passes the current frame depth buffer to the global model buffer
 
-					gfusion.combinedPredict(); // 1x map from global, to get sent to the ICP thingy
+					gfusion.combinedPredict(); // vs fs // 1x map from global, to get sent to the ICP thingy
 
-					gfusion.predictIndices(); // 4x map from global
+					gfusion.predictIndices(); // cs // 4x map from global
 
 					// we should now have a current view of the global model with maps of verts and normals
 
@@ -1481,13 +1495,13 @@ int main(int, char**)
 
 					//gfusion.makeImagePyramids();
 
-					tracked = gfusion.TrackSplat();
+					tracked = gfusion.TrackSplat(); // cs
 
 					//gfusion.fuse(); // 
 
 					if (tracked)
 					{
-						gfusion.fuse();
+						gfusion.fuse(); // cs then // vs gs // perhaps should be other way around (vs gs, then cs)
 					}
 				}
 

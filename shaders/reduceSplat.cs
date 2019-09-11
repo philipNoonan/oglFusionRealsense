@@ -46,18 +46,18 @@ void main()
             reduType row = trackOutput[(y * imageSize.x) + x];
             if (row.result < 1)
             {
-                if (row.result == -4)
+                if (row.result < -1) // all but -1
                 {
                     sums[28] += 1;
                 }
-                if (row.result == -5)
-                {
-                    sums[28] += 1;
-                }
-                if (row.result > -4)
-                {
-                    sums[28] += 1;
-                }
+                //if (row.result == -5)
+                //{
+                //    sums[28] += 1;
+                //}
+                //if (row.result == -2)
+                //{
+                //    sums[28] += 1;
+                //}
                 continue;
             }
 

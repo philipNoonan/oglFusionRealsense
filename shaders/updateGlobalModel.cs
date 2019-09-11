@@ -1,26 +1,54 @@
-#version 430
+#version 430 core
 
-layout(local_size_x = 32) in;
+layout(local_size_x = 1024, local_size_y = 1) in; // 
 
-uint maxNumVerts;
+// input depth frame data
+// layout(location = 0) in vec4 vertexConfidence;
+// layout(location = 1) in vec4 normalRadius;
+// layout(location = 2) in vec4 colorTimeDevice;
 
-layout(std430, binding = 0) buffer feedbackBuffer
+// global buffer
+layout(std430, binding = 0) buffer globalBuffer
 {
-    vec4 interleavedData [];
+    vec4 interleavedGlobalBuffer [];
 };
 
-layout(std430, binding = 1) buffer updateIndexMapBuffer
+// new depth frame buffer
+layout(std430, binding = 1) buffer depthBuffer
 {
-    vec4 updateIndexInterleaved [];
+    vec4 interleavedDepthBuffer [];
 };
 
-layout(std430, binding = 2) buffer outputBuffer
+// output index matching buffer
+layout(std430, binding = 2) buffer indexMatchingBuffer
 {
-    vec4 outputInterleavedData [];
+    int updateIndexMatchingBuffer [];
 };
 
+layout(std430, binding = 3) buffer indexNewUnstableBuffer
+{
+    int updateIndexNewUnstableBuffer [];
+};
+
+layout(binding = 0, rgba32f) uniform image2D outImagePC;
+
+//out vec4 geoVertPosConf;
+//out vec4 geoVertNormRadi;
+//out vec4 geoVertColTimDev;
+//flat out int toFuse;
+
+uniform vec4 camPam;
 uniform float texDim;
 uniform int time;
+uniform uint currentGlobalNumber;
+uniform uint currentNewUnstableNumber;
+
+vec3 projectPointImage(vec3 p)
+{
+    return vec3(((camPam.z * p.x) / p.z) + camPam.x,
+                ((camPam.w * p.y) / p.z) + camPam.y,
+                p.z);
+}
 
 float encodeColor(vec3 c)
 {
@@ -43,71 +71,110 @@ void main()
 {
     // this gets run for every vertex in the global model
 
-    // data is vec4 vec4 vec4
-    //vec2 imSize = vec2(imageSize(imVertConf));
+    //int toFuse = 0;
 
-    int vertID = int(gl_GlobalInvocationID.x);
+    // get the (if any) matching depth vertices index from the global-size matched update index buffer 
 
-    //ivec2 pix;
-    //pix.y = vertID / int(texDim);
-    //pix.x = vertID - (pix.y * int(texDim));
+    uint invocationID = gl_GlobalInvocationID.x;
 
-
-    vec4 newColor = updateIndexInterleaved[(vertID * 3) + 2];
-
-    //Do averaging here
-    if (newColor.w == -1)
+    if (invocationID > currentGlobalNumber + currentNewUnstableNumber)
     {
-        vec4 vertexConfidence = interleavedData[(vertID * 3)];
-        vec4 normalRadius = interleavedData[(vertID * 3) + 1];
-        vec4 colorTimeDevice = interleavedData[(vertID * 3) + 2];
-
-        vec4 newPos = updateIndexInterleaved[(vertID * 3)];
-        vec4 newNorm = updateIndexInterleaved[(vertID * 3) + 1];
-
-        float c_k = vertexConfidence.w;
-        vec3 v_k = vertexConfidence.xyz;
-        
-        float a = newPos.w;
-        vec3 v_g = newPos.xyz;
-        
-        if(newNorm.w < (1.0 + 0.5) * normalRadius.w)
-        {
-            // vert conf output
-            outputInterleavedData[(vertID * 3)] = vec4(((c_k * v_k) + (a * v_g)) / (c_k + a), c_k + a);
-	        
-	        vec3 oldCol = decodeColor(colorTimeDevice.x);
-	        vec3 newCol = decodeColor(newColor.x);
-           
-            vec3 avgColor = ((c_k * oldCol.xyz) + (a * newCol.xyz)) / (c_k + a);
-
-            // norm radius output
-            outputInterleavedData[(vertID * 3) + 1] = vec4(encodeColor(avgColor), colorTimeDevice.y, colorTimeDevice.z, time);
-	        
-	        vec4 outVertNormRadi = ((c_k * normalRadius) + (a * newNorm)) / (c_k + a);
-
-            // color time device output
-            outputInterleavedData[(vertID * 3) + 1] = vec4(normalize(outVertNormRadi.xyz), outVertNormRadi.w);
-        }
-        else
-        {
-            outputInterleavedData[(vertID * 3)    ] = vec4(vertexConfidence.xyz, c_k + a);
-            outputInterleavedData[(vertID * 3) + 1] = normalRadius;
-            outputInterleavedData[(vertID * 3) + 2] = vec4(colorTimeDevice.xyz, colorTimeDevice);
-        }
-    }
-    else
-    {
-        //This point isn't being updated, so just transfer it
-        outputInterleavedData[(vertID * 3)    ] = interleavedData[(vertID * 3)];
-        outputInterleavedData[(vertID * 3) + 1] = interleavedData[(vertID * 3) + 1];
-        outputInterleavedData[(vertID * 3) + 2] = interleavedData[(vertID * 3) + 2];
+        return;
     }
 
+    if (invocationID > currentGlobalNumber) // new unstable point
+    {
+        
+        uint newUnstableInvocationID = invocationID - currentGlobalNumber; // CHECK THAT THIS ISNT A ERROR OF 1 OUT
 
-    // need to wipe the update buffer after every update, this should always ensure that the active buffer values are set off after use
-    updateIndexInterleaved[(vertID * 3)] = vec4(0.0f);
-    updateIndexInterleaved[(vertID * 3) + 1] = vec4(0.0f);
-    updateIndexInterleaved[(vertID * 3) + 2] = vec4(0.0f);
+        uint newUnstableID = updateIndexNewUnstableBuffer[newUnstableInvocationID];
 
+        vec4 depthVertConf = interleavedDepthBuffer[(newUnstableID * 3)];
+        vec4 depthNormRadi = interleavedDepthBuffer[(newUnstableID * 3) + 1];
+        vec4 depthColDevTim = interleavedDepthBuffer[(newUnstableID * 3) + 2];
+
+        interleavedGlobalBuffer[(invocationID * 3) + 0] = depthVertConf;
+        interleavedGlobalBuffer[(invocationID * 3) + 1] = depthNormRadi;
+        interleavedGlobalBuffer[(invocationID * 3) + 2] = depthColDevTim;
+
+        updateIndexNewUnstableBuffer[newUnstableInvocationID] = 0; // SGHOULD THIS BE ZERO?
+
+    }
+    else // we either have a stable point to merge, or just need to copy/do nothing
+    {
+        int matchingIndex = updateIndexMatchingBuffer[invocationID];
+
+        vec4 globalVertConf = interleavedGlobalBuffer[(invocationID * 3)];
+        vec4 globalNormRadi = interleavedGlobalBuffer[(invocationID * 3) + 1];
+        vec4 globalColDevTim = interleavedGlobalBuffer[(invocationID * 3) + 2];
+
+        if (matchingIndex == 0) // no point to merge with
+        {
+            // copy accross, or rather, dont overwrite this global vert in the buffer
+        }
+        else // point to merge with
+        {
+            vec4 depthVertConf = interleavedDepthBuffer[(abs(matchingIndex) * 3)];
+            vec4 depthNormRadi = interleavedDepthBuffer[(abs(matchingIndex) * 3) + 1];
+            vec4 depthColDevTim = interleavedDepthBuffer[(abs(matchingIndex) * 3) + 2];
+
+            vec3 pix = projectPointImage(depthVertConf.xyz);
+
+            float globalConfidence = depthVertConf.w; // c_k
+            vec3 globalVertex = depthVertConf.xyz; // v_k
+
+            float depthConfidence = depthVertConf.w; // a
+            vec3 depthVertex = depthVertConf.xyz; // v_g
+
+            if (depthNormRadi.w < (1.0 + 0.5) * globalNormRadi.w)
+            {
+                // vert conf output
+                interleavedGlobalBuffer[(matchingIndex * 3) + 0] = vec4(((globalConfidence * globalVertex) + (depthConfidence * depthVertex)) / (globalConfidence + depthConfidence), globalConfidence + depthConfidence);
+
+                vec3 globalCol = decodeColor(globalColDevTim.x);
+                vec3 depthCol = decodeColor(depthColDevTim.x);
+
+                vec3 avgColor = ((globalConfidence * globalCol.xyz) + (depthConfidence * depthCol.xyz)) / (globalConfidence + depthConfidence);
+
+                vec4 geoVertNormRadi = ((globalConfidence * globalNormRadi) + (depthConfidence * depthNormRadi)) / (globalConfidence + depthConfidence);
+                interleavedGlobalBuffer[(matchingIndex * 3) + 1] = vec4(normalize(geoVertNormRadi.xyz), geoVertNormRadi.w);
+
+                interleavedGlobalBuffer[(matchingIndex * 3) + 2] = vec4(encodeColor(avgColor), globalColDevTim.y, globalColDevTim.z, time);
+
+
+
+            }
+            else
+            {
+
+                imageStore(outImagePC, ivec2(pix.xy), vec4(0.6, 0.2, 0.3, 1));
+
+                interleavedGlobalBuffer[(gl_GlobalInvocationID.x * 3) + 0] = vec4(globalVertConf.xyz, globalConfidence + depthConfidence);
+                interleavedGlobalBuffer[(gl_GlobalInvocationID.x * 3) + 1] = globalNormRadi;
+                interleavedGlobalBuffer[(gl_GlobalInvocationID.x * 3) + 2] = vec4(globalColDevTim.xyz, time);
+
+
+            }
+
+        }
+
+        updateIndexMatchingBuffer[invocationID] = 0;
+
+    }
 }
+
+
+
+
+//void main()
+//{
+//    if (toFuse[0] == 1)
+//    {
+//        outVertPosConf = geoVertPosConf[0];
+//        outVertNormRadi = geoVertNormRadi[0];
+//        outVertColTimDev = geoVertColTimDev[0];
+//        EmitVertex();
+//        EndPrimitive();
+//    }
+
+//}

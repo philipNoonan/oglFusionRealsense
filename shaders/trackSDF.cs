@@ -300,7 +300,7 @@ void main()
 
         if (normals.x == 2)
         {
-            trackOutput[offset + ((pix.y * imageSize.x) + pix.x)].result = -4; 
+            trackOutput[offset + ((pix.y * imageSize.x) + pix.x)].result = -1; 
             imageStore(trackImage, ivec2(pix), vec4(0, 0, 0, 0));
 
         }

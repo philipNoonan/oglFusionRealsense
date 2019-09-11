@@ -82,7 +82,7 @@ void main()
             if (normals.x == 2)
             {
                 trackOutput[offset].result = -1; // does this matter since we are in a low mipmap not full size???
-                imageStore(trackImage, ivec3(pix, camera), vec4(0, 0, 0, 0));
+                imageStore(trackImage, ivec3(pix, camera), vec4(0, 0, 0, 1));
             }
             else
             {
@@ -128,7 +128,7 @@ void main()
                 if (projPixel.x < 0 || projPixel.x > refSize.x - 1 || projPixel.y < 0 || projPixel.y > refSize.y - 1)
                 {
                     trackOutput[offset].result = -2;
-                    imageStore(trackImage, ivec3(pix, camera), vec4(1.0f, 0.0f, 0, 1.0f));
+                    imageStore(trackImage, ivec3(pix, camera), vec4(1.0f, 0.0f, 0.0f, 1.0f));
                 }
                 else
                 {
@@ -137,7 +137,7 @@ void main()
                     //vec3 tmp = imageLoad(refVertex, refPixel).xyz;
                     //imageStore(differenceImage, ivec2(projPixel), vec4(tmp.z, 0.0f, 0.0f, 1.0f));
 
-                    if (referenceNormal.x == -2)
+                    if (referenceNormal.x == 2)
                     {
                         trackOutput[offset].result = -3;
                         imageStore(trackImage, ivec3(pix, camera), vec4(0, 1.0f, 0, 1.0f));
@@ -148,7 +148,7 @@ void main()
                         vec4 currNormal = imageLoad(inNormal, pix);
                         vec3 projectedNormal = vec3((cameraPoses[camera] * vec4(currNormal.xyz, 0.0f)).xyz); // input mipmap sized pixel
 
-                        imageStore(trackImage, ivec3(pix, camera), vec4(diff, 1.0f));
+                        //imageStore(trackImage, ivec3(pix, camera), vec4(currNormal.x, referenceNormal.x, 0.0f, 1.0f));
                         if (length(diff) > dist_threshold)
                         {
                             trackOutput[offset].result = -4;

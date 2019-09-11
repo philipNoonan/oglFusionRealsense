@@ -351,3 +351,4 @@ cv::Mat col;
 
 float windowWidth = 5.0f;
 std::map<int, std::deque<std::valarray<float>>> rollingAverage;
+

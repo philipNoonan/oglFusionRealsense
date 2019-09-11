@@ -53,7 +53,7 @@ void main()
 		pix = projectPointImage(vCurrentPosition.xyz);
         //x = ((((camPam.z * vCurrentPosition.x) / vCurrentPosition.z) + camPam.x) - (imSize.x * 0.5)) / (imSize.x * 0.5);
         //y = ((((camPam.w * vCurrentPosition.y) / vCurrentPosition.z) + camPam.y) - (imSize.y * 0.5)) / (imSize.y * 0.5);
-        geoVertexID = gl_VertexID;
+        geoVertexID = vertID;
     }
     
 
