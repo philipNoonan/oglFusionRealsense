@@ -979,6 +979,6 @@ private:
 	int m_initUnstable;
 	uint32_t m_frameCount;
 	uint32_t m_timeDelta = 200;
-	float m_depthMax = 1.0f;
+	float m_depthMax = 0.5f;
 
 };

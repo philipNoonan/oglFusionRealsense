@@ -76,8 +76,11 @@ void gFusion::compileAndLinkShader()
 		const GLchar* feedbackOutput[] = { "outVertPosConf",
 									       "outVertNormRadi",
 									       "outVertColTimDev" };
-		const GLchar* indexFeedbackOutput[] = { "outUpdateId" };
 
+		const GLchar* indexFeedbackOutput[] = { "outVC",
+												"outNR",
+												"outCTD",
+												"outVertID" };
 
 		depthToBufferProg.compileShader("shaders/depthToBuffer.vs");
 		depthToBufferProg.compileShader("shaders/depthToBuffer.gs");
@@ -93,7 +96,7 @@ void gFusion::compileAndLinkShader()
 		dataProg.compileShader("shaders/data.vs");
 		dataProg.compileShader("shaders/data.gs");
 		//dataProg.compileShader("shaders/data.fs");
-		glTransformFeedbackVaryings(dataProg.getHandle(), 1, indexFeedbackOutput, GL_INTERLEAVED_ATTRIBS);
+		glTransformFeedbackVaryings(dataProg.getHandle(), 4, indexFeedbackOutput, GL_INTERLEAVED_ATTRIBS);
 		//dataProg.compileShader("shaders/data.cs");
 		dataProg.link();
 
@@ -1373,7 +1376,7 @@ void gFusion::combinedPredict()
 	}
 	else
 	{
-		glDrawArrays(GL_POINTS, 0, globalVertCount); // this should include stable and unstable points, but only stable points get 
+		glDrawArrays(GL_POINTS, 0, inputDepthCount); // this should include stable and unstable points, but only stable points get 
 	}
 	//glDrawTransformFeedback(GL_POINTS, m_globalTarget_TFO);
 
@@ -1676,8 +1679,8 @@ void gFusion::fuse()
 
 	glEnable(GL_RASTERIZER_DISCARD);
 
-	glBindTransformFeedback(GL_TRANSFORM_FEEDBACK, m_newUnstable_TFO);
-	glBindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER, 0, m_newUnstableIndex_VBO);
+	glBindTransformFeedback(GL_TRANSFORM_FEEDBACK, m_globalRender_TFO);
+	glBindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER, 0, m_globalRender_VBO);
 
 	glBindVertexArray(m_data_VAO);
 
@@ -1690,7 +1693,7 @@ void gFusion::fuse()
 	glActiveTexture(GL_TEXTURE3);
 	glBindTexture(GL_TEXTURE_2D, m_textureGlobalIndexColTimDev);
 
-	//glBindImageTexture(0, m_textureDist, 0, GL_TRUE, 0, GL_WRITE_ONLY, GL_RGBA32F);
+	glBindImageTexture(0, m_textureDist, 0, GL_TRUE, 0, GL_WRITE_ONLY, GL_RGBA32F);
 
 	glm::mat4 pose[4];
 
@@ -1718,8 +1721,8 @@ void gFusion::fuse()
 	//glBindBufferBase(GL_ATOMIC_COUNTER_BUFFER, 0, m_atomicCounterTest);
 
 	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, m_depth_VBO);
-	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, m_updateIndex_VBO);
-
+	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, m_globalTarget_VBO);
+	
 
 	//GLuint query;
 	//glGenQueries(1, &query);
@@ -1749,35 +1752,64 @@ void gFusion::fuse()
 
 	std::cout << "fuses : " << newUnstableCount << std::endl;
 
+	// HERE WE HAVE A NEW UNSTABLE BUFFER (CURRENTLY LENGTH OF THE GLOBAL BUFFER, BUT IT DOESNT HAVE TO BE, I THINK) 
+	// IT CONTAINS THE UNORDERED LIST OF MATCHED POINTS (WITH AN INDEX SHOWING WHICH GLOBAL VERT THEY MATCH WITH)
+	// AND NEW UNSTABLE POINTS THAT DONT MATCH WITH ANYTHING YET
+	// TO UPDATE THE GLOBAL MODEL, WE ONLY TOUCH THE VERTS THAT HAVE FOUND A MATCH, NOTHING GETS DONE TO THE NEW UNSTABLE POINTS YET
+	// THE MERGING COULD BE DONE IN DATA.VS, REMOVING THE NEED FOR UPDATEGLOBALMODEL.VS
+	// OR WE JUST USE A SIMPLE COMPUTE SHADER TO DO THIS, SINCE WE ARE NOT MAKING A SMALLER TFO
+
+	// IN CLEAN GLOBAL, WE SPIN UP A TRANSFORM FEEDBACK THAT RUNS OVER ALL GLOBAL VERTS AND THE LENGTH OF THE TFO RETURNED FROM DATA, WHICH INCLUDES ALL THE NEW INSTABLE AND THE NEWLY MATCHED POINTS
+	// THIS ALLOWS THE OUTPUT FROM THAT SHADER TO BE A CLEANED, PRUNED VERSION OF THE GLOBAL MODEL
+	// THE OUTPUT IS THE RENDER VERSION, THAT THEN GETS TICK TOCKED WITH THE GLOBAL TARGET
 
 
 
-	GLfloat black[] = { 0, 0, 0, 1 };
-	glClearTexImage(m_textureDist, 0, GL_RGBA, GL_FLOAT, black);
+	//std::vector<float> testvec(848 * 480 * 4, 10);
+	//glActiveTexture(GL_TEXTURE0);
+	//glBindTexture(GL_TEXTURE_2D, m_textureDist);
+	//glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_FLOAT, testvec.data());
+	//glBindTexture(GL_TEXTURE_2D, 0);
+	//cv::Mat combo = cv::Mat(480, 848, CV_32FC4, testvec.data());
+	//cv::imshow("combined", combo);
+	//cv::waitKey(1);
 
 
-	//// this gets run over all verts in global model, plus the new number of unstable points to be appended to the list
-	updateGlobalModelProg.use();
+	//std::vector<float> testoutputData(textureDimension * textureDimension * 16);
 
-	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, m_globalTarget_VBO);
-	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, m_depth_VBO);
-	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, m_updateIndex_VBO);
-	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 3, m_newUnstableIndex_VBO);
+	//glBindBuffer(GL_SHADER_STORAGE_BUFFER, m_globalRender_VBO);
+	//void *ptr = glMapBuffer(GL_SHADER_STORAGE_BUFFER, GL_READ_ONLY);
+	//memcpy(testoutputData.data(), ptr, testoutputData.size() * sizeof(float));
 
-	glBindImageTexture(0, m_textureDist, 0, GL_TRUE, 0, GL_WRITE_ONLY, GL_RGBA32F);
+	//glUnmapBuffer(GL_SHADER_STORAGE_BUFFER);
 
-	glUniform4fv(m_ugmCamPamID, 1, glm::value_ptr(camPam[0]));
-	glUniform1ui(m_ugmTimeID, m_frameCount);
-	glUniform1ui(m_ugmTimeDeltaID, m_timeDelta);
 
-	glUniform1f(m_ugmTexDimID, (float)textureDimension); // NOT YET SET
-	glUniform1ui(m_ugmCurrentGlobalNumberID, globalVertCount);
-	glUniform1ui(m_ugmCurrentNewUnstableNumberID, newUnstableCount);
+	//GLfloat black[] = { 0, 0, 0, 1 };
+	//glClearTexImage(m_textureDist, 0, GL_RGBA, GL_FLOAT, black);
 
-	//globalVertCount = globalVertCount + newUnstableCount;
-	int xthreads = divup(globalVertCount + newUnstableCount, 1024); // this should be global plus the length of the newUnstable buffer
-	glDispatchCompute(xthreads, 1, 1);
-	glMemoryBarrier(GL_ALL_BARRIER_BITS);
+
+	////// this gets run over all verts in global model, plus the new number of unstable points to be appended to the list
+	//updateGlobalModelProg.use();
+
+	//glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, m_globalTarget_VBO);
+	//glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, m_depth_VBO);
+	//glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, m_updateIndex_VBO);
+	//glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 3, m_newUnstableIndex_VBO);
+
+	//glBindImageTexture(0, m_textureDist, 0, GL_TRUE, 0, GL_WRITE_ONLY, GL_RGBA32F);
+
+	//glUniform4fv(m_ugmCamPamID, 1, glm::value_ptr(camPam[0]));
+	//glUniform1ui(m_ugmTimeID, m_frameCount);
+	//glUniform1ui(m_ugmTimeDeltaID, m_timeDelta);
+
+	//glUniform1f(m_ugmTexDimID, (float)textureDimension); // NOT YET SET
+	//glUniform1ui(m_ugmCurrentGlobalNumberID, globalVertCount);
+	//glUniform1ui(m_ugmCurrentNewUnstableNumberID, newUnstableCount);
+
+	////globalVertCount = globalVertCount + newUnstableCount;
+	//int xthreads = divup(globalVertCount + newUnstableCount, 1024); // this should be global plus the length of the newUnstable buffer
+	//glDispatchCompute(xthreads, 1, 1);
+	//glMemoryBarrier(GL_ALL_BARRIER_BITS);
 
 	// CLEAN GLOBAL MODEL
 	//cleanGlobalProg.use();
