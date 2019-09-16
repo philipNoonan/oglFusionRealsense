@@ -113,11 +113,11 @@ void main()
 
 	if (initUnstable == 1)
 	{
-			geoVertexColorTimeDevice= vec4(0.2, frameCount, 1, texelCoord.z); // .z is the stable flag or counter
+			geoVertexColorTimeDevice= vec4(0.2, 0, frameCount, texelCoord.z); // .z is the stable flag or counter
 	}
 	else
 	{
-		geoVertexColorTimeDevice= vec4(0.2, frameCount, 0, texelCoord.z);// .z is the stable flag or counter, here set to unstable
+		geoVertexColorTimeDevice= vec4(0.2, 1, frameCount, texelCoord.z);// .z is the stable flag or counter, here set to unstable
 	}
 
 	imageCoord = texelCoord.xy;
@@ -133,7 +133,8 @@ void main()
 	imageStore(combinedConRadDev, imageCoord, vec4(0.0f, 0.0f, 0.0f, 1.0f));
 
 	// wipe the previous frames new unstable buffer since we have a invocation per depth pixel here
-	updateIndexNewUnstableBuffer[vertID] = 0;
+
+
 	// wipe previous depth frame buffer
 	interleavedDepthBuffer[(vertID * 3) + 0] = vec4(0);
     interleavedDepthBuffer[(vertID * 3) + 1] = vec4(0);

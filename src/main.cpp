@@ -1499,10 +1499,10 @@ int main(int, char**)
 
 					////gfusion.fuse(); // 
 
-					if (tracked)
-					{
+					//if (tracked)
+					//{
 						gfusion.fuse(); // cs then // vs gs // perhaps should be other way around (vs gs, then cs)
-					}
+					//}
 				}
 
 			}

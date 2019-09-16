@@ -13,7 +13,7 @@ layout(std430, binding = 1) buffer globalModelBuffer
     vec4 globalModel [];
 };
 
-layout (binding = 0) uniform usampler2D indexSampler; // 4x
+layout (binding = 0) uniform isampler2D indexSampler; // 4x
 layout (binding = 1) uniform sampler2D vertConfSampler; // 4x
 layout (binding = 2) uniform sampler2D normRadiSampler; // 4x
 layout (binding = 3) uniform sampler2D colTimDevSampler; // 4x
@@ -259,7 +259,7 @@ void main()
 			geoCTD.w = -1;
 			geoVertID = int(best);
 
-			// UPDATE GLOBAL MODEL HERE, RATHER THAN IN SEPARATE VERTEX SHADER STAGE, OR WOULD THIS UNBALANCE THE PIPELINE???
+		/*	// UPDATE GLOBAL MODEL HERE, RATHER THAN IN SEPARATE VERTEX SHADER STAGE, OR WOULD THIS UNBALANCE THE PIPELINE???
 			// these may be swapped up, but i dont think it matters
 
 			float c_k = bestVC.w;
@@ -294,13 +294,13 @@ void main()
 				globalModel[(geoVertID * 3) + 2].w = time;
 
 			}
-
+			*/
 
 
         }
         else // no matching point found, so this is a new unstable
         {
-			updateID = 2; 
+			updateID = 2;  // CAN PROBABLY GET RID OF THIS AND JUST USE -2 .w
 			geoCTD.w = -2;
 			geoVertID = -2;
 

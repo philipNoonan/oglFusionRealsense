@@ -11,7 +11,6 @@ out vec4 outVertPosConf;
 out vec4 outVertNormRadi;
 out vec4 outVertColTimDev;
 
-
 void main()
 {
 	if (test[0] > 0)

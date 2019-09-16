@@ -14,16 +14,15 @@ flat in int updateID[];
 out vec4 outVC;
 out vec4 outNR;
 out vec4 outCTD;
-out uint outVertID;
 
 void main() 
 {
-		if (updateID[0] > 0)
+		if (updateID[0] == 2) //we dont need the degenerate cases anymore since they have already been merged into the global model
 		{
 			outVC = geoVC[0];
 			outNR = geoNR[0];
 			outCTD = geoCTD[0];
-			outVertID = geoVertID[0];
+
 			EmitVertex();
 			EndPrimitive(); 
 		} 

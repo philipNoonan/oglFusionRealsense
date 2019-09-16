@@ -770,7 +770,8 @@ private:
 
 	// Depth to Vertex Buffering
 	GLuint m_depth_VAO;
-	GLuint m_global_VAO;
+	GLuint m_globalTarget_VAO;
+	GLuint m_globalRender_VAO;
 
 	GLuint m_depth_VBO;
 	GLuint m_depth_TFO;
@@ -975,10 +976,11 @@ private:
 	GLuint fuseCount;
 	GLuint newUnstableCount;
 	GLuint globalVertCount = 0;
+	GLuint finalVertCount = 0;
 
 	int m_initUnstable;
 	uint32_t m_frameCount;
 	uint32_t m_timeDelta = 200;
-	float m_depthMax = 0.5f;
+	float m_depthMax = 2.0f;
 
 };
