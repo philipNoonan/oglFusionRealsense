@@ -39,7 +39,8 @@ layout(binding = 0, rgba32f) uniform image2D outImagePC;
 
 uniform vec4 camPam;
 uniform float texDim;
-uniform int time;
+uniform uint time;
+uniform uint timeDelta;
 uniform uint currentGlobalNumber;
 uniform uint currentNewUnstableNumber;
 
@@ -82,6 +83,14 @@ void main()
         return;
     }
 
+    vec4 globalVertConf;
+    vec4 globalNormRadi;
+    vec4 globalColDevTim;
+
+    vec4 depthVertConf;
+    vec4 depthNormRadi;
+    vec4 depthColDevTim;
+
     if (invocationID > currentGlobalNumber) // new unstable point
     {
         
@@ -89,34 +98,42 @@ void main()
 
         uint newUnstableID = updateIndexNewUnstableBuffer[newUnstableInvocationID];
 
-        vec4 depthVertConf = interleavedDepthBuffer[(newUnstableID * 3)];
-        vec4 depthNormRadi = interleavedDepthBuffer[(newUnstableID * 3) + 1];
-        vec4 depthColDevTim = interleavedDepthBuffer[(newUnstableID * 3) + 2];
+        depthVertConf = interleavedDepthBuffer[(newUnstableID * 3)];
+        depthNormRadi = interleavedDepthBuffer[(newUnstableID * 3) + 1];
+        depthColDevTim = interleavedDepthBuffer[(newUnstableID * 3) + 2];
 
         interleavedGlobalBuffer[(invocationID * 3) + 0] = depthVertConf;
         interleavedGlobalBuffer[(invocationID * 3) + 1] = depthNormRadi;
         interleavedGlobalBuffer[(invocationID * 3) + 2] = depthColDevTim;
 
         updateIndexNewUnstableBuffer[newUnstableInvocationID] = 0; // SGHOULD THIS BE ZERO?
+        vec3 pix0 = projectPointImage(depthVertConf.xyz);
+
+        imageStore(outImagePC, ivec2(pix0.xy), vec4(0.6, 0.5, 0.3, 1));
+
 
     }
     else // we either have a stable point to merge, or just need to copy/do nothing
     {
         int matchingIndex = updateIndexMatchingBuffer[invocationID];
 
-        vec4 globalVertConf = interleavedGlobalBuffer[(invocationID * 3)];
-        vec4 globalNormRadi = interleavedGlobalBuffer[(invocationID * 3) + 1];
-        vec4 globalColDevTim = interleavedGlobalBuffer[(invocationID * 3) + 2];
+        globalVertConf = interleavedGlobalBuffer[(invocationID * 3)];
+        globalNormRadi = interleavedGlobalBuffer[(invocationID * 3) + 1];
+        globalColDevTim = interleavedGlobalBuffer[(invocationID * 3) + 2];
 
         if (matchingIndex == 0) // no point to merge with
         {
             // copy accross, or rather, dont overwrite this global vert in the buffer
+            vec3 pix1 = projectPointImage(globalVertConf.xyz);
+
+            imageStore(outImagePC, ivec2(pix1.xy), vec4(0.6, 0.2, 0.7, 1));
+
         }
         else // point to merge with
         {
-            vec4 depthVertConf = interleavedDepthBuffer[(abs(matchingIndex) * 3)];
-            vec4 depthNormRadi = interleavedDepthBuffer[(abs(matchingIndex) * 3) + 1];
-            vec4 depthColDevTim = interleavedDepthBuffer[(abs(matchingIndex) * 3) + 2];
+            depthVertConf = interleavedDepthBuffer[(abs(matchingIndex) * 3)];
+            depthNormRadi = interleavedDepthBuffer[(abs(matchingIndex) * 3) + 1];
+            depthColDevTim = interleavedDepthBuffer[(abs(matchingIndex) * 3) + 2];
 
             vec3 pix = projectPointImage(depthVertConf.xyz);
 
@@ -141,6 +158,7 @@ void main()
 
                 interleavedGlobalBuffer[(matchingIndex * 3) + 2] = vec4(encodeColor(avgColor), globalColDevTim.y, globalColDevTim.z, time);
 
+                imageStore(outImagePC, ivec2(pix.xy), vec4(0.2, 0.2, 0.3, 1));
 
 
             }
@@ -161,6 +179,15 @@ void main()
         updateIndexMatchingBuffer[invocationID] = 0;
 
     }
+
+    // we now have a buffer of stable and unstable verts, the new unstable verts are at the end of the buffer, but there may be unstable verts at any point in the buffer
+    // so for each invocationID, we need to check whether they are stable (some flag in color) and if not, how long have they been in the buffer, and what is their confidence
+
+    //if (time - globalColDevTim.w > timeDelta) 
+
+
+
+
 }
 
 

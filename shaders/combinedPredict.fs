@@ -1,15 +1,15 @@
 #version 430 core
 
-in vec4 fragVertConf;
+flat in vec4 fragVertConf;
 flat in vec4 fragNormRadi;
-in vec4 fragColTimDev;
+flat in vec4 fragColTimDev;
 
 uniform vec4 camPam;
 uniform float maxDepth;
 
 layout(location = 0) out vec4 outVertex;
 layout(location = 1) out vec4 outNormal;
-layout(location = 2) out vec4 outColTim;
+layout(location = 2) out vec4 outColTimStab;
 layout(location = 3) out vec4 outConRadDev;
 
 
@@ -44,12 +44,12 @@ void main()
     float sqrRad = pow(fragNormRadi.w, 2);
     vec3 diff = corrected_pos - fragVertConf.xyz;
 
-    if(dot(diff, diff) > sqrRad)
+    if(dot(diff, diff) > sqrRad || fragColTimDev.z == 0) // this prevent the render of unstable points
     {
         discard;
     }
 
-    outColTim = vec4(decodeColor(fragColTimDev.x), 1);
+    outColTimStab = vec4(fragColTimDev.xyz, 1); // 8008 is a placeholder for a stable flag or counter
     
     float z = corrected_pos.z;
 	// is this S.O. relevent?

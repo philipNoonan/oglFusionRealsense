@@ -28,7 +28,7 @@ vec3 projectPointImage(vec3 p)
 void main()
 {
 
-	int vertID = int(gl_GlobalInvocationID.x); // 0 to max number of valid depth verts
+	int vertID = int(gl_GlobalInvocationID.x); // 0 to max number of global verts stable and unstable
 
 	vec4 vertexConfidence = interleavedData[(vertID * 3)];
 	vec4 normalRadius = interleavedData[(vertID * 3) + 1];

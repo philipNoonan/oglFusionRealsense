@@ -1434,7 +1434,7 @@ int main(int, char**)
 
 			}
 
-			gfusion.uploadDepthToBuffer(cameraInterface.getDepthQueues(), cameraDevice, iOff);
+			gfusion.uploadDepthToBuffer(cameraInterface.getDepthQueues(), cameraDevice, iOff, counter);
 			//gfusion.uploadDepth(cameraInterface.getDepthQueues(), cameraDevice, iOff);
 			gfusion.depthToVertex();
 			gfusion.vertexToNormal();
@@ -1489,15 +1489,15 @@ int main(int, char**)
 
 					gfusion.predictIndices(); // cs // 4x map from global
 
-					// we should now have a current view of the global model with maps of verts and normals
+					//// we should now have a current view of the global model with maps of verts and normals
 
-					// call mipmap on them?
+					//// call mipmap on them?
 
-					//gfusion.makeImagePyramids();
+					////gfusion.makeImagePyramids();
 
 					tracked = gfusion.TrackSplat(); // cs
 
-					//gfusion.fuse(); // 
+					////gfusion.fuse(); // 
 
 					if (tracked)
 					{
@@ -1538,10 +1538,10 @@ int main(int, char**)
 
 
 			
-			if (counter <= 20)
-			{
+			//if (counter <= 20)
+			//{
 				counter++;
-			}
+			//}
 
 			//FOR ONE CAMERA ONLY
 			outputFile << std::to_string(gfusion.getFrameTime()[0]) << " " << gfusion.alignmentEnergy() << " " << cameraInterface.getTemperature()[0];

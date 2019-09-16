@@ -1,5 +1,6 @@
 #version 430 core
 
+// the global model which contains stable and unstable vertices
 layout(location = 0) in vec4 vertexConfidence;
 layout(location = 1) in vec4 normalRadius;
 layout(location = 2) in vec4 colorTimeDevice;
@@ -15,9 +16,9 @@ uniform int timeDelta;
 
 layout(binding = 0, rgba32f) uniform image2D outImagePC;
 
-out vec4 fragVertConf;
+flat out vec4 fragVertConf;
 flat out vec4 fragNormRadi;
-out vec4 fragColTimDev;
+flat out vec4 fragColTimDev;
 
 vec3 projectPoint(vec3 p)
 {
@@ -52,7 +53,7 @@ void main()
 	    fragVertConf = vec4(vPosHome.xyz, vertexConfidence.w);
 	    fragNormRadi = vec4(normalize(mat3(inversePose[0]) * normalRadius.xyz), normalRadius.w);
 
-		imageStore(outImagePC, ivec2(pix.xy), vec4(fragNormRadi.xyz,1));
+		//imageStore(outImagePC, ivec2(pix.xy), vec4(fragNormRadi.xyz ,1));
 
 	    vec3 x1 = normalize(vec3((fragNormRadi.y - fragNormRadi.z), -fragNormRadi.x, fragNormRadi.x)) * fragNormRadi.w * 1.41421356;
 	    

@@ -227,7 +227,7 @@ public:
 	//void depthToVertex(std::vector<rs2::frame_queue> depthQ, glm::vec3 &point);
 	// backproject depth frame into vertex image
 	void uploadDepth(std::vector<rs2::frame_queue> depthQ, int devNumber, glm::vec3 &point);
-	void uploadDepthToBuffer(std::vector<rs2::frame_queue> depthQ, int devNumber, glm::vec3 &point);
+	void uploadDepthToBuffer(std::vector<rs2::frame_queue> depthQ, int devNumber, glm::vec3 &point, uint32_t counter);
 	void allocateTransformFeedbackBuffers();
 	void initSplatterFusion();
 	void combinedPredict();
@@ -434,7 +434,7 @@ private:
 	GLSLProgram depthToBufferProg;
 	GLSLProgram updateGlobalModelProg;
 	GLSLProgram dataProg;
-	GLSLProgram unstableProg;
+	GLSLProgram cleanGlobalProg;
 	GLSLProgram initUnstableProg;
 	GLSLProgram splatterProg;
 	GLSLProgram splatterGlobalProg;
@@ -601,6 +601,7 @@ private:
 	GLuint m_depthScaleID_d2b;
 	GLuint m_invKID_d2b;
 	GLuint m_initUnstableID_d2b;
+	GLuint m_frameCountID_d2b;
 
 	// index map
 	GLuint m_indexInversePoseID;
@@ -632,14 +633,25 @@ private:
 	GLuint m_dpPoseID;
 	GLuint m_dpMaxDepthID;
 	GLuint m_dpTimeID;
+	GLuint m_dpTimeDeltaID;
 	GLuint m_dpWeightingID;
 
 	// update global model
 	GLuint m_ugmCamPamID;
 	GLuint m_ugmTimeID;
+	GLuint m_ugmTimeDeltaID;
 	GLuint m_ugmTexDimID;
 	GLuint m_ugmCurrentGlobalNumberID;
+	GLuint m_ugmCurrentNewUnstableNumberID;
 
+	// clean global model
+	GLuint m_cgTimeID;
+	GLuint m_cgTimeDeltaID;
+	GLuint m_cgInversePoseID;
+	GLuint m_cgCamPamID;
+	GLuint m_cgConfThresholdID;
+	GLuint m_cgCurrentGlobalNumberID;
+	GLuint m_cgCurrentNewUnstableNumberID;
 	// TEXTURES
 	GLuint createTexture(GLenum target, int levels, int w, int h, int d, GLint internalformat, GLenum magFilter, GLenum minFilter);
 	GLuint m_textureColor;
@@ -965,5 +977,8 @@ private:
 	GLuint globalVertCount = 0;
 
 	int m_initUnstable;
+	uint32_t m_frameCount;
+	uint32_t m_timeDelta = 200;
+	float m_depthMax = 1.0f;
 
 };

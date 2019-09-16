@@ -23,11 +23,12 @@ layout(binding = 0, rgba32f) uniform image2D outImagePC;
 flat out int vertID;
 flat out int newUnstable;
 
-uniform vec4 camPam; //cx, cy, fx, fy
+uniform vec4 camPam; //cx, cy, 1 / fx, 1 / fy
 uniform float scale; // index map scale = 4.0f
 uniform mat4 pose[4];
 uniform float maxDepth;
-uniform float time;
+uniform uint time;
+uniform uint timeDelta;
 uniform float weighting;
 
 vec2 imSize;
@@ -143,6 +144,9 @@ vec3 projectPointImage(vec3 p)
 }
 
 // this gets run for every valid depth vertex from the depth TFO
+// its purpose is to determine if there are any new points in the depth map that could be fused to the global model
+// it creates a sub-buffer of new unstable points from the depth TFO to be later fused with the global model as new unstable points
+// it also creates an index list of the new points that 
 void main()
 {
 	ivec2 bigTexSize = textureSize(vertConfSampler, 0); // this is the 4x size
@@ -239,5 +243,7 @@ void main()
         {
 			newUnstable = 1; // it was a real depth point but it has no found match
         }
+
+		// make sure new unstable is valid time wise
     }	
 }

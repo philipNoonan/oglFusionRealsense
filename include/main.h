@@ -241,7 +241,7 @@ bool performFlood = false;
 bool performFlow = false;
 bool performAruco = false;
 
-int counter = 0;
+uint32_t counter = 0;
 bool reset = true;
 bool integratingFlag = true;
 bool selectInitialPoseFlag = false;

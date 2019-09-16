@@ -23,7 +23,10 @@ uniform mat4 invK[4];
 uniform uint time;
 uniform float depthScale;
 
+
 uniform int initUnstable;
+uniform uint frameCount;
+
 
 layout(std430, binding = 0) buffer depthBuffer
 {
@@ -79,6 +82,7 @@ float getRadi(float depth, float normZ, int camNumber)
 
 float getConf(vec3 texelCoord, float weighting)
 {
+    // http://reality.cs.ucl.ac.uk/projects/kinect/keller13realtime.pdf sec 4.2
     const float maxRadDist = 400; //sqrt((width * 0.5)^2 + (height * 0.5)^2)
     const float twoSigmaSquared = 0.72; //2*(0.6^2) from paper
     
@@ -109,11 +113,11 @@ void main()
 
 	if (initUnstable == 1)
 	{
-			geoVertexColorTimeDevice= vec4(0.2, 0.6, 1, texelCoord.z);
+			geoVertexColorTimeDevice= vec4(0.2, frameCount, 1, texelCoord.z); // .z is the stable flag or counter
 	}
 	else
 	{
-		geoVertexColorTimeDevice= vec4(0.2, 0.6, 69, texelCoord.z);
+		geoVertexColorTimeDevice= vec4(0.2, frameCount, 0, texelCoord.z);// .z is the stable flag or counter, here set to unstable
 	}
 
 	imageCoord = texelCoord.xy;
@@ -125,8 +129,8 @@ void main()
 
 	imageStore(combinedVertex, imageCoord, vec4(0.0f, 0.0f, 0.0f, 1.0f));
 	imageStore(combinedNormal, imageCoord, vec4(2.0f, 0.0f, 0.0f, 1.0f));
-	imageStore(combinedColTim, imageCoord, vec4(0.0f, 0.0f, 0.0f, 0.0f));
-	imageStore(combinedConRadDev, imageCoord, vec4(0.0f, 0.0f, 0.0f, 0.0f));
+	imageStore(combinedColTim, imageCoord, vec4(0.0f, 0.0f, 0.0f, 1.0f));
+	imageStore(combinedConRadDev, imageCoord, vec4(0.0f, 0.0f, 0.0f, 1.0f));
 
 	// wipe the previous frames new unstable buffer since we have a invocation per depth pixel here
 	updateIndexNewUnstableBuffer[vertID] = 0;

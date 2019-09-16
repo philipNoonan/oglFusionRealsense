@@ -1,10 +1,5 @@
 #version 430 core
 
-// input depth frame data
-// layout(location = 0) in vec4 vertexConfidence;
-// layout(location = 1) in vec4 normalRadius;
-// layout(location = 2) in vec4 colorTimeDevice;
-
 // global buffer
 layout(std430, binding = 0) buffer globalBuffer
 {
@@ -17,21 +12,30 @@ layout(std430, binding = 1) buffer depthBuffer
     vec4 interleavedDepthBuffer [];
 };
 
+// output index matching buffer
 layout(std430, binding = 2) buffer indexMatchingBuffer
 {
     int updateIndexMatchingBuffer [];
 };
 
+layout(std430, binding = 3) buffer indexNewUnstableBuffer
+{
+    int updateIndexNewUnstableBuffer [];
+};
+
 layout(binding = 0, rgba32f) uniform image2D outImagePC;
 
-out vec4 geoVertPosConf;
-out vec4 geoVertNormRadi;
-out vec4 geoVertColTimDev;
+flat out vec4 outputVC;
+flat out vec4 outputNR;
+flat out vec4 outputCDT;
 flat out int toFuse;
 
-vec4 camPam = vec4(424, 240, 424, 424);
+uniform vec4 camPam;
 uniform float texDim;
-uniform int time;
+uniform uint time;
+uniform uint timeDelta;
+uniform uint currentGlobalCount;
+uniform uint currentNewUnstableCount;
 
 vec3 projectPointImage(vec3 p)
 {
@@ -59,88 +63,149 @@ vec3 decodeColor(float c)
 
 void main()
 {
-	// this gets run for every vertex in the global model
-	
-	toFuse = 0;
+    //int toFuse = 0;
 
-	// get the (if any) matching depth vertices index from the global-size matched update index buffer 
-	int matchingIndex = updateIndexMatchingBuffer[gl_VertexID];
+    // get the (if any) matching depth vertices index from the global-size matched update index buffer 
 
-	vec4 globalVertConf  = interleavedGlobalBuffer[(gl_VertexID * 3)];
-	vec4 globalNormRadi  = interleavedGlobalBuffer[(gl_VertexID * 3) + 1];
-	vec4 globalColDevTim = interleavedGlobalBuffer[(gl_VertexID * 3) + 2];
-		
-	//Do averaging here
-	if (matchingIndex != 0) // this defines whether this is a stable (+ve) or unstable (-ve) or non matching (0)
-	{
+    uint invocationID = gl_GlobalInvocationID.x;
 
-		vec4 depthVertConf  = interleavedDepthBuffer[(abs(matchingIndex) * 3)];
-		vec4 depthNormRadi  = interleavedDepthBuffer[(abs(matchingIndex) * 3) + 1];
-		vec4 depthColDevTim = interleavedDepthBuffer[(abs(matchingIndex) * 3) + 2];
+    if (invocationID > currentGlobalNumber + currentNewUnstableNumber)
+    {
+        return;
+    }
 
-		vec3 pix = projectPointImage(depthVertConf.xyz);
+    vec4 globalVertConf;
+    vec4 globalNormRadi;
+    vec4 globalColDevTim;
+
+    vec4 depthVertConf;
+    vec4 depthNormRadi;
+    vec4 depthColDevTim;
 
 
-		toFuse = 1;
-
-		float globalConfidence = depthVertConf.w; // c_k
-		vec3 globalVertex = depthVertConf.xyz; // v_k
+    if (invocationID > currentGlobalNumber) // new unstable point
+    {
         
-		float depthConfidence = depthVertConf.w; // a
-		vec3 depthVertex = depthVertConf.xyz; // v_g
-        
+        uint newUnstableInvocationID = invocationID - currentGlobalNumber; // CHECK THAT THIS ISNT A ERROR OF 1 OUT
 
-		if(matchingIndex > 0 && depthNormRadi.w < (1.0 + 0.5) * globalNormRadi.w)
-		{
+        uint newUnstableID = updateIndexNewUnstableBuffer[newUnstableInvocationID];
+
+        depthVertConf = interleavedDepthBuffer[(newUnstableID * 3)];
+        depthNormRadi = interleavedDepthBuffer[(newUnstableID * 3) + 1];
+        depthColDevTim = interleavedDepthBuffer[(newUnstableID * 3) + 2];
+
+        //interleavedGlobalBuffer[(invocationID * 3) + 0] = depthVertConf;
+        //interleavedGlobalBuffer[(invocationID * 3) + 1] = depthNormRadi;
+        //interleavedGlobalBuffer[(invocationID * 3) + 2] = depthColDevTim;
+
+		outputVC = depthVertConf;
+        outputNR = depthNormRadi;
+        outputCDT = depthColDevTim;
+
+        updateIndexNewUnstableBuffer[newUnstableInvocationID] = 0; // SGHOULD THIS BE ZERO?
+        vec3 pix0 = projectPointImage(depthVertConf.xyz);
+
+        imageStore(outImagePC, ivec2(pix0.xy), vec4(0.6, 0.5, 0.3, 1));
+
+
+    }
+    else // we either have a stable point to merge, or just need to copy/do nothing
+    {
+        int matchingIndex = updateIndexMatchingBuffer[invocationID];
+
+        globalVertConf = interleavedGlobalBuffer[(invocationID * 3)];
+        globalNormRadi = interleavedGlobalBuffer[(invocationID * 3) + 1];
+        globalColDevTim = interleavedGlobalBuffer[(invocationID * 3) + 2];
+
+        if (matchingIndex == 0) // no point to merge with
+        {
+            // copy accross, or rather, dont overwrite this global vert in the buffer
+            vec3 pix1 = projectPointImage(globalVertConf.xyz);
+
+            imageStore(outImagePC, ivec2(pix1.xy), vec4(0.6, 0.2, 0.7, 1));
+
+        }
+        else // point to merge with
+        {
+            depthVertConf = interleavedDepthBuffer[(abs(matchingIndex) * 3)];
+            depthNormRadi = interleavedDepthBuffer[(abs(matchingIndex) * 3) + 1];
+            depthColDevTim = interleavedDepthBuffer[(abs(matchingIndex) * 3) + 2];
+
+            vec3 pix = projectPointImage(depthVertConf.xyz);
+
+            float globalConfidence = depthVertConf.w; // c_k
+            vec3 globalVertex = depthVertConf.xyz; // v_k
+
+            float depthConfidence = depthVertConf.w; // a
+            vec3 depthVertex = depthVertConf.xyz; // v_g
+
+            if (depthNormRadi.w < (1.0 + 0.5) * globalNormRadi.w)
+            {
+                // vert conf output
+
+                vec3 globalCol = decodeColor(globalColDevTim.x);
+                vec3 depthCol = decodeColor(depthColDevTim.x);
+
+                vec3 avgColor = ((globalConfidence * globalCol.xyz) + (depthConfidence * depthCol.xyz)) / (globalConfidence + depthConfidence);
+
+                vec4 geoVertNormRadi = ((globalConfidence * globalNormRadi) + (depthConfidence * depthNormRadi)) / (globalConfidence + depthConfidence);
+                
+				
+				//interleavedGlobalBuffer[(matchingIndex * 3) + 0] = vec4(((globalConfidence * globalVertex) + (depthConfidence * depthVertex)) / (globalConfidence + depthConfidence), globalConfidence + depthConfidence);
+			    //interleavedGlobalBuffer[(matchingIndex * 3) + 1] = vec4(normalize(geoVertNormRadi.xyz), geoVertNormRadi.w);
+                //interleavedGlobalBuffer[(matchingIndex * 3) + 2] = vec4(encodeColor(avgColor), globalColDevTim.y, globalColDevTim.z, time);
+
+
+				outputVC = vec4(((globalConfidence * globalVertex) + (depthConfidence * depthVertex)) / (globalConfidence + depthConfidence), globalConfidence + depthConfidence);
+			    outputNR = vec4(normalize(geoVertNormRadi.xyz), geoVertNormRadi.w);
+                outputCDT = vec4(encodeColor(avgColor), globalColDevTim.y, globalColDevTim.z, time);
+
+                imageStore(outImagePC, ivec2(pix.xy), vec4(0.2, 0.2, 0.3, 1));
+
+
+            }
+            else
+            {
+
+                imageStore(outImagePC, ivec2(pix.xy), vec4(0.6, 0.2, 0.3, 1));
+
+                //interleavedGlobalBuffer[(gl_GlobalInvocationID.x * 3) + 0] = vec4(globalVertConf.xyz, globalConfidence + depthConfidence);
+                //interleavedGlobalBuffer[(gl_GlobalInvocationID.x * 3) + 1] = globalNormRadi;
+                //interleavedGlobalBuffer[(gl_GlobalInvocationID.x * 3) + 2] = vec4(globalColDevTim.xyz, time);
+
+				outputVC = vec4(globalVertConf.xyz, globalConfidence + depthConfidence);
+                outputNR = globalNormRadi;
+                outputCDT = vec4(globalColDevTim.xyz, time);
+            }
+
+        }
+
+        updateIndexMatchingBuffer[invocationID] = 0;
+
+    }
+
+    // we now have a buffer of stable and unstable verts, the new unstable verts are at the end of the buffer, but there may be unstable verts at any point in the buffer
+    // so for each invocationID, we need to check whether they are stable (some flag in color) and if not, how long have they been in the buffer, and what is their confidence
+
+    //if (time - globalColDevTim.w > timeDelta) 
 
 
 
-			// vert conf output
-			geoVertPosConf = vec4(((globalConfidence * globalVertex) + (depthConfidence * depthVertex)) / (globalConfidence + depthConfidence), globalConfidence + depthConfidence);
-	        
-
-
-			vec3 globalCol = decodeColor(globalColDevTim.x);
-			vec3 depthCol = decodeColor(depthColDevTim.x);
-           
-			vec3 avgColor = ((globalConfidence * globalCol.xyz) + (depthConfidence * depthCol.xyz)) / (globalConfidence + depthConfidence);
-
-			geoVertNormRadi = ((globalConfidence * globalNormRadi) + (depthConfidence * depthNormRadi)) / (globalConfidence + depthConfidence);
-			geoVertNormRadi = vec4(normalize(geoVertNormRadi.xyz), geoVertNormRadi.w);
-			
-			imageStore(outImagePC, ivec2(pix.xy), vec4(geoVertPosConf.www, 1));
-
-			geoVertColTimDev = vec4(encodeColor(avgColor), globalColDevTim.y, globalColDevTim.z, time);
-		}
-		else
-		{
-			imageStore(outImagePC, ivec2(pix.xy), vec4(0.6,0.2,0.3,1));
-
-			geoVertPosConf = vec4(globalVertConf.xyz, globalConfidence + depthConfidence);
-			geoVertNormRadi = globalNormRadi;
-			geoVertColTimDev = vec4(globalColDevTim.xyz, time);
-		}
-	}
-	else // no matching in depth frame so just copy over
-	{
-		//This point isn't being updated, so just transfer it
-		geoVertPosConf = globalVertConf;
-		geoVertNormRadi = globalNormRadi;
-		geoVertColTimDev = globalColDevTim;
-	}
-
-	//updateIndexMatchingBuffer[gl_VertexID] = 0;
 
 }
 
 
 
 
-	//imageStore(outImagePC, ivec2(i / 4, j / 4), vec4(dist, 0, 0, 1));
-	
+//void main()
+//{
+//    if (toFuse[0] == 1)
+//    {
+//        outVertPosConf = geoVertPosConf[0];
+//        outVertNormRadi = geoVertNormRadi[0];
+//        outVertColTimDev = geoVertColTimDev[0];
+//        EmitVertex();
+//        EndPrimitive();
+//    }
 
-    // need to wipe the update buffer after every update, this should always ensure that the active buffer values are set off after use
-  //  updateIndexInterleaved[(gl_VertexID * 3)] = vec4(0.0f);
-  //  updateIndexInterleaved[(gl_VertexID * 3) + 1] = vec4(0.0f);
-  //  updateIndexInterleaved[(gl_VertexID * 3) + 2] = vec4(0.0f);
 //}

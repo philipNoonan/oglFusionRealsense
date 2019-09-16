@@ -97,10 +97,10 @@ void gFusion::compileAndLinkShader()
 		//dataProg.compileShader("shaders/data.cs");
 		dataProg.link();
 
-		//unstableProg.compileShader("shaders/copyUnstable.vs");
-		//unstableProg.compileShader("shaders/copyUnstable.gs");
-		//glTransformFeedbackVaryings(unstableProg.getHandle(), 3, feedbackOutput, GL_INTERLEAVED_ATTRIBS);
-		//unstableProg.link();
+		cleanGlobalProg.compileShader("shaders/cleanGlobal.vs");
+		cleanGlobalProg.compileShader("shaders/cleanGlobal.gs");
+		glTransformFeedbackVaryings(cleanGlobalProg.getHandle(), 3, feedbackOutput, GL_INTERLEAVED_ATTRIBS);
+		cleanGlobalProg.link();
 		
 		//initUnstableProg.compileShader("shaders/initUnstable.vs");
 		//initUnstableProg.compileShader("shaders/initUnstable.vs");
@@ -289,6 +289,7 @@ void gFusion::setLocations()
 	m_depthScaleID_d2b = glGetUniformLocation(depthToBufferProg.getHandle(), "depthScale");
 	m_invKID_d2b = glGetUniformLocation(depthToBufferProg.getHandle(), "invK");
 	m_initUnstableID_d2b = glGetUniformLocation(depthToBufferProg.getHandle(), "initUnstable");
+	m_frameCountID_d2b = glGetUniformLocation(depthToBufferProg.getHandle(), "frameCount");
 
 	createIndexMapProg.use();
 	m_indexInversePoseID = glGetUniformLocation(createIndexMapProg.getHandle(), "inversePose");
@@ -317,12 +318,25 @@ void gFusion::setLocations()
 	m_dpPoseID = glGetUniformLocation(dataProg.getHandle(), "pose");
 	m_dpMaxDepthID = glGetUniformLocation(dataProg.getHandle(), "maxDepth");
 	m_dpTimeID = glGetUniformLocation(dataProg.getHandle(), "time");
+	m_dpTimeDeltaID = glGetUniformLocation(dataProg.getHandle(), "timeDelta");
+
 	m_dpWeightingID = glGetUniformLocation(dataProg.getHandle(), "weighting");
 
 	m_ugmCamPamID = glGetUniformLocation(updateGlobalModelProg.getHandle(), "camPam");
 	m_ugmTimeID = glGetUniformLocation(updateGlobalModelProg.getHandle(), "time");
+	m_ugmTimeDeltaID = glGetUniformLocation(updateGlobalModelProg.getHandle(), "timeDelta");
 	m_ugmTexDimID = glGetUniformLocation(updateGlobalModelProg.getHandle(), "texDim");
-	m_ugmCurrentGlobalNumberID = glGetUniformLocation(updateGlobalModelProg.getHandle(), "currentGlobalNumber");
+	m_ugmCurrentGlobalNumberID = glGetUniformLocation(updateGlobalModelProg.getHandle(), "currentGlobalCount");
+	m_ugmCurrentNewUnstableNumberID = glGetUniformLocation(updateGlobalModelProg.getHandle(), "currentNewUnstableCount");
+
+	m_cgTimeID = glGetUniformLocation(cleanGlobalProg.getHandle(), "time");
+	m_cgTimeDeltaID = glGetUniformLocation(cleanGlobalProg.getHandle(), "timeDelta");
+	m_cgInversePoseID = glGetUniformLocation(cleanGlobalProg.getHandle(), "inversePose");
+	m_cgCamPamID = glGetUniformLocation(cleanGlobalProg.getHandle(), "camPam");
+	m_cgConfThresholdID = glGetUniformLocation(cleanGlobalProg.getHandle(), "confThreshold");
+	m_cgCurrentGlobalNumberID = glGetUniformLocation(updateGlobalModelProg.getHandle(), "currentGlobalCount");
+	m_cgCurrentNewUnstableNumberID = glGetUniformLocation(updateGlobalModelProg.getHandle(), "currentNewUnstableCount");
+
 
 }
 
@@ -805,23 +819,31 @@ void gFusion::allocateTransformFeedbackBuffers()
 	//glGenVertexArrays(1, &m_depth_VAO);
 	//glBindVertexArray(m_depth_VAO);
 
-	glGenTransformFeedbacks(1, &m_globalTarget_TFO);
-	glGenBuffers(1, &m_globalTarget_VBO);
-	glBindBuffer(GL_ARRAY_BUFFER, m_globalTarget_VBO);
-	glBufferData(GL_ARRAY_BUFFER, textureDimension * textureDimension * 8, NULL, GL_STREAM_DRAW);
-	glBindBuffer(GL_ARRAY_BUFFER, 0);
-
-	//glGenTransformFeedbacks(1, &m_globalRender_TFO);
-	//glGenBuffers(1, &m_globalRender_VBO);
-	//glBindBuffer(GL_ARRAY_BUFFER, m_globalRender_VBO);
-	//glBufferData(GL_ARRAY_BUFFER, textureDimension * textureDimension * 8, NULL, GL_STREAM_DRAW);
-	//glBindBuffer(GL_ARRAY_BUFFER, 0);
-
 	glGenTransformFeedbacks(1, &m_depth_TFO);
 	glGenBuffers(1, &m_depth_VBO);
 	glBindBuffer(GL_ARRAY_BUFFER, m_depth_VBO);
+	glBufferData(GL_ARRAY_BUFFER, textureDimension * textureDimension * 16, NULL, GL_STREAM_DRAW);
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
+
+	glGenTransformFeedbacks(1, &m_newUnstable_TFO);
+	glGenBuffers(1, &m_newUnstableIndex_VBO);
+	glBindBuffer(GL_ARRAY_BUFFER, m_newUnstableIndex_VBO);
 	glBufferData(GL_ARRAY_BUFFER, textureDimension * textureDimension * 8, NULL, GL_STREAM_DRAW);
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
+
+	glGenTransformFeedbacks(1, &m_globalTarget_TFO);
+	glGenBuffers(1, &m_globalTarget_VBO);
+	glBindBuffer(GL_ARRAY_BUFFER, m_globalTarget_VBO);
+	glBufferData(GL_ARRAY_BUFFER, textureDimension * textureDimension * 16, NULL, GL_STREAM_DRAW);
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
+
+	glGenTransformFeedbacks(1, &m_globalRender_TFO); // do i need the TFO here as well?
+	glGenBuffers(1, &m_globalRender_VBO);
+	glBindBuffer(GL_ARRAY_BUFFER, m_globalRender_VBO);
+	glBufferData(GL_ARRAY_BUFFER, textureDimension * textureDimension * 16, NULL, GL_STREAM_DRAW);
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
+
+
 
 	//glGenTransformFeedbacks(1, &m_unstable_TFO);
 	//glGenBuffers(1, &m_unstable_VBO);
@@ -834,17 +856,13 @@ void gFusion::allocateTransformFeedbackBuffers()
 	glBufferData(GL_ARRAY_BUFFER, textureDimension * textureDimension * 8, NULL, GL_STREAM_DRAW);
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 
-	glGenTransformFeedbacks(1, &m_newUnstable_TFO);
-	glGenBuffers(1, &m_newUnstableIndex_VBO);
-	glBindBuffer(GL_ARRAY_BUFFER, m_newUnstableIndex_VBO);
-	glBufferData(GL_ARRAY_BUFFER, textureDimension * textureDimension, NULL, GL_STREAM_DRAW);
-	glBindBuffer(GL_ARRAY_BUFFER, 0);
 
-	// Atomics
-	glGenBuffers(1, &m_atomicCounterTest);
-	glBindBuffer(GL_ATOMIC_COUNTER_BUFFER, m_atomicCounterTest);
-	glBufferData(GL_ATOMIC_COUNTER_BUFFER, sizeof(GLuint), NULL, GL_DYNAMIC_DRAW);
-	glBindBuffer(GL_ATOMIC_COUNTER_BUFFER, 0);
+
+	//// Atomics
+	//glGenBuffers(1, &m_atomicCounterTest);
+	//glBindBuffer(GL_ATOMIC_COUNTER_BUFFER, m_atomicCounterTest);
+	//glBufferData(GL_ATOMIC_COUNTER_BUFFER, sizeof(GLuint), NULL, GL_DYNAMIC_DRAW);
+	//glBindBuffer(GL_ATOMIC_COUNTER_BUFFER, 0);
 
 }
 void gFusion::initSplatterFBOs()
@@ -907,8 +925,8 @@ void gFusion::initSplatterFBOs()
 
 	glGenRenderbuffers(1, &m_combined_RBO);
 	glBindRenderbuffer(GL_RENDERBUFFER, m_combined_RBO);
-	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, configuration.depthFrameSize.x, configuration.depthFrameSize.y); // use a single renderbuffer object for both a depth AND stencil buffer.
-	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, m_combined_RBO); // now actually attach it
+	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT32F, configuration.depthFrameSize.x, configuration.depthFrameSize.y); // use a single renderbuffer object for both a depth AND stencil buffer.
+	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, m_combined_RBO); // now actually attach it
 	// now that we actually created the framebuffer and added all attachments we want to check if it is actually complete now
 	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
 		std::cout << "ERROR::FRAMEBUFFER:: Framebuffer is not complete!" << std::endl;
@@ -1026,10 +1044,10 @@ void gFusion::initSplatterVAOs()
 	glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, sizeof(glm::vec4) * 3, (GLvoid*)0);
 	// normal radius
 	glEnableVertexAttribArray(1);
-	glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, sizeof(glm::vec4) * 3, (GLvoid*)(sizeof(glm::vec4)));
+	glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, sizeof(glm::vec4) * 3, (GLvoid*)(sizeof(glm::vec4) * 1));
 	//// color time device
 	glEnableVertexAttribArray(2);
-	glVertexAttribPointer(2, 4, GL_FLOAT, GL_FALSE, sizeof(glm::vec4) * 2, (GLvoid*)(sizeof(glm::vec4) * 2));
+	glVertexAttribPointer(2, 4, GL_FLOAT, GL_FALSE, sizeof(glm::vec4) * 3, (GLvoid*)(sizeof(glm::vec4) * 2));
 
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 	glBindVertexArray(0);
@@ -1044,10 +1062,10 @@ void gFusion::initSplatterVAOs()
 	glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, sizeof(glm::vec4) * 3, (GLvoid*)0);
 	// normal radius
 	glEnableVertexAttribArray(1);
-	glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, sizeof(glm::vec4) * 3, (GLvoid*)(sizeof(glm::vec4)));
+	glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, sizeof(glm::vec4) * 3, (GLvoid*)(sizeof(glm::vec4) * 1));
 	//// color time device
 	glEnableVertexAttribArray(2);
-	glVertexAttribPointer(2, 4, GL_FLOAT, GL_FALSE, sizeof(glm::vec4) * 2, (GLvoid*)(sizeof(glm::vec4) * 2));
+	glVertexAttribPointer(2, 4, GL_FLOAT, GL_FALSE, sizeof(glm::vec4) * 3, (GLvoid*)(sizeof(glm::vec4) * 2));
 
 	//glBindBuffer(GL_ARRAY_BUFFER, 0);
 	glBindVertexArray(0);
@@ -1056,10 +1074,10 @@ void gFusion::initSplatterVAOs()
 
 }
 
-void gFusion::uploadDepthToBuffer(std::vector<rs2::frame_queue> depthQ, int devNumber, glm::vec3 &point)
+void gFusion::uploadDepthToBuffer(std::vector<rs2::frame_queue> depthQ, int devNumber, glm::vec3 &point, uint32_t counter)
 {
 
-
+	m_frameCount = counter;
 	std::vector<rs2::frame> depthFrame(m_numberOfCameras);
 
 
@@ -1156,6 +1174,7 @@ void gFusion::uploadDepthToBuffer(std::vector<rs2::frame_queue> depthQ, int devN
 			glUniform1f(m_depthScaleID_d2b, m_depthUnit / 1000000.0f); // 1000 == each depth unit == 1 mm
 			glUniformMatrix4fv(m_invKID_d2b, 4, GL_FALSE, glm::value_ptr(invK[0]));
 			glUniform1i(m_initUnstableID_d2b, m_initUnstable);
+			glUniform1ui(m_frameCountID_d2b, m_frameCount);
 			glBindVertexArray(m_depth_VAO);
 
 			glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, m_depth_VBO);
@@ -1338,11 +1357,11 @@ void gFusion::combinedPredict()
 	glUniformMatrix4fv(m_cpInversePoseID, 4, GL_FALSE, glm::value_ptr(inversePose[0]));
 	glUniform4fv(m_cpCamPamID, 1, glm::value_ptr(camPam[0]));
 	glUniform2fv(m_cpImSizeID, 1, glm::value_ptr(configuration.depthFrameSize));
-	glUniform1f(m_cpMaxDepthID, 5.0f); // NOT YET SET
+	glUniform1f(m_cpMaxDepthID, m_depthMax); 
 	glUniform1i(m_cpTimeID, 1);
 	glUniform1f(m_cpConfThresholdID, 100.0f); // NOT YET SET
-	glUniform1i(m_cpMaxTimeID, 100); // NOT YET SET
-	glUniform1i(m_cpTimeDeltaID, 50); // NOT YET SET
+	glUniform1i(m_cpMaxTimeID, m_frameCount);
+	glUniform1i(m_cpTimeDeltaID, m_timeDelta);
 
 	glBindBuffer(GL_ARRAY_BUFFER, m_globalTarget_VBO);
 
@@ -1354,7 +1373,7 @@ void gFusion::combinedPredict()
 	}
 	else
 	{
-		glDrawArrays(GL_POINTS, 0, globalVertCount); // afterwards we should know how many global verts exist
+		glDrawArrays(GL_POINTS, 0, globalVertCount); // this should include stable and unstable points, but only stable points get 
 	}
 	//glDrawTransformFeedback(GL_POINTS, m_globalTarget_TFO);
 
@@ -1373,14 +1392,14 @@ void gFusion::combinedPredict()
 	glBindVertexArray(0);
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
-	std::vector<float> testvec(848 * 480 * 4, 10);
-	glActiveTexture(GL_TEXTURE0);
-	glBindTexture(GL_TEXTURE_2D, m_textureDist);
-	glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_FLOAT, testvec.data());
-	glBindTexture(GL_TEXTURE_2D, 0);
-	cv::Mat combo = cv::Mat(480, 848, CV_32FC4, testvec.data());
-	cv::imshow("combined", combo);
-	cv::waitKey(1);
+	//std::vector<float> testvec(848 * 480 * 4, 10);
+	//glActiveTexture(GL_TEXTURE0);
+	//glBindTexture(GL_TEXTURE_2D, m_textureDist);
+	//glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_FLOAT, testvec.data());
+	//glBindTexture(GL_TEXTURE_2D, 0);
+	//cv::Mat combo = cv::Mat(480, 848, CV_32FC4, testvec.data());
+	//cv::imshow("combined", combo);
+	//cv::waitKey(1);
 
 }
 
@@ -1423,7 +1442,7 @@ void gFusion::predictIndices()
 	glUniformMatrix4fv(m_indexInversePoseID, 4, GL_FALSE, glm::value_ptr(model[0]));
 	glUniform4fv(m_indexCamPamID, 1, glm::value_ptr(camPam[0] * indexMapScaleFactor));
 	glUniform2fv(m_indexImSizeID, 1, glm::value_ptr((glm::vec2(configuration.depthFrameSize * indexMapScaleFactor))));
-	glUniform1f(m_indexMaxDepthID, 5.0f);
+	glUniform1f(m_indexMaxDepthID, m_depthMax);
 	glUniform1i(m_indexTimeID, 1); // time not SET
 
 	//glBindBuffer(GL_ARRAY_BUFFER, m_globalTarget_VBO);
@@ -1440,7 +1459,7 @@ void gFusion::predictIndices()
 		
 
 	int xthreads;
-	xthreads = divup(inputDepthCount, 1024);
+	xthreads = divup(globalVertCount, 1024);
 
 
 	glDispatchCompute(xthreads, 1, 1);
@@ -1684,13 +1703,15 @@ void gFusion::fuse()
 
 	for (int i = 0; i < m_numberOfCameras; i++)
 	{
-		camPam[i] = glm::vec4(m_camPamsDepth[i].z, m_camPamsDepth[i].w, m_camPamsDepth[i].x, m_camPamsDepth[i].y);
+		camPam[i] = glm::vec4(m_camPamsDepth[i].z, m_camPamsDepth[i].w, 1.0f / m_camPamsDepth[i].x, 1.0f / m_camPamsDepth[i].y);
 	}
 
 	glUniformMatrix4fv(m_dpPoseID, 4, GL_FALSE, glm::value_ptr(pose[0]));
 	glUniform4fv(m_dpCamPamID, 1, glm::value_ptr(camPam[0]));
-	glUniform1f(m_dpMaxDepthID, 5.0f);
-	glUniform1i(m_dpTimeID, 1); // time not SET
+	glUniform1f(m_dpMaxDepthID, m_depthMax);
+	glUniform1ui(m_dpTimeID, m_frameCount);
+	glUniform1ui(m_dpTimeDeltaID, m_timeDelta);
+
 	glUniform1f(m_dpScaleID, 4.0f);
 	glUniform1f(m_dpWeightingID, 1.0f); // NOT YET SET
 
@@ -1728,51 +1749,10 @@ void gFusion::fuse()
 
 	std::cout << "fuses : " << newUnstableCount << std::endl;
 
-	//int xthreads;
-	//xthreads = divup(inputDepthCount, 1024); 
-
-
-	//glDispatchCompute(xthreads, 1, 1);
-	//glMemoryBarrier(GL_ALL_BARRIER_BITS);
-
-	//glBindTexture(GL_TEXTURE_2D, 0);
-	//glActiveTexture(GL_TEXTURE0);
-	//glDisableVertexAttribArray(0);
-	//glBindBuffer(GL_ARRAY_BUFFER, 0);
-	////glBindTransformFeedback(GL_TRANSFORM_FEEDBACK, 0);
-
-	////glFinish();
-
-	//uint32_t numberOfVertsProcessed;
-	//glBindBuffer(GL_ATOMIC_COUNTER_BUFFER, m_atomicCounterTest);
-	//glGetBufferSubData(GL_ATOMIC_COUNTER_BUFFER, 0, sizeof(uint32_t), &m_atomicCounterTest);
-
-	//std::cout << "number of atomics " << m_atomicCounterTest << std::endl;
-	//GLuint zeroData = globalVertCount;
-	//glClearBufferData(GL_ATOMIC_COUNTER_BUFFER, GL_R32UI, GL_RED, GL_UNSIGNED_INT, &zeroData);
-
-
-	//glActiveTexture(GL_TEXTURE0);
-	//glBindTexture(GL_TEXTURE_2D, m_textureDepthIndexVertConf);
-	//glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_FLOAT, testvec1.data());
-	//glBindTexture(GL_TEXTURE_2D, 0);
-
-	//cv::Mat bigboi1 = cv::Mat(480, 848, CV_32FC4, testvec1.data());
-	////cv::imshow("bigdasdgie", bigboi1);
-	////cv::waitKey(1);
-
-	//cv::Mat diffMat = (bigboi - bigboi1);
-
-	//cv::imshow("diff", (bigboi - bigboi1) * 100);
-	//cv::waitKey(1);
-
-
-
 
 
 
 	GLfloat black[] = { 0, 0, 0, 1 };
-
 	glClearTexImage(m_textureDist, 0, GL_RGBA, GL_FLOAT, black);
 
 
@@ -1787,69 +1767,47 @@ void gFusion::fuse()
 	glBindImageTexture(0, m_textureDist, 0, GL_TRUE, 0, GL_WRITE_ONLY, GL_RGBA32F);
 
 	glUniform4fv(m_ugmCamPamID, 1, glm::value_ptr(camPam[0]));
-	glUniform1i(m_ugmTimeID, 1);
+	glUniform1ui(m_ugmTimeID, m_frameCount);
+	glUniform1ui(m_ugmTimeDeltaID, m_timeDelta);
+
 	glUniform1f(m_ugmTexDimID, (float)textureDimension); // NOT YET SET
 	glUniform1ui(m_ugmCurrentGlobalNumberID, globalVertCount);
+	glUniform1ui(m_ugmCurrentNewUnstableNumberID, newUnstableCount);
 
-	globalVertCount = globalVertCount + newUnstableCount;
-	int xthreads = divup(globalVertCount, 1024); // this should be global plus the length of the newUnstable buffer
+	//globalVertCount = globalVertCount + newUnstableCount;
+	int xthreads = divup(globalVertCount + newUnstableCount, 1024); // this should be global plus the length of the newUnstable buffer
 	glDispatchCompute(xthreads, 1, 1);
 	glMemoryBarrier(GL_ALL_BARRIER_BITS);
 
-
-
-
-	////std::cout << "previous globs : " << globalVertCount << " : input : " << inputDepthCount << std::endl;
-
-
-	////glDrawArrays(GL_POINTS, 0, m_atomicCounterTest + globalVertCount);
-	////glDrawTransformFeedback(GL_POINTS, m_globalTarget_TFO); 
-
-	////glEndTransformFeedback();
-	////glFlush();
-
-	////glEndQuery(GL_TRANSFORM_FEEDBACK_PRIMITIVES_WRITTEN);
-	////glGetQueryObjectuiv(query, GL_QUERY_RESULT, &globalVertCount);
-
-	////std::cout << "globs : " << globalVertCount << std::endl;
-
-	////glDisable(GL_RASTERIZER_DISCARD);
-
-	////glBindBuffer(GL_ARRAY_BUFFER, 0);
-	////glBindTransformFeedback(GL_TRANSFORM_FEEDBACK, 0);
-
-
-
-	////////std::vector<float> testvec(848 * 480 * 4, 10);
-	////////glActiveTexture(GL_TEXTURE0);
-	////////glBindTexture(GL_TEXTURE_2D, m_textureDist);
-	////////glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_FLOAT, testvec.data());
-	////////glBindTexture(GL_TEXTURE_2D, 0);
-	////////cv::Mat bigboi = cv::Mat(480, 848, CV_32FC4, testvec.data());
-	////////cv::imshow("biggie", bigboi * 100000000.0f);
-	////////cv::waitKey(1);
-
-
-	//
-	//std::vector<float> testvec(848 * 480 * 4, 10);
+	// CLEAN GLOBAL MODEL
+	//cleanGlobalProg.use();
+	//glEnable(GL_RASTERIZER_DISCARD);
+	//glBindTransformFeedback(GL_TRANSFORM_FEEDBACK, m_globalTarget_TFO);
+	//glBindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER, 0, m_globalRender_VBO);
+	//glBindVertexArray(m_global_VAO);
 	//glActiveTexture(GL_TEXTURE0);
-	//glBindTexture(GL_TEXTURE_2D, m_textureDist);
-	//glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_FLOAT, testvec.data());
-	//glBindTexture(GL_TEXTURE_2D, 0);
-	//cv::Mat bigboi = cv::Mat(480, 848, CV_32FC4, testvec.data());
-	//cv::imshow("biggie", bigboi);
-	//cv::waitKey(1);
-
-	////glCopyBufferSubData(m_globalRender_VBO, m_globalTarget_VBO, 0, 0, globalVertCount * sizeof(glm::vec4)); // MAYBE???
-
-	////GLuint swapHandleVBO = m_globalTarget_VBO;
-	////m_globalTarget_VBO = m_globalRender_VBO;
-	////m_globalRender_VBO = swapHandleVBO;
-
-	////GLuint swapHandleTFO = m_globalTarget_TFO;
-	////m_globalTarget_TFO = m_globalRender_TFO;
-	////m_globalRender_TFO = swapHandleTFO;
-
+	//glBindTexture(GL_TEXTURE_2D, m_textureVertexID);
+	//glActiveTexture(GL_TEXTURE1);
+	//glBindTexture(GL_TEXTURE_2D, m_textureGlobalIndexVertConf);
+	//glActiveTexture(GL_TEXTURE2);
+	//glBindTexture(GL_TEXTURE_2D, m_textureGlobalIndexNormRadi);
+	//glActiveTexture(GL_TEXTURE3);
+	//glBindTexture(GL_TEXTURE_2D, m_textureGlobalIndexColTimDev);
+	//glUniformMatrix4fv(m_cgInversePoseID, 4, GL_FALSE, glm::value_ptr(pose[0]));
+	//glUniform4fv(m_cgCamPamID, 1, glm::value_ptr(camPam[0]));
+	//glUniform1ui(m_cgTimeID, m_frameCount);
+	//glUniform1ui(m_cgTimeDeltaID, m_timeDelta);
+	//glUniform1f(m_cgConfThresholdID, 100.0f); // NOT YET SET PROPERLY
+	//glUniform1ui(m_cgCurrentGlobalNumberID, globalVertCount);
+	//glUniform1ui(m_cgCurrentNewUnstableNumberID, newUnstableCount);
+	//glBeginTransformFeedback(GL_POINTS);
+	//glDrawArrays(GL_POINTS, 0, globalVertCount + newUnstableCount); // contains 
+	//glEndTransformFeedback();
+	//glDisable(GL_RASTERIZER_DISCARD);
+	//glFlush();
+	//glDisable(GL_RASTERIZER_DISCARD);
+	//glBindBuffer(GL_ARRAY_BUFFER, 0);
+	//glBindTransformFeedback(GL_TRANSFORM_FEEDBACK, 0);
 
 }
 
