@@ -39,7 +39,7 @@ void main()
    // get the position of the global vert in the current estimated camera position fov
     vec4 vPosHome = inversePose[0] * vec4(vertexConfidence.xyz, 1.0);
     
-    if(vPosHome.z > maxDepth || vPosHome.z < 0)// || vertexConfidence.w < confThreshold || time - colorTimeDevice.w > timeDelta || colorTimeDevice.w > maxTime)
+    if(vPosHome.z > maxDepth || vPosHome.z < 0 || (vertexConfidence.w < confThreshold && time - colorTimeDevice.w > timeDelta) || colorTimeDevice.w > maxTime)
     {
         gl_Position = vec4(1000.0f, 1000.0f, 1000.0f, 1000.0f);
         gl_PointSize = 0;
@@ -49,28 +49,32 @@ void main()
 		// project the current view global point to opengl image space (-1 to 1)
 	    gl_Position = vec4(projectPoint(vPosHome.xyz), 1.0);
 		vec3 pix = projectPointImage(vPosHome.xyz);
-        fragColTimDev = colorTimeDevice;
-	    fragVertConf = vec4(vPosHome.xyz, vertexConfidence.w);
-	    fragNormRadi = vec4(normalize(mat3(inversePose[0]) * normalRadius.xyz), normalRadius.w);
 
-		//imageStore(outImagePC, ivec2(pix.xy), vec4(fragNormRadi.xyz ,1));
 
-	    vec3 x1 = normalize(vec3((fragNormRadi.y - fragNormRadi.z), -fragNormRadi.x, fragNormRadi.x)) * fragNormRadi.w * 1.41421356;
-	    
-	    vec3 y1 = cross(fragNormRadi.xyz, x1);
-	
-	    vec4 proj1 = vec4(projectPointImage(vPosHome.xyz + x1), 1.0);
-	    vec4 proj2 = vec4(projectPointImage(vPosHome.xyz + y1), 1.0);
-	    vec4 proj3 = vec4(projectPointImage(vPosHome.xyz - y1), 1.0);
-	    vec4 proj4 = vec4(projectPointImage(vPosHome.xyz - x1), 1.0);
-	                
-	    vec2 xs = vec2(min(proj1.x, min(proj2.x, min(proj3.x, proj4.x))), max(proj1.x, max(proj2.x, max(proj3.x, proj4.x))));
-	    vec2 ys = vec2(min(proj1.y, min(proj2.y, min(proj3.y, proj4.y))), max(proj1.y, max(proj2.y, max(proj3.y, proj4.y))));
-	
-	    float xDiff = abs(xs.y - xs.x);
-	    float yDiff = abs(ys.y - ys.x);
-	
-	    gl_PointSize = max(0, max(xDiff, yDiff));
+	    fragColTimDev = colorTimeDevice;
+		fragVertConf = vec4(vPosHome.xyz, vertexConfidence.w);
+		fragNormRadi = vec4(normalize(mat3(inversePose[0]) * normalRadius.xyz), normalRadius.w);
+
+		//imageStore(outImagePC, ivec2(pix.xy), vec4(inversePose[0][3].xyz ,1));
+
+		vec3 x1 = normalize(vec3((fragNormRadi.y - fragNormRadi.z), -fragNormRadi.x, fragNormRadi.x)) * fragNormRadi.w * 1.41421356;
+    
+		vec3 y1 = cross(fragNormRadi.xyz, x1);
+
+		vec4 proj1 = vec4(projectPointImage(vPosHome.xyz + x1), 1.0);
+		vec4 proj2 = vec4(projectPointImage(vPosHome.xyz + y1), 1.0);
+		vec4 proj3 = vec4(projectPointImage(vPosHome.xyz - y1), 1.0);
+		vec4 proj4 = vec4(projectPointImage(vPosHome.xyz - x1), 1.0);
+                
+		vec2 xs = vec2(min(proj1.x, min(proj2.x, min(proj3.x, proj4.x))), max(proj1.x, max(proj2.x, max(proj3.x, proj4.x))));
+		vec2 ys = vec2(min(proj1.y, min(proj2.y, min(proj3.y, proj4.y))), max(proj1.y, max(proj2.y, max(proj3.y, proj4.y))));
+
+		float xDiff = abs(xs.y - xs.x);
+		float yDiff = abs(ys.y - ys.x);
+
+		gl_PointSize = max(0, max(xDiff, yDiff));
+		
+
 
     }
 }

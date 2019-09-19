@@ -44,12 +44,12 @@ void main()
     float sqrRad = pow(fragNormRadi.w, 2);
     vec3 diff = corrected_pos - fragVertConf.xyz;
 
-    if(dot(diff, diff) > sqrRad || fragColTimDev.z == 0) // this prevent the render of unstable points
+    if(dot(diff, diff) > sqrRad) // this prevent the render of unstable points
     {
         discard;
     }
 
-    outColTimStab = vec4(fragColTimDev.xyz, 1); // 8008 is a placeholder for a stable flag or counter
+    outColTimStab = vec4(fragColTimDev.xyz, 1); 
     
     float z = corrected_pos.z;
 	// is this S.O. relevent?
@@ -62,7 +62,7 @@ void main()
     
 	outConRadDev = vec4(fragVertConf.w, fragNormRadi.w, fragColTimDev.w, 1.0f);
 
-    gl_FragDepth = (corrected_pos.z / (2 * maxDepth)) + 0.5f;
+    gl_FragDepth = (corrected_pos.z / (2.0f * maxDepth)) + 0.5f;
 
 
 }

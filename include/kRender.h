@@ -206,7 +206,7 @@ public:
 
 	void setInfraFrame(std::vector<rs2::frame_queue> infraQ, int devNumber, cv::Mat &infraMat);
 
-	void setTextures(GLuint depthTex, GLuint colorTex, GLuint vertexTex, GLuint normalTex, GLuint volumeTex, GLuint trackTex, GLuint pvpNormTex, GLuint pvdNormTex, GLuint splatterDepth);
+	void setTextures(GLuint depthTex, GLuint colorTex, GLuint vertexTex, GLuint normalTex, GLuint volumeTex, GLuint trackTex, GLuint pvpNormTex, GLuint pvdNormTex, GLuint splatterDepth, GLuint splatterNormal);
 	void setFlowTexture(GLuint flowTex);
 	void setBuffersFromMarchingCubes(GLuint posBuf, GLuint normBuf, size_t numVerts)
 	{
@@ -248,7 +248,7 @@ public:
 	void setupComputeFBO();
 
 	// The correcter way 
-	void setRenderingOptions(bool showDepthFlag, bool showBigDepthFlag, bool showInfraFlag, bool showColorFlag, bool showLightFlag, bool showPointFlag, bool showFlowFlag, bool showEdgesFlag, bool showNormalFlag, bool showVolumeSDFFlag, bool showTrackFlag, bool showSFFlag, bool showMarkerFlag);
+	void setRenderingOptions(bool showDepthFlag, bool showBigDepthFlag, bool showInfraFlag, bool showColorFlag, bool showLightFlag, bool showPointFlag, bool showFlowFlag, bool showEdgesFlag, bool showNormalFlag, bool showVolumeSDFFlag, bool showTrackFlag, bool showSFFlag, bool showMarkerFlag, bool showDepthSplat, bool showNormalSplat);
 	void setBuffersForRendering(float * depthArray, float * bigDepthArray, float * colorArray, float * infraArray, unsigned char * flowPtr);
 	void setDepthImageRenderPosition(float vertFov);
 	void setNormalImageRenderPosition();
@@ -456,6 +456,7 @@ private:
 	GLuint m_texturePVPNormal;
 	GLuint m_texturePVDNormal;
 	GLuint m_textureSplatterDepth;
+	GLuint m_textureSplatterNormal;
 
 	GLuint m_textureFlood;
 
@@ -576,7 +577,7 @@ private:
 	glm::vec3 m_volume_size = glm::vec3(128.0f, 128.0f, 128.0f);
 
 
-	int getRenderOptions(bool depth, bool infra, bool color, bool norm, bool track, bool flood, bool volume, bool splatter);
+	int getRenderOptions(bool depth, bool infra, bool color, bool norm, bool track, bool flood, bool volume, bool splatterDepth, bool splatterNormal);
 
 	bool m_showDepthFlag = false;
 	bool m_showNormalFlag = false;
@@ -589,6 +590,8 @@ private:
 	bool m_showEdgesFlag = false;
 	bool m_showVolumeSDFFlag = false;
 	bool m_showTrackFlag = false;
+	bool m_showSplatterDepth = false;
+	bool m_showSplatterNormal = false;
 	bool m_showVolumeFlag = false;
 	bool m_showMarkersFlag = false;
 

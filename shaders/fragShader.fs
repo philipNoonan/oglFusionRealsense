@@ -12,6 +12,7 @@ layout (binding=5) uniform sampler2D currentTextureInfra;
 layout (binding=6) uniform sampler3D currentTextureVolume; 
 layout (binding=7) uniform usampler3D currentTextureSDF; 
 layout (binding=8) uniform sampler2D currentTextureSplatterDepth; 
+layout (binding=9) uniform sampler2D currentTextureSplatterNormal; 
 
 
 //layout(binding = 5, rgba32f) uniform image3D volumeData; // texel access
@@ -53,6 +54,7 @@ vec4 fromStandardFragment()
 	uint renderFlood =   (renderOptions & 32) >> 5;
 	uint renderVolume =  (renderOptions & 64) >> 6;
 	uint renderSplatterDepth = (renderOptions & 128) >> 7;
+	uint renderSplatterNormal = (renderOptions & 256) >> 8;
 
 	vec4 outColor = vec4(0.0f);
 
@@ -124,6 +126,16 @@ vec4 fromStandardFragment()
 			outColor = mix(outColor, vec4(tCol.xy, tCol.z, 1.0f), 1.0f);
 		}
 	}
+
+	if (renderSplatterNormal == 1)
+	{
+		vec4 tCol = textureLod(currentTextureSplatterNormal, vec2(TexCoord), 0);
+		if (tCol.w > 0)
+		{
+			outColor = mix(outColor, vec4(tCol.xy, -tCol.z, 1.0f), 1.0f);
+		}
+	}
+
 	return outColor;
 
 }

@@ -218,6 +218,7 @@ public:
 	// reset functions
 	void Reset(glm::mat4 pose, bool deleteFlag);
 	void resetVolume();
+	void resetSplat();
 	void resetPose(glm::mat4 pose);
 	void allocateBuffers();
 	void initSplatterVAOs();
@@ -346,7 +347,11 @@ public:
 	}
 	GLuint getSplatterDepth()
 	{
-		return m_textureSplatteredDepth;
+		return m_textureCombinedIndexVertex;
+	}
+	GLuint getSplatterNormal()
+	{
+		return m_textureCombinedIndexNormal;
 	}
 	GLuint getSplatterModel()
 	{
@@ -609,6 +614,7 @@ private:
 	GLuint m_indexImSizeID;
 	GLuint m_indexMaxDepthID;
 	GLuint m_indexTimeID;
+	GLuint m_indexTimeDeltaID;
 
 	// init unstable 
 	GLuint m_InitUnstableMaxNumVertsID;
@@ -742,6 +748,7 @@ private:
 	GLuint m_modelVBO;
 	GLuint m_textureSplatteredModel;
 	GLuint m_textureSplatteredDepth;
+	GLuint m_textureSplatteredNormal;
 
 	GLuint m_textureGlobalIndexVertConf;
 	GLuint m_textureGlobalIndexNormRadi;
@@ -981,6 +988,7 @@ private:
 	int m_initUnstable;
 	uint32_t m_frameCount;
 	uint32_t m_timeDelta = 200;
-	float m_depthMax = 2.0f;
+	float m_depthMax = 0.5f;
+	size_t m_bufferSize = 3072 * 3072 * 16;
 
 };

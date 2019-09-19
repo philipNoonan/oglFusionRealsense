@@ -15,6 +15,8 @@ layout(binding = 3, rgba32f) uniform image2DArray refNormal;
 layout(binding = 4, r32f) uniform image2D differenceImage;
 layout(binding = 5, rgba32f) uniform image2DArray trackImage;
 
+        layout(binding = 6, rgba32f) uniform image2D outImagePC;
+
 uniform int numberOfCameras;
 uniform mat4 cameraPoses[4];
 uniform mat4 inverseCameraPoses[4];
@@ -67,13 +69,13 @@ void main()
             {
                 trackOutput[offset].result = -1; // does this matter since we are in a low mipmap not full size???
                 imageStore(trackImage, ivec3(pix, camera), vec4(0, 0, 0, 0));
-
             }
             else
             {
+                // depth vert in global space
                 vec4 projectedVertex = cameraPoses[camera] * vec4(imageLoad(inVertex, ivec3(pix, camera)).xyz, 1.0f); // CHECK ME AGAINT THE OLD CRAPPY OPMUL
                                                                                                                       //vec3 projectedVertex = opMul(Ttrack, imageLoad(inVertex, ivec2(pix)).xyz); // CHECK ME AGAINT THE OLD CRAPPY OPMUL
-
+                // this depth vert in global space is then prejected back to normal depth space
                 vec4 projectedPos = inverseCameraPoses[camera] * projectedVertex;
                 //vec3 projectedPos = opMul(view, projectedVertex);
 
@@ -98,6 +100,7 @@ void main()
                     vec3 referenceNormal = imageLoad(refNormal, refPixel).xyz;
                     vec3 tmp = imageLoad(refVertex, refPixel).xyz;
                     //imageStore(differenceImage, ivec2(projPixel), vec4(tmp.z, 0.0f, 0.0f, 1.0f));
+                    imageStore(outImagePC, ivec2(pix), vec4(referenceNormal.xyz, 1.0f));
 
 
                     if (referenceNormal.x == -2)
@@ -115,35 +118,35 @@ void main()
                         imageStore(trackImage, ivec3(pix, camera), vec4(diff, 1.0f));
 
 
-                        //if (length(diff) > dist_threshold)
-                        //{
-                        //    trackOutput[offset].result = -4;
-                        //    imageStore(trackImage, ivec3(pix, camera), vec4(0, 0, 1.0f, 1.0f));
+                        if (length(diff) > dist_threshold)
+                        {
+                            trackOutput[offset].result = -4;
+                            imageStore(trackImage, ivec3(pix, camera), vec4(0, 0, 1.0f, 1.0f));
 
-                        //}
-                        //else if (dot(projectedNormal, referenceNormal) < normal_threshold)
-                        //{
-                        //    trackOutput[offset].result = -5;
-                        //    imageStore(trackImage, ivec3(pix, camera), vec4(1.0f, 1.0f, 0, 1.0f));
+                        }
+                        else if (dot(projectedNormal, referenceNormal) < normal_threshold)
+                        {
+                            trackOutput[offset].result = -5;
+                            imageStore(trackImage, ivec3(pix, camera), vec4(1.0f, 1.0f, 0, 1.0f));
 
-                        //}
-                        //else
-                        //{
-                        //    imageStore(trackImage, ivec3(pix, camera), vec4(0.5f, 0.5f, 0.5f, 1.0f));
+                        }
+                        else
+                        {
+                            imageStore(trackImage, ivec3(pix, camera), vec4(0.5f, 0.5f, 0.5f, 1.0f));
 
 
-                        //    trackOutput[offset].result = 1;
-                        //    trackOutput[offset].error = dot(referenceNormal, diff);
+                            trackOutput[offset].result = 1;
+                            trackOutput[offset].error = dot(referenceNormal, diff);
 
-                        //    trackOutput[offset].J[0] = referenceNormal.x;
-                        //    trackOutput[offset].J[1] = referenceNormal.y;
-                        //    trackOutput[offset].J[2] = referenceNormal.z;
+                            trackOutput[offset].J[0] = referenceNormal.x;
+                            trackOutput[offset].J[1] = referenceNormal.y;
+                            trackOutput[offset].J[2] = referenceNormal.z;
 
-                        //    vec3 crossProjVertRefNorm = cross(projectedVertex.xyz, referenceNormal);
-                        //    trackOutput[offset].J[3] = crossProjVertRefNorm.x;
-                        //    trackOutput[offset].J[4] = crossProjVertRefNorm.y;
-                        //    trackOutput[offset].J[5] = crossProjVertRefNorm.z;
-                        //}
+                            vec3 crossProjVertRefNorm = cross(projectedVertex.xyz, referenceNormal);
+                            trackOutput[offset].J[3] = crossProjVertRefNorm.x;
+                            trackOutput[offset].J[4] = crossProjVertRefNorm.y;
+                            trackOutput[offset].J[5] = crossProjVertRefNorm.z;
+                        }
                     }
                 }
             }

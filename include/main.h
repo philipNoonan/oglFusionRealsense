@@ -198,6 +198,9 @@ bool showVolumeFlag = false;
 bool showTrackFlag = false;
 bool showSDFVolume = false;
 bool showMarkerFlag = false;
+bool showDepthSplatFlag = false;
+bool showNormalSplatFlag = false;
+
 
 float irBrightness = 1.0;
 float irLow = 0.0f;
@@ -234,8 +237,8 @@ bool calibratingFlag = false;
 
 // FUSION STUFF
 bool trackDepthToPoint = false;
-bool trackDepthToVolume = true;
-bool useSplatter = false;
+bool trackDepthToVolume = false;
+bool useSplatter = true;
 bool useMultipleFusion = false;
 bool performFlood = false;
 bool performFlow = false;

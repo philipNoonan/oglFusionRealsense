@@ -2,21 +2,27 @@
 
 layout(local_size_x = 1024, local_size_y = 1) in; // 
 
+// global TFO data in global space
 layout(std430, binding = 0) buffer feedbackBuffer
 {
     vec4 interleavedData [];
 };
 
-uniform mat4 inversePose[4];
+uniform mat4 inversePose;
 uniform vec4 camPam; // cx, cy, fx, fy
 uniform vec2 imSize;
 uniform float maxDepth;
 uniform int time;
+uniform int timeDelta;
 
+// outputs in current depth space
 layout(binding=0, rgba32f) uniform image2D outputVertConf;
 layout(binding=1, rgba32f) uniform image2D outputNormRadi;
 layout(binding=2, rgba32f) uniform image2D outputColTimDev;
 layout(binding=3, r32i)    uniform iimage2D outputVertexID; 
+
+    layout(binding = 4, rgba32f) uniform image2D outImagePC;
+
 
 vec3 projectPointImage(vec3 p)
 {
@@ -30,19 +36,21 @@ void main()
 
 	int vertID = int(gl_GlobalInvocationID.x); // 0 to max number of global verts stable and unstable
 
+    // in global space
 	vec4 vertexConfidence = interleavedData[(vertID * 3)];
 	vec4 normalRadius = interleavedData[(vertID * 3) + 1];
 	vec4 colorTimeDevice = interleavedData[(vertID * 3) + 2];
 
 	int geoVertexID;
 
-    vec4 vCurrentPosition = inversePose[0] * vec4(vertexConfidence.xyz, 1.0);
+    // in depth space
+    vec4 vCurrentPosition = inversePose * vec4(vertexConfidence.xyz, 1.0);
     vec3 pix;
 
     float x = 0;
     float y = 0;
         
-    if(vCurrentPosition.z > maxDepth || vCurrentPosition.z < 0) // || time - colorTimeDevice.w > timeDelta)
+    if(vCurrentPosition.z > maxDepth || vCurrentPosition.z < 0 || time - colorTimeDevice.w > timeDelta)
     {
         x = -10;
         y = -10;
@@ -58,18 +66,27 @@ void main()
     
 
     //gl_Position = vec4(x, y, vCurrentPosition.z / maxDepth, 1.0);
-	//gl_PointSize = 1.0f;
-
+    // THIS MAY BE AN ISSUE IF POINTSIZE IS AFFECTED BY THE Z POSITION OF THE SPRITE
 	if (geoVertexID > 0)
 	{
-		imageStore(outputVertConf, ivec2(pix.xy), vec4(vCurrentPosition.xyz, vertexConfidence.w));
-		imageStore(outputNormRadi, ivec2(pix.xy), vec4(normalize(mat3(inversePose[0]) * normalRadius.xyz), normalRadius.w));
-		imageStore(outputColTimDev, ivec2(pix.xy), vec4(colorTimeDevice));
-		imageStore(outputVertexID, ivec2(pix.xy), ivec4(geoVertexID));
-	}
+        float depthTest = imageLoad(outputVertConf, ivec2(pix.xy)).z;
 
-   // geoVertConf = vec4(vCurrentPosition.xyz, vertexConfidence.w);
-   // geoNormRadi = vec4(normalize(mat3(inversePose[0]) * normalRadius.xyz), normalRadius.w);
-   // geoColTimDev = colorTimeDevice;
+        //if (vCurrentPosition.z < depthTest)
+        //{
+            imageStore(outputVertConf, ivec2(pix.xy), vec4(vCurrentPosition.xyz, vertexConfidence.w));
+            imageStore(outputNormRadi, ivec2(pix.xy), vec4(normalize(mat3(inversePose) * normalRadius.xyz), normalRadius.w));
+            imageStore(outputColTimDev, ivec2(pix.xy), vec4(colorTimeDevice));
+            imageStore(outputVertexID, ivec2(pix.xy), ivec4(geoVertexID));
+        //}
+
+        //imageStore(outImagePC, ivec2(pix.xy / 4), vec4(inversePose[3].xyz * 10000.0f, 1));
+
+    }
+
+
+
+    // geoVertConf = vec4(vCurrentPosition.xyz, vertexConfidence.w);
+    // geoNormRadi = vec4(normalize(mat3(inversePose[0]) * normalRadius.xyz), normalRadius.w);
+    // geoColTimDev = colorTimeDevice;
 
 }

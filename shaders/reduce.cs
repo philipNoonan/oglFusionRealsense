@@ -54,7 +54,7 @@ void main()
                 {
                     sums[28] += 1;
                 }
-                if (row.result > -4)
+                if (row.result > -2)
                 {
                     sums[28] += 1;
                 }

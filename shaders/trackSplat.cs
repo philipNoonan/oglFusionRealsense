@@ -2,10 +2,7 @@
 
 layout (local_size_x = 32, local_size_y = 32) in;
 
-//uniform mat4 view;
-//uniform mat4 Ttrack;
-uniform float dist_threshold;
-uniform float normal_threshold;
+
 
 //layout(binding = 0, rgba8ui) uniform image2D TrackData;
 layout(binding = 0, rgba32f) uniform image2D inVertex;
@@ -15,12 +12,20 @@ layout(binding = 3, rgba32f) uniform image2D refNormal;
 layout(binding = 4, r32f) uniform image2D differenceImage;
 layout(binding = 5, rgba32f) uniform image2DArray trackImage;
 
-int numberOfCameras = 1;
+    layout(binding = 6, rgba32f) uniform image2D outImagePC;
+
 uniform mat4 cameraPoses[4];
 uniform mat4 inverseVP[4];
 uniform vec4 camPam; // cx cy fx fy
-vec2 imSize = vec2(848.0f,480.0f);
 uniform float maxDepth = 3.0f;
+//uniform mat4 view;
+//uniform mat4 Ttrack;
+uniform float dist_threshold;
+uniform float normal_threshold;
+
+vec2 imSize;// = vec2(848.0f,480.0f);
+int numberOfCameras = 1;
+
 
 struct reduType
 {
@@ -68,7 +73,7 @@ vec3 projectPointImage(vec3 p)
 void main()
 {
     ivec2 pix = ivec2(gl_GlobalInvocationID.xy);
-    //imSize = imageSize(inVertex); // mipmapped sizes
+    imSize = imageSize(inVertex); // mipmapped sizes
     ivec2 refSize = imageSize(refVertex); // full depth size
 
     for (int camera = 0; camera < numberOfCameras; camera++)
@@ -90,7 +95,7 @@ void main()
                 vec4 projectedVertex = cameraPoses[camera] * vec4(imageLoad(inVertex, ivec2(pix)).xyz, 1.0f); // CHECK ME AGAINT THE OLD CRAPPY OPMUL
                                                                                                                       //vec3 projectedVertex = opMul(Ttrack, imageLoad(inVertex, ivec2(pix)).xyz); // CHECK ME AGAINT THE OLD CRAPPY OPMUL
 
-                vec4 projectedPos = inverseVP[camera] * projectedVertex;
+                vec4 projectedPos = inverse(cameraPoses[camera]) * projectedVertex;
                 //vec3 projectedPos = opMul(view, projectedVertex);
                 //imageStore(trackImage, ivec3(pix, camera), vec4(projectedPos.xyz, 0.323f));
 
@@ -105,18 +110,8 @@ void main()
 
                 //imageStore(trackImage, ivec3(pix, camera), vec4(projectedPos.xyz, 1.0f));
 
+                vec3 projPixel = projectPointImage(projectedVertex.xyz);// vec2(projectedPos.x / projectedPos.z, projectedPos.y / projectedPos.z);
 
-
-
-
-
-
-
-
-
-                vec2 projPixel = vec2(projectedPos.x / projectedPos.z, projectedPos.y / projectedPos.z);
-
-                // imageStore(trackImage, ivec3(pix, camera), vec4(projPixel.xy/1000.0f, 0.0f, 0.323f));
 
 
                 //imageStore(trackImage, ivec3(pix, camera), vec4(projPixel/1000.0f, projectedPos.z, 1.0f));
@@ -136,6 +131,7 @@ void main()
                     vec3 referenceNormal = imageLoad(refNormal, refPixel).xyz;
                     //vec3 tmp = imageLoad(refVertex, refPixel).xyz;
                     //imageStore(differenceImage, ivec2(projPixel), vec4(tmp.z, 0.0f, 0.0f, 1.0f));
+                imageStore(outImagePC, ivec2(pix), vec4(referenceNormal.xyz, 1.0f));
 
                     if (referenceNormal.x == 2)
                     {

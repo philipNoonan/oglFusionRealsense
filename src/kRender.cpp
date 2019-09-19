@@ -605,7 +605,7 @@ void kRender::setWindowLayout()
 //}
 
 
-void kRender::setRenderingOptions(bool showDepthFlag, bool showBigDepthFlag, bool showInfraFlag, bool showColorFlag, bool showLightFlag, bool showPointFlag, bool showFlowFlag, bool showEdgesFlag, bool showNormalFlag, bool showVolumeFlag, bool showTrackFlag, bool showSDFlag, bool showMarkerFlag)
+void kRender::setRenderingOptions(bool showDepthFlag, bool showBigDepthFlag, bool showInfraFlag, bool showColorFlag, bool showLightFlag, bool showPointFlag, bool showFlowFlag, bool showEdgesFlag, bool showNormalFlag, bool showVolumeFlag, bool showTrackFlag, bool showSDFlag, bool showMarkerFlag, bool showDepthSplatFlag, bool showNormalSplatFlag)
 {
 	m_showDepthFlag = showDepthFlag;
 	m_showBigDepthFlag = showBigDepthFlag;
@@ -620,12 +620,14 @@ void kRender::setRenderingOptions(bool showDepthFlag, bool showBigDepthFlag, boo
 	m_showTrackFlag = showTrackFlag;
 	m_showVolumeSDFFlag = showSDFlag;
 	m_showMarkersFlag = showMarkerFlag;
+	m_showSplatterDepth = showDepthSplatFlag;
+	m_showSplatterNormal = showNormalSplatFlag;
 
 
 					  
 }
 
-void kRender::setTextures(GLuint depthTex, GLuint colorTex, GLuint vertexTex, GLuint normalTex, GLuint volumeTex, GLuint trackTex, GLuint pvpNormTex, GLuint pvdNormTex, GLuint splatterDepthTex)
+void kRender::setTextures(GLuint depthTex, GLuint colorTex, GLuint vertexTex, GLuint normalTex, GLuint volumeTex, GLuint trackTex, GLuint pvpNormTex, GLuint pvdNormTex, GLuint splatterDepthTex, GLuint splatterNormalTex)
 {
 
 	m_textureDepth = depthTex;
@@ -637,6 +639,7 @@ void kRender::setTextures(GLuint depthTex, GLuint colorTex, GLuint vertexTex, GL
 	m_texturePVPNormal = pvpNormTex;
 	m_texturePVDNormal = pvdNormTex;
 	m_textureSplatterDepth = splatterDepthTex;
+	m_textureSplatterNormal = splatterNormalTex;
 
 }
 void kRender::setFlowTexture(GLuint flowTex)
@@ -677,8 +680,10 @@ void kRender::bindTexturesForRendering()
 
 
 
+
 	}
 	
+
 
 	if (m_showTrackFlag)
 	{
@@ -722,13 +727,19 @@ void kRender::bindTexturesForRendering()
 
 	}
 
-	if (m_useSplatter)
+	if (m_showSplatterDepth)
 	{
 		glActiveTexture(GL_TEXTURE8);
 		glBindTexture(GL_TEXTURE_2D, m_textureSplatterDepth);
 	}
 
+	if (m_showSplatterNormal)
+	{
+		glActiveTexture(GL_TEXTURE9);
+		glBindTexture(GL_TEXTURE_2D, m_textureSplatterNormal);
 
+
+	}
 
 }
 
@@ -1138,7 +1149,7 @@ void kRender::setViewport(int x, int y, int w, int h)
 	glViewport(x, y, w, h);
 }
 
-int kRender::getRenderOptions(bool depth, bool infra, bool color, bool norms, bool track, bool flood, bool volume, bool splatterDepth)
+int kRender::getRenderOptions(bool depth, bool infra, bool color, bool norms, bool track, bool flood, bool volume, bool splatterDepth, bool splatterNormal)
 {
 	int opts = depth << 0 |
 		       infra << 1 |
@@ -1147,7 +1158,8 @@ int kRender::getRenderOptions(bool depth, bool infra, bool color, bool norms, bo
 		       track << 4 |
 		       flood << 5 |
 			  volume << 6 |
-	   splatterDepth << 7;
+	   splatterDepth << 7 |
+	   splatterNormal << 8;
 
 	return opts;
 }
@@ -1162,7 +1174,7 @@ void kRender::renderLiveVideoWindow(bool useInfrared, int devNumber)
 
 
 	//// RENDER LEFT WINDOW
-	int leftRenderOptions = getRenderOptions(m_showDepthFlag, m_showInfraFlag, 0, m_showNormalFlag, m_showTrackFlag, 0, 0, m_useSplatter);
+	int leftRenderOptions = getRenderOptions(m_showDepthFlag, m_showInfraFlag, 0, m_showNormalFlag, m_showTrackFlag, 0, 0, m_showSplatterDepth, m_showSplatterNormal);
 
 
 	glm::vec2 imageSize(848.0f, 480.0f);
@@ -1180,7 +1192,7 @@ void kRender::renderLiveVideoWindow(bool useInfrared, int devNumber)
 	glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 
 	//// RENDER RIGHT WINDOW
-	int rightRenderOptions = getRenderOptions(0, 0, m_showColorFlag, 0, 0, m_showVolumeSDFFlag, m_showVolumeFlag, 0);
+	int rightRenderOptions = getRenderOptions(0, 0, m_showColorFlag, 0, 0, m_showVolumeSDFFlag, m_showVolumeFlag, 0, 0);
 
 
 	setViewport(m_display3DPos.x, m_display3DPos.y, m_display3DSize.x, m_display3DSize.y);

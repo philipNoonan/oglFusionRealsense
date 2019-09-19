@@ -41,7 +41,7 @@ void kRenderInit()
 	krender.setLocations();
 	krender.setVertPositions();
 	krender.allocateBuffers();
-	krender.setTextures(gfusion.getDepthImage(), gflow.getColorTexture(), gfusion.getVerts(), gfusion.getNorms(), gfusion.getVolume(), gfusion.getTrackImage(), gfusion.getPVPNorms(), gfusion.getPVDNorms(), gfusion.getSplatterDepth()); //needs texture uints from gfusion init
+	krender.setTextures(gfusion.getDepthImage(), gflow.getColorTexture(), gfusion.getVerts(), gfusion.getNorms(), gfusion.getVolume(), gfusion.getTrackImage(), gfusion.getPVPNorms(), gfusion.getPVDNorms(), gfusion.getSplatterDepth(), gfusion.getSplatterNormal()); //needs texture uints from gfusion init
 	krender.anchorMW(std::make_pair<int, int>(1920 - 512 - krender.guiPadding().first, krender.guiPadding().second));
 
 	krender.setFusionType(trackDepthToPoint, trackDepthToVolume, useSplatter);
@@ -67,9 +67,9 @@ void gFusionInit()
 	gconfig.depthFrameSize = glm::vec2(depthFrameSize[devNumber]);
 	gconfig.mu = 0.05f;
 	gconfig.maxWeight = 100.0f;
-	gconfig.iterations[0] = 4;
-	gconfig.iterations[1] = 0;
-	gconfig.iterations[2] = 0;
+	gconfig.iterations[0] = 5;
+	gconfig.iterations[1] = 5;
+	gconfig.iterations[2] = 5;
 	
 	for (int i = 0; i < numberOfCameras; i++)
 	{
@@ -83,9 +83,18 @@ void gFusionInit()
 				cameraInterface.getColorIntrinsics(i).cy));
 	}
 
+	glm::mat4 initPose;
 	// AND THE OTHER ONE
-	glm::mat4 initPose = glm::mat4(1.0f);// glm::translate(glm::mat4(1.0f), glm::vec3(gconfig.volumeDimensions.x / 2.0f, gconfig.volumeDimensions.y / 2.0f, 0.0f));
-	//glm::mat4 initPose = glm::translate(glm::mat4(1.0f), glm::vec3(gconfig.volumeDimensions.x / 2.0f, gconfig.volumeDimensions.y / 2.0f, 0.0f));
+	if (!useSplatter)
+	{
+		initPose = glm::translate(glm::mat4(1.0f), glm::vec3(gconfig.volumeDimensions.x / 2.0f, gconfig.volumeDimensions.y / 2.0f, 0.0f));
+
+	}
+	else
+	{
+		initPose = glm::mat4(1.0f);// glm::translate(glm::mat4(1.0f), glm::vec3(gconfig.volumeDimensions.x / 2.0f, gconfig.volumeDimensions.y / 2.0f, 0.0f));
+
+	}
 
 	gfusion.setConfig(gconfig);
 	gfusion.setPose(initPose);
@@ -183,15 +192,25 @@ void resetVolume()
 	//std::cout << glm::to_string(iOff) << std::endl;
 
 	// AND THE OTHER ONE
-	glm::mat4 initPose = glm::mat4(1.0f);// glm::translate(glm::mat4(1.0f), glm::vec3(-iOff.x + gconfig.volumeDimensions.x / 2.0f, -iOff.y + gconfig.volumeDimensions.y / 2.0f, -iOff.z + dimension / 2.0));
-	//glm::mat4 initPose = glm::translate(glm::mat4(1.0f), glm::vec3(-iOff.x + gconfig.volumeDimensions.x / 2.0f, -iOff.y + gconfig.volumeDimensions.y / 2.0f, -iOff.z + dimension / 2.0));
+	glm::mat4 initPose;
+	if (!useSplatter)
+	{
+		initPose = glm::translate(glm::mat4(1.0f), glm::vec3(-iOff.x + gconfig.volumeDimensions.x / 2.0f, -iOff.y + gconfig.volumeDimensions.y / 2.0f, -iOff.z + dimension / 2.0));
+
+	}
+	else
+	{
+		initPose = glm::mat4(1.0f);// glm::translate(glm::mat4(1.0f), glm::vec3(gconfig.volumeDimensions.x / 2.0f, gconfig.volumeDimensions.y / 2.0f, 0.0f));
+
+	}
 
 	volSlice = gconfig.volumeSize.z / 2.0f;
 
 	krender.setVolumeSize(gconfig.volumeSize);
 
 
-
+	gfusion.setPose(initPose);
+	gfusion.setPoseP2V(initPose);
 
 
 	gfusion.Reset(initPose, deleteFlag);
@@ -1030,6 +1049,11 @@ void setUI()
 
 			if (ImGui::Button("Points")) showPointFlag ^= 1; ImGui::SameLine(); ImGui::Checkbox("", &showPointFlag);
 
+			if (ImGui::Button("Splat D")) showDepthSplatFlag ^= 1; ImGui::SameLine(); ImGui::Checkbox("", &showDepthSplatFlag);
+			ImGui::SameLine();
+			if (ImGui::Button("Splat N")) showNormalSplatFlag ^= 1; ImGui::SameLine(); ImGui::Checkbox("", &showNormalSplatFlag);
+
+
 			ImGui::Text("slice");
 			ImGui::PushItemWidth(-1);
 			ImGui::SliderFloat("slice", &volSlice, 0, gconfig.volumeSize.z - 1);
@@ -1463,17 +1487,20 @@ int main(int, char**)
 
 			if (trackDepthToVolume)
 			{
-				//tracked = gfusion.TrackSDF();
-				//gfusion.raycast(cameraDevice);
+				tracked = gfusion.TrackSDF();
+				gfusion.raycast(cameraDevice);
+			}
 
-				if (counter <= 10) // the first frame seems garbage
+			if (useSplatter)
+			{
+				if (counter < 1) // the first frame seems garbage
 				{
-					gfusion.setInitUnstable(1); 
+					gfusion.setInitUnstable(1);
 
 
 					gfusion.initSplatterFusion(); // simple copy // this passes the current frame depth buffer to the global model buffer
-				
-					if (counter == 10)
+
+					if (counter == 0)
 					{
 						gfusion.combinedPredict(); // vs fs
 					}
@@ -1487,7 +1514,7 @@ int main(int, char**)
 
 					gfusion.combinedPredict(); // vs fs // 1x map from global, to get sent to the ICP thingy
 
-					gfusion.predictIndices(); // cs // 4x map from global
+					gfusion.predictIndices(); // 4x map from global
 
 					//// we should now have a current view of the global model with maps of verts and normals
 
@@ -1495,15 +1522,17 @@ int main(int, char**)
 
 					////gfusion.makeImagePyramids();
 
-					tracked = gfusion.TrackSplat(); // cs
+					tracked = gfusion.TrackSplat();
 
 					////gfusion.fuse(); // 
 
-					//if (tracked)
-					//{
-						gfusion.fuse(); // cs then // vs gs // perhaps should be other way around (vs gs, then cs)
-					//}
+					if (tracked)
+					{
+							gfusion.fuse(); 
+					}
 				}
+
+
 
 			}
 
@@ -1593,7 +1622,7 @@ int main(int, char**)
 		setUI();
 
 
-		krender.setRenderingOptions(showDepthFlag, showBigDepthFlag, showInfraFlag, showColorFlag, showLightFlag, showPointFlag, showFlowFlag, showEdgesFlag, showNormalFlag, showVolumeFlag, showTrackFlag, showSDFVolume, showMarkerFlag);
+		krender.setRenderingOptions(showDepthFlag, showBigDepthFlag, showInfraFlag, showColorFlag, showLightFlag, showPointFlag, showFlowFlag, showEdgesFlag, showNormalFlag, showVolumeFlag, showTrackFlag, showSDFVolume, showMarkerFlag, showDepthSplatFlag, showNormalSplatFlag);
 		krender.setFusionType(trackDepthToPoint, trackDepthToVolume, useSplatter);
 
 
@@ -1627,7 +1656,7 @@ int main(int, char**)
 		if (cameraRunning)
 		{
 			krender.setProjectionMatrix(cameraDevice);
-			krender.setTextures(gfusion.getDepthImage(), gflow.getColorTexture(), gfusion.getVerts(), gfusion.getNorms(), gfusion.getVolume(), gfusion.getTrackImage(), gfusion.getPVPNorms(), gfusion.getPVDNorms(), gfusion.getSplatterDepth()); //needs texture uints from gfusion init
+			krender.setTextures(gfusion.getDepthImage(), gflow.getColorTexture(), gfusion.getVerts(), gfusion.getNorms(), gfusion.getVolume(), gfusion.getTrackImage(), gfusion.getPVPNorms(), gfusion.getPVDNorms(), gfusion.getSplatterDepth(), gfusion.getSplatterNormal()); //needs texture uints from gfusion init
 
 			krender.setDisplayOriSize(display2DWindow.x, display_h - display2DWindow.y - display2DWindow.h, display2DWindow.w, display2DWindow.h);
 			krender.set3DDisplayOriSize(display3DWindow.x, display_h - display3DWindow.y - display3DWindow.h, display3DWindow.w, display3DWindow.h);
