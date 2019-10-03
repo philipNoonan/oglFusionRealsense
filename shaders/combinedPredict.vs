@@ -1,9 +1,14 @@
 #version 430 core
 
 // the global model which contains stable and unstable vertices
-layout(location = 0) in vec4 vertexConfidence;
-layout(location = 1) in vec4 normalRadius;
-layout(location = 2) in vec4 colorTimeDevice;
+//layout(location = 0) in vec4 vertexConfidence;
+//layout(location = 1) in vec4 normalRadius;
+//layout(location = 2) in vec4 colorTimeDevice;
+
+layout(std430, binding = 0) buffer globalModelBuffer
+{
+    vec4 globalModel [];
+};
 
 uniform mat4 inversePose[4];
 uniform vec4 camPam; // cx cy fx fy
@@ -16,9 +21,9 @@ uniform int timeDelta;
 
 layout(binding = 0, rgba32f) uniform image2D outImagePC;
 
-flat out vec4 fragVertConf;
-flat out vec4 fragNormRadi;
-flat out vec4 fragColTimDev;
+out vec4 fragVertConf;
+out vec4 fragNormRadi;
+out vec4 fragColTimDev;
 
 vec3 projectPoint(vec3 p)
 {
@@ -37,9 +42,15 @@ vec3 projectPointImage(vec3 p)
 void main()
 {
    // get the position of the global vert in the current estimated camera position fov
-    vec4 vPosHome = inversePose[0] * vec4(vertexConfidence.xyz, 1.0);
-    
-    if(vPosHome.z > maxDepth || vPosHome.z < 0 || (vertexConfidence.w < confThreshold && time - colorTimeDevice.w > timeDelta) || colorTimeDevice.w > maxTime)
+
+    vec4 vertexConfidence	= globalModel[(gl_VertexID * 3) + 0];
+	vec4 normalRadius		= globalModel[(gl_VertexID * 3) + 1];
+	vec4 colorTimeDevice	= globalModel[(gl_VertexID * 3) + 2];
+
+	vec4 vPosHome = inversePose[0] * vec4(vertexConfidence.xyz, 1.0);
+
+	// THIS TIME THING IS A HACK || (vertexConfidence.w < confThreshold && time > 10)
+    if(vPosHome.z > maxDepth || vPosHome.z < 0 || vertexConfidence.w < confThreshold || time - colorTimeDevice.w > timeDelta || colorTimeDevice.w > maxTime)
     {
         gl_Position = vec4(1000.0f, 1000.0f, 1000.0f, 1000.0f);
         gl_PointSize = 0;
@@ -55,7 +66,7 @@ void main()
 		fragVertConf = vec4(vPosHome.xyz, vertexConfidence.w);
 		fragNormRadi = vec4(normalize(mat3(inversePose[0]) * normalRadius.xyz), normalRadius.w);
 
-		//imageStore(outImagePC, ivec2(pix.xy), vec4(inversePose[0][3].xyz ,1));
+		//imageStore(outImagePC, ivec2(pix.xy), vec4(vertexConfidence.www,1));
 
 		vec3 x1 = normalize(vec3((fragNormRadi.y - fragNormRadi.z), -fragNormRadi.x, fragNormRadi.x)) * fragNormRadi.w * 1.41421356;
     

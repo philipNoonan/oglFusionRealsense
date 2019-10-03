@@ -14,6 +14,7 @@
 
 #include <librealsense2/rs.hpp> // Include RealSense Cross Platform API
 
+#include "Frame.h"
 
 #define USE_OPENCV
 
@@ -189,6 +190,12 @@ public:
 	{
 		m_depthUnit = value;
 	}
+
+	float getDepthScale()
+	{
+		return m_depthUnit / 1000000.0f;
+	}
+
 	void setDepthTexture(GLuint depthTex)
 	{
 
@@ -229,15 +236,13 @@ public:
 	// backproject depth frame into vertex image
 	void uploadDepth(std::vector<rs2::frame_queue> depthQ, int devNumber, glm::vec3 &point);
 	void uploadDepthToBuffer(std::vector<rs2::frame_queue> depthQ, int devNumber, glm::vec3 &point, uint32_t counter);
+	void runBilateralFilter();
 	void allocateTransformFeedbackBuffers();
 	void initSplatterFusion();
 	void combinedPredict();
 	//void makeImagePyramids();
 	void predictIndices();
 	void fuse();
-	void splatterDepth();
-	void splatterModel();
-	void makeImagePyramids();
 	bool TrackSplat();
 	void trackSplat(int level);
 	void reduceSplat(int level);
@@ -334,15 +339,19 @@ public:
 	{
 		return m_textureDepthArray;
 	}
+	GLuint getDepthFilteredImage()
+	{
+		return m_textureDepthFilteredArray;
+	}
 	GLuint getColorImage()
 	{
 		return m_textureColor;
 	}
 	GLuint getVerts()
 	{
-		return m_textureVertex;
+		//return m_textureVertex;
 
-		//return m_textureReferenceVertex;
+		return m_textureReferenceVertexArray;
 
 	}
 	GLuint getSplatterDepth()
@@ -459,6 +468,7 @@ private:
 	GLSLProgram reduceSDFProg;
 	GLSLProgram mipProg;
 
+	GLSLProgram bilateralFilterProg;
 	GLSLProgram trackSplatProg;
 	GLSLProgram reduceSplatProg;
 
@@ -658,11 +668,18 @@ private:
 	GLuint m_cgConfThresholdID;
 	GLuint m_cgCurrentGlobalNumberID;
 	GLuint m_cgCurrentNewUnstableNumberID;
+
+	//BILATER FILTER 
+	GLuint m_bfDepthScaleID;
+	GLuint m_bfSigmaID;
+	GLuint m_bfDSigmaID;
+	
 	// TEXTURES
 	GLuint createTexture(GLenum target, int levels, int w, int h, int d, GLint internalformat, GLenum magFilter, GLenum minFilter);
 	GLuint m_textureColor;
 	GLuint m_textureColorArray; // EMPTY AT THE MOMENT
 	GLuint m_textureDepthArray;
+	GLuint m_textureDepthFilteredArray;
 	GLuint m_textureVertexArray;
 	GLuint m_textureNormalArray;
 	std::vector<GLuint> m_textureDepth;
@@ -827,6 +844,8 @@ private:
 	std::vector<glm::vec4> m_camPamsDepth;
 	std::vector<glm::vec4> m_camPamsColor;
 	glm::mat4 m_pose;
+	glm::mat4 m_prevPose;
+	glm::mat4 m_splatPose;
 
 
 
@@ -985,10 +1004,10 @@ private:
 	GLuint globalVertCount = 0;
 	GLuint finalVertCount = 0;
 
-	int m_initUnstable;
-	uint32_t m_frameCount;
-	uint32_t m_timeDelta = 200;
-	float m_depthMax = 0.5f;
+	int m_initUnstable = 1;
+	uint32_t m_frameCount = 0;
+	uint32_t m_timeDelta = 20000;
+	float m_depthMax = 0.7f;
 	size_t m_bufferSize = 3072 * 3072 * 16;
 
 };

@@ -100,7 +100,7 @@ void main()
                     vec3 referenceNormal = imageLoad(refNormal, refPixel).xyz;
                     vec3 tmp = imageLoad(refVertex, refPixel).xyz;
                     //imageStore(differenceImage, ivec2(projPixel), vec4(tmp.z, 0.0f, 0.0f, 1.0f));
-                    imageStore(outImagePC, ivec2(pix), vec4(referenceNormal.xyz, 1.0f));
+                    //imageStore(outImagePC, ivec2(pix), vec4(referenceNormal.xyz, 1.0f));
 
 
                     if (referenceNormal.x == -2)
@@ -115,19 +115,19 @@ void main()
                         vec4 currNormal = imageLoad(inNormal, ivec3(pix, camera));
                         vec3 projectedNormal = vec3((cameraPoses[camera] * vec4(currNormal.xyz, 0.0f)).xyz); // input mipmap sized pixel
 
-                        imageStore(trackImage, ivec3(pix, camera), vec4(diff, 1.0f));
+                        //imageStore(trackImage, ivec3(pix, camera), vec4(diff, 1.0f));
 
 
                         if (length(diff) > dist_threshold)
                         {
                             trackOutput[offset].result = -4;
-                            imageStore(trackImage, ivec3(pix, camera), vec4(0, 0, 1.0f, 1.0f));
+                            //imageStore(trackImage, ivec3(pix, camera), vec4(0, 0, 1.0f, 1.0f));
 
                         }
                         else if (dot(projectedNormal, referenceNormal) < normal_threshold)
                         {
                             trackOutput[offset].result = -5;
-                            imageStore(trackImage, ivec3(pix, camera), vec4(1.0f, 1.0f, 0, 1.0f));
+                            //imageStore(trackImage, ivec3(pix, camera), vec4(1.0f, 1.0f, 0, 1.0f));
 
                         }
                         else

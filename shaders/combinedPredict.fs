@@ -1,8 +1,8 @@
 #version 430 core
 
-flat in vec4 fragVertConf;
-flat in vec4 fragNormRadi;
-flat in vec4 fragColTimDev;
+in vec4 fragVertConf;
+in vec4 fragNormRadi;
+in vec4 fragColTimDev;
 
 uniform vec4 camPam;
 uniform float maxDepth;
@@ -44,7 +44,7 @@ void main()
     float sqrRad = pow(fragNormRadi.w, 2);
     vec3 diff = corrected_pos - fragVertConf.xyz;
 
-    if(dot(diff, diff) > sqrRad) // this prevent the render of unstable points
+    if(dot(diff, diff) > sqrRad) 
     {
         discard;
     }
@@ -55,14 +55,14 @@ void main()
 	// is this S.O. relevent?
     // https://stackoverflow.com/questions/701504/perspective-projection-determine-the-2d-screen-coordinates-x-y-of-points-in-3/701978#701978
     outVertex = vec4((gl_FragCoord.x - camPam.x) * z * (1.f / camPam.z), (gl_FragCoord.y - camPam.y) * z * (1.f / camPam.w), z, 1.0f);
-    
+    //outVertex = fragVertConf;
     outNormal = vec4(fragNormRadi.xyz, 1.0f); // this doesnt like being non 1.0f for w
     //outNormRadi = vec4(0.5f, 0.25f, 0.5f, 1.0f);
     //outTime = uint(fragColTimDev.z);
     
 	outConRadDev = vec4(fragVertConf.w, fragNormRadi.w, fragColTimDev.w, 1.0f);
 
-    gl_FragDepth = (corrected_pos.z / (2.0f * maxDepth)) + 0.5f;
+    gl_FragDepth = (corrected_pos.z / (2.0f * maxDepth)) + 0.5f; // scale to some max depth but still allow for the depth to be discarded if it is greater than other frags
 
 
 }

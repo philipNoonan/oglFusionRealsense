@@ -48,15 +48,15 @@ void main()
             {
                 if (row.result == -4)
                 {
-                    sums[28] += 1;
+                    sums[29] += 1;
                 }
                 if (row.result == -5)
                 {
-                    sums[28] += 1;
+                    sums[30] += 1;
                 }
-                if (row.result > -2)
+                if (row.result > -4)
                 {
-                    sums[28] += 1;
+                    sums[31] += 1;
                 }
                 continue;
             }

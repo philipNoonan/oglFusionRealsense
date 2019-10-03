@@ -1,0 +1,88 @@
+// adapted from 
+/**
+ * 
+ * PixelFlow | Copyright (C) 2017 Thomas Diewald - http://thomasdiewald.com
+ * 
+ * A Processing/Java library for high performance GPU-Computing (GLSL).
+ * MIT License: https://opensource.org/licenses/MIT
+ * 
+ */
+
+
+//
+// resouces
+//
+// Jumpflood Algorithm (JFA)
+//
+// Jump Flooding in GPU with Applications to Voronoi Diagram and Distance Transform
+// www.comp.nus.edu.sg/~tants/jfa/i3d06.pdf
+//
+
+
+#version 430
+
+layout(local_size_x = 1024) in; // 
+
+
+layout(binding = 0, r32ui) writeonly uniform uimage3D image0;
+
+uniform mat4 T;
+
+
+// Data structure
+struct gMapData
+{
+	vec4 data;	// Confidence, radius, timestamp, timeFirstSeen 
+	vec4 vert;	// Vertex
+	vec4 norm;	// Normal
+	vec4 color;	// Color
+};
+// Distance global map
+layout(std430, binding = 0) buffer gMap
+{
+	gMapData elems[];
+};
+
+
+#define LENGTH_SQ(dir) ((dir).x*(dir).x + (dir).y*(dir).y + (dir).z*(dir).z)
+#define POS_MAX 0x7FFF // == 32767 == ((1<<15) - 1)
+
+vec3 dtnn = vec3(POS_MAX); // some large number
+
+vec3 pix;
+float dmin = LENGTH_SQ(dtnn);
+uniform float jump;
+
+uniform float scaleFactor;
+
+// https://www.rapidtables.com/convert/number/binary-to-decimal.html?x=11111111110000000000000000000000
+uint encodeValues(vec3 inVec)
+{
+    return uint(inVec.x) << 22 | uint(inVec.y) << 12 | uint(inVec.z) << 2;
+}
+
+vec3 decodeValues(uint inUint)
+{
+    return vec3((inUint & 4290772992) >> 22, (inUint & 4190208) >> 12, (inUint & 4092) >> 2); ;
+}
+
+
+
+
+void main()
+{
+    int vertID = int(gl_GlobalInvocationID.x);
+
+    ivec3 imSize = ivec3(imageSize(image0));
+
+    vec4 vertexInVolume = scaleFactor * (T * elems[vertID].vert) ;
+
+    if (all(greaterThan(vertexInVolume.xyz, vec3(0.0f))) && all(lessThan(vertexInVolume.xyz, vec3(imSize.x))))
+    {
+        uint encodedOriginal = encodeValues(vertexInVolume.xyz);
+
+        imageStore(image0, ivec3(vertexInVolume.xyz), uvec4(encodedOriginal));
+    }
+
+}
+

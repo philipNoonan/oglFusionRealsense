@@ -31,10 +31,9 @@ flat out vec4 geoCTD;
 
 uniform vec4 camPam; //cx, cy, 1 / fx, 1 / fy
 uniform float scale; // index map scale = 4.0f
-uniform mat4 pose[4];
+uniform mat4 pose;
 uniform float maxDepth;
 uniform uint time;
-uniform uint timeDelta;
 uniform float weighting;
 
 vec2 imSize;
@@ -166,19 +165,18 @@ void main()
 
 	uint vertID = gl_VertexID; // 0 to max number of valid depth verts
 
-    //Vertex position in current depth space
+    // Vertex position in current depth space
     vec4 vPosLocal = interleavedData[(vertID * 3)];
 
-    geoVC = pose[0] * vec4(vPosLocal.xyz, 1); // vert position in global space
+    geoVC = pose * vec4(vPosLocal.xyz, 1); // vert position in global space
     geoVC.w = vPosLocal.w;
 
-    //Normal and radius computed with filtered position / depth map transformed to global coords
-    //vec3 vNormLocal = getNorm(depthSampler, geoVC, textureCoord, 1.0f / vec3(texSize.xyz), texelCoord);
+    // Normal and radius computed with filtered position / depth map transformed to global coords
 	// norm in depth space
-    vec4 vNormLocal = interleavedData[(vertID * 3) + 1];// vec4(mat3(pose) * vNormLocal, getRadi(geoVC.z, vNormLocal.z, texelCoord.z));
+    vec4 vNormLocal = interleavedData[(vertID * 3) + 1];
 
 	// norm in global space
-    geoNR = vec4(mat3(pose[0]) * vNormLocal.xyz, vNormLocal.w);
+    geoNR = vec4(mat3(pose) * vNormLocal.xyz, vNormLocal.w);
 
 	// color in depth space, shouldnt matter to transform it
     geoCTD = interleavedData[(vertID * 3) + 2];
@@ -188,18 +186,18 @@ void main()
 
     uint best = 0U;
 
-	vec4 bestVC;
-	vec4 bestNR;
-	vec4 bestCTD;
+
+
+	        // project to 1x image space
+        vec3 pix = projectPointImage(vPosLocal.xyz);
 
     //If this point is actually a valid vertex (i.e. has depth)
     // this should now be valid depth since we TFBO'd it previously
-    //if(texelCoord.x % 2 == int(time) % 2 && texelCoord.y % 2 == int(time) % 2 && 
-    //   checkNeighboursFIXME(1) && 
-    if (vPosLocal.z > 0 && vPosLocal.z <= maxDepth) // only proceed if in current depth frame space
+    if(
+	//int(pix.x) % 2 == int(time) % 2 && int(pix.y) % 2 == int(time) % 2 && // do we need this line?
+		vPosLocal.z > 0 && vPosLocal.z <= maxDepth && isnan(vNormLocal.x) == false) // only proceed if in current depth frame space
     {
-        // project to 1x image space
-        vec3 pix = projectPointImage(vPosLocal.xyz);
+
 
         //imageStore(outImagePC, ivec2(pix.xy), vec4(geoVC.xyw, 1));
 			  
@@ -217,9 +215,9 @@ void main()
         // ray is direction of ray in pixel space out from each pixel from camera centre
 
         // find best
-        for (int i = int((pix.x * 4) - 2); i < int((pix.x * 4) + 2); i += 1)
+        for (int i = int(((pix.x * 4.0f) - 4.0f) + 0.5f); i < int(((pix.x * 4.0f) + 4.f) + 0.5f); i += 1)
         {
-            for (int j = int((pix.y * 4) - 2); j < int((pix.y * 4) + 2); j += 1)
+            for (int j = int(((pix.y * 4.0f) - 4.0f) + 0.5f); j < int(((pix.y * 4.0f) + 4.0f) + 0.5f); j += 1)
             {
 			    //imageStore(outImagePC, ivec2(i / 4, j / 4), vec4(1));
 
@@ -245,12 +243,12 @@ void main()
                         {
                             //imageStore(outImagePC, ivec2(i / 4, j / 4), vec4(normRad.x,vNormLocal.x,0.8,1));
 
-							bestVC = pose[0] * vec4(vertConf.xyz, 1); // vert position in global space
-							bestVC.w = vertConf.w;
+							//bestVC = pose * vec4(vertConf.xyz, 1); // vert position in global space
+							//bestVC.w = vertConf.w;
 
-							bestNR = vec4(mat3(pose[0]) * normRad.xyz, normRad.w);
+							//bestNR = vec4(mat3(pose) * normRad.xyz, normRad.w);
 
-							bestCTD = texelFetch(colTimDevSampler, ivec2(i, j), 0);
+							//bestCTD = texelFetch(colTimDevSampler, ivec2(i, j), 0);
                             counter++;
                             bestDist = dist;
                             best = current;
@@ -270,13 +268,16 @@ void main()
 			// we need to get the current depth data in global space to merge correctly with the global model
 			// we know the index of mathcing vert, so 
 
+			vec4 bestVC = globalModel[(best * 3) + 0];
+			vec4 bestNR = globalModel[(best * 3) + 1];
+			vec4 bestCTD = globalModel[(best * 3) + 2];
+
 			float c_k = bestVC.w;
 			vec3 v_k = bestVC.xyz;
 
 			float a = geoVC.w;
 			vec3 v_g = geoVC.xyz;
 
-			//imageStore(outImagePC, ivec2(pix), vec4(geoNR.xyz - globalModel[(best * 3) + 1].xyz, 1.0f));
 
 			if(geoNR.w < (1.0 + 0.5) * bestNR.w)
 			{

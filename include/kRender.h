@@ -78,6 +78,11 @@ public:
 		return m_window;
 	}
 
+	void setWindow(GLFWwindow* win)
+	{
+		m_window = win;
+	}
+
 	void SetCallbackFunctions();
 
 	bool showImgui()

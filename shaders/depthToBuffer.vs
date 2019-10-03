@@ -113,11 +113,11 @@ void main()
 
 	if (initUnstable == 1)
 	{
-			geoVertexColorTimeDevice= vec4(0, 0, 1, 0); // .z is the stable flag or counter
+		geoVertexColorTimeDevice = vec4(0, 0, 1, 0); // .z is the stable flag or counter
 	}
 	else
 	{
-		geoVertexColorTimeDevice= vec4(0, 0, frameCount, 0);// .z is the stable flag or counter, here set to unstable
+		geoVertexColorTimeDevice = vec4(0, 0, frameCount, 0);// .z is the stable flag or counter, here set to unstable
 	}
 
 	imageCoord = texelCoord.xy;

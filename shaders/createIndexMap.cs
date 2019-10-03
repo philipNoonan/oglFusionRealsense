@@ -15,7 +15,7 @@ uniform float maxDepth;
 uniform int time;
 uniform int timeDelta;
 
-// outputs in current depth space
+// outputs in current depth space at 4x size
 layout(binding=0, rgba32f) uniform image2D outputVertConf;
 layout(binding=1, rgba32f) uniform image2D outputNormRadi;
 layout(binding=2, rgba32f) uniform image2D outputColTimDev;
@@ -69,14 +69,14 @@ void main()
     // THIS MAY BE AN ISSUE IF POINTSIZE IS AFFECTED BY THE Z POSITION OF THE SPRITE
 	if (geoVertexID > 0)
 	{
-        float depthTest = imageLoad(outputVertConf, ivec2(pix.xy)).z;
+        //float depthTest = imageLoad(outputVertConf, ivec2(pix.xy)).z;
 
         //if (vCurrentPosition.z < depthTest)
         //{
-            imageStore(outputVertConf, ivec2(pix.xy), vec4(vCurrentPosition.xyz, vertexConfidence.w));
-            imageStore(outputNormRadi, ivec2(pix.xy), vec4(normalize(mat3(inversePose) * normalRadius.xyz), normalRadius.w));
-            imageStore(outputColTimDev, ivec2(pix.xy), vec4(colorTimeDevice));
-            imageStore(outputVertexID, ivec2(pix.xy), ivec4(geoVertexID));
+            imageStore(outputVertConf, ivec2(pix.xy + 0.5f), vec4(vCurrentPosition.xyz, vertexConfidence.w));
+            imageStore(outputNormRadi, ivec2(pix.xy + 0.5f), vec4(normalize(mat3(inversePose) * normalRadius.xyz), normalRadius.w));
+            imageStore(outputColTimDev, ivec2(pix.xy + 0.5f), vec4(colorTimeDevice));
+            imageStore(outputVertexID, ivec2(pix.xy + 0.5f), ivec4(geoVertexID));
         //}
 
         //imageStore(outImagePC, ivec2(pix.xy / 4), vec4(inversePose[3].xyz * 10000.0f, 1));

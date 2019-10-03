@@ -30,8 +30,8 @@ layout(binding = 1, r32ui) uniform uimage3D image1;
 
 layout(binding = 2, r32i) uniform iimage3D outImage;
 
-layout(binding = 3, rgba32f) uniform image2D verts;
-layout(binding = 4, rgba32f) uniform image2D norms;
+layout(binding = 3, rgba32f) uniform image2DArray verts;
+layout(binding = 4, rgba32f) uniform image2DArray norms;
 
 uniform mat4 trackMat;
 
@@ -81,14 +81,14 @@ void jfaInitFromDepth()
 
     ivec3 imSize = ivec3(imageSize(image0));
 
-    vec4 vertex = imageLoad(verts, pix);
+    vec4 vertex = imageLoad(verts, ivec3(pix, 0));
 
     vec4 vertexInVolume = scaleFactor * (trackMat * vertex) ;
     //vec4 vertexInVolume = scaleFactor * vertex;
 
 
 
-    vec4 normal = imageLoad(norms, pix);
+    vec4 normal = imageLoad(norms, ivec3(pix, 0));
 
     //vec3 vectorToNearestPoint = normalize(dtnn.xyz - pix);
     //float dotAngle = dot(normal.xyz, vectorToNearestPoint);

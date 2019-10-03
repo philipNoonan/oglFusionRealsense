@@ -395,7 +395,7 @@ void kRender::setInfraFrame(std::vector<rs2::frame_queue> infraQ, int devNumber,
 
 void kRender::allocateBuffers()
 {
-	glEnable(GL_BLEND); glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+	//glEnable(GL_BLEND); glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
 	glGenVertexArrays(1, &m_VAO);
 	glGenBuffers(1, &m_VBO_Standard);

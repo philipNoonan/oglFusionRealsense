@@ -1,7 +1,5 @@
 #version 430 core
 
-layout(local_size_x = 1024, local_size_y = 1) in; // 
-
 layout(std430, binding = 0) buffer feedbackBuffer
 {
     vec4 interleavedData [];
@@ -42,7 +40,7 @@ void main()
     float x = 0;
     float y = 0;
         
-    if(vCurrentPosition.z > maxDepth || vCurrentPosition.z < 0) // || time - colorTimeDevice.w > timeDelta)
+    if(vCurrentPosition.z > maxDepth || vCurrentPosition.z < 0 || time - colorTimeDevice.w > timeDelta)
     {
         x = -10;
         y = -10;
