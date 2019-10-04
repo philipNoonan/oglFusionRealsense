@@ -8,14 +8,14 @@ namespace rgbd
 		const glm::mat4 &K,
 		const rgbd::FUSIONTYPE fType,
 		const std::map<std::string, const gl::Shader::Ptr> &progs, 
-		glm::vec3 &volDim,
-		glm::vec3 &volSize,
-		float dMin,
-		float dMax,
+		glm::vec3 &vDim,
+		glm::vec3 &vSize,
 		float distThresh,
 		float normThresh
 	)
 	{
+		volDim = vDim;
+		volSize = vSize;
 		icp.resize(ICPConstParam::MAX_LEVEL);
 		p2picp.resize(ICPConstParam::MAX_LEVEL);
 		p2vicp.resize(ICPConstParam::MAX_LEVEL);
@@ -34,7 +34,7 @@ namespace rgbd
 				p2picp[lv] = std::make_shared<rgbd::p2pICP>(width / bias, height / bias, distThresh, normThresh, _K, progs);
 				break;
 			case FUSIONTYPE::P2V:
-				p2vicp[lv] = std::make_shared<rgbd::p2vICP>(width / bias, height / bias, distThresh, normThresh, _K, volDim, volSize, dMin, dMax, progs);
+				p2vicp[lv] = std::make_shared<rgbd::p2vICP>(width / bias, height / bias, distThresh, normThresh, _K, progs);
 				break;
 			case FUSIONTYPE::SPLATTER:
 				icp[lv] = std::make_shared<rgbd::PointToPlaneICP>(width / bias, height / bias, _K, progs);
@@ -89,12 +89,18 @@ namespace rgbd
 
 		glm::mat4 oldT = T;
 
+
+
 		for (int lv = ICPConstParam::MAX_LEVEL - 1; lv >= 0; --lv)
 		{
 			p2picp[lv]->calc(lv, currentFrame, virtualFrame, T, AE, icpCount);
 		}
 
-		std::cout << " AE: " << AE << std::endl;
+
+
+
+
+		//std::cout << " AE: " << AE << std::endl;
 
 		//T = oldT;
 
@@ -109,7 +115,6 @@ namespace rgbd
 		glm::mat4 &T
 	)
 	{
-
 		Eigen::Matrix<float, 4, 4, Eigen::ColMajor> T_eig, T_eigPrev;
 		std::memcpy(T_eig.data(), glm::value_ptr(T), 16 * sizeof(float));
 		T_eigPrev = T_eig;
@@ -122,11 +127,12 @@ namespace rgbd
 		result << 0.0, 0.0, 0.0, 0.0, 0.0, 0.0;
 		//glm::mat4 twistMat = Twist(result);
 		Eigen::Matrix<double, 6, 1> result_prev = result;
+
 		bool tracked;
 
 		for (int lv = ICPConstParam::MAX_LEVEL - 1; lv >= 0; --lv)
 		{
-			tracked = p2vicp[lv]->calc(lv, gVolID, currentFrame, virtualFrame, T_eig, AE, icpCount, result, result_prev);
+			tracked = p2vicp[lv]->calc(lv, gVolID, currentFrame, virtualFrame, T_eig, AE, icpCount, volDim, volSize, result, result_prev);
 		}
 
 		std::cout << " p2v AE: " << AE << std::endl;
@@ -146,7 +152,18 @@ namespace rgbd
 			//m_cumTwist += result;
 		//}
 
+
+
 		//T = oldT;
 
+	}
+
+	void PyramidricalICP::reset(
+		glm::vec3 vDim,
+		glm::vec3 vSize
+	)
+	{
+		volDim = vDim;
+		volSize = vSize;
 	}
 }

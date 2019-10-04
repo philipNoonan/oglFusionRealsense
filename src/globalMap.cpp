@@ -109,16 +109,16 @@ namespace rgbd
 		progs["GlobalMapUpdate"]->setUniform("invT", glm::inverse(T));
 		progs["GlobalMapUpdate"]->setUniform("timestamp", timestamp);
 
-		indexMapFBO.getColorAttachment(0)->bindImage(0, GL_READ_ONLY);
-		srcFrame.getVertexMap()->bindImage(1, GL_READ_ONLY);
-		srcFrame.getNormalMap()->bindImage(2, GL_READ_ONLY);
-		srcFrame.getColorMap()->bindImage(3, GL_READ_ONLY);	// <-- debugging: color integration
+		indexMapFBO.getColorAttachment(0)->bindImage(0, 0, GL_READ_ONLY);
+		srcFrame.getVertexMap()->bindImage(1, 0, GL_READ_ONLY);
+		srcFrame.getNormalMap()->bindImage(2, 0, GL_READ_ONLY);
+		srcFrame.getColorMap()->bindImage(3, 0, GL_READ_ONLY);	// <-- debugging: color integration
 
 		atomic[buffSwitch].update(&mapSize, 0, 1);
 		atomic[buffSwitch].bindBase(0);
 		ssbo[buffSwitch].bindBase(0);
 
-		glDispatchCompute(width / 20, height / 20, 1);
+		glDispatchCompute(width / 32, height / 32, 1);
 		atomic[buffSwitch].read(&mapSize, 0, 1);
 		progs["GlobalMapUpdate"]->disuse();
 	}

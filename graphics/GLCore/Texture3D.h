@@ -72,6 +72,8 @@ namespace gl
 		int getDepth() const;
 		int getID() const;
 
+		void deleteTexture();
+
 		typedef std::shared_ptr<Texture3D> Ptr;
 	};
 }

@@ -23,9 +23,9 @@ namespace rgbd
 		prog->setUniform("invK", invK);
 
 		prog->use();
-		srcDepthMap->bindImage(0, GL_READ_ONLY);
-		dstVertexMap->bindImage(1, GL_WRITE_ONLY);
-		glDispatchCompute(dstVertexMap->getWidth() / 20, dstVertexMap->getHeight() / 20, 1);
+		srcDepthMap->bindImage(0, 0, GL_READ_ONLY);
+		dstVertexMap->bindImage(1, 0, GL_WRITE_ONLY);
+		glDispatchCompute(dstVertexMap->getWidth() / 32, dstVertexMap->getHeight() / 32, 1);
 		prog->disuse();
 	}
 }

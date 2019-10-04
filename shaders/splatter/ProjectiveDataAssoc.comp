@@ -6,7 +6,7 @@ layout (binding = 3, rgba32f) readonly uniform image2D prevNormMap;	// Distance 
 
 
 
-layout (local_size_x = 20, local_size_y = 20) in;
+layout (local_size_x = 32, local_size_y = 32) in;
 
 layout (binding = 2, offset = 0) uniform atomic_uint g_icpDataIdx;
 
@@ -25,6 +25,8 @@ uniform float ed;
 uniform float et;
 uniform float minZ;
 uniform float maxZ;
+
+uniform int mip;
 
 void main(void)
 {

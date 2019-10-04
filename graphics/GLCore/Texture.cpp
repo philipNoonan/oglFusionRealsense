@@ -160,10 +160,44 @@ namespace gl
 		unbind();
 	}
 
+	void Texture::createStorage(int levels, int w, int h, int channels, GLuint intFormat, TextureType type, bool normalized)
+	{
+
+		this->width = w;
+		this->height = h;
+
+		internalFormat = intFormat;// getInternalFormat(type, channels);
+		format = getFormat(type, channels, normalized);
+		if (type == TextureType::FLOAT16 || type == TextureType::FLOAT32)
+		{
+			dataType = GL_FLOAT;
+		}
+		else if (type == TextureType::UINT16)
+		{
+			dataType = GL_UNSIGNED_SHORT;
+		}
+		else if (type == TextureType::UINT32)
+		{
+			dataType = GL_UNSIGNED_INT;
+		}
+
+		bind();
+		glTexStorage2D(GL_TEXTURE_2D, levels, internalFormat, w, h);
+		unbind();
+
+	}
+
 	void Texture::update(const void* data)
 	{
 		glBindTexture(GL_TEXTURE_2D, id);
 		glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, width, height, format, dataType, data);
+		glBindTexture(GL_TEXTURE_2D, 0);
+	}
+
+	void Texture::mipmap()
+	{
+		glBindTexture(GL_TEXTURE_2D, id);
+		glGenerateMipmap(GL_TEXTURE_2D);
 		glBindTexture(GL_TEXTURE_2D, 0);
 	}
 
@@ -240,14 +274,14 @@ namespace gl
 		glBindTexture(GL_TEXTURE_2D, 0);
 	}
 
-	void Texture::bindImage(int idx, GLenum access)
+	void Texture::bindImage(int idx, int layer, GLenum access)
 	{
-		glBindImageTexture(idx, id, 0, GL_FALSE, 0, access, internalFormat);
+		glBindImageTexture(idx, id, 0, GL_TRUE, layer, access, internalFormat);
 	}
 
-	void Texture::bindImage(int idx, GLenum access, GLenum internalFormat)
+	void Texture::bindImage(int idx, int layer, GLenum access, GLenum internalFormat)
 	{
-		glBindImageTexture(idx, id, 0, GL_FALSE, 0, access, internalFormat);
+		glBindImageTexture(idx, id, 0, GL_TRUE, layer, access, internalFormat);
 	}
 
 	void Texture::use(int idx)

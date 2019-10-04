@@ -26,8 +26,6 @@ layout(std430, binding = 0) buffer TrackData
 uniform mat4 T;
 uniform vec3 volDim;
 uniform vec3 volSize; 
-uniform float dMax;
-uniform float dMin;
 uniform int mip;
 
 
@@ -234,6 +232,8 @@ void main()
 
                 float absD = abs(D);// get abs depth
 
+				float dMin = -volDim.x / 20.0f;
+				float dMax = volDim.x / 10.0f;
 
                 if (D < dMax && D > dMin)
                 {

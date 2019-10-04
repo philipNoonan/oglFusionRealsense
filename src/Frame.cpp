@@ -25,7 +25,7 @@ namespace rgbd
 		this->height = height;
 		this->K = K;
 
-		frameData.resize(maxLevel);
+		frameData.resize(1);
 
 		// Color needs only "one" level
 		// Note: Color must be 4ch since compute shader does not support rgb8 internal format.
@@ -34,7 +34,16 @@ namespace rgbd
 		frameData[0].colorMap->setFiltering(gl::TextureFilter::NEAREST);
 		frameData[0].colorMap->setWarp(gl::TextureWarp::CLAMP_TO_EDGE);
 
-		for (int lv = 0; lv < frameData.size(); ++lv)
+		frameData[0].depthMap = std::make_shared<gl::Texture>();
+		frameData[0].vertexMap = std::make_shared<gl::Texture>();
+		frameData[0].normalMap = std::make_shared<gl::Texture>();
+
+		frameData[0].depthMap->createStorage(maxLevel, width, height, 1, GL_R32F, gl::TextureType::FLOAT32, 0);
+		frameData[0].vertexMap->createStorage(maxLevel, width, height, 4, GL_RGBA32F, gl::TextureType::FLOAT32, 0);
+		frameData[0].normalMap->createStorage(maxLevel, width, height, 4, GL_RGBA32F, gl::TextureType::FLOAT32, 0);
+
+
+		/*for (int lv = 0; lv < frameData.size(); ++lv)
 		{
 			int dev = int(pow(2, lv));
 			int _w(width / dev), _h(height / dev);
@@ -52,7 +61,7 @@ namespace rgbd
 			frameData[lv].normalMap->create(0, _w, _h, 4, gl::TextureType::FLOAT32);
 			frameData[lv].normalMap->setFiltering(gl::TextureFilter::NEAREST);
 			frameData[lv].normalMap->setWarp(gl::TextureWarp::CLAMP_TO_EDGE);
-		}
+		}*/
 
 		shortDepthMap = std::make_shared<gl::Texture>();
 		shortDepthMap->create(0, width, height, 1, gl::TextureType::UINT16);
@@ -166,12 +175,33 @@ namespace rgbd
 
 	void Frame::update() const
 	{
-		for (int lv = 0; lv < downSampling.size(); ++lv)
+		/*GLuint query;
+		glGenQueries(1, &query);
+
+		glBeginQuery(GL_TIME_ELAPSED, query);*/
+
+		frameData[0].depthMap->mipmap();
+		frameData[0].vertexMap->mipmap();
+		frameData[0].normalMap->mipmap();
+
+		//glEndQuery(GL_TIME_ELAPSED);
+		//GLuint available = 0;
+		//while (!available) {
+		//	glGetQueryObjectuiv(query, GL_QUERY_RESULT_AVAILABLE, &available);
+		//}
+
+		//// elapsed time in nanoseconds
+		//GLuint64 elapsed;
+		//glGetQueryObjectui64vEXT(query, GL_QUERY_RESULT, &elapsed);
+
+		//std::cout << "time : " << elapsed / 1000000.0 << std::endl;
+
+		/*for (int lv = 0; lv < downSampling.size(); ++lv)
 		{
 			std::dynamic_pointer_cast<rgbd::DownSampling>(downSampling[lv])->execute(frameData[lv].depthMap, frameData[lv + 1].depthMap, MAP_TYPE::DEPTH);
 			std::dynamic_pointer_cast<rgbd::DownSampling>(downSampling[lv])->execute(frameData[lv].vertexMap, frameData[lv + 1].vertexMap, MAP_TYPE::VERTEX);
 			std::dynamic_pointer_cast<rgbd::DownSampling>(downSampling[lv])->execute(frameData[lv].normalMap, frameData[lv + 1].normalMap, MAP_TYPE::NORMAL);
-		}
+		}*/
 	}
 
 	void Frame::clearAll()

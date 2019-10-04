@@ -15,6 +15,7 @@ namespace gl
 		FLOAT16,
 		FLOAT32,
 		UINT16,
+		UINT32,
 	};
 
 	enum class TextureFilter
@@ -51,8 +52,10 @@ namespace gl
 		~Texture();
 
 		void create(const void* data, int width, int height, int channels, TextureType type, bool invertChannels = false);
-		void update(const void* data);
+		void createStorage(int levels, int w, int h, int channels, GLuint intFormat, TextureType type, bool normalized);
 
+		void update(const void* data);
+		void mipmap();
 		void setFiltering(TextureFilter filter);
 		void setWarp(TextureWarp warp);
 
@@ -61,8 +64,8 @@ namespace gl
 
 		void bind();
 		void unbind();
-		void bindImage(int idx, GLenum access);
-		void bindImage(int idx, GLenum access, GLenum internalFormat);
+		void bindImage(int idx, int layer, GLenum access);
+		void bindImage(int idx, int layer, GLenum access, GLenum internalFormat);
 
 		void use(int idx = 0);
 		

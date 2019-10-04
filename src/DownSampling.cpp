@@ -22,9 +22,9 @@ namespace rgbd
 	{
 		progs[type]->use();
 
-		src->bindImage(0, GL_READ_ONLY);
-		dst->bindImage(1, GL_WRITE_ONLY);
-		glDispatchCompute(dst->getWidth() / 20, dst->getHeight() / 20, 1);
+		src->bindImage(0, 0, GL_READ_ONLY);
+		dst->bindImage(1, 0, GL_WRITE_ONLY);
+		glDispatchCompute(dst->getWidth() / 32, dst->getHeight() / 32, 1);
 
 		progs[type]->disuse();
 	}

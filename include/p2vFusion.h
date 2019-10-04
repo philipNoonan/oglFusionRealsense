@@ -27,6 +27,7 @@ namespace rgbd
 		std::vector<glm::mat4> vT;
 		glm::mat4 T;
 		glm::vec3 volSize;
+		glm::vec3 volDim;
 
 	public:
 		p2vFusion();
@@ -38,13 +39,12 @@ namespace rgbd
 		);
 
 		void init(
+			rgbd::GlobalVolume::Ptr volume,
 			const rgbd::Frame &currentFrame,
 			const rgbd::Frame &virtualFrame,
 			glm::vec3 &dim,
 			glm::vec3 &size,
-			const float dMin,
-			const float dMax,
-			const glm::mat4 &initPose,
+			glm::mat4 &initPose,
 			const glm::mat4 &K,
 			const float maxWeight,
 			const float distThresh, 
@@ -76,7 +76,7 @@ namespace rgbd
 
 		//void exportGlobalVertexMap();
 		GLuint getVolumeID();
-		void clear(const glm::mat4 & resetPose);
+		void clear(const glm::mat4 & resetPose, glm::vec3 volumeSize, glm::vec3 volumeDimensions);
 
 	};
 }

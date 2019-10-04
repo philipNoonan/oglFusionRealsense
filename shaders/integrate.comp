@@ -15,8 +15,7 @@ uniform mat4 K;
 
 uniform int p2p;
 uniform int p2v;
-uniform float dMax;
-uniform float dMin;
+
 uniform float volDim; // length in meters FLOAT!!!!
 uniform float volSize; // voxel grid size
 uniform float maxWeight;
@@ -131,6 +130,9 @@ void integrateExperimental()
         {
             ctfo = 0.001f;
         }
+
+		float dMin = -volDim / 20.0f;
+		float dMax = volDim / 10.0f;
 
         // if diff within TSDF range, write to volume
         if (finalDiff < dMax && finalDiff > dMin)

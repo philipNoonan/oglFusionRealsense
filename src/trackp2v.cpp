@@ -8,10 +8,6 @@ namespace rgbd
 		float distThresh,
 		float normThresh,
 		const glm::mat4 &K,
-		const glm::vec3 &volDim,
-		const glm::vec3 &volSize,
-		const float dMin,
-		const float dMax,
 		const std::map<std::string, const gl::Shader::Ptr> &progs
 	) : progs{ { "p2vTrack", progs.at("p2vTrack") },
 			   { "p2vReduce", progs.at("p2vReduce") } }
@@ -32,10 +28,8 @@ namespace rgbd
 
 
 
-		this->progs["p2vTrack"]->setUniform("volDim", volDim);
-		this->progs["p2vTrack"]->setUniform("volSize", volSize);
-		this->progs["p2vTrack"]->setUniform("dMin", dMin);
-		this->progs["p2vTrack"]->setUniform("dMax", dMax);
+
+
 
 	}
 
@@ -48,32 +42,42 @@ namespace rgbd
 		GLuint gVolID,
 		const rgbd::Frame &currentFrame,
 		const rgbd::Frame &virtualFrame,
+		glm::vec3 volDim,
+		glm::vec3 volSize,
 		glm::mat4 &T,
-		int level
+		int layer
 	)
 	{
 		glm::mat4 invT = glm::inverse(T);
 
 		progs["p2vTrack"]->use();
 		progs["p2vTrack"]->setUniform("T", T);
-		progs["p2vTrack"]->setUniform("mip", level);
+		progs["p2vTrack"]->setUniform("mip", layer);
+
+		progs["p2vTrack"]->setUniform("volDim", volDim);
+		progs["p2vTrack"]->setUniform("volSize", volSize);
+
+		//progs["p2vTrack"]->setUniform("dMin", dMin);
+		//progs["p2vTrack"]->setUniform("dMax", dMax);
 
 		glActiveTexture(GL_TEXTURE0);
 		glBindTexture(GL_TEXTURE_3D, gVolID);
 
+		//glBindImageTexture(5, gVolID, 0, GL_FALSE, 0, GL_READ_ONLY, GL_RG16F);
 
-		currentFrame.getVertexMap(level)->bindImage(0, GL_READ_ONLY);
-		currentFrame.getNormalMap(level)->bindImage(1, GL_READ_ONLY);
 
-		virtualFrame.getNormalMap(0)->bindImage(2, GL_WRITE_ONLY);
+		currentFrame.getVertexMap(0)->bindImage(0, layer, GL_READ_ONLY);
+		currentFrame.getNormalMap(0)->bindImage(1, layer, GL_READ_ONLY);
 
-		currentFrame.getTrackMap()->bindImage(3, GL_WRITE_ONLY);
+		virtualFrame.getNormalMap(0)->bindImage(2, 0, GL_WRITE_ONLY);
+
+		currentFrame.getTrackMap()->bindImage(3, 0, GL_WRITE_ONLY);
 
 		ssboReduction.bindBase(0);
 
-		glDispatchCompute(currentFrame.getVertexMap(level)->getWidth() / 32, currentFrame.getVertexMap(level)->getHeight() / 32, 1);
+		glDispatchCompute(divup(currentFrame.getVertexMap(0)->getWidth() >> layer, 32), divup(currentFrame.getVertexMap(0)->getHeight() >> layer, 32), 1);
 
-		progs["p2pTrack"]->disuse();
+		progs["p2vTrack"]->disuse();
 	}
 
 	void p2vICP::reduce(
@@ -162,6 +166,8 @@ namespace rgbd
 		Eigen::Matrix4f &T_eigPrev,
 		float &AE, 
 		uint32_t &icpCount,
+		glm::vec3 volDim,
+		glm::vec3 volSize,
 		Eigen::Matrix<double, 6, 1> &result,
 		Eigen::Matrix<double, 6, 1> &resultPrev,
 		const float finThresh
@@ -179,7 +185,7 @@ namespace rgbd
 			std::memcpy(glm::value_ptr(currT), tempT.data(), 16 * sizeof(float));
 
 			// track
-			track(gVolID, currentFrame, virtualFrame, currT, level);
+			track(gVolID, currentFrame, virtualFrame, volDim, volSize, currT, level);
 			// then reduce
 			reduce(glm::ivec2(currentFrame.getWidth(level), currentFrame.getHeight(level)));
 			// get reduction
@@ -193,7 +199,7 @@ namespace rgbd
 			Eigen::Matrix<double, 6, 6, Eigen::RowMajor> dC_icp = C_icp.cast<double>();
 			Eigen::Matrix<double, 6, 1> db_icp = b_icp.cast<double>();
 
-			double scaling = 1.0 / dC_icp.maxCoeff();
+			double scaling = 1.0 / (dC_icp.maxCoeff() > 0 ? dC_icp.maxCoeff() : 1.0);
 
 			dC_icp *= scaling;
 			db_icp *= scaling;
@@ -207,9 +213,9 @@ namespace rgbd
 
 			resultPrev = result;
 
-			//std::cout << "cnorms : " << Cnorm << std::endl;
+			std::cout << "cnorms : " << Cnorm << std::endl;
 
-			if (Cnorm < 1e-4 && result.norm() != 0)
+			if (Cnorm < 1e-4 && AE != 0)
 			{
 				tracked = true;
 				break;

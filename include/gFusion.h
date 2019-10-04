@@ -68,7 +68,7 @@ struct gFusionConfig
 
 	gFusionConfig() 
 	{
-		volumeSize = glm::vec3(256);
+		volumeSize = glm::vec3(128);
 		volumeDimensions = glm::vec3(1.0f);
 		//cameraParameters = glm::vec4(256.0f, 212.0f, );
 		mu = 0.5f;

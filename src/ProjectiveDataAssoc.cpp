@@ -46,16 +46,18 @@ namespace rgbd
 	)
 	{
 		progs["ProjectiveDataAssoc"]->use();
-		virtualVertexMap->bindImage(0, GL_READ_ONLY);
-		virtualNormalMap->bindImage(1, GL_READ_ONLY);
-		prevFrame.getVertexMap(level)->bindImage(2, GL_READ_ONLY);
-		prevFrame.getNormalMap(level)->bindImage(3, GL_READ_ONLY);
+		progs["ProjectiveDataAssoc"]->setUniform("mip", level);
+
+		virtualVertexMap->bindImage(0, 0, GL_READ_ONLY);
+		virtualNormalMap->bindImage(1, 0, GL_READ_ONLY);
+		prevFrame.getVertexMap(0)->bindImage(2, 0, GL_READ_ONLY);
+		prevFrame.getNormalMap(0)->bindImage(3, 0, GL_READ_ONLY);
 		
 		GLuint numOfValidPix(0);
 		atomic.bindBase(2);
 		atomic.update(&numOfValidPix, 0, 1);
 		ssbo.bindBase(2);
-		glDispatchCompute(width / 20, height / 20, 1);
+		glDispatchCompute(width / 32, height / 32, 1);
 		atomic.read(&numOfValidPix, 0, 1);
 		progs["ProjectiveDataAssoc"]->disuse();
 
@@ -63,7 +65,7 @@ namespace rgbd
 		atomic.bindBase(2);
 		atomic.update(&numOfValidPix, 0, 1);
 		ssbo.bindBase(2);
-		assocDataTex.bindImage(0, GL_WRITE_ONLY);
+		assocDataTex.bindImage(0, 0, GL_WRITE_ONLY);
 		glDispatchCompute(6, 7, 1);
 		progs["MultiplyMatrices"]->disuse();
 

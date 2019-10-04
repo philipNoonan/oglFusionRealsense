@@ -22,8 +22,9 @@ namespace rgbd
 	class p2pFusion
 	{
 	private:
-		rgbd::PyramidricalICP::Ptr icp;
 		rgbd::GlobalVolume::Ptr gVol;
+
+		rgbd::PyramidricalICP::Ptr icp;
 		std::vector<glm::mat4> vT;
 		glm::mat4 T;
 		glm::vec3 volSize;
@@ -38,12 +39,11 @@ namespace rgbd
 		);
 
 		void init(
+			rgbd::GlobalVolume::Ptr volume,
 			const rgbd::Frame &currentFrame,
 			const rgbd::Frame &virtualFrame,
 			glm::vec3 &dim,
 			glm::vec3 &size,
-			const float dMin,
-			const float dMax,
 			const glm::mat4 &initPose,
 			const glm::mat4 &K,
 			const float maxWeight,
@@ -76,7 +76,11 @@ namespace rgbd
 
 		//void exportGlobalVertexMap();
 		GLuint getVolumeID();
-		void clear(const glm::mat4 & resetPose);
+
+		void clear(
+			const glm::mat4 & resetPose,
+			glm::vec3 volumeSize
+		);
 
 	};
 }

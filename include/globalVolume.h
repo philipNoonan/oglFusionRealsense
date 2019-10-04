@@ -21,7 +21,8 @@ namespace rgbd
 	private:
 		const int width;
 		const int height;
-		const glm::vec3 size;
+		glm::vec3 size;
+		glm::vec3 dim;
 		const float dMin;
 		const float dMax;
 		const glm::mat4 K;
@@ -34,10 +35,8 @@ namespace rgbd
 		GlobalVolume(
 			int width,
 			int height,
-			const glm::vec3 &dim,
-			const glm::vec3 &size,
-			const float dMin,
-			const float dMax,
+			glm::vec3 &dim,
+			glm::vec3 &size,
 			const glm::mat4 &K,
 			const float maxWeight,
 			const float largeStep,
@@ -50,6 +49,7 @@ namespace rgbd
 
 
 		void integrate(
+			const int fType,
 			const rgbd::Frame &srcFrame,
 			const glm::mat4 &T
 		);
@@ -70,6 +70,10 @@ namespace rgbd
 		void exportVertexPointCloud(std::vector<glm::vec3> &outputVertexData);
 
 		void reset();
+
+		void setVolDim(glm::vec3 vDim);
+
+		void resize(glm::vec3 vSize);
 
 		typedef std::shared_ptr<rgbd::GlobalVolume> Ptr;
 	};

@@ -28,6 +28,9 @@ namespace rgbd
 		std::vector<rgbd::p2pICP::Ptr> p2picp;
 		std::vector<rgbd::p2vICP::Ptr> p2vicp;
 
+		glm::vec3 volDim;
+		glm::vec3 volSize;
+
 		Eigen::Matrix4f Twist(const Eigen::Matrix<double, 6, 1> &xi)
 		{
 			Eigen::Matrix4f M;
@@ -49,8 +52,6 @@ namespace rgbd
 			const std::map<std::string, const gl::Shader::Ptr> &progs,
 			glm::vec3 &volDim = glm::vec3(128.0f),
 			glm::vec3 &volSize = glm::vec3(1.0f),
-			float dMin = 0.0f,
-			float dMax = 0.0f,
 			float distThresh = 0.05f,
 			float normThresh = 0.9f
 		);
@@ -74,6 +75,11 @@ namespace rgbd
 			const rgbd::Frame &prevFrame,
 			const rgbd::Frame &currFrame,
 			glm::mat4 &T
+		);
+
+		void reset(
+			glm::vec3 vDim,
+			glm::vec3 vSize
 		);
 
 		typedef std::shared_ptr<rgbd::PyramidricalICP> Ptr;

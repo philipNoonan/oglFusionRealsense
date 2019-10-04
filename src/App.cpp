@@ -67,6 +67,7 @@ void App::initP2PFusion()
 	std::string pathToShaders("./shaders/");
 	p2pFusion.loadShaders(progsForP2P, pathToShaders);
 
+
 	for (auto &f : frame)
 	{
 		f.create(gconfig.depthFrameSize.x, gconfig.depthFrameSize.y, rgbd::ICPConstParam::MAX_LEVEL,
@@ -75,8 +76,8 @@ void App::initP2PFusion()
 		f.update(cameraInterface.getColorQueues(), cameraInterface.getDepthQueues(), numberOfCameras, cameraInterface.getDepthUnit(0) / 1000000.0f, glm::ivec2(m_pointX, m_pointY), iOff);
 	}
 
-	glm::vec3 dim(1.0f, 1.0f, 1.0f);
-	glm::vec3 size(128.0f, 128.0f, 128.0f);
+	glm::vec3 dim = gconfig.volumeDimensions;
+	glm::vec3 size = gconfig.volumeSize;
 	glm::mat4 initPose = glm::translate(glm::mat4(1.0f), glm::vec3(gconfig.volumeDimensions.x / 2.0f, gconfig.volumeDimensions.y / 2.0f, 0.0f));
 
 	float dMin = -dim.x / 20.0f;
@@ -99,7 +100,12 @@ void App::initP2PFusion()
 	float nearPlane = 0.1f;
 	float farPlane = 3.0f;
 
-	p2pFusion.init(frame[rgbd::FRAME::CURRENT], frame[rgbd::FRAME::VIRTUAL], dim, size, dMin, dMax, initPose, K, maxWeight, distThresh, normThresh, largeStep, step, nearPlane, farPlane, progsForP2P);
+	if (!volume)
+	{
+		volume = std::make_shared<rgbd::GlobalVolume>(frame[rgbd::FRAME::CURRENT].getWidth(), frame[rgbd::FRAME::CURRENT].getHeight(), dim, size, K, maxWeight, largeStep, step, nearPlane, farPlane, progsForP2P);
+	}
+
+	p2pFusion.init(volume, frame[rgbd::FRAME::CURRENT], frame[rgbd::FRAME::VIRTUAL], dim, size, initPose, K, maxWeight, distThresh, normThresh, largeStep, step, nearPlane, farPlane, progsForP2P);
 
 }
 
@@ -123,12 +129,13 @@ void App::initP2VFusion()
 		f.update(cameraInterface.getColorQueues(), cameraInterface.getDepthQueues(), numberOfCameras, cameraInterface.getDepthUnit(0) / 1000000.0f, glm::ivec2(m_pointX, m_pointY), iOff);
 	}
 
-	glm::vec3 dim(1.0f, 1.0f, 1.0f);
-	glm::vec3 size(128.0f, 128.0f, 128.0f);
+	glm::vec3 dim = gconfig.volumeDimensions;
+	glm::vec3 size = gconfig.volumeSize;
+
 	glm::mat4 initPose = glm::translate(glm::mat4(1.0f), glm::vec3(gconfig.volumeDimensions.x / 2.0f, gconfig.volumeDimensions.y / 2.0f, 0.0f));
 
-	float dMin = -dim.x / 20.0f;
-	float dMax = dim.x / 10.0f;
+	//float dMin = -gconfig.volumeDimensions.x / 20.0f;
+	//float dMax = gconfig.volumeDimensions.x / 10.0f;
 
 	float maxWeight = 100.0f;
 	float distThresh = 0.05f;
@@ -147,7 +154,11 @@ void App::initP2VFusion()
 	float nearPlane = 0.1f;
 	float farPlane = 3.0f;
 
-	p2vFusion.init(frame[rgbd::FRAME::CURRENT], frame[rgbd::FRAME::VIRTUAL], dim, size, dMin, dMax, initPose, K, maxWeight, distThresh, normThresh, largeStep, step, nearPlane, farPlane, progsForP2V);
+	if (!volume)
+	{
+		volume = std::make_shared<rgbd::GlobalVolume>(frame[rgbd::FRAME::CURRENT].getWidth(), frame[rgbd::FRAME::CURRENT].getHeight(), dim, size, K, maxWeight, largeStep, step, nearPlane, farPlane, progsForP2V);
+	}
+	p2vFusion.init(volume, frame[rgbd::FRAME::CURRENT], frame[rgbd::FRAME::VIRTUAL], dim, size, initPose, K, maxWeight, distThresh, normThresh, largeStep, step, nearPlane, farPlane, progsForP2V);
 
 }
 
@@ -175,7 +186,10 @@ bool App::runP2P()
 
 	glm::mat4 T = p2pFusion.calcDevicePose(frame[rgbd::FRAME::CURRENT], frame[rgbd::FRAME::VIRTUAL]);
 
-	p2pFusion.integrate(frame[rgbd::FRAME::CURRENT]);
+	if (integratingFlag)
+	{
+		p2pFusion.integrate(frame[rgbd::FRAME::CURRENT]);
+	}
 
 
 	//std::cout << glm::to_string(glm::transpose(T)) << std::endl;
@@ -191,7 +205,10 @@ bool App::runP2V()
 
 	glm::mat4 T = p2vFusion.calcDevicePose(frame[rgbd::FRAME::CURRENT], frame[rgbd::FRAME::VIRTUAL]);
 
-	p2vFusion.integrate(frame[rgbd::FRAME::CURRENT]);
+	if (integratingFlag)
+	{
+		p2vFusion.integrate(frame[rgbd::FRAME::CURRENT]);
+	}
 
 	return status;
 
@@ -247,73 +264,6 @@ void App::kRenderInit()
 
 }
 
-void App::gFusionInit()
-{
-	//int devNumber = 0;
-	//depthArray.resize(depthFrameSize[devNumber].x * depthFrameSize[devNumber].y, 1);
-	//colorArray.resize(depthFrameSize[devNumber].x * depthFrameSize[devNumber].y, 0);
-	////gfusion.queryDeviceLimits();
-	//gfusion.compileAndLinkShader();
-	//gfusion.setLocations();
-
-	//gfusion.setNumberOfCameras(numberOfCameras);
-
-
-	
-	//gconfig.volumeSize = glm::vec3(128);
-	//gconfig.volumeDimensions = glm::vec3(1.0f);
-	//gconfig.depthFrameSize = glm::vec2(depthFrameSize[devNumber]);
-	//gconfig.mu = 0.05f;
-	//gconfig.maxWeight = 100.0f;
-	//gconfig.iterations[0] = 2;
-	//gconfig.iterations[1] = 4;
-	//gconfig.iterations[2] = 6;
-
-	//for (int i = 0; i < numberOfCameras; i++)
-	//{
-	//	gfusion.setCameraParams(i, glm::vec4(cameraInterface.getDepthIntrinsics(i).fx,
-	//		cameraInterface.getDepthIntrinsics(i).fy,
-	//		cameraInterface.getDepthIntrinsics(i).cx,
-	//		cameraInterface.getDepthIntrinsics(i).cy),
-	//		glm::vec4(cameraInterface.getColorIntrinsics(i).fx,
-	//			cameraInterface.getColorIntrinsics(i).fy,
-	//			cameraInterface.getColorIntrinsics(i).cx,
-	//			cameraInterface.getColorIntrinsics(i).cy));
-	//}
-
-	//glm::mat4 initPose;
-	//// AND THE OTHER ONE
-	//if (!useSplatter)
-	//{
-	//	initPose = glm::translate(glm::mat4(1.0f), glm::vec3(gconfig.volumeDimensions.x / 2.0f, gconfig.volumeDimensions.y / 2.0f, 0.0f));
-
-	//}
-	//else
-	//{
-	//	initPose = glm::mat4(1.0f);// glm::translate(glm::mat4(1.0f), glm::vec3(gconfig.volumeDimensions.x / 2.0f, gconfig.volumeDimensions.y / 2.0f, 0.0f));
-
-	//}
-
-	//gfusion.setConfig(gconfig);
-	//gfusion.setPose(initPose);
-	//gfusion.setPoseP2V(initPose);
-
-	//gfusion.initTextures();
-	//gfusion.initVolume();
-	//gfusion.allocateBuffers();
-	//gfusion.allocateTransformFeedbackBuffers();
-
-	//gfusion.setUsingDepthFloat(false);
-
-
-
-	//volSlice = gconfig.volumeSize.z / 2.0f;
-
-
-	//gfusion.initSplatterVAOs();
-	//gfusion.initSplatterFBOs();
-
-}
 
 void App::gDisOptFlowInit()
 {
@@ -425,12 +375,22 @@ void App::resetVolume()
 
 	if (trackDepthToPoint)
 	{
-		p2pFusion.clear(initPose);
+		if (deleteFlag)
+		{
+			volume->resize(gconfig.volumeSize);
+		}
+		volume->setVolDim(gconfig.volumeDimensions);
+		p2pFusion.clear(initPose, gconfig.volumeSize);
 	}
 
 	if (trackDepthToVolume)
 	{
-		p2vFusion.clear(initPose);
+		if (deleteFlag)
+		{
+			volume->resize(gconfig.volumeSize);
+		}
+		volume->setVolDim(gconfig.volumeDimensions);
+		p2vFusion.clear(initPose, gconfig.volumeSize, gconfig.volumeDimensions);
 	}
 
 
@@ -1378,7 +1338,7 @@ void App::setUI()
 
 void App::setUpGPU()
 {
-	gFusionInit();
+	//gFusionInit();
 	//mCubeInit();
 	
 	//krender.setBuffersFromMarchingCubes(gfusion.getVertsMC(), gfusion.getNormsMC(), gfusion.getNumVerts());
@@ -1389,9 +1349,9 @@ void App::setUpGPU()
 
 	gFloodInit();
 	
-	//initSplatter();
+	initSplatter();
 	
-	//initP2PFusion();
+	initP2PFusion();
 
 	initP2VFusion();
 
@@ -1935,7 +1895,22 @@ void App::mainLoop()
 			krender.Render(false, cameraDevice);
 		}
 
-		if (showNormalSplatFlag)
+		if (cameraRunning)
+		{
+			glDisable(GL_DEPTH_TEST);
+
+			glViewport(display2DWindow.x, display_h - display2DWindow.y - display2DWindow.h, display2DWindow.w, display2DWindow.h);
+			progs["ScreenQuad"]->use();
+			progs["ScreenQuad"]->setUniform("mapType", int(rgbd::MAP_TYPE::DEPTH));
+			quad.render(frame[rgbd::FRAME::CURRENT].getDepthMap());
+			progs["ScreenQuad"]->disuse();
+
+			glEnable(GL_DEPTH_TEST);
+
+		}
+
+
+		if ((trackDepthToPoint || trackDepthToVolume || useSplatter) && showNormalFlag)
 		{
 			glDisable(GL_DEPTH_TEST);
 
@@ -1945,11 +1920,7 @@ void App::mainLoop()
 			quad.render(frame[rgbd::FRAME::VIRTUAL].getNormalMap());
 			progs["ScreenQuad"]->disuse();
 
-			glViewport(display2DWindow.x, display_h - display2DWindow.y - display2DWindow.h, display2DWindow.w, display2DWindow.h);
-			progs["ScreenQuad"]->use();
-			progs["ScreenQuad"]->setUniform("mapType", int(rgbd::MAP_TYPE::DEPTH));
-			quad.render(frame[rgbd::FRAME::CURRENT].getDepthMap());
-			progs["ScreenQuad"]->disuse();
+
 
 
 			glEnable(GL_DEPTH_TEST);

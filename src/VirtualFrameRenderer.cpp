@@ -56,9 +56,10 @@ namespace rgbd
 
 		prog->use();
 		prog->setUniform("T", T);
+		prog->setUniform("mip", level);
 
-		srcFrame.getVertexMap(level)->use(0);
-		srcFrame.getNormalMap(level)->use(1);
+		srcFrame.getVertexMap(0)->use(0);
+		srcFrame.getNormalMap(0)->use(1);
 
 		std::vector<GLenum> drawBuffs = virtualFrameFBO.getDrawBuffers();
 		glDrawBuffers((GLsizei)drawBuffs.size(), drawBuffs.data());

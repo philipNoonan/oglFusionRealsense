@@ -56,11 +56,12 @@ namespace rgbd
 		
 		std::vector<float> outputReductionData;
 
-
 		void track(
 			GLuint gVolID,
 			const rgbd::Frame &currentFrame,
 			const rgbd::Frame &virtualFrame,
+			glm::vec3 volDim,
+			glm::vec3 volSize,
 			glm::mat4 &T,
 			int level
 		);
@@ -93,6 +94,9 @@ namespace rgbd
 			return M;
 		};
 
+		inline int divup(int a, int b) { return (a % b != 0) ? (a / b + 1) : (a / b); }
+
+
 	public:
 		p2vICP(
 			int width,
@@ -100,10 +104,6 @@ namespace rgbd
 			float distThresh,
 			float normThresh,
 			const glm::mat4 &K,
-			const glm::vec3 &volDim,
-			const glm::vec3 &volSize,
-			const float dMin,
-			const float dMax,
 			const std::map<std::string, const gl::Shader::Ptr> &progs
 		);
 		~p2vICP();
@@ -118,6 +118,8 @@ namespace rgbd
 			Eigen::Matrix4f &T,
 			float &AE,
 			uint32_t &icpCount,
+			glm::vec3 volDim,
+			glm::vec3 volSize,
 			Eigen::Matrix<double, 6, 1> &result,
 			Eigen::Matrix<double, 6, 1> &resultPrev,
 			const float finThresh = 1.0e-4F

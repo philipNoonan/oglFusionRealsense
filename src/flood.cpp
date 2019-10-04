@@ -57,7 +57,7 @@ void gFlood::setFloodInitialFromDepth(const rgbd::Frame &srcFrame, const glm::ma
 	progs["jumpFloodInitVert"]->setUniform("scaleFactor", (volSize / 2.0f ) / volDim);
 
 	jfaTex[1]->bindImage(0, 1, GL_WRITE_ONLY);
-	srcFrame.getVertexMap()->bindImage(1, GL_READ_ONLY);
+	srcFrame.getVertexMap()->bindImage(1, 0, GL_READ_ONLY);
 
 
 

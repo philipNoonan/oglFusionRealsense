@@ -3,7 +3,7 @@
 layout (binding = 0, rgba8) readonly uniform image2D dataIn;	// Src color image
 layout (binding = 1, rgba8) writeonly uniform image2D dataOut;	// Dst color image
 
-layout (local_size_x = 20, local_size_y = 20) in;
+layout (local_size_x = 32, local_size_y = 32) in;
 
 void main(void)
 {

@@ -31,12 +31,11 @@ namespace rgbd
 
 	}
 	void p2pFusion::init(
+		rgbd::GlobalVolume::Ptr volume,
 		const rgbd::Frame &currentFrame,
 		const rgbd::Frame &virtualFrame,
 		glm::vec3 &dim,
 		glm::vec3 &size,
-		const float dMin,
-		const float dMax,
 		const glm::mat4 &initPose,
 		const glm::mat4 &K,
 		const float maxWeight,
@@ -56,8 +55,8 @@ namespace rgbd
 		T = initPose;
 
 
-		icp = std::make_shared<rgbd::PyramidricalICP>(width, height, K, rgbd::FUSIONTYPE::P2P, progs, dim, size, dMin, dMax, distThresh, normThresh);
-		gVol = std::make_shared<rgbd::GlobalVolume>(width, height, dim, size, dMin, dMax, K, maxWeight, largeStep, step, nearPlane, farPlane, progs);
+		icp = std::make_shared<rgbd::PyramidricalICP>(width, height, K, rgbd::FUSIONTYPE::P2P, progs, dim, size, distThresh, normThresh);
+		gVol = volume; // std::make_shared<rgbd::GlobalVolume>(width, height, dim, size, dMin, dMax, K, maxWeight, largeStep, step, nearPlane, farPlane, progs);
 
 		integrate(currentFrame);
 
@@ -81,7 +80,9 @@ namespace rgbd
 		const rgbd::Frame &currentFrame
 	)
 	{
-		gVol->integrate(currentFrame, vT.back());
+		// rgbd::FUSIONTYPE::P2P == 1
+
+		gVol->integrate(0, currentFrame, vT.back());
 	}
 
 	void p2pFusion::raycast(
@@ -97,8 +98,9 @@ namespace rgbd
 		return gVol->getID();
 	}
 
-	void p2pFusion::clear(const glm::mat4 & resetPose)
+	void p2pFusion::clear(const glm::mat4 & resetPose, glm::vec3 volumeSize)
 	{
+		volSize = volumeSize;
 		gVol->reset();
 		vT.resize(1, resetPose);
 		T = resetPose;

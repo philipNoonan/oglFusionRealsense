@@ -5,10 +5,8 @@ namespace rgbd
 	GlobalVolume::GlobalVolume(
 		const int width,
 		const int height,
-		const glm::vec3 &dim,
-		const glm::vec3 &size,
-		const float dMin,
-		const float dMax,
+		glm::vec3 &dim,
+		glm::vec3 &size,
 		const glm::mat4 &K,
 		const float maxWeight,
 		const float largeStep,
@@ -17,7 +15,7 @@ namespace rgbd
 		const float farPlane,
 		const std::map<std::string, const gl::Shader::Ptr> &progs
 	) : width(width), height(height), 
-		size(size), dMin(dMin), dMax(dMax), K(K),
+		size(size), dim(dim), dMin(dMin), dMax(dMax), K(K),
 		progs{ { "Integrate", progs.at("Integrate") },
 		{ "Raycast", progs.at("Raycast") } }
 	{
@@ -34,10 +32,7 @@ namespace rgbd
 		volumeTex->setFiltering(gl::Texture3DFilter::NEAREST);
 		volumeTex->setWarp(gl::Texture3DWarp::CLAMP_TO_EDGE);
 		glm::mat4 invK = glm::inverse(K);
-		this->progs["Integrate"]->setUniform("dMin", dMin);
-		this->progs["Integrate"]->setUniform("dMax", dMax);
-		this->progs["Integrate"]->setUniform("volDim", dim.x);
-		this->progs["Integrate"]->setUniform("volSize", size.x);
+
 		this->progs["Integrate"]->setUniform("maxWeight", maxWeight);
 		this->progs["Integrate"]->setUniform("K", K);
 		this->progs["Integrate"]->setUniform("invK", invK);
@@ -47,8 +42,7 @@ namespace rgbd
 		this->progs["Raycast"]->setUniform("step", step);
 		this->progs["Raycast"]->setUniform("nearPlane", nearPlane);
 		this->progs["Raycast"]->setUniform("farPlane", farPlane);
-		this->progs["Raycast"]->setUniform("volDim", dim);
-		this->progs["Raycast"]->setUniform("volSize", size);
+
 
 	}
 
@@ -57,6 +51,7 @@ namespace rgbd
 	}
 
 	void GlobalVolume::integrate(
+		const int fType,
 		const rgbd::Frame &srcFrame,
 		const glm::mat4 &T		
 	)
@@ -65,16 +60,17 @@ namespace rgbd
 		progs["Integrate"]->use();
 		progs["Integrate"]->setUniform("T", T);
 		progs["Integrate"]->setUniform("invT", invT);
-		progs["Integrate"]->setUniform("p2p", 1);
-		progs["Integrate"]->setUniform("p2v", 0);
+		progs["Integrate"]->setUniform("p2p", fType == 0 ? 1 : 0);
+		progs["Integrate"]->setUniform("p2v", fType == 1 ? 1 : 0);
 		progs["Integrate"]->setUniform("integrateFlag", 1);
 		progs["Integrate"]->setUniform("resetFlag", 0);
-
+		progs["Integrate"]->setUniform("volDim", dim.x);
+		progs["Integrate"]->setUniform("volSize", size.x);
 
 		volumeTex->bindImage(0, 0, GL_READ_WRITE, GL_RG16F);
 
-		srcFrame.getVertexMap(0)->bindImage(1, GL_READ_ONLY);
-		srcFrame.getTrackMap()->bindImage(2, GL_READ_ONLY);
+		srcFrame.getVertexMap(0)->bindImage(1, 0, GL_READ_ONLY);
+		srcFrame.getTrackMap()->bindImage(2, 0, GL_READ_ONLY);
 
 		glDispatchCompute(volumeTex->getWidth() / 32, volumeTex->getHeight() / 32, 1);
 
@@ -90,11 +86,13 @@ namespace rgbd
 		progs["Raycast"]->use();
 		
 		progs["Raycast"]->setUniform("view", view);
-
+		progs["Raycast"]->setUniform("volDim", dim);
+		progs["Raycast"]->setUniform("volSize", size);
+		
 		volumeTex->bindImage(0, 0, GL_READ_ONLY, GL_RG16F);
 
-		dstFrame.getVertexMap(0)->bindImage(1, GL_WRITE_ONLY);
-		dstFrame.getNormalMap(0)->bindImage(2, GL_WRITE_ONLY);
+		dstFrame.getVertexMap(0)->bindImage(1, 0, GL_WRITE_ONLY);
+		dstFrame.getNormalMap(0)->bindImage(2, 0, GL_WRITE_ONLY);
 
 		glDispatchCompute(width / 32, height / 32, 1);
 
@@ -113,6 +111,11 @@ namespace rgbd
 
 	}
 
+	void GlobalVolume::setVolDim(glm::vec3 vDim)
+	{
+		dim = vDim;
+	}
+
 	void GlobalVolume::reset()
 	{
 		progs["Integrate"]->use();
@@ -125,4 +128,14 @@ namespace rgbd
 
 		progs["Integrate"]->disuse();
 	}
+
+	void GlobalVolume::resize(glm::vec3 vSize)
+	{
+		size = vSize;
+		volumeTex->deleteTexture();
+		volumeTex->createStorage(1, size.x, size.y, size.z, 2, GL_RG16F, gl::Texture3DType::FLOAT16, true);
+	}
+
+
+
 }

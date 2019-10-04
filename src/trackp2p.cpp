@@ -45,7 +45,7 @@ namespace rgbd
 		const rgbd::Frame &currentFrame,
 		const rgbd::Frame &virtualFrame,
 		glm::mat4 &T,
-		int level
+		int layer
 	)
 	{
 		glm::mat4 invT = glm::inverse(T);
@@ -54,18 +54,18 @@ namespace rgbd
 		progs["p2pTrack"]->setUniform("T", T);
 		progs["p2pTrack"]->setUniform("invT", invT);
 
-		currentFrame.getVertexMap(level)->bindImage(0, GL_READ_ONLY);
-		currentFrame.getNormalMap(level)->bindImage(1, GL_READ_ONLY);
+		currentFrame.getVertexMap(0)->bindImage(0, layer, GL_READ_ONLY);
+		currentFrame.getNormalMap(0)->bindImage(1, layer, GL_READ_ONLY);
 
-		virtualFrame.getVertexMap(0)->bindImage(2, GL_READ_ONLY);
-		virtualFrame.getNormalMap(0)->bindImage(3, GL_READ_ONLY);
+		virtualFrame.getVertexMap(0)->bindImage(2, 0, GL_READ_ONLY);
+		virtualFrame.getNormalMap(0)->bindImage(3, 0, GL_READ_ONLY);
 
-		currentFrame.getTrackMap()->bindImage(4, GL_WRITE_ONLY);
-		currentFrame.getTestMap()->bindImage(5, GL_WRITE_ONLY);
+		currentFrame.getTrackMap()->bindImage(4, 0, GL_WRITE_ONLY);
+		currentFrame.getTestMap()->bindImage(5, 0, GL_WRITE_ONLY);
 
 		ssboReduction.bindBase(0);
 
-		glDispatchCompute(currentFrame.getVertexMap(level)->getWidth() / 32, currentFrame.getVertexMap(level)->getHeight() / 32, 1);
+		glDispatchCompute((currentFrame.getVertexMap(0)->getWidth() >> layer) / 32, (currentFrame.getVertexMap(0)->getHeight() >> layer) / 32, 1);
 
 		progs["p2pTrack"]->disuse();
 	}
@@ -166,6 +166,8 @@ namespace rgbd
 
 			// track
 			track(currentFrame, virtualFrame, T, level);
+
+
 			// then reduce
 			reduce(glm::ivec2(currentFrame.getWidth(level), currentFrame.getHeight(level)));
 			// get reduction

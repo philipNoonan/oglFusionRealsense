@@ -296,4 +296,9 @@ namespace gl
 		return id;
 	}
 
+	void Texture3D::deleteTexture()
+	{
+		glDeleteTextures(1, &id);
+	}
+
 }

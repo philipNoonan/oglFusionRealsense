@@ -54,11 +54,14 @@
 #include "GLCore/Window.h"
 #include "p2pFusion.h"
 #include "p2vFusion.h"
+#include "GlobalVolume.h"
 
 
 class App : gl::Window
 {
 private:
+
+	rgbd::GlobalVolume::Ptr volume;
 
 	std::array<rgbd::Frame, 2> frame;
 	rgbd::splatterFusion slam;
@@ -77,7 +80,7 @@ private:
 	void initP2VFusion();
 
 	void kRenderInit();
-	void gFusionInit();
+	//void gFusionInit();
 	void gDisOptFlowInit();
 	void gFloodInit();
 	void resetVolume();
