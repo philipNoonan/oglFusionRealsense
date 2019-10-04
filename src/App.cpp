@@ -421,6 +421,8 @@ void App::resetVolume()
 void App::saveSTL()
 {
 	mcconfig.gridSize = glm::uvec3(gconfig.volumeSize.x, gconfig.volumeSize.y, gconfig.volumeSize.z);
+	mcconfig.voxelSize = glm::vec3(gconfig.volumeDimensions.x / gconfig.volumeSize.x, gconfig.volumeDimensions.y / gconfig.volumeSize.y, gconfig.volumeDimensions.z / gconfig.volumeSize.z);
+
 	mcubes.setConfig(mcconfig);
 
 	if (trackDepthToPoint)

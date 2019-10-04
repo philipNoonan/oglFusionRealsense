@@ -50,6 +50,7 @@ void MCubes::setLocations()
 	m_totalSumID = glGetUniformLocation(traverseHistoPyramidsProg.getHandle(), "totalSum");
 	m_volumeTypeTHPID = glGetUniformLocation(traverseHistoPyramidsProg.getHandle(), "volumeType");
 	m_isoLevelTHPID = glGetUniformLocation(traverseHistoPyramidsProg.getHandle(), "isoLevel");
+	m_voxelSizeID = glGetUniformLocation(traverseHistoPyramidsProg.getHandle(), "voxelSize");
 
 	// PREFIX SUMS
 	m_prefixSumSubroutineID = glGetSubroutineUniformLocation(prefixSumProg.getHandle(), GL_COMPUTE_SHADER, "getPrefixSum");
@@ -71,7 +72,6 @@ void MCubes::setLocations()
 	m_numVoxelsID = glGetUniformLocation(marchingCubesProg.getHandle(), "numVoxels");
 	m_activeVoxelsID = glGetUniformLocation(marchingCubesProg.getHandle(), "activeVoxels");
 	m_maxVertsID = glGetUniformLocation(marchingCubesProg.getHandle(), "maxVerts");
-	m_voxelSizeID = glGetUniformLocation(marchingCubesProg.getHandle(), "voxelSize");
 
 	glGenQueries(1, timeQuery);
 
@@ -314,6 +314,7 @@ void MCubes::histoPyramids()
 	glUniform1ui(m_totalSumID, sumData[0]);
 	glUniform1ui(m_volumeTypeTHPID, 0);
 	glUniform1f(m_isoLevelTHPID, m_isoLevel);
+	glUniform1f(m_voxelSizeID, m_mcubeConfiguration.voxelSize.x);
 
 	
 

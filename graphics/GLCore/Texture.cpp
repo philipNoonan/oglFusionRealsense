@@ -274,14 +274,14 @@ namespace gl
 		glBindTexture(GL_TEXTURE_2D, 0);
 	}
 
-	void Texture::bindImage(int idx, int layer, GLenum access)
+	void Texture::bindImage(int idx, int level, GLenum access)
 	{
-		glBindImageTexture(idx, id, 0, GL_TRUE, layer, access, internalFormat);
+		glBindImageTexture(idx, id, level, GL_FALSE, 0, access, internalFormat);
 	}
 
-	void Texture::bindImage(int idx, int layer, GLenum access, GLenum internalFormat)
+	void Texture::bindImage(int idx, int level, GLenum access, GLenum internalFormat)
 	{
-		glBindImageTexture(idx, id, 0, GL_TRUE, layer, access, internalFormat);
+		glBindImageTexture(idx, id, level, GL_FALSE, 0, access, internalFormat);
 	}
 
 	void Texture::use(int idx)

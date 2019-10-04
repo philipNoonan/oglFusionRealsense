@@ -22,7 +22,7 @@ namespace rgbd
 		ssboReduction.unbind();
 
 		ssboReductionOutput.bind();
-		ssboReductionOutput.create(tmpOutputData.data(), 32 * 8 * sizeof(float), GL_DYNAMIC_DRAW);
+		ssboReductionOutput.create(tmpOutputData.data(), 32 * 8, GL_DYNAMIC_DRAW);
 		ssboReductionOutput.bindBase(1);
 		ssboReductionOutput.unbind();
 

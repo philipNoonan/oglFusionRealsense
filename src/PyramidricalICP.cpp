@@ -16,6 +16,21 @@ namespace rgbd
 	{
 		volDim = vDim;
 		volSize = vSize;
+
+
+		std::vector<BufferReductionP2V> tmpMapData(width * height);
+		std::vector<float> tmpOutputData(32 * 8);
+
+		ssboReduction.bind();
+		ssboReduction.create(tmpMapData.data(), width * height, GL_DYNAMIC_DRAW);
+		ssboReduction.bindBase(0);
+		ssboReduction.unbind();
+
+		ssboReductionOutput.bind();
+		ssboReductionOutput.create(tmpOutputData.data(), 32 * 8, GL_DYNAMIC_DRAW);
+		ssboReductionOutput.bindBase(1);
+		ssboReductionOutput.unbind();
+
 		icp.resize(ICPConstParam::MAX_LEVEL);
 		p2picp.resize(ICPConstParam::MAX_LEVEL);
 		p2vicp.resize(ICPConstParam::MAX_LEVEL);
@@ -132,7 +147,7 @@ namespace rgbd
 
 		for (int lv = ICPConstParam::MAX_LEVEL - 1; lv >= 0; --lv)
 		{
-			tracked = p2vicp[lv]->calc(lv, gVolID, currentFrame, virtualFrame, T_eig, AE, icpCount, volDim, volSize, result, result_prev);
+			tracked = p2vicp[lv]->calc(lv, gVolID, currentFrame, virtualFrame, ssboReduction, ssboReductionOutput, T_eig, AE, icpCount, volDim, volSize, result, result_prev);
 		}
 
 		std::cout << " p2v AE: " << AE << std::endl;

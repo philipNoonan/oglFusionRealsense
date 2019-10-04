@@ -1,5 +1,7 @@
 #pragma once
 
+#include "glhelper.h"
+
 #include "ConstantParameters.h"
 #include "IterativeClosestPoint.h"
 #include "trackp2p.h" // RENAME ME
@@ -21,12 +23,20 @@ namespace rgbd
 		SPLATTER
 	};
 
+
+
 	class PyramidricalICP
 	{
 	private:
+
+		gl::ShaderStorageBuffer<BufferReductionP2V> ssboReduction;
+		gl::ShaderStorageBuffer<float> ssboReductionOutput;
+
 		std::vector<rgbd::PointToPlaneICP::Ptr> icp;
 		std::vector<rgbd::p2pICP::Ptr> p2picp;
 		std::vector<rgbd::p2vICP::Ptr> p2vicp;
+
+
 
 		glm::vec3 volDim;
 		glm::vec3 volSize;

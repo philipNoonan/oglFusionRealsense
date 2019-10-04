@@ -13,20 +13,6 @@ namespace rgbd
 			   { "p2vReduce", progs.at("p2vReduce") } }
 	{
 
-		std::vector<BufferReductionP2V> tmpMapData(width * height);
-		std::vector<float> tmpOutputData(32 * 8);
-
-		ssboReduction.bind();
-		ssboReduction.create(tmpMapData.data(), width * height, GL_DYNAMIC_DRAW);
-		ssboReduction.bindBase(0);
-		ssboReduction.unbind();
-
-		ssboReductionOutput.bind();
-		ssboReductionOutput.create(tmpOutputData.data(), 32 * 8 * sizeof(float), GL_DYNAMIC_DRAW);
-		ssboReductionOutput.bindBase(1);
-		ssboReductionOutput.unbind();
-
-
 
 
 
@@ -42,17 +28,18 @@ namespace rgbd
 		GLuint gVolID,
 		const rgbd::Frame &currentFrame,
 		const rgbd::Frame &virtualFrame,
+		gl::ShaderStorageBuffer<rgbd::BufferReductionP2V> &ssboRed,
 		glm::vec3 volDim,
 		glm::vec3 volSize,
 		glm::mat4 &T,
-		int layer
+		int level
 	)
 	{
 		glm::mat4 invT = glm::inverse(T);
 
 		progs["p2vTrack"]->use();
 		progs["p2vTrack"]->setUniform("T", T);
-		progs["p2vTrack"]->setUniform("mip", layer);
+		progs["p2vTrack"]->setUniform("mip", level);
 
 		progs["p2vTrack"]->setUniform("volDim", volDim);
 		progs["p2vTrack"]->setUniform("volSize", volSize);
@@ -66,29 +53,31 @@ namespace rgbd
 		//glBindImageTexture(5, gVolID, 0, GL_FALSE, 0, GL_READ_ONLY, GL_RG16F);
 
 
-		currentFrame.getVertexMap(0)->bindImage(0, layer, GL_READ_ONLY);
-		currentFrame.getNormalMap(0)->bindImage(1, layer, GL_READ_ONLY);
+		currentFrame.getVertexMap(0)->bindImage(0, level, GL_READ_ONLY);
+		currentFrame.getNormalMap(0)->bindImage(1, level, GL_READ_ONLY);
 
-		virtualFrame.getNormalMap(0)->bindImage(2, 0, GL_WRITE_ONLY);
+		virtualFrame.getNormalMap(0)->bindImage(2, level, GL_WRITE_ONLY);
 
 		currentFrame.getTrackMap()->bindImage(3, 0, GL_WRITE_ONLY);
 
-		ssboReduction.bindBase(0);
+		ssboRed.bindBase(0);
 
-		glDispatchCompute(divup(currentFrame.getVertexMap(0)->getWidth() >> layer, 32), divup(currentFrame.getVertexMap(0)->getHeight() >> layer, 32), 1);
+		glDispatchCompute(divup(currentFrame.getVertexMap(0)->getWidth() >> level, 32), divup(currentFrame.getVertexMap(0)->getHeight() >> level, 32), 1);
 
 		progs["p2vTrack"]->disuse();
 	}
 
 	void p2vICP::reduce(
+		gl::ShaderStorageBuffer<rgbd::BufferReductionP2V> &ssboRed,
+		gl::ShaderStorageBuffer<float> &ssboRedOut,
 		const glm::ivec2 &imSize
 	)
 	{
 		progs["p2vReduce"]->use();
 		progs["p2vReduce"]->setUniform("imSize", imSize);
 
-		ssboReduction.bindBase(0);
-		ssboReductionOutput.bindBase(1);
+		ssboRed.bindBase(0);
+		ssboRedOut.bindBase(1);
 
 
 		glDispatchCompute(8, 1, 1);
@@ -117,6 +106,7 @@ namespace rgbd
 	}
 
 	void p2vICP::getReduction(
+		gl::ShaderStorageBuffer<float> &ssboRedOut,
 		std::vector<float> &b,
 		std::vector<float> &C,
 		float &AE,
@@ -124,7 +114,7 @@ namespace rgbd
 	)
 	{
 		outputReductionData.resize(32 * 8);
-		ssboReductionOutput.read(outputReductionData.data(), 0, 32 * 8);
+		ssboRedOut.read(outputReductionData.data(), 0, 32 * 8);
 
 		for (int row = 1; row < 8; row++)
 		{
@@ -163,6 +153,8 @@ namespace rgbd
 		GLuint gVolID,
 		const rgbd::Frame &currentFrame,
 		const rgbd::Frame &virtualFrame,
+		gl::ShaderStorageBuffer<rgbd::BufferReductionP2V> &ssboRed,
+		gl::ShaderStorageBuffer<float> &ssboRedOut,
 		Eigen::Matrix4f &T_eigPrev,
 		float &AE, 
 		uint32_t &icpCount,
@@ -185,11 +177,11 @@ namespace rgbd
 			std::memcpy(glm::value_ptr(currT), tempT.data(), 16 * sizeof(float));
 
 			// track
-			track(gVolID, currentFrame, virtualFrame, volDim, volSize, currT, level);
+			track(gVolID, currentFrame, virtualFrame, ssboRed, volDim, volSize, currT, level);
 			// then reduce
-			reduce(glm::ivec2(currentFrame.getWidth(level), currentFrame.getHeight(level)));
+			reduce(ssboRed, ssboRedOut, glm::ivec2( currentFrame.getWidth(level), currentFrame.getHeight(level)));
 			// get reduction
-			getReduction(b, C, AE, icpCount);
+			getReduction(ssboRedOut, b, C, AE, icpCount);
 
 			// now solve
 			Eigen::Matrix<float, 6, 1> b_icp(b.data());
@@ -213,7 +205,7 @@ namespace rgbd
 
 			resultPrev = result;
 
-			std::cout << "cnorms : " << Cnorm << std::endl;
+			//std::cout << "cnorms : " << Cnorm << std::endl;
 
 			if (Cnorm < 1e-4 && AE != 0)
 			{

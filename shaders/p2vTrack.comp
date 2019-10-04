@@ -18,6 +18,7 @@ struct reduSDFType
     float D;
     float J[6];
 };
+
 layout(std430, binding = 0) buffer TrackData
 {
     reduSDFType trackOutput [];
@@ -154,7 +155,7 @@ void main()
 
     for (int camera = 0; camera < numberOfCameras; camera++)
     { 
-        imageStore(SDFImage, ivec2(pix), vec4(0.0f, 0.0f, 0.0, 0.0));
+        imageStore(SDFImage, ivec2(pix), vec4(0.0, 0.0f, 0.0, 0.0));
         imageStore(trackImage, ivec2(pix), vec4(0.0f, 0.0, 0.0, 1.0));
 
         uint offset = uint(camera * imSize.x * imSize.y) + ((pix.y * imSize.x) + pix.x);
@@ -180,7 +181,7 @@ void main()
 
                 vec4 projectedVertex = T * vec4(cameraPoint.xyz, 1.0f);
 
-				 //               imageStore(SDFImage, ivec2(pix), vec4(projectedVertex.xy, T[3][0], 1.0f));
+				// imageStore(SDFImage, ivec2(pix), vec4(cameraPoint.xyz, 1.0f));
 
 
                 bool isInterpolated;

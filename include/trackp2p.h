@@ -1,10 +1,13 @@
 #pragma once
 
+#include "glhelper.h"
 #include <opencv2/opencv.hpp>
 #include <GLCore/Shader.h>
 #include "ConstantParameters.h"
 #include "Frame.h"
 #include "GLCore/Buffer.h"
+
+
 
 #define GLM_ENABLE_EXPERIMENTAL
 #include <glm/glm.hpp>
@@ -25,22 +28,7 @@
 // Ref: kfusion 
 namespace rgbd
 {
-	struct BufferReduction
-	{
-		GLint result;
-		GLfloat error;
-		GLfloat J[6];
 
-		BufferReduction()
-		{
-			result = 0;
-			error = 0.0f;
-			for (int i = 0; i < 6; i++)
-			{
-				J[i] = 0.0f;
-			}			
-		}
-	};
 
 	class p2pICP
 	{

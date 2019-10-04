@@ -15,8 +15,58 @@
 
 #include <algorithm>
 
+
+namespace rgbd
+{
+	struct BufferReduction
+	{
+		GLint result;
+		GLfloat error;
+		GLfloat J[6];
+
+		BufferReduction()
+		{
+			result = 0;
+			error = 0.0f;
+			for (int i = 0; i < 6; i++)
+			{
+				J[i] = 0.0f;
+			}
+		}
+	};
+
+
+	struct BufferReductionP2V
+	{
+		GLint result;
+		GLfloat h;
+		GLfloat D;
+		GLfloat J[6];
+
+		BufferReductionP2V()
+		{
+			result = 0;
+			h = 0.0f;
+			D = 0.0f;
+			for (int i = 0; i < 6; i++)
+			{
+				J[i] = 0.0f;
+			}
+		}
+	};
+
+
+}
+
+
 namespace GLHelper
 {
+
+
+
+
+
+
 	GLuint createTexture(GLuint ID, GLenum target, int levels, int w, int h, int d, GLuint internalformat, GLenum magFilter, GLenum minFilter);
 	glm::mat4 getInverseCameraMatrix(const glm::vec4 & k);
 	glm::mat4 getCameraMatrix(const glm::vec4 & k);

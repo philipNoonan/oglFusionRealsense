@@ -1,5 +1,7 @@
 #pragma once
 
+#include "glhelper.h"
+
 #include <opencv2/opencv.hpp>
 #include <GLCore/Shader.h>
 #include "ConstantParameters.h"
@@ -27,32 +29,14 @@
 // Ref: kfusion 
 namespace rgbd
 {
-	struct BufferReductionP2V
-	{
-		GLint result;
-		GLfloat h;
-		GLfloat D;
-		GLfloat J[6];
 
-		BufferReductionP2V()
-		{
-			result = 0;
-			h = 0.0f;
-			D = 0.0f;
-			for (int i = 0; i < 6; i++)
-			{
-				J[i] = 0.0f;
-			}			
-		}
-	};
 
 	class p2vICP
 	{
 	private:
 		std::map<std::string, const gl::Shader::Ptr> progs;
 
-		gl::ShaderStorageBuffer<BufferReductionP2V> ssboReduction;
-		gl::ShaderStorageBuffer<float> ssboReductionOutput;
+
 		
 		std::vector<float> outputReductionData;
 
@@ -60,6 +44,7 @@ namespace rgbd
 			GLuint gVolID,
 			const rgbd::Frame &currentFrame,
 			const rgbd::Frame &virtualFrame,
+			gl::ShaderStorageBuffer<rgbd::BufferReductionP2V> &ssboRed,
 			glm::vec3 volDim,
 			glm::vec3 volSize,
 			glm::mat4 &T,
@@ -67,10 +52,13 @@ namespace rgbd
 		);
 
 		void reduce(
+			gl::ShaderStorageBuffer<rgbd::BufferReductionP2V> &ssboRed,
+			gl::ShaderStorageBuffer<float> &ssboRedOut,
 			const glm::ivec2 &imSize
 		);
 
 		void getReduction(
+			gl::ShaderStorageBuffer<float> &ssboRedOut,
 			std::vector<float> &b,
 			std::vector<float> &C,
 			float &AE,
@@ -115,6 +103,8 @@ namespace rgbd
 			GLuint gVolID,
 			const rgbd::Frame &currentFrame,
 			const rgbd::Frame &virtualFrame,
+			gl::ShaderStorageBuffer<rgbd::BufferReductionP2V> &ssboRed,
+			gl::ShaderStorageBuffer<float> &ssboRedOut,
 			Eigen::Matrix4f &T,
 			float &AE,
 			uint32_t &icpCount,

@@ -34,6 +34,7 @@ uniform int baseLevel;
 uniform float isoLevel;
 uniform uint totalSum;
 uniform int volumeType = 1;
+uniform float voxelSize;
 
 uniform uvec4 cubeOffsets[8] = {
     {0, 0, 0, 0},
@@ -238,7 +239,7 @@ bool traverseHPLevel()
         // {
         // target is for each triangle
         // the problem is hereerererrererererere
-        pos[target * 3 + vertexNr] = vec4(vertex.xyz, 0.0f);
+        pos[target * 3 + vertexNr] = vec4(vertex.xyz * voxelSize, 0.0f);
         // }
         //norm[target * 3 + vertexNr] = normal;
         //}

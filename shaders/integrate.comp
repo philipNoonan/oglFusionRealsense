@@ -117,7 +117,7 @@ void integrateExperimental()
 
 		//imageStore(volumeData, ivec3(pix), vec4(finalDiff, 0, 0, 1));
 
-        float ctfo = 0.0f;
+        float ctfo = 0.1f;
         if (track[bestTrack] == vec4(0.5f, 0.5f, 0.5f, 1.0 ))
         {
             ctfo = 0.1f;
