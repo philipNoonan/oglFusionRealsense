@@ -50,8 +50,8 @@ namespace rgbd
 
 		virtualVertexMap->bindImage(0, 0, GL_READ_ONLY);
 		virtualNormalMap->bindImage(1, 0, GL_READ_ONLY);
-		prevFrame.getVertexMap(0)->bindImage(2, 0, GL_READ_ONLY);
-		prevFrame.getNormalMap(0)->bindImage(3, 0, GL_READ_ONLY);
+		prevFrame.getVertexMap(0)->bindImage(2, level, GL_READ_ONLY);
+		prevFrame.getNormalMap(0)->bindImage(3, level, GL_READ_ONLY);
 		
 		GLuint numOfValidPix(0);
 		atomic.bindBase(2);

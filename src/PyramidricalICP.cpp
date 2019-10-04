@@ -73,7 +73,11 @@ namespace rgbd
 
 		for (int lv = ICPConstParam::MAX_LEVEL - 1; lv >= 0; --lv)
 		{
+
+
 			icp[lv]->calc(lv, prevFrame, currFrame, T, lastA);
+
+
 		}
 
 		//Eigen::MatrixXd covariance = lastA.cast<double>().lu().inverse();

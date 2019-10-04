@@ -70,10 +70,13 @@ namespace rgbd
 		const rgbd::Frame &virtualFrame
 	)
 	{
+
+
+
 		clock_t start_icp = clock();
 		//static glm::mat4 T(1.0f);
 		bool tracked = true;
-		icp->calc(virtualFrame, currentFrame, T, tracked);
+		icp->calc(virtualFrame, currentFrame, T, tracked); // 0.1 ms
 		if (tracked)
 		{
 			vT.push_back(vT.back() * T);
@@ -82,6 +85,15 @@ namespace rgbd
 		{
 			std::cout << "tracking lost" << std::endl;
 		}
+
+
+
+		clock_t start_update_frame2 = clock();
+		virtualFrame.update(); // 0.06 ms
+		//std::cout << "  Update frame #2: " << (clock() - start_update_frame2) / (double)CLOCKS_PER_SEC << " sec" << std::endl;
+
+
+
 		//std::cout << "  ICP: " << (clock() - start_icp) / (double)CLOCKS_PER_SEC << " sec" << std::endl;
 		//std::cout << glm::to_string(T) << std::endl;
 		return vT.back();
@@ -92,29 +104,39 @@ namespace rgbd
 		const rgbd::Frame &virtualFrame
 	)
 	{
+
+
 		glm::mat4 invT = glm::inverse(vT.back());
 
 		clock_t start_idx_map = clock();
-		gMap->genIndexMap(invT);
+		gMap->genIndexMap(invT); // 4 -5 ms 
 		//std::cout << "  Index map: " << (clock() - start_idx_map) / (double)CLOCKS_PER_SEC << " sec" << std::endl;
 
+
+
 		clock_t start_update_map = clock();
-		gMap->updateGlobalMap(currentFrame, vT.back(), static_cast<int>(vT.size()));
+		gMap->updateGlobalMap(currentFrame, vT.back(), static_cast<int>(vT.size())); // 2 ms
 		//std::cout << "  Update map: " << (clock() - start_update_map) / (double)CLOCKS_PER_SEC << " sec" << std::endl;
 		//std::cout << "  --> Map size: " << gMap->getMapSize() << std::endl;
 
+
+
 		clock_t start_remove_pts = clock();
-		gMap->removeUnnecessaryPoints(static_cast<int>(vT.size()));
+		gMap->removeUnnecessaryPoints(static_cast<int>(vT.size())); // 3.5 ms
 		//std::cout << "  Remove points: " << (clock() - start_remove_pts) / (double)CLOCKS_PER_SEC << " sec" << std::endl;
+		
+
+
 		std::cout << "  --> Removed map size: " << gMap->getMapSize() << std::endl;
 
+
+
 		clock_t start_virtual_frame = clock();
-		gMap->genVirtualFrame(virtualFrame, invT);
+		gMap->genVirtualFrame(virtualFrame, invT); // 1.5 ms
 		//std::cout << "  Virtual frame: " << (clock() - start_virtual_frame) / (double)CLOCKS_PER_SEC << " sec" << std::endl;
 
-		clock_t start_update_frame2 = clock();
-		virtualFrame.update();
-		//std::cout << "  Update frame #2: " << (clock() - start_update_frame2) / (double)CLOCKS_PER_SEC << " sec" << std::endl;
+
+
 	}
 
 	void splatterFusion::exportGlobalVertexMap()

@@ -13,7 +13,7 @@ out vec3 vsNorm;
 
 void main()
 {
-	ivec2 resolution = textureSize(vertMap, 0);
+	ivec2 resolution = textureSize(vertMap, mip);
 	vec2 texcoord = vec2(
 		(float(gl_VertexID % resolution.x) + 0.5f) / float(resolution.x),
 		(float(gl_VertexID / resolution.x) + 0.5f) / float(resolution.y)

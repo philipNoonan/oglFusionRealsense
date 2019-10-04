@@ -164,6 +164,10 @@ void App::initP2VFusion()
 
 bool App::runSLAM()
 {
+	//GLuint query;
+	//glGenQueries(1, &query);
+	//glBeginQuery(GL_TIME_ELAPSED, query);
+
 	glViewport(0, 0, width, height);
 	bool status = true;
 	frame[rgbd::FRAME::CURRENT].update(cameraInterface.getColorQueues(), cameraInterface.getDepthQueues(), numberOfCameras, cameraInterface.getDepthUnit(0) / 1000000.0f, glm::ivec2(m_pointX, m_pointY), iOff);
@@ -172,6 +176,16 @@ bool App::runSLAM()
 	slam.updateGlobalMap(frame[rgbd::FRAME::CURRENT], frame[rgbd::FRAME::VIRTUAL]);
 
 	//std::cout << glm::to_string(glm::transpose(T)) << std::endl;
+
+	//glEndQuery(GL_TIME_ELAPSED);
+	//GLuint available = 0;
+	//while (!available) {
+	//	glGetQueryObjectuiv(query, GL_QUERY_RESULT_AVAILABLE, &available);
+	//}
+	//// elapsed time in nanoseconds
+	//GLuint64 elapsed;
+	//glGetQueryObjectui64vEXT(query, GL_QUERY_RESULT, &elapsed);
+	//std::cout << "time : " << elapsed / 1000000.0 << std::endl;
 
 	return status;
 }
