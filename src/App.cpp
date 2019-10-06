@@ -12,6 +12,10 @@ App::App(int width, int height, const std::string &windowName) : Window(width, h
 {
 	krender.setWindow(window);
 	glfwSetWindowSize(window, width, height);
+
+	//camera->type = Camera::CameraType::lookat;
+
+
 }
 
 
@@ -164,9 +168,9 @@ void App::initP2VFusion()
 
 bool App::runSLAM()
 {
-	//GLuint query;
-	//glGenQueries(1, &query);
-	//glBeginQuery(GL_TIME_ELAPSED, query);
+	GLuint query;
+	glGenQueries(1, &query);
+	glBeginQuery(GL_TIME_ELAPSED, query);
 
 	glViewport(0, 0, width, height);
 	bool status = true;
@@ -177,15 +181,15 @@ bool App::runSLAM()
 
 	//std::cout << glm::to_string(glm::transpose(T)) << std::endl;
 
-	//glEndQuery(GL_TIME_ELAPSED);
-	//GLuint available = 0;
-	//while (!available) {
-	//	glGetQueryObjectuiv(query, GL_QUERY_RESULT_AVAILABLE, &available);
-	//}
-	//// elapsed time in nanoseconds
-	//GLuint64 elapsed;
-	//glGetQueryObjectui64vEXT(query, GL_QUERY_RESULT, &elapsed);
-	//std::cout << "time : " << elapsed / 1000000.0 << std::endl;
+	glEndQuery(GL_TIME_ELAPSED);
+	GLuint available = 0;
+	while (!available) {
+		glGetQueryObjectuiv(query, GL_QUERY_RESULT_AVAILABLE, &available);
+	}
+	// elapsed time in nanoseconds
+	GLuint64 elapsed;
+	glGetQueryObjectui64vEXT(query, GL_QUERY_RESULT, &elapsed);
+	std::cout << "time : " << elapsed / 1000000.0 << std::endl;
 
 	return status;
 }
@@ -340,7 +344,8 @@ void mCubeInit()
 
 void App::resetVolume()
 {
-
+	rotation = glm::vec3(0.0);
+	cameraPos = glm::vec3(0.0);
 
 	int devNumber = 0;
 	//glm::mat4 initPose = glm::translate(glm::mat4(1.0f), glm::vec3(gconfig.volumeDimensions.x / 2.0f, gconfig.volumeDimensions.y / 2.0f, 0.0f));
@@ -1373,6 +1378,84 @@ void App::setUpGPU()
 
 }
 
+int App::getRenderOptions(bool depth, bool infra, bool color)
+{
+	int opts = depth << 0 |
+		infra << 1 |
+		color << 2;
+
+	return opts;
+}
+
+void App::renderGlobal(bool reset)
+{
+	bool imguiFocus = ImGui::IsAnyItemActive();
+
+	ImGuiIO& io = ImGui::GetIO();
+	if (ImGui::IsMouseClicked(0) || ImGui::IsMouseClicked(1) && imguiFocus == false)
+	{
+		ImVec2 mPos = ImGui::GetMousePos();
+		mousePos.x = mPos.x;
+		mousePos.y = mPos.y;
+	}
+
+	if (ImGui::IsMouseDragging(0))
+	{
+		// get mouse dragging states and pixel locations
+		ImVec2 mPos = ImGui::GetMousePos();
+
+		rotation.x += (mousePos.y - mPos.y) * 1.25f * 0.1f; // 1.0f == rotation speed change for faster 
+		rotation.y -= (mousePos.x - mPos.x) * 1.25f * 0.1f;
+		//renderer.setRotation(rotation);
+
+		//camera->setRotation(rotation);
+		mousePos.x = mPos.x;
+		mousePos.y = mPos.y;
+
+		
+
+	}
+
+	if (ImGui::IsMouseDragging(1) && imguiFocus == false)
+	{
+		ImVec2 mPos = ImGui::GetMousePos();
+
+		cameraPos.x -= (mousePos.x - mPos.x) * 0.01f;
+		cameraPos.y += (mousePos.y - mPos.y) * 0.01f;
+		
+		//camera->setPosition(cameraPos);
+		//renderer.setCameraPos(cameraPos);
+		mousePos.x = mPos.x;
+		mousePos.y = mPos.y;
+	}
+
+
+
+	if (io.MouseWheel != 0.0f)
+	{
+		cameraPos.z += io.MouseWheel * 0.01f;
+	}
+
+	glm::mat4 rotM = glm::mat4(1.0f);
+	glm::mat4 transM(1.0f);
+
+	rotM = glm::rotate(rotM, glm::radians(rotation.x), glm::vec3(-1.0f, 0.0f, 0.0f));
+	rotM = glm::rotate(rotM, glm::radians(rotation.y), glm::vec3(0.0f, 1.0f, 0.0f));
+	rotM = glm::rotate(rotM, glm::radians(rotation.z), glm::vec3(0.0f, 0.0f, 1.0f));
+
+	transM = glm::translate(transM, cameraPos);
+
+
+	glm::mat4 view = transM * rotM;
+
+
+	//camera->update(0.01f);
+
+
+	slam.renderGlobalMap(view, frame[rgbd::FRAME::GLOBAL]);
+
+
+}
 
 
 void App::mainLoop()
@@ -1792,6 +1875,21 @@ void App::mainLoop()
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 			counter++;
 			
 
@@ -1856,6 +1954,12 @@ void App::mainLoop()
 		glfwPollEvents();
 		ImGui_ImplGlfwGL3_NewFrame();
 
+		if (useSplatter && cameraRunning)
+		{
+			renderGlobal(false);
+		}
+
+
 		setUI();
 
 
@@ -1910,38 +2014,73 @@ void App::mainLoop()
 
 			krender.Render(false, cameraDevice);
 		}
+		
+		int renderOpts;
 
-		if (cameraRunning)
+		if (cameraRunning && !(trackDepthToPoint || trackDepthToVolume || useSplatter))
 		{
-			glDisable(GL_DEPTH_TEST);
 
+			renderOpts = getRenderOptions(1, 0, 0);
+
+			glDisable(GL_DEPTH_TEST);
 			glViewport(display2DWindow.x, display_h - display2DWindow.y - display2DWindow.h, display2DWindow.w, display2DWindow.h);
+			//glViewport(display3DWindow.x, display_h - display3DWindow.y - display3DWindow.h, display3DWindow.w, display3DWindow.h);
 			progs["ScreenQuad"]->use();
-			progs["ScreenQuad"]->setUniform("mapType", int(rgbd::MAP_TYPE::DEPTH));
-			quad.render(frame[rgbd::FRAME::CURRENT].getDepthMap());
+			progs["ScreenQuad"]->setUniform("mapType", int(rgbd::MAP_TYPE::NORMAL));
+			progs["ScreenQuad"]->setUniform("renderOptions", renderOpts);
+			progs["ScreenQuad"]->setUniform("maxDepth", 10.0f);
+			progs["ScreenQuad"]->setUniform("depthRange", glm::vec2(depthMin, depthMax));
+
+			quad.renderMulti(frame[rgbd::FRAME::CURRENT].getDepthMap(), frame[rgbd::FRAME::VIRTUAL].getNormalMap(), frame[rgbd::FRAME::CURRENT].getColorMap());
 			progs["ScreenQuad"]->disuse();
 
 			glEnable(GL_DEPTH_TEST);
 
 		}
-
-
-		if ((trackDepthToPoint || trackDepthToVolume || useSplatter) && showNormalFlag)
+		else if (cameraRunning && (trackDepthToPoint || trackDepthToVolume || useSplatter) && showNormalFlag)
 		{
-			glDisable(GL_DEPTH_TEST);
+			renderOpts = getRenderOptions(1, 1, 0);
 
+			glDisable(GL_DEPTH_TEST);
+			glViewport(display2DWindow.x, display_h - display2DWindow.y - display2DWindow.h, display2DWindow.w, display2DWindow.h);
+			//glViewport(display3DWindow.x, display_h - display3DWindow.y - display3DWindow.h, display3DWindow.w, display3DWindow.h);
+			progs["ScreenQuad"]->use();
+			progs["ScreenQuad"]->setUniform("mapType", int(rgbd::MAP_TYPE::NORMAL));
+			progs["ScreenQuad"]->setUniform("renderOptions", renderOpts);
+			progs["ScreenQuad"]->setUniform("maxDepth", 10.0f);
+			progs["ScreenQuad"]->setUniform("depthRange", glm::vec2(depthMin, depthMax));
+
+			quad.renderMulti(frame[rgbd::FRAME::CURRENT].getDepthMap(), frame[rgbd::FRAME::VIRTUAL].getNormalMap(), frame[rgbd::FRAME::CURRENT].getColorMap());
+			progs["ScreenQuad"]->disuse();
+
+
+
+
+			glEnable(GL_DEPTH_TEST);
+
+		}
+
+		if (useSplatter)
+		{
+			renderOpts = getRenderOptions(0, 1, 0);
+
+			glDisable(GL_DEPTH_TEST);
 			glViewport(display3DWindow.x, display_h - display3DWindow.y - display3DWindow.h, display3DWindow.w, display3DWindow.h);
 			progs["ScreenQuad"]->use();
 			progs["ScreenQuad"]->setUniform("mapType", int(rgbd::MAP_TYPE::NORMAL));
-			quad.render(frame[rgbd::FRAME::VIRTUAL].getNormalMap());
+			progs["ScreenQuad"]->setUniform("renderOptions", renderOpts);
+			progs["ScreenQuad"]->setUniform("maxDepth", 10.0f);
+			progs["ScreenQuad"]->setUniform("depthRange", glm::vec2(depthMin, depthMax));
+
+			quad.renderMulti(frame[rgbd::FRAME::GLOBAL].getDepthMap(), frame[rgbd::FRAME::GLOBAL].getNormalMap(), frame[rgbd::FRAME::GLOBAL].getColorMap());
 			progs["ScreenQuad"]->disuse();
-
-
-
-
 			glEnable(GL_DEPTH_TEST);
-
 		}
+
+
+
+
+
 
 		glfwSwapBuffers(window);
 

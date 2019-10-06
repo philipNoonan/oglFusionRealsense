@@ -93,7 +93,7 @@ void main()
                         vec3 projectedNormal = vec3((T * vec4(currNormal.xyz, 0.0f)).xyz); // input mipmap sized pixel
 
 
-						//imageStore(testImage, ivec2(pix), vec4(diff, 1.0f));
+						imageStore(testImage, ivec2(pix), vec4(diff, 1.0f));
 
                         if (length(diff) > distThresh)
                         {

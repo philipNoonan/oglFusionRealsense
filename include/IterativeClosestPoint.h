@@ -1,5 +1,7 @@
 #pragma once
 
+#include "glhelper.h"
+
 #include <opencv2/opencv.hpp>
 
 #include <Eigen/Core>
@@ -28,8 +30,39 @@ namespace rgbd
 	class PointToPlaneICP
 	{
 	private:
+
+		std::map<std::string, const gl::Shader::Ptr> progs;
+
 		VirtualFrameRenderer virtualFrameRenderer;
 		ProjectiveDataAssoc dataAssoc;
+
+		std::vector<float> outputReductionData;
+
+		gl::ShaderStorageBuffer<BufferReduction> ssboReduction;
+		gl::ShaderStorageBuffer<float> ssboReductionOutput;
+
+		void track(
+			const rgbd::Frame &currentFrame,
+			const rgbd::Frame &virtualFrame,
+			glm::mat4 &T,
+			int level
+		);
+
+		void reduce(
+			const glm::ivec2 &imSize
+		);
+
+		void getReduction(
+			std::vector<float> &b,
+			std::vector<float> &C,
+			float &AE,
+			uint32_t &icpCount
+		);
+
+
+		std::vector<float> makeJTJ(
+			std::vector<float> v
+		);
 
 	public:
 		PointToPlaneICP(

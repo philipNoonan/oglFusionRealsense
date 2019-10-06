@@ -14,7 +14,7 @@
 #include <chrono>
 #include <fstream>
 
-
+#include "camera.hpp"
 
 #include "kRender.h"
 #include "renderHelpers.h"
@@ -61,9 +61,11 @@ class App : gl::Window
 {
 private:
 
+	Camera* camera;
+
 	rgbd::GlobalVolume::Ptr volume;
 
-	std::array<rgbd::Frame, 2> frame;
+	std::array<rgbd::Frame, 3> frame;
 	rgbd::splatterFusion slam;
 	rgbd::p2pFusion p2pFusion;
 	rgbd::p2vFusion p2vFusion;
@@ -78,6 +80,9 @@ private:
 
 	void initP2PFusion();
 	void initP2VFusion();
+	int getRenderOptions(bool depth, bool infra, bool color);
+	void renderGlobal(bool reset);
+
 
 	void kRenderInit();
 	//void gFusionInit();
@@ -97,6 +102,13 @@ private:
 
 	int m_pointX = 0;
 	int m_pointY = 0; 
+
+	glm::vec3 rotation = glm::vec3();
+	glm::vec3 cameraPos = glm::vec3();
+	glm::vec2 mousePos = glm::vec2();
+
+	glm::mat4 globalRenderPose = glm::mat4(1.0f);
+
 
 	std::string return_current_time_and_date()
 	{
@@ -360,7 +372,6 @@ private:
 	float mouseX = 0;
 	float mouseY = 0;
 
-	glm::vec2 mousePos = glm::vec2(0, 0);
 
 	int numberOfCameras;
 

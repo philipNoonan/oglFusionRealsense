@@ -20,7 +20,7 @@ namespace rgbd
 {
 	enum FRAME
 	{
-		VIRTUAL, CURRENT
+		VIRTUAL, CURRENT, GLOBAL
 	};
 
 	struct FrameData

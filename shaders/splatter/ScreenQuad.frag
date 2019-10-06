@@ -1,28 +1,58 @@
 #version 440 core
 
-layout (binding = 0) uniform sampler2D tex;
+layout (binding = 0) uniform sampler2D depthTex;
+layout (binding = 1) uniform sampler2D normalTex;
+layout (binding = 2) uniform sampler2D colorTex;
 
 in vec2 vsTexCoord;
 
+layout(location = 0) out vec4 color;
+
+
 uniform int mapType;
+
 uniform float maxDepth;
+uniform int renderOptions;
+uniform float depthScale;
+uniform vec2 depthRange;
+
 
 void main()
 {
-	if (mapType == 0)		// BGR image
+
+	int renderDepth =   (renderOptions & 1); 
+	int renderNormals =   (renderOptions & 2) >> 1; 
+	int renderColor =   (renderOptions & 4) >> 2; 
+
+
+	vec4 outColor = vec4(0.0f);
+
+
+
+	if (renderDepth == 1)
 	{
-		gl_FragColor = texture(tex, vsTexCoord).bgra;
+		vec4 tColor = vec4(texture(depthTex, vsTexCoord));
+	    float depthVal = smoothstep(depthRange.x, depthRange.y, tColor.x);
+
+		outColor = vec4(depthVal.xxx, 1.0f);
 	}
-	else if (mapType == 1)	// RGB image
+
+	if (renderNormals == 1)
 	{
-		gl_FragColor = texture(tex, vsTexCoord).rgba;
+		vec4 tCol = texture(normalTex, vsTexCoord);
+		if (abs(tCol.x) > 0)
+		{
+			outColor = mix(outColor, abs(tCol), 1.0f);
+		}
 	}
-	else if (mapType == 2)	// Depth map
+
+	if (renderColor == 1)
 	{
-		gl_FragColor = vec4(texture(tex, vsTexCoord).rrr / maxDepth, 1.0);
+		outColor = texture(colorTex, vsTexCoord);
 	}
-	else if (mapType == 4)	// Normal map
-	{
-		gl_FragColor = abs(texture(tex, vsTexCoord).bgra);
-	}
+
+
+
+	color = outColor;
+
 }

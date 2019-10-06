@@ -30,6 +30,17 @@ namespace gl
 	{
 	}
 
+	void Quad::renderMulti(gl::Texture::Ptr depthTex, gl::Texture::Ptr normalTex, gl::Texture::Ptr colorTex)
+	{
+		vao.bind();
+		depthTex->use(0);
+		normalTex->use(1);
+		colorTex->use(2);
+
+		glDrawElements(GL_TRIANGLE_FAN, 4, GL_UNSIGNED_SHORT, 0);
+		vao.unbind();
+	}
+
 	void Quad::render(gl::Texture::Ptr tex)
 	{
 		vao.bind();

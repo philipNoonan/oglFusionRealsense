@@ -30,6 +30,9 @@ namespace rgbd
 		progs.insert(std::make_pair("GlobalMapUpdate", std::make_shared<gl::Shader>(folderPath + "GlobalMapUpdate.comp")));
 		progs.insert(std::make_pair("SurfaceSplatting", std::make_shared<gl::Shader>(folderPath + "SurfaceSplatting.vert", folderPath + "SurfaceSplatting.frag", folderPath + "SurfaceSplatting.geom")));
 		progs.insert(std::make_pair("UnnecessaryPointRemoval", std::make_shared<gl::Shader>(folderPath + "UnnecessaryPointRemoval.comp")));
+		progs.insert(std::make_pair("p2pTrack", std::make_shared<gl::Shader>(folderPath + "p2pTrack.comp")));
+		progs.insert(std::make_pair("p2pReduce", std::make_shared<gl::Shader>(folderPath + "p2pReduce.comp")));
+
 	}
 
 	void splatterFusion::init(
@@ -64,6 +67,12 @@ namespace rgbd
 		glDisable(GL_CULL_FACE);
 
 	}
+
+	void splatterFusion::renderGlobalMap(glm::mat4 renderPose, const rgbd::Frame &globalFrame)
+	{
+		gMap->genVirtualFrame(globalFrame, renderPose);
+	}
+
 
 	glm::mat4 splatterFusion::calcDevicePose(
 		const rgbd::Frame &currentFrame,

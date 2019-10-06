@@ -3,7 +3,7 @@
 namespace rgbd
 {
 	const float ICPConstParam::MIN_DEPTH = 0.1f;
-	const float ICPConstParam::MAX_DEPTH = 3.0f;
+	const float ICPConstParam::MAX_DEPTH = 1.0f;
 
 	const float ICPConstParam::DST_THRESH = 0.01f;
 	const float ICPConstParam::ANG_THRESH = 0.9f;

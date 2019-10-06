@@ -55,6 +55,12 @@ namespace rgbd
 			const rgbd::Frame &virtualFrame
 		);
 
+		void renderGlobalMap(
+			glm::mat4 renderPose, 
+			const rgbd::Frame &virtualFrame
+		);
+
+
 		void exportGlobalVertexMap();
 
 		GLuint getGlobalModelBuffer(GLuint &mSize)
