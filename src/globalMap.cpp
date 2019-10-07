@@ -119,7 +119,7 @@ namespace rgbd
 		indexMapFBO.getColorAttachment(0)->bindImage(0, 0, GL_READ_ONLY);
 		srcFrame.getVertexMap()->bindImage(1, 0, GL_READ_ONLY);
 		srcFrame.getNormalMap()->bindImage(2, 0, GL_READ_ONLY);
-		srcFrame.getColorMap()->bindImage(3, 0, GL_READ_ONLY);	// <-- debugging: color integration
+		srcFrame.getColorAlignedToDepthMap()->bindImage(3, 0, GL_READ_ONLY);	// <-- debugging: color integration
 
 		atomic[buffSwitch].update(&mapSize, 0, 1);
 		atomic[buffSwitch].bindBase(0);
@@ -202,11 +202,12 @@ namespace rgbd
 		}
 	}
 
-	void GlobalMap::exportPointCloud(std::vector<glm::vec4> &outputVertexData, std::vector<glm::vec3> &outputNormalData)
+	void GlobalMap::exportPointCloud(std::vector<glm::vec4> &outputVertexData, std::vector<glm::vec3> &outputNormalData, std::vector<glm::vec3> &outputColorData)
 	{
 		std::vector<GlobalMapData> outputMapData(mapSize);
 		outputVertexData.resize(mapSize);
 		outputNormalData.resize(mapSize);
+		outputColorData.resize(mapSize);
 
 		ssbo[0].read(outputMapData.data(), 0, mapSize);
 		int val = 0;
@@ -214,6 +215,7 @@ namespace rgbd
 		{
 			outputVertexData[val] = glm::vec4(i.vertex.x, i.vertex.y, i.vertex.z, i.data.x);
 			outputNormalData[val] = glm::vec3(i.normal.x, i.normal.y, i.normal.z);
+			outputColorData[val] = glm::vec3(i.color.x, i.color.y, i.color.z);
 
 			val++;
 		}

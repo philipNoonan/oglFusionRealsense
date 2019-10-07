@@ -81,7 +81,8 @@ namespace rgbd
 		void clearAll();
 		void exportPointCloud(
 			std::vector<glm::vec4> &outputVertexData, 
-			std::vector<glm::vec3> &outputNormalData
+			std::vector<glm::vec3> &outputNormalData,
+			std::vector<glm::vec3> &outputColorData
 		);
 
 		GLuint getMapSize();

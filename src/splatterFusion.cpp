@@ -17,6 +17,7 @@ namespace rgbd
 	)
 	{
 		progs.insert(std::make_pair("BilateralFilter", std::make_shared<gl::Shader>(folderPath + "BilateralFilter.comp")));
+		progs.insert(std::make_pair("alignDepthColor", std::make_shared<gl::Shader>(folderPath + "alignDepthColor.comp")));
 		progs.insert(std::make_pair("CalcVertexMap", std::make_shared<gl::Shader>(folderPath + "CalcVertexMap.comp")));
 		progs.insert(std::make_pair("CalcNormalMap", std::make_shared<gl::Shader>(folderPath + "CalcNormalMap.comp")));
 		progs.insert(std::make_pair("VirtualMapGeneration", std::make_shared<gl::Shader>(folderPath + "VirtualMapGeneration.vert", folderPath + "VirtualMapGeneration.frag")));
@@ -104,15 +105,16 @@ namespace rgbd
 
 
 		//std::cout << "  ICP: " << (clock() - start_icp) / (double)CLOCKS_PER_SEC << " sec" << std::endl;
-		std::cout << glm::to_string(T) << std::endl;
-		std::cout << glm::to_string(vT.back()) << std::endl;
+		//std::cout << glm::to_string(T) << std::endl;
+		//std::cout << glm::to_string(vT.back()) << std::endl;
 
 		return vT.back();
 	}
 
 	void splatterFusion::updateGlobalMap(
 		const rgbd::Frame &currentFrame,
-		const rgbd::Frame &virtualFrame
+		const rgbd::Frame &virtualFrame,
+		bool integrate
 	)
 	{
 
@@ -124,21 +126,24 @@ namespace rgbd
 		//std::cout << "  Index map: " << (clock() - start_idx_map) / (double)CLOCKS_PER_SEC << " sec" << std::endl;
 
 
-
-		clock_t start_update_map = clock();
-		gMap->updateGlobalMap(currentFrame, vT.back(), static_cast<int>(vT.size())); // 2 ms
-		//std::cout << "  Update map: " << (clock() - start_update_map) / (double)CLOCKS_PER_SEC << " sec" << std::endl;
-		//std::cout << "  --> Map size: " << gMap->getMapSize() << std::endl;
-
-
-
-		clock_t start_remove_pts = clock();
-		gMap->removeUnnecessaryPoints(static_cast<int>(vT.size())); // 3.5 ms
-		//std::cout << "  Remove points: " << (clock() - start_remove_pts) / (double)CLOCKS_PER_SEC << " sec" << std::endl;
-		
+		if (integrate)
+		{
+			clock_t start_update_map = clock();
+			gMap->updateGlobalMap(currentFrame, vT.back(), static_cast<int>(vT.size())); // 2 ms
+			//std::cout << "  Update map: " << (clock() - start_update_map) / (double)CLOCKS_PER_SEC << " sec" << std::endl;
+			//std::cout << "  --> Map size: " << gMap->getMapSize() << std::endl;
 
 
-		std::cout << "  --> Removed map size: " << gMap->getMapSize() << std::endl;
+
+			clock_t start_remove_pts = clock();
+			gMap->removeUnnecessaryPoints(static_cast<int>(vT.size())); // 3.5 ms
+			//std::cout << "  Remove points: " << (clock() - start_remove_pts) / (double)CLOCKS_PER_SEC << " sec" << std::endl;
+
+			std::cout << "  --> Removed map size: " << gMap->getMapSize() << std::endl;
+
+		}
+
+
 
 
 
@@ -154,8 +159,9 @@ namespace rgbd
 	{
 		std::vector<glm::vec4> outputVerts;
 		std::vector<glm::vec3> outputNorms;
+		std::vector<glm::vec3> outputColor;
 
-		gMap->exportPointCloud(outputVerts, outputNorms);
+		gMap->exportPointCloud(outputVerts, outputNorms, outputColor);
 
 
 		std::string modelFileName = "data/meshes/splatterVertsBin.ply";
@@ -190,9 +196,9 @@ namespace rgbd
 		outFile << "property float x" << std::endl;
 		outFile << "property float y" << std::endl;
 		outFile << "property float z" << std::endl;
-		//outFile << "property uchar red" << std::endl;
-		//outFile << "property uchar green" << std::endl;
-		//outFile << "property uchar blue" << std::endl;
+		outFile << "property uchar red" << std::endl;
+		outFile << "property uchar green" << std::endl;
+		outFile << "property uchar blue" << std::endl;
 		outFile << "property float nx" << std::endl;
 		outFile << "property float ny" << std::endl;
 		outFile << "property float nz" << std::endl;
@@ -210,13 +216,13 @@ namespace rgbd
 			outFile.write((char*)&outputNorms[i].y, sizeof(float));
 			outFile.write((char*)&outputNorms[i].z, sizeof(float));
 
-			//unsigned char r = int(outputNorms[i].x) >> 16 & 0xFF;
-			//unsigned char g = int(outputNorms[i].y) >> 8 & 0xFF;
-			//unsigned char b = int(outputNorms[i].z) & 0xFF;
+			unsigned char r = int(outputColor[i].x * 255);
+			unsigned char g = int(outputColor[i].y * 255);
+			unsigned char b = int(outputColor[i].z * 255);
 
-			//outFile.write((char*)&r, sizeof(float));
-			//outFile.write((char*)&g, sizeof(float));
-			//outFile.write((char*)&b, sizeof(float));
+			outFile.write((char*)&r, sizeof(unsigned char));
+			outFile.write((char*)&g, sizeof(unsigned char));
+			outFile.write((char*)&b, sizeof(unsigned char));
 
 			outFile.write((char*)&outputVerts[i].w, sizeof(float));
 

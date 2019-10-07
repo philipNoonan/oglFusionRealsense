@@ -15,6 +15,7 @@
 #include "CalcNormalMap.h"
 #include "CalcNormalMap.h"
 #include "DownSampling.h"
+#include "AlignDepthColor.h"
 
 namespace rgbd
 {
@@ -26,6 +27,7 @@ namespace rgbd
 	struct FrameData
 	{
 		gl::Texture::Ptr colorMap;
+		gl::Texture::Ptr colorAlignedToDepthMap;
 		gl::Texture::Ptr depthMap;
 		gl::Texture::Ptr vertexMap;
 		gl::Texture::Ptr normalMap;
@@ -48,6 +50,7 @@ namespace rgbd
 		std::vector<rgbd::FrameData> frameData;
 
 		rgbd::ComputeShader::Ptr bilateralFilter;
+		rgbd::ComputeShader::Ptr alignDC;
 		rgbd::ComputeShader::Ptr vertexMapProc;
 		rgbd::ComputeShader::Ptr normalMapProc;
 		std::vector<rgbd::ComputeShader::Ptr> downSampling;
@@ -94,12 +97,20 @@ namespace rgbd
 		// for the synthetic frame
 		void update() const;
 
+		void alignDepthTocolor(
+			glm::mat4 extrins, 
+			glm::vec4 depthIntrins, 
+			glm::vec4 colorIntrins
+		);
+
 		void clearAll();
 
 		int getWidth(int lv = 0) const;
 		int getHeight(int lv = 0) const;
 
 		gl::Texture::Ptr getColorMap(int lv = 0) const;
+		gl::Texture::Ptr getColorAlignedToDepthMap(int lv = 0) const;
+
 		gl::Texture::Ptr getDepthMap(int lv = 0) const;
 		gl::Texture::Ptr getVertexMap(int lv = 0) const;
 		gl::Texture::Ptr getNormalMap(int lv = 0) const;

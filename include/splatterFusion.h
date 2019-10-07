@@ -52,7 +52,8 @@ namespace rgbd
 
 		void updateGlobalMap(
 			const rgbd::Frame &currentFrame,
-			const rgbd::Frame &virtualFrame
+			const rgbd::Frame &virtualFrame,
+			bool integrate
 		);
 
 		void renderGlobalMap(

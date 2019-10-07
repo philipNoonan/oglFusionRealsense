@@ -175,9 +175,16 @@ bool App::runSLAM()
 	glViewport(0, 0, width, height);
 	bool status = true;
 	frame[rgbd::FRAME::CURRENT].update(cameraInterface.getColorQueues(), cameraInterface.getDepthQueues(), cameraInterface.getInfraQueues(), numberOfCameras, cameraInterface.getDepthUnit(0) / 1000000.0f, glm::ivec2(m_pointX, m_pointY), iOff);
+	frame[rgbd::FRAME::CURRENT].alignDepthTocolor(
+		cameraInterface.getDepthToColorExtrinsics(0),
+		glm::vec4(cameraInterface.getDepthIntrinsics(0).cx, cameraInterface.getDepthIntrinsics(0).cy, cameraInterface.getDepthIntrinsics(0).fx, cameraInterface.getDepthIntrinsics(0).fy),
+		glm::vec4(cameraInterface.getColorIntrinsics(0).cx, cameraInterface.getColorIntrinsics(0).cy, cameraInterface.getColorIntrinsics(0).fx, cameraInterface.getColorIntrinsics(0).fy)
+		);
 
 	glm::mat4 T = slam.calcDevicePose(frame[rgbd::FRAME::CURRENT], frame[rgbd::FRAME::VIRTUAL]);
-	slam.updateGlobalMap(frame[rgbd::FRAME::CURRENT], frame[rgbd::FRAME::VIRTUAL]);
+
+	slam.updateGlobalMap(frame[rgbd::FRAME::CURRENT], frame[rgbd::FRAME::VIRTUAL], integratingFlag);
+	
 
 	//std::cout << glm::to_string(glm::transpose(T)) << std::endl;
 
@@ -543,7 +550,7 @@ void App::startRealsense()
 
 			infraProfiles.resize(numberOfCameras, std::make_tuple(desiredWidth, desiredHeight, desiredRate, RS2_FORMAT_Y8));
 			depthProfiles.resize(numberOfCameras, std::make_tuple(desiredWidth, desiredHeight, desiredRate, RS2_FORMAT_Z16));
-			colorProfiles.resize(numberOfCameras, std::make_tuple(desiredColorWidth, desiredColorHeight, desiredColorRate, RS2_FORMAT_RGB8));
+			colorProfiles.resize(numberOfCameras, std::make_tuple(desiredColorWidth, desiredColorHeight, desiredColorRate, RS2_FORMAT_RGBA8));
 
 			depthFrameSize.resize(numberOfCameras);
 			colorFrameSize.resize(numberOfCameras);
@@ -2044,7 +2051,7 @@ void App::mainLoop()
 
 		if (useSplatter && cameraRunning)
 		{
-			renderOpts = getRenderOptions(0, showNormalFlag, 0, 0);
+			renderOpts = getRenderOptions(0, showNormalFlag, showColorFlag, 0);
 
 			glDisable(GL_DEPTH_TEST);
 			glViewport(display3DWindow.x, display_h - display3DWindow.y - display3DWindow.h, display3DWindow.w, display3DWindow.h);
@@ -2054,7 +2061,7 @@ void App::mainLoop()
 			progs["ScreenQuad"]->setUniform("maxDepth", 10.0f);
 			progs["ScreenQuad"]->setUniform("depthRange", glm::vec2(depthMin, depthMax));
 
-			quad.renderMulti(frame[rgbd::FRAME::GLOBAL].getDepthMap(), frame[rgbd::FRAME::GLOBAL].getNormalMap(), frame[rgbd::FRAME::GLOBAL].getColorMap(), frame[rgbd::FRAME::CURRENT].getInfraMap());
+			quad.renderMulti(frame[rgbd::FRAME::GLOBAL].getDepthMap(), frame[rgbd::FRAME::GLOBAL].getNormalMap(), frame[rgbd::FRAME::VIRTUAL].getColorMap(), frame[rgbd::FRAME::CURRENT].getInfraMap());
 			progs["ScreenQuad"]->disuse();
 			glEnable(GL_DEPTH_TEST);
 		}

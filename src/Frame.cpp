@@ -30,9 +30,14 @@ namespace rgbd
 		// Color needs only "one" level
 		// Note: Color must be 4ch since compute shader does not support rgb8 internal format.
 		frameData[0].colorMap = std::make_shared<gl::Texture>();
-		frameData[0].colorMap->create(0, width, height, 3, gl::TextureType::COLOR);
+		frameData[0].colorMap->create(0, width, height, 4, gl::TextureType::COLOR);
 		frameData[0].colorMap->setFiltering(gl::TextureFilter::NEAREST);
 		frameData[0].colorMap->setWarp(gl::TextureWarp::CLAMP_TO_EDGE);
+
+		frameData[0].colorAlignedToDepthMap = std::make_shared<gl::Texture>();
+		frameData[0].colorAlignedToDepthMap->create(0, width, height, 4, gl::TextureType::COLOR);
+		frameData[0].colorAlignedToDepthMap->setFiltering(gl::TextureFilter::NEAREST);
+		frameData[0].colorAlignedToDepthMap->setWarp(gl::TextureWarp::CLAMP_TO_EDGE);
 
 		frameData[0].depthMap = std::make_shared<gl::Texture>();
 		frameData[0].vertexMap = std::make_shared<gl::Texture>();
@@ -89,6 +94,8 @@ namespace rgbd
 		testMap->setWarp(gl::TextureWarp::CLAMP_TO_EDGE);
 
 		bilateralFilter = std::make_shared<rgbd::BilateralFilter>(progs["BilateralFilter"]);
+		alignDC = std::make_shared<rgbd::AlignDepthColor>(progs["alignDepthColor"]);
+
 		vertexMapProc = std::make_shared<rgbd::CalcVertexMap>(minDepth, maxDepth, K, progs["CalcVertexMap"]);
 		normalMapProc = std::make_shared<rgbd::CalcNormalMap>(progs["CalcNormalMap"]);
 		downSampling.resize(maxLevel - 1);
@@ -186,6 +193,23 @@ namespace rgbd
 		update();
 	}
 
+
+	void Frame::alignDepthTocolor(glm::mat4 extrins, glm::vec4 depthIntrins, glm::vec4 colorIntrins)
+	{
+		// from the verteex map, apply the depth to color extrinsic
+		// project from 3D to color space using color intrins
+		// read color from color map and update color map for the original vertID in the vertex map
+
+		std::dynamic_pointer_cast<rgbd::AlignDepthColor>(alignDC)->execute(frameData[0].vertexMap, frameData[0].colorMap, frameData[0].colorAlignedToDepthMap, extrins, colorIntrins);
+
+
+
+
+
+	}
+
+
+
 	void Frame::update() const
 	{
 
@@ -229,10 +253,16 @@ namespace rgbd
 		return height / int(pow(2, lv));
 	}
 
+	gl::Texture::Ptr Frame::getColorAlignedToDepthMap(int lv) const
+	{
+		return frameData[lv].colorAlignedToDepthMap;
+	}
+
 	gl::Texture::Ptr Frame::getColorMap(int lv) const
 	{
 		return frameData[lv].colorMap;
 	}
+	
 
 	gl::Texture::Ptr Frame::getDepthMap(int lv) const
 	{
