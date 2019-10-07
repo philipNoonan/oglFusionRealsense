@@ -80,7 +80,7 @@ private:
 
 	void initP2PFusion();
 	void initP2VFusion();
-	int getRenderOptions(bool depth, bool infra, bool color);
+	int getRenderOptions(bool depth, bool normal, bool color, bool infra);
 	void renderGlobal(bool reset);
 
 
@@ -235,7 +235,7 @@ private:
 	bool showDepthFilteredFlag = false;
 	bool showBigDepthFlag = false;
 	bool showInfraFlag = false;
-	bool showColorFlag = true;
+	bool showColorFlag = false;
 	bool showLightFlag = false;
 	bool showPointFlag = false;
 

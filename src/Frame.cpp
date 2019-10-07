@@ -78,6 +78,11 @@ namespace rgbd
 		trackMap->setFiltering(gl::TextureFilter::NEAREST);
 		trackMap->setWarp(gl::TextureWarp::CLAMP_TO_EDGE);
 
+		infraMap = std::make_shared<gl::Texture>();
+		infraMap->create(0, width, height, 1, gl::TextureType::COLOR);
+		infraMap->setFiltering(gl::TextureFilter::NEAREST);
+		infraMap->setWarp(gl::TextureWarp::CLAMP_TO_EDGE);
+
 		testMap = std::make_shared<gl::Texture>();
 		testMap->create(0, width, height, 4, gl::TextureType::FLOAT32);
 		testMap->setFiltering(gl::TextureFilter::NEAREST);
@@ -100,6 +105,7 @@ namespace rgbd
 	void Frame::update(
 		std::vector<rs2::frame_queue> colorQ,
 		std::vector<rs2::frame_queue> depthQ,
+		std::vector<rs2::frame_queue> infraQ,
 		int numberOfCameras,
 		float depthScale,
 		const glm::ivec2 pixel,
@@ -110,6 +116,7 @@ namespace rgbd
 	{
 		std::vector<rs2::frame> depthFrame(numberOfCameras);
 		std::vector<rs2::frame> colorFrame(numberOfCameras);
+		std::vector<rs2::frame> infraFrame(numberOfCameras);
 
 		for (int camNumber = 0; camNumber < numberOfCameras; camNumber++)
 		{
@@ -118,6 +125,12 @@ namespace rgbd
 			if (colorFrame[camNumber] != NULL)
 			{
 				frameData[0].colorMap->update(colorFrame[camNumber].get_data());
+			}
+
+			infraQ[camNumber].poll_for_frame(&infraFrame[camNumber]);
+			if (infraFrame[camNumber] != NULL)
+			{
+				infraMap->update(infraFrame[camNumber].get_data());
 			}
 
 			depthQ[camNumber].poll_for_frame(&depthFrame[camNumber]);
@@ -175,26 +188,12 @@ namespace rgbd
 
 	void Frame::update() const
 	{
-		/*GLuint query;
-		glGenQueries(1, &query);
 
-		glBeginQuery(GL_TIME_ELAPSED, query);*/
 
 		frameData[0].depthMap->mipmap();
 		frameData[0].vertexMap->mipmap();
 		frameData[0].normalMap->mipmap();
 
-		//glEndQuery(GL_TIME_ELAPSED);
-		//GLuint available = 0;
-		//while (!available) {
-		//	glGetQueryObjectuiv(query, GL_QUERY_RESULT_AVAILABLE, &available);
-		//}
-
-		//// elapsed time in nanoseconds
-		//GLuint64 elapsed;
-		//glGetQueryObjectui64vEXT(query, GL_QUERY_RESULT, &elapsed);
-
-		//std::cout << "time : " << elapsed / 1000000.0 << std::endl;
 
 		/*for (int lv = 0; lv < downSampling.size(); ++lv)
 		{
@@ -258,5 +257,10 @@ namespace rgbd
 	gl::Texture::Ptr Frame::getTestMap() const
 	{
 		return testMap;
+	}
+
+	gl::Texture::Ptr Frame::getInfraMap() const
+	{
+		return infraMap;
 	}
 }

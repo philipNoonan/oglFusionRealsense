@@ -3,6 +3,7 @@
 layout (binding = 0) uniform sampler2D depthTex;
 layout (binding = 1) uniform sampler2D normalTex;
 layout (binding = 2) uniform sampler2D colorTex;
+layout (binding = 3) uniform sampler2D infraTex;
 
 in vec2 vsTexCoord;
 
@@ -23,6 +24,7 @@ void main()
 	int renderDepth =   (renderOptions & 1); 
 	int renderNormals =   (renderOptions & 2) >> 1; 
 	int renderColor =   (renderOptions & 4) >> 2; 
+	int renderInfra = (renderOptions & 8) >> 3;
 
 
 	vec4 outColor = vec4(0.0f);
@@ -35,6 +37,11 @@ void main()
 	    float depthVal = smoothstep(depthRange.x, depthRange.y, tColor.x);
 
 		outColor = vec4(depthVal.xxx, 1.0f);
+	}
+
+	if (renderInfra == 1)
+	{
+		outColor = vec4(texture(infraTex, vsTexCoord).xxx, 1.0f);
 	}
 
 	if (renderNormals == 1)
@@ -50,6 +57,9 @@ void main()
 	{
 		outColor = texture(colorTex, vsTexCoord);
 	}
+
+
+
 
 
 

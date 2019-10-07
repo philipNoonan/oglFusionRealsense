@@ -15,7 +15,7 @@ namespace rgbd
 		const float farPlane,
 		const std::map<std::string, const gl::Shader::Ptr> &progs
 	) : width(width), height(height), 
-		size(size), dim(dim), dMin(dMin), dMax(dMax), K(K),
+		size(size), dim(dim), K(K),
 		progs{ { "Integrate", progs.at("Integrate") },
 		{ "Raycast", progs.at("Raycast") } }
 	{

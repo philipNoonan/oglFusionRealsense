@@ -194,8 +194,8 @@ namespace rgbd
 
 	void PointToPlaneICP::calc(
 		const int level,
-		const rgbd::Frame &prevFrame,
-		const rgbd::Frame &currFrame,
+		const rgbd::Frame &currentFrame,
+		const rgbd::Frame &virtualFrame,
 		glm::mat4 &T,
 		Eigen::Matrix<double, 6, 6, Eigen::RowMajor> &lastA,
 		const float finThresh
@@ -209,11 +209,11 @@ namespace rgbd
 			std::vector<float> b, C;
 
 			// track
-			track(currFrame, prevFrame, T, level);
+			track(currentFrame, virtualFrame, T, level);
 
 
 			// then reduce
-			reduce(glm::ivec2(currFrame.getWidth(level), currFrame.getHeight(level)));
+			reduce(glm::ivec2(currentFrame.getWidth(level), currentFrame.getHeight(level)));
 			// get reduction
 			getReduction(b, C, AE, icpCount);
 

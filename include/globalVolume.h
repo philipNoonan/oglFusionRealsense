@@ -23,8 +23,6 @@ namespace rgbd
 		const int height;
 		glm::vec3 size;
 		glm::vec3 dim;
-		const float dMin;
-		const float dMax;
 		const glm::mat4 K;
 		gl::Texture3D::Ptr volumeTex;
 

@@ -275,4 +275,8 @@ namespace gl
 	{
 		glProgramUniform3fv(prog, getUniformLoc(name), 1, glm::value_ptr(value));
 	}
+	template<> void Shader::setUniform<glm::vec4>(const std::string &name, const glm::vec4 &value)
+	{
+		glProgramUniform4fv(prog, getUniformLoc(name), 1, glm::value_ptr(value));
+	}
 }

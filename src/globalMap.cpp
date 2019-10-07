@@ -55,6 +55,10 @@ namespace rgbd
 			width, height, K[2][0], K[2][1], K[0][0], K[1][1], 0.0f
 		);
 		this->progs["IndexMapGeneration"]->setUniform("P", P);
+		this->progs["IndexMapGeneration"]->setUniform("maxDepth", 10.0f);
+		this->progs["IndexMapGeneration"]->setUniform("imSize", glm::vec2(width, height));
+		this->progs["IndexMapGeneration"]->setUniform("cam", glm::vec4(K[2][0], K[2][1], K[0][0], K[1][1]));
+
 
 		this->progs["GlobalMapUpdate"]->setUniform("timestamp", 0);
 		this->progs["GlobalMapUpdate"]->setUniform("sigma", 0.6f);
@@ -65,6 +69,9 @@ namespace rgbd
 		this->progs["SurfaceSplatting"]->setUniform("P", P);
 		this->progs["SurfaceSplatting"]->setUniform("c_stable", GlobalMapConstParam::CSTABLE);
 		this->progs["SurfaceSplatting"]->setUniform("scale", 1.5f);
+		this->progs["SurfaceSplatting"]->setUniform("maxDepth", 10.0f);
+		this->progs["SurfaceSplatting"]->setUniform("imSize", glm::vec2(width, height));
+		this->progs["SurfaceSplatting"]->setUniform("cam", glm::vec4(K[2][0], K[2][1], K[0][0], K[1][1]));
 
 		this->progs["UnnecessaryPointRemoval"]->setUniform("c_stable", GlobalMapConstParam::CSTABLE);
 	}

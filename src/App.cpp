@@ -41,7 +41,7 @@ void App::initSplatter()
 		f.create(gconfig.depthFrameSize.x, gconfig.depthFrameSize.y, rgbd::ICPConstParam::MAX_LEVEL,
 			rgbd::ICPConstParam::MIN_DEPTH, rgbd::ICPConstParam::MAX_DEPTH,
 			K, cameraInterface.getDepthUnit(0) / 1000000.0f, progsForSlam);
-		f.update(cameraInterface.getColorQueues(), cameraInterface.getDepthQueues(), numberOfCameras, cameraInterface.getDepthUnit(0) / 1000000.0f, glm::ivec2(m_pointX, m_pointY), iOff);
+		f.update(cameraInterface.getColorQueues(), cameraInterface.getDepthQueues(), cameraInterface.getInfraQueues(), numberOfCameras, cameraInterface.getDepthUnit(0) / 1000000.0f, glm::ivec2(m_pointX, m_pointY), iOff);
 	}
 
 	slam.init(frame[rgbd::FRAME::CURRENT], frame[rgbd::FRAME::VIRTUAL], K, progsForSlam);
@@ -77,7 +77,7 @@ void App::initP2PFusion()
 		f.create(gconfig.depthFrameSize.x, gconfig.depthFrameSize.y, rgbd::ICPConstParam::MAX_LEVEL,
 			rgbd::ICPConstParam::MIN_DEPTH, rgbd::ICPConstParam::MAX_DEPTH,
 			K, cameraInterface.getDepthUnit(0) / 1000000.0f, progsForP2P);
-		f.update(cameraInterface.getColorQueues(), cameraInterface.getDepthQueues(), numberOfCameras, cameraInterface.getDepthUnit(0) / 1000000.0f, glm::ivec2(m_pointX, m_pointY), iOff);
+		f.update(cameraInterface.getColorQueues(), cameraInterface.getDepthQueues(), cameraInterface.getInfraQueues(), numberOfCameras, cameraInterface.getDepthUnit(0) / 1000000.0f, glm::ivec2(m_pointX, m_pointY), iOff);
 	}
 
 	glm::vec3 dim = gconfig.volumeDimensions;
@@ -130,7 +130,7 @@ void App::initP2VFusion()
 		f.create(gconfig.depthFrameSize.x, gconfig.depthFrameSize.y, rgbd::ICPConstParam::MAX_LEVEL,
 			rgbd::ICPConstParam::MIN_DEPTH, rgbd::ICPConstParam::MAX_DEPTH,
 			K, cameraInterface.getDepthUnit(0) / 1000000.0f, progsForP2V);
-		f.update(cameraInterface.getColorQueues(), cameraInterface.getDepthQueues(), numberOfCameras, cameraInterface.getDepthUnit(0) / 1000000.0f, glm::ivec2(m_pointX, m_pointY), iOff);
+		f.update(cameraInterface.getColorQueues(), cameraInterface.getDepthQueues(), cameraInterface.getInfraQueues(), numberOfCameras, cameraInterface.getDepthUnit(0) / 1000000.0f, glm::ivec2(m_pointX, m_pointY), iOff);
 	}
 
 	glm::vec3 dim = gconfig.volumeDimensions;
@@ -174,7 +174,7 @@ bool App::runSLAM()
 
 	glViewport(0, 0, width, height);
 	bool status = true;
-	frame[rgbd::FRAME::CURRENT].update(cameraInterface.getColorQueues(), cameraInterface.getDepthQueues(), numberOfCameras, cameraInterface.getDepthUnit(0) / 1000000.0f, glm::ivec2(m_pointX, m_pointY), iOff);
+	frame[rgbd::FRAME::CURRENT].update(cameraInterface.getColorQueues(), cameraInterface.getDepthQueues(), cameraInterface.getInfraQueues(), numberOfCameras, cameraInterface.getDepthUnit(0) / 1000000.0f, glm::ivec2(m_pointX, m_pointY), iOff);
 
 	glm::mat4 T = slam.calcDevicePose(frame[rgbd::FRAME::CURRENT], frame[rgbd::FRAME::VIRTUAL]);
 	slam.updateGlobalMap(frame[rgbd::FRAME::CURRENT], frame[rgbd::FRAME::VIRTUAL]);
@@ -198,7 +198,7 @@ bool App::runP2P()
 {
 	glViewport(0, 0, width, height);
 	bool status = true;
-	frame[rgbd::FRAME::CURRENT].update(cameraInterface.getColorQueues(), cameraInterface.getDepthQueues(), numberOfCameras, cameraInterface.getDepthUnit(0) / 1000000.0f, glm::ivec2(m_pointX, m_pointY), iOff);
+	frame[rgbd::FRAME::CURRENT].update(cameraInterface.getColorQueues(), cameraInterface.getDepthQueues(), cameraInterface.getInfraQueues(), numberOfCameras, cameraInterface.getDepthUnit(0) / 1000000.0f, glm::ivec2(m_pointX, m_pointY), iOff);
 
 	p2pFusion.raycast(frame[rgbd::FRAME::VIRTUAL]);
 
@@ -219,7 +219,7 @@ bool App::runP2V()
 {
 	glViewport(0, 0, width, height);
 	bool status = true;
-	frame[rgbd::FRAME::CURRENT].update(cameraInterface.getColorQueues(), cameraInterface.getDepthQueues(), numberOfCameras, cameraInterface.getDepthUnit(0) / 1000000.0f, glm::ivec2(m_pointX, m_pointY), iOff);
+	frame[rgbd::FRAME::CURRENT].update(cameraInterface.getColorQueues(), cameraInterface.getDepthQueues(), cameraInterface.getInfraQueues(), numberOfCameras, cameraInterface.getDepthUnit(0) / 1000000.0f, glm::ivec2(m_pointX, m_pointY), iOff);
 
 	glm::mat4 T = p2vFusion.calcDevicePose(frame[rgbd::FRAME::CURRENT], frame[rgbd::FRAME::VIRTUAL]);
 
@@ -1378,11 +1378,12 @@ void App::setUpGPU()
 
 }
 
-int App::getRenderOptions(bool depth, bool infra, bool color)
+int App::getRenderOptions(bool depth, bool normal, bool color, bool infra)
 {
 	int opts = depth << 0 |
-		infra << 1 |
-		color << 2;
+		normal << 1 |
+		color << 2 |
+		infra << 3;
 
 	return opts;
 }
@@ -2017,52 +2018,33 @@ void App::mainLoop()
 		
 		int renderOpts;
 
-		if (cameraRunning && !(trackDepthToPoint || trackDepthToVolume || useSplatter))
+
+			renderOpts = getRenderOptions(showDepthFlag, showNormalFlag, showColorFlag, showInfraFlag);
+
+			if (renderOpts > 0 && cameraRunning)
+			{
+				glDisable(GL_DEPTH_TEST);
+				glViewport(display2DWindow.x, display_h - display2DWindow.y - display2DWindow.h, display2DWindow.w, display2DWindow.h);
+				//glViewport(display3DWindow.x, display_h - display3DWindow.y - display3DWindow.h, display3DWindow.w, display3DWindow.h);
+				progs["ScreenQuad"]->use();
+				progs["ScreenQuad"]->setUniform("mapType", int(rgbd::MAP_TYPE::NORMAL));
+				progs["ScreenQuad"]->setUniform("renderOptions", renderOpts);
+				progs["ScreenQuad"]->setUniform("maxDepth", 10.0f);
+				progs["ScreenQuad"]->setUniform("depthRange", glm::vec2(depthMin, depthMax));
+
+				quad.renderMulti(frame[rgbd::FRAME::CURRENT].getDepthMap(), frame[rgbd::FRAME::VIRTUAL].getNormalMap(), frame[rgbd::FRAME::CURRENT].getColorMap(), frame[rgbd::FRAME::CURRENT].getInfraMap());
+				progs["ScreenQuad"]->disuse();
+
+				glEnable(GL_DEPTH_TEST);
+			}
+
+
+	
+
+
+		if (useSplatter && cameraRunning)
 		{
-
-			renderOpts = getRenderOptions(1, 0, 0);
-
-			glDisable(GL_DEPTH_TEST);
-			glViewport(display2DWindow.x, display_h - display2DWindow.y - display2DWindow.h, display2DWindow.w, display2DWindow.h);
-			//glViewport(display3DWindow.x, display_h - display3DWindow.y - display3DWindow.h, display3DWindow.w, display3DWindow.h);
-			progs["ScreenQuad"]->use();
-			progs["ScreenQuad"]->setUniform("mapType", int(rgbd::MAP_TYPE::NORMAL));
-			progs["ScreenQuad"]->setUniform("renderOptions", renderOpts);
-			progs["ScreenQuad"]->setUniform("maxDepth", 10.0f);
-			progs["ScreenQuad"]->setUniform("depthRange", glm::vec2(depthMin, depthMax));
-
-			quad.renderMulti(frame[rgbd::FRAME::CURRENT].getDepthMap(), frame[rgbd::FRAME::VIRTUAL].getNormalMap(), frame[rgbd::FRAME::CURRENT].getColorMap());
-			progs["ScreenQuad"]->disuse();
-
-			glEnable(GL_DEPTH_TEST);
-
-		}
-		else if (cameraRunning && (trackDepthToPoint || trackDepthToVolume || useSplatter) && showNormalFlag)
-		{
-			renderOpts = getRenderOptions(1, 1, 0);
-
-			glDisable(GL_DEPTH_TEST);
-			glViewport(display2DWindow.x, display_h - display2DWindow.y - display2DWindow.h, display2DWindow.w, display2DWindow.h);
-			//glViewport(display3DWindow.x, display_h - display3DWindow.y - display3DWindow.h, display3DWindow.w, display3DWindow.h);
-			progs["ScreenQuad"]->use();
-			progs["ScreenQuad"]->setUniform("mapType", int(rgbd::MAP_TYPE::NORMAL));
-			progs["ScreenQuad"]->setUniform("renderOptions", renderOpts);
-			progs["ScreenQuad"]->setUniform("maxDepth", 10.0f);
-			progs["ScreenQuad"]->setUniform("depthRange", glm::vec2(depthMin, depthMax));
-
-			quad.renderMulti(frame[rgbd::FRAME::CURRENT].getDepthMap(), frame[rgbd::FRAME::VIRTUAL].getNormalMap(), frame[rgbd::FRAME::CURRENT].getColorMap());
-			progs["ScreenQuad"]->disuse();
-
-
-
-
-			glEnable(GL_DEPTH_TEST);
-
-		}
-
-		if (useSplatter)
-		{
-			renderOpts = getRenderOptions(0, 1, 0);
+			renderOpts = getRenderOptions(0, showNormalFlag, 0, 0);
 
 			glDisable(GL_DEPTH_TEST);
 			glViewport(display3DWindow.x, display_h - display3DWindow.y - display3DWindow.h, display3DWindow.w, display3DWindow.h);
@@ -2072,7 +2054,7 @@ void App::mainLoop()
 			progs["ScreenQuad"]->setUniform("maxDepth", 10.0f);
 			progs["ScreenQuad"]->setUniform("depthRange", glm::vec2(depthMin, depthMax));
 
-			quad.renderMulti(frame[rgbd::FRAME::GLOBAL].getDepthMap(), frame[rgbd::FRAME::GLOBAL].getNormalMap(), frame[rgbd::FRAME::GLOBAL].getColorMap());
+			quad.renderMulti(frame[rgbd::FRAME::GLOBAL].getDepthMap(), frame[rgbd::FRAME::GLOBAL].getNormalMap(), frame[rgbd::FRAME::GLOBAL].getColorMap(), frame[rgbd::FRAME::CURRENT].getInfraMap());
 			progs["ScreenQuad"]->disuse();
 			glEnable(GL_DEPTH_TEST);
 		}

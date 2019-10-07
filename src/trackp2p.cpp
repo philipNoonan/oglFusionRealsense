@@ -53,6 +53,7 @@ namespace rgbd
 		progs["p2pTrack"]->use();
 		progs["p2pTrack"]->setUniform("T", T);
 		progs["p2pTrack"]->setUniform("invT", invT);
+		progs["p2pTrack"]->setUniform("mip", layer);
 
 		currentFrame.getVertexMap(0)->bindImage(0, layer, GL_READ_ONLY);
 		currentFrame.getNormalMap(0)->bindImage(1, layer, GL_READ_ONLY);

@@ -16,6 +16,7 @@ uniform mat4 invT;
 uniform mat4 K;
 uniform float distThresh;
 uniform float normThresh;
+uniform int mip;
 
 vec3 projectPointImage(vec3 p, float fx, float fy, float cx, float cy)
 {
@@ -76,7 +77,8 @@ void main()
                 }
                 else
                 {
-                    ivec2 refPixel = ivec2(pix);//ivec2(projPixel.x + 0.5f, projPixel.y + 0.5f);
+				// THIS IS NOT THE FIX!!!! THIS JUST DOES LOTS OF ITERATIONS WITHOUT TRYING TO UPDATE T, maybe
+                    ivec2 refPixel = ivec2(pix.x << mip, pix.y << mip);//ivec2(projPixel.x + 0.5f, projPixel.y + 0.5f);
                     vec3 referenceNormal = imageLoad(refNormal, refPixel).xyz;
                     vec3 tmp = imageLoad(refVertex, refPixel).xyz;
 

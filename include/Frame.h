@@ -43,6 +43,7 @@ namespace rgbd
 		gl::Texture::Ptr rawDepthMap;
 		gl::Texture::Ptr trackMap;
 		gl::Texture::Ptr testMap;
+		gl::Texture::Ptr infraMap;
 
 		std::vector<rgbd::FrameData> frameData;
 
@@ -72,6 +73,7 @@ namespace rgbd
 		void update(
 			std::vector<rs2::frame_queue> colorQ,
 			std::vector<rs2::frame_queue> depthQ,
+			std::vector<rs2::frame_queue> infraQ,
 			int numberOfCameras,
 			float depthScale,
 			const glm::ivec2 pixel,
@@ -103,6 +105,7 @@ namespace rgbd
 		gl::Texture::Ptr getNormalMap(int lv = 0) const;
 		gl::Texture::Ptr getTrackMap() const;
 		gl::Texture::Ptr getTestMap() const;
+		gl::Texture::Ptr getInfraMap() const;
 
 		typedef std::shared_ptr<rgbd::Frame> Ptr;
 	};

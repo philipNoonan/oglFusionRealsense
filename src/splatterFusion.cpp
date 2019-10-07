@@ -85,7 +85,7 @@ namespace rgbd
 		clock_t start_icp = clock();
 		//static glm::mat4 T(1.0f);
 		bool tracked = true;
-		icp->calc(virtualFrame, currentFrame, T, tracked); // 0.1 ms
+		icp->calc(currentFrame, virtualFrame, T, tracked); // 0.1 ms
 		if (tracked)
 		{
 			vT.push_back(vT.back() * T);
@@ -104,7 +104,9 @@ namespace rgbd
 
 
 		//std::cout << "  ICP: " << (clock() - start_icp) / (double)CLOCKS_PER_SEC << " sec" << std::endl;
-		//std::cout << glm::to_string(T) << std::endl;
+		std::cout << glm::to_string(T) << std::endl;
+		std::cout << glm::to_string(vT.back()) << std::endl;
+
 		return vT.back();
 	}
 
