@@ -7,6 +7,8 @@
 
 #include <librealsense2/rs.hpp>
 
+#include <opencv2/opencv.hpp>
+
 
 #include "GLCore/Texture.h"
 #include "ComputeShader.h"
@@ -57,6 +59,7 @@ namespace rgbd
 
 		glm::mat4 K;
 
+
 	public:
 		Frame();
 		~Frame();
@@ -81,9 +84,10 @@ namespace rgbd
 			float depthScale,
 			const glm::ivec2 pixel,
 			glm::vec3 &vertex,
+			cv::Mat &depthM,
 			float bfSigma = 15.0f,
 			float bfDSigma = 0.05f
-		) const;
+		);
 
 
 
@@ -100,10 +104,16 @@ namespace rgbd
 		void alignDepthTocolor(
 			glm::mat4 extrins, 
 			glm::vec4 depthIntrins, 
-			glm::vec4 colorIntrins
+			glm::vec4 colorIntrins,
+			std::vector<unsigned char> &colorVec
 		);
 
 		void clearAll();
+
+		void getDepthAndColorMats(
+			cv::Mat &depth,
+			cv::Mat &color
+		);
 
 		int getWidth(int lv = 0) const;
 		int getHeight(int lv = 0) const;

@@ -117,9 +117,10 @@ namespace rgbd
 		float depthScale,
 		const glm::ivec2 pixel,
 		glm::vec3 &vertex,
+		cv::Mat &depthM,
 		float bfSigma,
 		float bfDSigma
-	) const
+	) 
 	{
 		std::vector<rs2::frame> depthFrame(numberOfCameras);
 		std::vector<rs2::frame> colorFrame(numberOfCameras);
@@ -132,6 +133,7 @@ namespace rgbd
 			if (colorFrame[camNumber] != NULL)
 			{
 				frameData[0].colorMap->update(colorFrame[camNumber].get_data());
+				
 			}
 
 			infraQ[camNumber].poll_for_frame(&infraFrame[camNumber]);
@@ -166,7 +168,9 @@ namespace rgbd
 				vertex.y = tempPoint.y;
 				vertex.z = tempPoint.z;
 
+				depthM = cv::Mat(height, width, CV_16SC1, (void*)depthFrame[camNumber].get_data());
 
+				
 			}
 		}
 
@@ -175,6 +179,12 @@ namespace rgbd
 		std::dynamic_pointer_cast<rgbd::CalcNormalMap>(normalMapProc)->execute(frameData[0].vertexMap, frameData[0].normalMap);
 
 		update();
+	}
+
+	void Frame::getDepthAndColorMats(cv::Mat &depth, cv::Mat &color)
+	{
+		//depth = this->depthMat.clone();
+		//color = this->colorMat.clone();
 	}
 
 	void Frame::update(
@@ -194,7 +204,7 @@ namespace rgbd
 	}
 
 
-	void Frame::alignDepthTocolor(glm::mat4 extrins, glm::vec4 depthIntrins, glm::vec4 colorIntrins)
+	void Frame::alignDepthTocolor(glm::mat4 extrins, glm::vec4 depthIntrins, glm::vec4 colorIntrins, std::vector<unsigned char> &colorVec)
 	{
 		// from the verteex map, apply the depth to color extrinsic
 		// project from 3D to color space using color intrins
@@ -203,7 +213,11 @@ namespace rgbd
 		std::dynamic_pointer_cast<rgbd::AlignDepthColor>(alignDC)->execute(frameData[0].vertexMap, frameData[0].colorMap, frameData[0].colorAlignedToDepthMap, extrins, colorIntrins);
 
 
+		colorVec.resize(width * height * 4);
+		frameData[0].colorAlignedToDepthMap->read(colorVec.data());
 
+
+		
 
 
 	}

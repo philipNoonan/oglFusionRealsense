@@ -68,7 +68,7 @@ namespace rgbd
 
 		this->progs["SurfaceSplatting"]->setUniform("P", P);
 		this->progs["SurfaceSplatting"]->setUniform("c_stable", GlobalMapConstParam::CSTABLE);
-		this->progs["SurfaceSplatting"]->setUniform("scale", 1.5f);
+		this->progs["SurfaceSplatting"]->setUniform("scale", 1.0f);
 		this->progs["SurfaceSplatting"]->setUniform("maxDepth", 10.0f);
 		this->progs["SurfaceSplatting"]->setUniform("imSize", glm::vec2(width, height));
 		this->progs["SurfaceSplatting"]->setUniform("cam", glm::vec4(K[2][0], K[2][1], K[0][0], K[1][1]));

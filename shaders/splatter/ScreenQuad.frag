@@ -17,50 +17,55 @@ uniform int renderOptions;
 uniform float depthScale;
 uniform vec2 depthRange;
 
+uniform int renderType;
+
 
 void main()
 {
 
-	int renderDepth =   (renderOptions & 1); 
-	int renderNormals =   (renderOptions & 2) >> 1; 
-	int renderColor =   (renderOptions & 4) >> 2; 
-	int renderInfra = (renderOptions & 8) >> 3;
-
-
 	vec4 outColor = vec4(0.0f);
 
-
-
-	if (renderDepth == 1)
+	if (renderType == 0)
 	{
-		vec4 tColor = vec4(texture(depthTex, vsTexCoord));
-	    float depthVal = smoothstep(depthRange.x, depthRange.y, tColor.x);
+		int renderDepth =   (renderOptions & 1); 
+		int renderNormals =   (renderOptions & 2) >> 1; 
+		int renderColor =   (renderOptions & 4) >> 2; 
+		int renderInfra = (renderOptions & 8) >> 3;
 
-		outColor = vec4(depthVal.xxx, 1.0f);
-	}
 
-	if (renderInfra == 1)
-	{
-		outColor = vec4(texture(infraTex, vsTexCoord).xxx, 1.0f);
-	}
-
-	if (renderNormals == 1)
-	{
-		vec4 tCol = texture(normalTex, vsTexCoord);
-		if (abs(tCol.x) > 0)
+		if (renderDepth == 1)
 		{
-			outColor = mix(outColor, abs(tCol), 1.0f);
+			vec4 tColor = vec4(texture(depthTex, vsTexCoord));
+			float depthVal = smoothstep(depthRange.x, depthRange.y, tColor.x);
+
+			outColor = vec4(depthVal.xxx, 1.0f);
 		}
-	}
 
-	if (renderColor == 1)
+		if (renderInfra == 1)
+		{
+			outColor = vec4(texture(infraTex, vsTexCoord).xxx, 1.0f);
+		}
+
+		if (renderNormals == 1)
+		{
+			vec4 tCol = texture(normalTex, vsTexCoord);
+			if (abs(tCol.x) > 0)
+			{
+				outColor = mix(outColor, abs(tCol), 1.0f);
+			}
+		}
+
+		if (renderColor == 1)
+		{
+			outColor = texture(colorTex, vsTexCoord);
+		}
+	
+	}
+	else if (renderType == 1)
 	{
-		outColor = texture(colorTex, vsTexCoord);
+		outColor = vec4(0.0, 1.0, 0.1, 1.0f);
 	}
-
-
-
-
+	
 
 
 	color = outColor;

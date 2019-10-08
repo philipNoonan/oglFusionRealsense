@@ -49,6 +49,7 @@
 #include <map>
 #include "GLCore/Shader.h"
 #include "GLCore/Quad.h"
+#include "GLCore/Lines.h"
 #include "splatterFusion.h"
 #include "Frame.h"
 #include "GLCore/Window.h"
@@ -70,7 +71,14 @@ private:
 	rgbd::p2pFusion p2pFusion;
 	rgbd::p2vFusion p2vFusion;
 	gl::Quad quad;
+	gl::Lines line;
 	std::map<std::string, const gl::Shader::Ptr> progs;
+
+	cv::Mat depthMat;
+	cv::Mat colorMat;
+	std::vector<unsigned char> colorVec;
+
+	bool poseFound = false;
 
 	bool runSLAM();
 	bool runP2P();

@@ -212,17 +212,19 @@ namespace rgbd
 			outFile.write((char*)&outputVerts[i].y, sizeof(float));
 			outFile.write((char*)&outputVerts[i].z, sizeof(float));
 
-			outFile.write((char*)&outputNorms[i].x, sizeof(float));
-			outFile.write((char*)&outputNorms[i].y, sizeof(float));
-			outFile.write((char*)&outputNorms[i].z, sizeof(float));
-
-			unsigned char r = int(outputColor[i].x * 255);
-			unsigned char g = int(outputColor[i].y * 255);
-			unsigned char b = int(outputColor[i].z * 255);
+			unsigned char r = int(outputColor[i].x * 255.0f);
+			unsigned char g = int(outputColor[i].y * 255.0f);
+			unsigned char b = int(outputColor[i].z * 255.0f);
 
 			outFile.write((char*)&r, sizeof(unsigned char));
 			outFile.write((char*)&g, sizeof(unsigned char));
 			outFile.write((char*)&b, sizeof(unsigned char));
+
+			outFile.write((char*)&outputNorms[i].x, sizeof(float));
+			outFile.write((char*)&outputNorms[i].y, sizeof(float));
+			outFile.write((char*)&outputNorms[i].z, sizeof(float));
+
+
 
 			outFile.write((char*)&outputVerts[i].w, sizeof(float));
 
