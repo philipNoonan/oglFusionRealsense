@@ -4,8 +4,9 @@ layout(binding = 0, r32f) readonly uniform image2D indexMap;	// Index map
 layout(binding = 1, rgba32f) readonly uniform image2D mVertMap;	// Vertex map (measured)
 layout(binding = 2, rgba32f) readonly uniform image2D mNormMap;	// Normal map (measured)
 layout(binding = 3, rgba8) readonly uniform image2D mColorMap;	// RGBA color map (measured) 
+layout(binding = 4, rgba8) readonly uniform image2D mTrackStatusmap; // vertex tracking status (calculated)
 
-layout (binding = 4, rgba32f) writeonly uniform image2D statusMap;	// Dynamics status map
+//layout (binding = 5, rgba32f) writeonly uniform image2D statusMap;	// Dynamics status map
 
 
 layout(binding = 0, offset = 0) uniform atomic_uint g_idx;
@@ -53,7 +54,7 @@ float calcSigmaDepth(float z, float theta)
 }
 
 // https://www.intel.com/content/dam/support/us/en/documents/emerging-technologies/intel-realsense-technology/BKMs_Tuning_RealSense_D4xx_Cam.pdf
-// not sure if this is correctly implemeted
+// not sure if this is correctly implemeted, in fact it is probably not even close to doing anything remotley useful
 float calcSigmaDepthRealsense(float z, ivec2 uv, float baseline)
 {
 	return (pow(z, 2.0f) * float(sqrt(pow(uv.x - K[2][0], 2.0) + pow(uv.y - K[2][1], 2.0)))) / (K[0][0] * baseline);
@@ -116,6 +117,8 @@ void main(void)
 	vec3 v = imageLoad(mVertMap, uv).xyz;
 	vec3 n = imageLoad(mNormMap, uv).xyz;
 	vec3 c = imageLoad(mColorMap, uv).rgb;	// Note: Assuming "BGR" input
+	vec4 status = imageLoad(mTrackStatusmap, uv).xyzw;
+
 
 	if (v.z > 0.0 && n.z < 0.0)
 	{

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "ComputeShader.h"
+#include "glhelper.h"
 
 namespace rgbd
 {

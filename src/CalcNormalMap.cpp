@@ -16,7 +16,7 @@ namespace rgbd
 		prog->use();
 		srcVertexMap->bindImage(0, 0, GL_READ_ONLY);
 		dstNormalMap->bindImage(1, 0, GL_WRITE_ONLY);
-		glDispatchCompute(dstNormalMap->getWidth() / 32, dstNormalMap->getHeight() / 32, 1);
+		glDispatchCompute(GLHelper::divup(dstNormalMap->getWidth(), 32), GLHelper::divup(dstNormalMap->getHeight(), 32), 1);
 		prog->disuse();
 	}
 }

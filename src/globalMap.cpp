@@ -2,7 +2,7 @@
 
 namespace rgbd
 {
-	const unsigned int GlobalMapConstParam::MAX_MAP_SIZE = 5000000;
+	const unsigned int GlobalMapConstParam::MAX_MAP_SIZE = 2500000;
 	const float GlobalMapConstParam::CSTABLE = 10.0f;
 
 	GlobalMap::GlobalMap(
@@ -87,6 +87,10 @@ namespace rgbd
 
 	void GlobalMap::genIndexMap(const glm::mat4 &invT)
 	{
+		GLuint query;
+		glGenQueries(1, &query);
+		glBeginQuery(GL_TIME_ELAPSED, query);
+
 		glEnable(GL_DEPTH_TEST);
 
 		indexMapFBO.bind();
@@ -103,6 +107,17 @@ namespace rgbd
 
 		progs["IndexMapGeneration"]->disuse();
 		indexMapFBO.unbind();
+
+		glEndQuery(GL_TIME_ELAPSED);
+		GLuint available = 0;
+		while (!available) {
+			glGetQueryObjectuiv(query, GL_QUERY_RESULT_AVAILABLE, &available);
+		}
+		// elapsed time in nanoseconds
+		GLuint64 elapsed;
+		glGetQueryObjectui64vEXT(query, GL_QUERY_RESULT, &elapsed);
+		std::cout << "gen id time : " << elapsed / 1000000.0 << std::endl;
+
 	}
 
 	void GlobalMap::updateGlobalMap(
@@ -111,27 +126,55 @@ namespace rgbd
 		const int timestamp
 	)
 	{
+
+		GLuint query;
+		glGenQueries(1, &query);
+		glBeginQuery(GL_TIME_ELAPSED, query);
+
+
+
 		progs["GlobalMapUpdate"]->use();
 		progs["GlobalMapUpdate"]->setUniform("T", T);
 		progs["GlobalMapUpdate"]->setUniform("invT", glm::inverse(T));
 		progs["GlobalMapUpdate"]->setUniform("timestamp", timestamp);
 
+	
 		indexMapFBO.getColorAttachment(0)->bindImage(0, 0, GL_READ_ONLY);
 		srcFrame.getVertexMap()->bindImage(1, 0, GL_READ_ONLY);
 		srcFrame.getNormalMap()->bindImage(2, 0, GL_READ_ONLY);
 		srcFrame.getColorAlignedToDepthMap()->bindImage(3, 0, GL_READ_ONLY);	// <-- debugging: color integration
+		srcFrame.getTrackMap()->bindImage(4, 0, GL_READ_ONLY);	// <-- debugging: color integration
 
 		atomic[buffSwitch].update(&mapSize, 0, 1);
 		atomic[buffSwitch].bindBase(0);
 		ssbo[buffSwitch].bindBase(0);
 
-		glDispatchCompute(width / 32, height / 32, 1);
+		glDispatchCompute(GLHelper::divup(width, 32), GLHelper::divup(height, 32), 1);
+
+
 		atomic[buffSwitch].read(&mapSize, 0, 1);
 		progs["GlobalMapUpdate"]->disuse();
+
+		glEndQuery(GL_TIME_ELAPSED);
+		GLuint available = 0;
+		while (!available) {
+			glGetQueryObjectuiv(query, GL_QUERY_RESULT_AVAILABLE, &available);
+		}
+		// elapsed time in nanoseconds
+		GLuint64 elapsed;
+		glGetQueryObjectui64vEXT(query, GL_QUERY_RESULT, &elapsed);
+		std::cout << "gmu time : " << elapsed / 1000000.0 << std::endl;
+
 	}
 
 	void GlobalMap::removeUnnecessaryPoints(int timestamp)
 	{
+
+		GLuint query;
+		glGenQueries(1, &query);
+		glBeginQuery(GL_TIME_ELAPSED, query);
+
+
 		std::array<int, 2> _buffSwitch = { buffSwitch, (buffSwitch + 1) % 2 };
 
 		progs["UnnecessaryPointRemoval"]->use();
@@ -144,12 +187,23 @@ namespace rgbd
 		ssbo[_buffSwitch.front()].bindBase(0);
 		ssbo[_buffSwitch.back()].bindBase(1);
 
-		glDispatchCompute(mapSize / 400, 1, 1);
+		glDispatchCompute(GLHelper::divup(mapSize, 400), 1, 1);
 
 		atomic[_buffSwitch.back()].read(&mapSize, 0, 1);
 		progs["UnnecessaryPointRemoval"]->disuse();
 
 		buffSwitch = _buffSwitch.back();
+
+		glEndQuery(GL_TIME_ELAPSED);
+		GLuint available = 0;
+		while (!available) {
+			glGetQueryObjectuiv(query, GL_QUERY_RESULT_AVAILABLE, &available);
+		}
+		// elapsed time in nanoseconds
+		GLuint64 elapsed;
+		glGetQueryObjectui64vEXT(query, GL_QUERY_RESULT, &elapsed);
+		std::cout << "upr time : " << elapsed / 1000000.0 << std::endl;
+
 	}
 
 	void GlobalMap::genVirtualFrame(
@@ -157,6 +211,14 @@ namespace rgbd
 		const glm::mat4 &invT
 	)
 	{
+
+		GLuint query;
+		glGenQueries(1, &query);
+		glBeginQuery(GL_TIME_ELAPSED, query);
+
+
+
+
 		virtualFrameFBO.attach(dstFrame.getVertexMap(), 0);
 		virtualFrameFBO.attach(dstFrame.getNormalMap(), 1);
 		virtualFrameFBO.attach(dstFrame.getDepthMap(), 2);
@@ -180,6 +242,17 @@ namespace rgbd
 		glBindTexture(GL_TEXTURE_2D, 0);
 		progs["SurfaceSplatting"]->disuse();
 		virtualFrameFBO.unbind();
+
+		glEndQuery(GL_TIME_ELAPSED);
+		GLuint available = 0;
+		while (!available) {
+			glGetQueryObjectuiv(query, GL_QUERY_RESULT_AVAILABLE, &available);
+		}
+		// elapsed time in nanoseconds
+		GLuint64 elapsed;
+		glGetQueryObjectui64vEXT(query, GL_QUERY_RESULT, &elapsed);
+		std::cout << "ss time : " << elapsed / 1000000.0 << std::endl;
+
 	}
 
 	void GlobalMap::clearAll()

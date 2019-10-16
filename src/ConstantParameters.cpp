@@ -9,5 +9,5 @@ namespace rgbd
 	const float ICPConstParam::ANG_THRESH = 0.9f;
 
 	const int ICPConstParam::MAX_LEVEL = 3;
-	const int ICPConstParam::MAX_ITR_NUM[MAX_LEVEL] = { 4, 5, 10 };
+	const int ICPConstParam::MAX_ITR_NUM[MAX_LEVEL] = { 1, 0, 0 };
 }

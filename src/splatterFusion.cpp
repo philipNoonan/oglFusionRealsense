@@ -206,7 +206,7 @@ namespace rgbd
 
 		outFile << "end_header" << std::endl;
 
-		for (int i = 0; i < outputVerts.size(); i++)
+		for (int i = 0; i < outputVerts.size(); i++) 
 		{
 			outFile.write((char*)&outputVerts[i].x, sizeof(float));
 			outFile.write((char*)&outputVerts[i].y, sizeof(float));

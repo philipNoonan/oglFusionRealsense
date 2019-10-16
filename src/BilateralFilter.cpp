@@ -25,7 +25,7 @@ namespace rgbd
 		srcShortDepthMap->bindImage(0, 0, GL_READ_ONLY);
 		rawDepthMap->bindImage(1, 0, GL_WRITE_ONLY);
 		dstDepthMap->bindImage(2, 0, GL_WRITE_ONLY);
-		glDispatchCompute(dstDepthMap->getWidth() / 32, dstDepthMap->getHeight() / 32, 1);
+		glDispatchCompute(GLHelper::divup(dstDepthMap->getWidth(), 32), GLHelper::divup(dstDepthMap->getHeight(), 32), 1);
 		prog->disuse();
 	}
 }

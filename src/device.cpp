@@ -493,7 +493,7 @@ uint32_t Realsense2Camera::getDepthUnit()
 
 	float depthScale = m_sensors[0].as<rs2::depth_sensor>().get_depth_scale();
 
-	//return 100;
+	return 100;
 
 	//std::cout << "depth scale : " << depthScale * 1e6 << std::endl;
 	return (uint32_t)(depthScale * 1000000.0f);
@@ -508,10 +508,10 @@ rs2_extrinsics Realsense2Camera::getDepthToColorExtrinsics()
 		outExtrin = m_stream_profiles_depthIR[m_depthStreamID].get_extrinsics_to(m_stream_profiles_color[m_colorStreamID]);
 		//outExtrin = m_stream_profiles_color[m_colorStreamChoice].get_extrinsics_to(m_stream_profiles_depthIR[m_depthStreamChoice]);
 
-		std::cout << "Translation Vector : [" << outExtrin.translation[0] << "," << outExtrin.translation[1] << "," << outExtrin.translation[2] << "]\n";
+		/*std::cout << "Translation Vector : [" << outExtrin.translation[0] << "," << outExtrin.translation[1] << "," << outExtrin.translation[2] << "]\n";
 		std::cout << "Rotation Matrix    : [" << outExtrin.rotation[0] << "," << outExtrin.rotation[3] << "," << outExtrin.rotation[6] << "]\n";
 		std::cout << "                   : [" << outExtrin.rotation[1] << "," << outExtrin.rotation[4] << "," << outExtrin.rotation[7] << "]\n";
-		std::cout << "                   : [" << outExtrin.rotation[2] << "," << outExtrin.rotation[5] << "," << outExtrin.rotation[8] << "]" << std::endl;
+		std::cout << "                   : [" << outExtrin.rotation[2] << "," << outExtrin.rotation[5] << "," << outExtrin.rotation[8] << "]" << std::endl;*/
 
 	}
 	catch (const std::exception& e)
@@ -530,10 +530,10 @@ rs2_extrinsics Realsense2Camera::getColorToDepthExtrinsics()
 		//outExtrin = m_stream_profiles_depthIR[m_depthStreamChoice].get_extrinsics_to(m_stream_profiles_color[m_colorStreamChoice]);
 		outExtrin = m_stream_profiles_color[m_colorStreamID].get_extrinsics_to(m_stream_profiles_depthIR[m_depthStreamID]);
 
-		std::cout << "Translation Vector : [" << outExtrin.translation[0] << "," << outExtrin.translation[1] << "," << outExtrin.translation[2] << "]\n";
-		std::cout << "Rotation Matrix    : [" << outExtrin.rotation[0] << "," << outExtrin.rotation[3] << "," << outExtrin.rotation[6] << "]\n";
-		std::cout << "                   : [" << outExtrin.rotation[1] << "," << outExtrin.rotation[4] << "," << outExtrin.rotation[7] << "]\n";
-		std::cout << "                   : [" << outExtrin.rotation[2] << "," << outExtrin.rotation[5] << "," << outExtrin.rotation[8] << "]" << std::endl;
+		//std::cout << "Translation Vector : [" << outExtrin.translation[0] << "," << outExtrin.translation[1] << "," << outExtrin.translation[2] << "]\n";
+		//std::cout << "Rotation Matrix    : [" << outExtrin.rotation[0] << "," << outExtrin.rotation[3] << "," << outExtrin.rotation[6] << "]\n";
+		//std::cout << "                   : [" << outExtrin.rotation[1] << "," << outExtrin.rotation[4] << "," << outExtrin.rotation[7] << "]\n";
+		//std::cout << "                   : [" << outExtrin.rotation[2] << "," << outExtrin.rotation[5] << "," << outExtrin.rotation[8] << "]" << std::endl;
 
 	}
 	catch (const std::exception& e)

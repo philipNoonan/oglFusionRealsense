@@ -232,7 +232,7 @@ namespace rgbd
 			delta[3][1] = result(1);
 			delta[3][2] = result(2);
 
-			T = delta * T;
+			//T = delta * T;
 
 			if (result.norm() < 1e-5 && result.norm() != 0)
 				break;

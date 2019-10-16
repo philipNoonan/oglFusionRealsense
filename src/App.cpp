@@ -168,9 +168,9 @@ void App::initP2VFusion()
 
 bool App::runSLAM()
 {
-	GLuint query;
-	glGenQueries(1, &query);
-	glBeginQuery(GL_TIME_ELAPSED, query);
+	//GLuint query;
+	//glGenQueries(1, &query);
+	//glBeginQuery(GL_TIME_ELAPSED, query);
 
 	glViewport(0, 0, width, height);
 	bool status = true;
@@ -189,15 +189,17 @@ bool App::runSLAM()
 
 	//std::cout << glm::to_string(glm::transpose(T)) << std::endl;
 
-	glEndQuery(GL_TIME_ELAPSED);
-	GLuint available = 0;
-	while (!available) {
-		glGetQueryObjectuiv(query, GL_QUERY_RESULT_AVAILABLE, &available);
-	}
-	// elapsed time in nanoseconds
-	GLuint64 elapsed;
-	glGetQueryObjectui64vEXT(query, GL_QUERY_RESULT, &elapsed);
-	std::cout << "time : " << elapsed / 1000000.0 << std::endl;
+
+
+	//glEndQuery(GL_TIME_ELAPSED);
+	//GLuint available = 0;
+	//while (!available) {
+	//	glGetQueryObjectuiv(query, GL_QUERY_RESULT_AVAILABLE, &available);
+	//}
+	//// elapsed time in nanoseconds
+	//GLuint64 elapsed;
+	//glGetQueryObjectui64vEXT(query, GL_QUERY_RESULT, &elapsed);
+	//std::cout << "time : " << elapsed / 1000000.0 << std::endl;
 
 	return status;
 }
@@ -1631,8 +1633,8 @@ void App::mainLoop()
 			if (colorVec.size() > 0)
 			{
 				cv::Mat cMat = cv::Mat(480, 848, CV_8UC4, colorVec.data());
-				cv::imshow("col", cMat);
-				cv::waitKey(1);
+				//cv::imshow("col", cMat);
+				//cv::waitKey(1);
 				opwrapper.setImage(cMat, 0);
 			}
 
