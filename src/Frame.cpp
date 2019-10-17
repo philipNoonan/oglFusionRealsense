@@ -78,10 +78,12 @@ namespace rgbd
 		rawDepthMap->setFiltering(gl::TextureFilter::NEAREST);
 		rawDepthMap->setWarp(gl::TextureWarp::CLAMP_TO_EDGE);
 
+		
 		trackMap = std::make_shared<gl::Texture>();
-		trackMap->create(0, width, height, 4, gl::TextureType::COLOR);
-		trackMap->setFiltering(gl::TextureFilter::NEAREST);
-		trackMap->setWarp(gl::TextureWarp::CLAMP_TO_EDGE);
+		trackMap->createStorage(maxLevel, width, height, 4, GL_RGBA8, gl::TextureType::COLOR, 1);
+		//trackMap->create(0, width, height, 4, gl::TextureType::COLOR);
+		//trackMap->setFiltering(gl::TextureFilter::NEAREST);
+		//trackMap->setWarp(gl::TextureWarp::CLAMP_TO_EDGE);
 
 		infraMap = std::make_shared<gl::Texture>();
 		infraMap->create(0, width, height, 1, gl::TextureType::COLOR);
@@ -89,7 +91,8 @@ namespace rgbd
 		infraMap->setWarp(gl::TextureWarp::CLAMP_TO_EDGE);
 
 		testMap = std::make_shared<gl::Texture>();
-		testMap->create(0, width, height, 4, gl::TextureType::FLOAT32);
+		testMap->createStorage(maxLevel, width, height, 4, GL_RGBA32F, gl::TextureType::FLOAT32, 0);
+		//testMap->create(0, width, height, 4, gl::TextureType::FLOAT32);
 		testMap->setFiltering(gl::TextureFilter::NEAREST);
 		testMap->setWarp(gl::TextureWarp::CLAMP_TO_EDGE);
 

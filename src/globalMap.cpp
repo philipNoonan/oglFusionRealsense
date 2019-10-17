@@ -234,6 +234,9 @@ namespace rgbd
 		progs["SurfaceSplatting"]->use();
 		progs["SurfaceSplatting"]->setUniform("invT", invT);
 
+		glEnable(GL_PROGRAM_POINT_SIZE);
+		glEnable(GL_POINT_SPRITE);
+
 		ssbo[buffSwitch].bindBase(0);
 
 		glDrawBuffers((GLsizei)drawBuffs.size(), drawBuffs.data());
@@ -242,6 +245,9 @@ namespace rgbd
 		glBindTexture(GL_TEXTURE_2D, 0);
 		progs["SurfaceSplatting"]->disuse();
 		virtualFrameFBO.unbind();
+
+		glDisable(GL_PROGRAM_POINT_SIZE);
+		glDisable(GL_POINT_SPRITE);
 
 		glEndQuery(GL_TIME_ELAPSED);
 		GLuint available = 0;

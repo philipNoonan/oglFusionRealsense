@@ -1,7 +1,8 @@
 #version 430
 
 layout (points) in;
-layout (triangle_strip, max_vertices = 4) out;
+//layout (triangle_strip, max_vertices = 4) out;
+layout(points, max_vertices = 1) out;
 
 // Data structure
 struct gMapData
@@ -21,6 +22,9 @@ uniform mat4 invT;	// Transformation from the world to the sensor
 uniform mat4 P;
 uniform float c_stable;	// points with "c >= c_stable" are considered stable
 uniform float scale;		// enlarge surfels to reduce noisy dots...
+uniform vec4 cam; // cx cy fx fy
+uniform vec2 imsize;
+uniform float maxDepth;
 
 flat in int index[];
 
@@ -35,6 +39,21 @@ vec4 transPtForGL(vec4 v)
 	return P * vec4(v.xy, -v.z, 1.0);
 }
 
+vec3 projectPoint(vec3 p)
+{
+    return vec3(((((cam.z * p.x) / p.z) + cam.x) - (imsize.x * 0.5)) / (imsize.x * 0.5),
+                ((((cam.w * p.y) / p.z) + cam.y) - (imsize.y * 0.5)) / (imsize.y * 0.5),
+                p.z / maxDepth);
+}
+
+vec3 projectPointImage(vec3 p)
+{
+    return vec3(((cam.z * p.x) / p.z) + cam.x,
+                ((cam.w * p.y) / p.z) + cam.y,
+                p.z);
+}
+
+
 void main(void)
 {
 	int idx = index[0];
@@ -43,11 +62,19 @@ void main(void)
 
 	if (rad > 0.0 && conf >= c_stable)
 	{
+		
+
+
+
+
+
+	/*
 		vec3 norm = elems[idx].norm.xyz;
 		vec4 vert = gl_in[0].gl_Position;
 		vec4 cPos = transPtForGL(vert);
 		cPos /= cPos.w;
 		
+
 		if (cPos.x >= -1.0 && cPos.x <= 1.0 && cPos.y >= -1.0 && cPos.y <= 1.0 && cPos.z > 0.0 && cPos.z < 1.0)
 		{
 			gsVert = mat4x3(invT) * vert;
@@ -74,5 +101,6 @@ void main(void)
 			gsUvTex = vec2( 1.0,-1.0);
 			EmitVertex();
 		}
+	*/
 	}
 }

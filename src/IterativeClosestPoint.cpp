@@ -17,6 +17,7 @@ namespace rgbd
 		this->progs["p2pTrack"]->setUniform("invK", invK);
 		this->progs["p2pTrack"]->setUniform("distThresh", 0.01f); // SET ME PROPERLY
 		this->progs["p2pTrack"]->setUniform("normThresh", 0.9f);
+		this->progs["p2pTrack"]->setUniform("cam", glm::vec4(K[2][0], K[2][1], K[0][0], K[1][1]));
 
 		std::vector<BufferReduction> tmpMapData(width * height);
 		std::vector<float> tmpOutputData(32 * 8);
@@ -41,7 +42,7 @@ namespace rgbd
 		const rgbd::Frame &currentFrame,
 		const rgbd::Frame &virtualFrame,
 		glm::mat4 &T,
-		int layer
+		int level
 	)
 	{
 		glm::mat4 invT = glm::inverse(T);
@@ -49,19 +50,20 @@ namespace rgbd
 		progs["p2pTrack"]->use();
 		progs["p2pTrack"]->setUniform("T", T);
 		progs["p2pTrack"]->setUniform("invT", invT);
+		progs["p2pTrack"]->setUniform("mip", level);
 
-		currentFrame.getVertexMap(0)->bindImage(0, layer, GL_READ_ONLY);
-		currentFrame.getNormalMap(0)->bindImage(1, layer, GL_READ_ONLY);
+		currentFrame.getVertexMap(0)->bindImage(0, level, GL_READ_ONLY);
+		currentFrame.getNormalMap(0)->bindImage(1, level, GL_READ_ONLY);
 
 		virtualFrame.getVertexMap(0)->bindImage(2, 0, GL_READ_ONLY);
 		virtualFrame.getNormalMap(0)->bindImage(3, 0, GL_READ_ONLY);
 
-		currentFrame.getTrackMap()->bindImage(4, 0, GL_WRITE_ONLY);
-		currentFrame.getTestMap()->bindImage(5, 0, GL_WRITE_ONLY);
+		currentFrame.getTrackMap()->bindImage(4, level, GL_WRITE_ONLY);
+		currentFrame.getTestMap()->bindImage(5, level, GL_WRITE_ONLY);
 
 		ssboReduction.bindBase(0);
 
-		glDispatchCompute((currentFrame.getVertexMap(0)->getWidth() >> layer) / 32, (currentFrame.getVertexMap(0)->getHeight() >> layer) / 32, 1);
+		glDispatchCompute((currentFrame.getVertexMap(0)->getWidth() >> level) / 32, (currentFrame.getVertexMap(0)->getHeight() >> level) / 32, 1);
 
 		progs["p2pTrack"]->disuse();
 	}
@@ -232,7 +234,7 @@ namespace rgbd
 			delta[3][1] = result(1);
 			delta[3][2] = result(2);
 
-			//T = delta * T;
+			T = delta * T;
 
 			if (result.norm() < 1e-5 && result.norm() != 0)
 				break;
