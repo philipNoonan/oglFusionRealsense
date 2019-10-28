@@ -6,7 +6,7 @@ layout(binding = 2, rgba32f) readonly uniform image2D mNormMap;	// Normal map (m
 layout(binding = 3, rgba8) readonly uniform image2D mColorMap;	// RGBA color map (measured) 
 layout(binding = 4, rgba8) readonly uniform image2D mTrackStatusmap; // vertex tracking status (calculated)
 
-//layout (binding = 5, rgba32f) writeonly uniform image2D statusMap;	// Dynamics status map
+layout (binding = 5, rgba32f) writeonly uniform image2D statusMap;	// Dynamics status map
 
 
 layout(binding = 0, offset = 0) uniform atomic_uint g_idx;
@@ -39,6 +39,23 @@ uniform float sigma;
 uniform uint maxMapSize;
 uniform float c_stable;	// points with "c >= c_stable" are considered stable
 
+const float sqrt2 = 1.41421356237f;
+
+float getRadius(float depth, float norm_z, float camz, float camw)
+{
+    float meanFocal = ((1.0 / abs(camz)) + (1.0 / abs(camw))) / 2.0;
+    
+    float radius = (depth / meanFocal) * sqrt2;
+
+    float radius_n = radius;
+
+    radius_n = radius_n / abs(norm_z);
+
+    radius_n = min(2.0f * radius, radius_n);
+
+    return radius_n;
+}
+
 // Ref: In-hand Scanning with Online Loop Closure
 float calcRadius(float fx, float fy, float z, float n_z)
 {
@@ -67,6 +84,16 @@ float calcTheta(vec2 uv, float f, vec2 optCenter)
 
 vec3 calcWeightedAvg(vec3 v_g, vec3 v_c, float conf, float alpha)
 {
+	if (v_g == vec3(0))
+	{
+		return v_c;
+	}
+	
+	if (v_c == vec3(0f))
+	{
+		return v_g;
+	}
+
 	return (conf * v_g + alpha * v_c) / (conf + alpha);
 }
 float calcWeightedAvg(float a, float b, float conf, float alpha)
@@ -74,15 +101,27 @@ float calcWeightedAvg(float a, float b, float conf, float alpha)
 	return (conf * a + alpha * b) / (conf + alpha);
 }
 
+float calcLuminance(vec3 col)
+{
+	return 0.114 * col.x + 0.299 * col.y + 0.587 * col.z;
+}
+
 bool closeEachOther(int idxSelect, int idxCandi)
 {
 	float distV = length(elems[idxSelect].vert.xyz - elems[idxCandi].vert.xyz);
 	float distN = dot(elems[idxSelect].norm.xyz, elems[idxCandi].norm.xyz);
 	float distR = abs(elems[idxSelect].data.y - elems[idxCandi].data.y);
+	float distC = abs(calcLuminance(elems[idxSelect].color.xyz) - calcLuminance(elems[idxCandi].color.xyz));
 
 	// NOTE: I'm not sure if these parameters are proper or not...
-	if (distV <= 0.1 && distN >= 0.99 && distR < 0.001) return true;
-	else false;
+	if (distV <= 0.005 && distN > 0.999 && distR < 1.4f && distC > 0.5) 
+	{
+		return true;
+	}
+	else
+	{
+		return false;
+	}
 }
 
 void removePoint(inout int idx)
@@ -98,6 +137,7 @@ void removePoint(inout int idx)
 }
 void mergeAndRemove(int idxSelect, inout int idxCandi)
 {
+
 	elems[idxSelect].vert = vec4(calcWeightedAvg(elems[idxSelect].vert.xyz, elems[idxCandi].vert.xyz, elems[idxSelect].data.x, elems[idxCandi].data.x), 1.0);
 	elems[idxSelect].norm.xyz = normalize(calcWeightedAvg(elems[idxSelect].norm.xyz, elems[idxCandi].norm.xyz, elems[idxSelect].data.x, elems[idxCandi].data.x));
 	elems[idxSelect].color = vec4(calcWeightedAvg(elems[idxSelect].color.rgb, elems[idxCandi].color.rgb, elems[idxSelect].data.x, elems[idxCandi].data.x), 1.0);
@@ -114,13 +154,14 @@ void main(void)
 {
 	ivec2 uv = ivec2(gl_GlobalInvocationID.xy);
 	// current vertex and normal
-	vec3 v = imageLoad(mVertMap, uv).xyz;
-	vec3 n = imageLoad(mNormMap, uv).xyz;
-	vec3 c = imageLoad(mColorMap, uv).rgb;	// Note: Assuming "BGR" input
+	vec3 inputVert = imageLoad(mVertMap, uv).xyz;
+	vec3 inputNorm = imageLoad(mNormMap, uv).xyz;
+	vec3 inputColor = imageLoad(mColorMap, uv).rgb;	// Note: Assuming "BGR" input
 	vec4 status = imageLoad(mTrackStatusmap, uv).xyzw;
+	ivec2 bestPix;
 
 
-	if (v.z > 0.0 && n.z < 0.0)
+	if (inputVert.z > 0.0 && inputNorm.z < 0.0) // should this have to be negative z for the norm?
 	{
 		// -----
 		// ----- INTEGRATING NEW POINTS
@@ -128,33 +169,42 @@ void main(void)
 		// Point selection
 		int idxSelect = -1;
 		float tmpConf = -1.0;
-		//float sigma_depth = 0.05f;//calcSigmaDepth(v.z, calcTheta(uv, K[0][0], vec2(K[2][0], K[2][1])));
-		float sigma_depth = calcSigmaDepthRealsense(v.z, uv, 0.05f);
+		//float sigma_depth = 0.05f;//calcSigmaDepth(inputVert.z, calcTheta(uv, K[0][0], vec2(K[2][0], K[2][1])));
+		float sigma_depth = calcSigmaDepthRealsense(inputVert.z, uv, 0.05f);
 		int idxCandi[16];
+		
 		vec3 _v[16];
 		vec3 _n[16];
 
+		float bestDist = 1000.0f;
+
 		for (int i = 0; i < 16; ++i)
 		{
+			// locally store the surrounding 16 pixels from the 4x index map
 			idxCandi[i] = int(imageLoad(indexMap, ivec2(uv.x * 4 + i % 4, uv.y * 4 + i / 4)));
 			if (idxCandi[i] >= 0)
 			{
 				_v[i] = mat4x3(invT) * elems[idxCandi[i]].vert;
 				// 4.1 Data Association: Condition #1
-				if (abs(v.z - _v[i].z) < sigma_depth)
+				float dist = abs(inputVert.z - _v[i].z);
+				if (dist < sigma_depth)
 				{
 					_n[i] = mat3(invT) * elems[idxCandi[i]].norm.xyz;
 					float candiConf = elems[idxCandi[i]].data.x;
 					// 4.1 Data Association: Condition #2 & #3
 					// cos(PI * 20.0 / 180.0) = 0.93969262078
-					if (dot(n, _n[i]) > 0.93969262078 && candiConf > tmpConf)
+					if (dot(inputNorm, _n[i]) > 0.93969262078 && candiConf > tmpConf && dist < bestDist)
 					{
+						// find the id of the closest point in the index map 
 						idxSelect = idxCandi[i];
 						tmpConf = candiConf;
+						bestDist = dist;
+						bestPix = ivec2(uv.x * 4 + i % 4, uv.y * 4 + i / 4);
 					}
 				}
 			}
 		}
+
 
 		// MEMO: Do we REALLY need "4.1 Data Association: Condition #4"??
 
@@ -162,18 +212,23 @@ void main(void)
 		vec2 res_2 = vec2(res.x / 2.0, res.y / 2.0);
 		float gamma = length(vec2((uv.x - K[2][0]) / res_2.x, (uv.y - K[2][1]) / res_2.y));
 		float alpha = exp(-pow(gamma, 2.0) / (2.0 * pow(sigma, 2.0)));
-		float rad = calcRadius(K[0][0], K[1][1], v.z, n.z);
+		//float rad = calcRadius(K[0][0], K[1][1], inputVert.z, inputNorm.z);
+		float rad = getRadius(inputVert.z, inputNorm.z, 1.0 / K[0][0], 1.0 / K[1][1]);
 
 
-
+		// if we have found a vertex that is close to the input vertex
 		if (idxSelect >= 0)
 		{
+
+
+			// merge the point with the vertex already in the global map 
 			bool bAveraged = false;
+			// if the radius of the input vertex is less than 1.5x of the global vertex radius, then it should be merged
 			if (rad <= (1.0 + 0.5) * elems[idxSelect].data.y)
 			{
-				elems[idxSelect].vert = vec4(calcWeightedAvg(elems[idxSelect].vert.xyz, mat4x3(T) * vec4(v, 1.0), elems[idxSelect].data.x, alpha), 1.0);
-				elems[idxSelect].norm.xyz = normalize(calcWeightedAvg(elems[idxSelect].norm.xyz, mat3(T) * n, elems[idxSelect].data.x, alpha));
-				elems[idxSelect].color = vec4(calcWeightedAvg(elems[idxSelect].color.rgb, c, elems[idxSelect].data.x, alpha), 1.0);
+				elems[idxSelect].vert = vec4(calcWeightedAvg(elems[idxSelect].vert.xyz, mat4x3(T) * vec4(inputVert, 1.0), elems[idxSelect].data.x, alpha), 1.0);
+				elems[idxSelect].norm.xyz = normalize(calcWeightedAvg(elems[idxSelect].norm.xyz, mat3(T) * inputNorm, elems[idxSelect].data.x, alpha));
+				elems[idxSelect].color = vec4(calcWeightedAvg(elems[idxSelect].color.rgb, inputColor, elems[idxSelect].data.x, alpha), 1.0);
 				bAveraged = true;
 			}
 			elems[idxSelect].data.x += alpha;									// confidence
@@ -187,17 +242,30 @@ void main(void)
 			// 4.3 Removing points: Condition #1
 			//     --> in "removePoints.comp"
 
+			// if merging has occured, and the global vertex's onfidence is greater than the threshold
 			if (bAveraged && elems[idxSelect].data.x >= c_stable)
 			{
+
+
+
+				
 				// 4.3 Removing points: Condition #2
-				float mergedDepth = (mat4x3(invT) * elems[idxSelect].vert).z;
+				// values here in depth space
+				vec4 mergedDepthVec = invT * vec4(elems[idxSelect].vert.xyz, 1.0f);
+				float mergedDepth = mergedDepthVec.z;
+
 				float mergedNormZ = (mat3(invT) * elems[idxSelect].norm.xyz).z;
+
 
 				for (int i = 0; i < 16; ++i)
 				{
-					if (idxCandi[i] >= 0 && idxCandi[i] != idxSelect
-						&& _v[i].z < mergedDepth && (mergedNormZ * _n[i].z) >= 0.0)
+					if (idxCandi[i] >= 0 
+						&& idxCandi[i] != idxSelect
+						&& _v[i].z < mergedDepth
+						&& abs(mergedNormZ) > 0.85f)
 					{
+						//imageStore(statusMap, ivec2((bestPix / 4.0f) + 0.5f), vec4(mergedDepth, _v[i].z, 0, 1));
+
 						removePoint(idxCandi[i]);
 					}
 				}
@@ -205,21 +273,27 @@ void main(void)
 				// 4.3 Removing points: Condition #3
 				for (int i = 0; i < 16; ++i)
 				{
-					if (idxCandi[i] >= 0 && idxCandi[i] != idxSelect && closeEachOther(idxSelect, idxCandi[i]))
+					if (idxCandi[i] >= 0 && idxCandi[i] != idxSelect 
+						&& closeEachOther(idxSelect, idxCandi[i]))
 					{
 						mergeAndRemove(idxSelect, idxCandi[i]);
 					}
 				}
 
+
+
+
 				// Wheelan et al time condition, detect if time since last seen is > than some sensible threshold
-				for (int i = 0; i < 16; ++i)
-				{
-					if (idxCandi[i] >= 0 && idxCandi[i] != idxSelect && 
-						elems[idxCandi[i]].data.z - elems[idxCandi[i]].data.w > 20)
-					{
-						removePoint(idxCandi[i]);
-					}
-				}
+				//for (int i = 0; i < 16; ++i)
+				//{
+				//	if (idxCandi[i] >= 0 && idxCandi[i] != idxSelect && 
+				//		elems[idxCandi[i]].data.z - elems[idxCandi[i]].data.w > 20)
+				//	{
+				//		removePoint(idxCandi[i]);
+				//	}
+				//}
+
+				
 
 				
 			}
@@ -231,9 +305,9 @@ void main(void)
 		{
 			uint idx = atomicCounterIncrement(g_idx);
 
-			elems[idx].vert = T * vec4(v, 1.0);
-			elems[idx].norm = vec4(mat3(T) * n, 0.0);
-			elems[idx].color = vec4(c, 1.0);
+			elems[idx].vert = T * vec4(inputVert, 1.0);
+			elems[idx].norm = vec4(mat3(T) * inputNorm, 0.0);
+			elems[idx].color = vec4(inputColor, 1.0);
 			elems[idx].data.x = alpha;		// confidence
 			elems[idx].data.y = rad;		// radius
 			elems[idx].data.z = timestamp;	// timestamp

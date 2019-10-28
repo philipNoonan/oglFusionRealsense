@@ -151,7 +151,7 @@ void main()
 {
 	int numberOfCameras = 1;
     uvec2 pix = gl_GlobalInvocationID.xy;
-    ivec2 imSize = imageSize(trackImage) >> mip;
+    ivec2 imSize = imageSize(trackImage);
 
     for (int camera = 0; camera < numberOfCameras; camera++)
     { 

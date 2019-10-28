@@ -2,7 +2,7 @@
 
 namespace rgbd
 {
-	const unsigned int GlobalMapConstParam::MAX_MAP_SIZE = 2500000;
+	const unsigned int GlobalMapConstParam::MAX_MAP_SIZE = 5000000;
 	const float GlobalMapConstParam::CSTABLE = 10.0f;
 
 	GlobalMap::GlobalMap(
@@ -144,6 +144,7 @@ namespace rgbd
 		srcFrame.getNormalMap()->bindImage(2, 0, GL_READ_ONLY);
 		srcFrame.getColorAlignedToDepthMap()->bindImage(3, 0, GL_READ_ONLY);	// <-- debugging: color integration
 		srcFrame.getTrackMap()->bindImage(4, 0, GL_READ_ONLY);	// <-- debugging: color integration
+		srcFrame.getTestMap()->bindImage(5, 0, GL_WRITE_ONLY);
 
 		atomic[buffSwitch].update(&mapSize, 0, 1);
 		atomic[buffSwitch].bindBase(0);

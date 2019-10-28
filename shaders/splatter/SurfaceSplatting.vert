@@ -85,7 +85,7 @@ void main(void)
 	    float yDiff = abs(ys.y - ys.x);
 	
 	    gl_PointSize = max(0, max(xDiff, yDiff));
-		//gl_PointSize = 100.0f;
+		//gl_PointSize = 10.0f;
 
 	}
 }

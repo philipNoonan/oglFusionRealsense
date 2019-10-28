@@ -71,14 +71,14 @@ void main()
 
 				//imageStore(testImage, ivec2(pix), vec4(projectedPos));
 
-                if (projPixel.x < 0 || projPixel.x > refSize.x - 1 || projPixel.y < 0 || projPixel.y > refSize.y - 1)
+                if (projPixel.x < 0 || projPixel.x > refSize.x || projPixel.y < 0 || projPixel.y > refSize.y)
                 {
                     trackOutput[offset].result = -2;
                     imageStore(trackImage, ivec2(pix), vec4(1.0f, 0, 0, 1.0f));
                 }
                 else
                 {
-				// THIS IS NOT THE FIX!!!! THIS JUST DOES LOTS OF ITERATIONS WITHOUT TRYING TO UPDATE T, maybe
+				// THIS IS NOT THE FIX!!!! THIS JUST DOES LOTS OF ITERATIONS WITHOUT TRYING TO UPDATE T, maybe, not his is probably ok, T is getting updated so projectedVertex is changing each iter
                     ivec2 refPixel = ivec2(pix.x << mip, pix.y << mip);//ivec2(projPixel.x + 0.5f, projPixel.y + 0.5f);
                     vec3 referenceNormal = imageLoad(refNormal, refPixel).xyz;
                     vec3 tmp = imageLoad(refVertex, refPixel).xyz;
@@ -96,7 +96,7 @@ void main()
                         vec3 projectedNormal = vec3((T * vec4(currNormal.xyz, 0.0f)).xyz); // input mipmap sized pixel
 
 
-						imageStore(testImage, ivec2(pix), vec4(diff, 1.0f));
+						//imageStore(testImage, ivec2(pix), vec4(diff, 1.0f));
 
                         if (length(diff) > distThresh)
                         {

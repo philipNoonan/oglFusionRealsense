@@ -58,7 +58,7 @@ namespace rgbd
 
 		virtualFrame.getNormalMap(0)->bindImage(2, level, GL_WRITE_ONLY);
 
-		currentFrame.getTrackMap()->bindImage(3, 0, GL_WRITE_ONLY);
+		currentFrame.getTrackMap()->bindImage(3, level, GL_WRITE_ONLY);
 
 		ssboRed.bindBase(0);
 

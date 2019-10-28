@@ -63,7 +63,7 @@ namespace rgbd
 
 		ssboReduction.bindBase(0);
 
-		glDispatchCompute((currentFrame.getVertexMap(0)->getWidth() >> level) / 32, (currentFrame.getVertexMap(0)->getHeight() >> level) / 32, 1);
+		glDispatchCompute(GLHelper::divup(currentFrame.getVertexMap(0)->getWidth() >> level, 32), GLHelper::divup(currentFrame.getVertexMap(0)->getHeight() >> level, 32), 1);
 
 		progs["p2pTrack"]->disuse();
 	}

@@ -30,7 +30,20 @@ void main()
 
 	vec3 colPix = projectPointImage(vertexInColor.xyz);
 
-	imageStore(dstColorMap, pix, imageLoad(srcColorMap, ivec2(colPix.x + 0.5f, colPix.y + 0.5f))); 
+	if (vertex.z == 0 || isnan(vertex.z))
+	{
+		imageStore(dstColorMap, pix, vec4(1)); 
+		return;
+	}
+	if (any(lessThan(colPix.xy, vec2(0))) || any(greaterThan(colPix.xy, vec2(imageSize(srcColorMap).xy))))
+	{
+		imageStore(dstColorMap, pix, vec4(0,0,0,1.0)); 
+	}
+	else
+	{
+		imageStore(dstColorMap, pix, imageLoad(srcColorMap, ivec2(colPix.x + 0.5f, colPix.y + 0.5f))); 
+	}
+
 
 	//imageStore(dstColorMap, pix, vec4(vertex.xyz, 1.0f)); 
 

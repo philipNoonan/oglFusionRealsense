@@ -85,7 +85,7 @@ namespace rgbd
 			const glm::ivec2 pixel,
 			glm::vec3 &vertex,
 			cv::Mat &depthM,
-			float bfSigma = 15.0f,
+			float bfSigma = 10.0f,
 			float bfDSigma = 0.05f
 		);
 
@@ -95,7 +95,7 @@ namespace rgbd
 		void update(
 			const void *colorData,
 			const void *depthData,
-			float bfSigma = 15.0f,
+			float bfSigma = 10.0f,
 			float bfDSigma = 0.05f
 		) const;
 		// for the synthetic frame
