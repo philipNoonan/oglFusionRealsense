@@ -55,8 +55,8 @@ uniform ivec2 texSize;// = ivec2(1920, 1080);
 float luminance(vec3 color)
 {
     //return 0.2126 * float(color.x) / 255.0f + 0.7152 * float(color.y) / 255.0f + 0.0722 * float(color.z) / 255.0f;
-    //return 0.299f * float(color.x) + 0.587f * float(color.y) + 0.114f * float(color.z);
-    return (float(color.x) + float(color.y) + float(color.z)) / 3.0f;
+    return 0.299f * float(color.x) + 0.587f * float(color.y) + 0.114f * float(color.z);
+    //return (float(color.x) + float(color.y) + float(color.z)) / 3.0f;
 
 }
 

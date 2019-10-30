@@ -199,7 +199,8 @@ namespace rgbd
 		const rgbd::Frame &currentFrame,
 		const rgbd::Frame &virtualFrame,
 		glm::mat4 &T,
-		Eigen::Matrix<double, 6, 6, Eigen::RowMajor> &lastA,
+		float &alignmentEnergy,
+		float &lastICPcount,
 		const float finThresh
 	)
 	{
@@ -236,10 +237,16 @@ namespace rgbd
 
 			T = delta * T;
 
+			//lastA = dC_icp;
+
 			if (result.norm() < 1e-5 && result.norm() != 0)
 				break;
 		}
 
+		alignmentEnergy = AE;
+		lastICPcount = icpCount;
+
+		//std::cout << "AE : " << AE << " count : " << icpCount << std::endl;
 		//glm::mat4 dT(1.0f);
 		//for (int loop = 0; loop < ICPConstParam::MAX_ITR_NUM[level]; ++loop)
 		//{

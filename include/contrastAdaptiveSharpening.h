@@ -5,23 +5,20 @@
 
 namespace rgbd
 {
-	// Ref: https://www.shadertoy.com/view/4dfGDH
-	class AlignDepthColor : public ComputeShader
+	// Ref: https://github.com/GPUOpen-Effects/FidelityFX
+	class CASFilter : public ComputeShader
 	{
 	private:
 		const gl::Shader::Ptr prog;
 
 	public:
-		AlignDepthColor(
+		CASFilter(
 			const gl::Shader::Ptr prog
 		);
 		void execute(
-			gl::Texture::Ptr srcVertexMap,
 			gl::Texture::Ptr srcColorMap,
 			gl::Texture::Ptr dstColorMap,
-			gl::Texture::Ptr mappingMap,
-			const glm::mat4 &depthToColorExtrins,
-			const glm::vec4 &colorIntrins
+			const float sharpVal
 		);
 	};
 }

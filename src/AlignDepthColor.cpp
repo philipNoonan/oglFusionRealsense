@@ -12,6 +12,7 @@ namespace rgbd
 		gl::Texture::Ptr srcVertexMap,
 		gl::Texture::Ptr srcColorMap,
 		gl::Texture::Ptr dstColorMap,
+		gl::Texture::Ptr mappingMap,
 		const glm::mat4 &depthToColorExtrins,
 		const glm::vec4 &colorIntrins // cx cy fx fy 
 	)
@@ -23,6 +24,8 @@ namespace rgbd
 		srcVertexMap->bindImage(0, 0, GL_READ_ONLY);
 		srcColorMap->bindImage(1, 0, GL_READ_ONLY);
 		dstColorMap->bindImage(2, 0, GL_WRITE_ONLY);
+		mappingMap->bindImage(3, 0, GL_WRITE_ONLY);
+
 		glDispatchCompute(GLHelper::divup(srcVertexMap->getWidth(), 32), GLHelper::divup(srcVertexMap->getHeight(), 32), 1);
 		prog->disuse();
 	}

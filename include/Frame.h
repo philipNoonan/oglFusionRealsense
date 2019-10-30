@@ -13,6 +13,7 @@
 #include "GLCore/Texture.h"
 #include "ComputeShader.h"
 #include "BilateralFilter.h"
+#include "contrastAdaptiveSharpening.h"
 #include "CalcVertexMap.h"
 #include "CalcNormalMap.h"
 #include "CalcNormalMap.h"
@@ -29,6 +30,7 @@ namespace rgbd
 	struct FrameData
 	{
 		gl::Texture::Ptr colorMap;
+		gl::Texture::Ptr colorFilteredMap;
 		gl::Texture::Ptr colorAlignedToDepthMap;
 		gl::Texture::Ptr depthMap;
 		gl::Texture::Ptr vertexMap;
@@ -48,10 +50,12 @@ namespace rgbd
 		gl::Texture::Ptr trackMap;
 		gl::Texture::Ptr testMap;
 		gl::Texture::Ptr infraMap;
+		gl::Texture::Ptr mappingMap;
 
 		std::vector<rgbd::FrameData> frameData;
 
 		rgbd::ComputeShader::Ptr bilateralFilter;
+		rgbd::ComputeShader::Ptr casFilter;
 		rgbd::ComputeShader::Ptr alignDC;
 		rgbd::ComputeShader::Ptr vertexMapProc;
 		rgbd::ComputeShader::Ptr normalMapProc;
@@ -85,6 +89,7 @@ namespace rgbd
 			const glm::ivec2 pixel,
 			glm::vec3 &vertex,
 			cv::Mat &depthM,
+			float sharpness,
 			float bfSigma = 10.0f,
 			float bfDSigma = 0.05f
 		);
@@ -119,6 +124,7 @@ namespace rgbd
 		int getHeight(int lv = 0) const;
 
 		gl::Texture::Ptr getColorMap(int lv = 0) const;
+		gl::Texture::Ptr getColorFilteredMap(int lv = 0) const;
 		gl::Texture::Ptr getColorAlignedToDepthMap(int lv = 0) const;
 
 		gl::Texture::Ptr getDepthMap(int lv = 0) const;
@@ -127,6 +133,7 @@ namespace rgbd
 		gl::Texture::Ptr getTrackMap() const;
 		gl::Texture::Ptr getTestMap() const;
 		gl::Texture::Ptr getInfraMap() const;
+		gl::Texture::Ptr getMappingMap() const;
 
 		typedef std::shared_ptr<rgbd::Frame> Ptr;
 	};

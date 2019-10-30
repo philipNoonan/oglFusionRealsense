@@ -220,8 +220,8 @@ void Realsense2Camera::setSensorOptions()
 
 
 	// rcolor
-	m_sensors[1].set_option(RS2_OPTION_EXPOSURE, 200);
-	m_sensors[1].set_option(RS2_OPTION_ENABLE_AUTO_EXPOSURE, 0);
+	// m_sensors[1].set_option(RS2_OPTION_EXPOSURE, 100);
+	m_sensors[1].set_option(RS2_OPTION_ENABLE_AUTO_EXPOSURE, 1);
 }
 
 void Realsense2Camera::setEmitterOptions(float status, float power)

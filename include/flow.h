@@ -27,6 +27,8 @@
 
 #include <librealsense2/rs.hpp>
 
+#include "GLCore/Texture.h"
+
 
 
 class gFlow
@@ -54,6 +56,9 @@ public:
 	{
 		m_cameraDevice = dev;
 	}
+
+	void setFrameTexture(gl::Texture::Ptr inTex);
+
 	void setTexture(unsigned char * imageArray, int nChn);
 	void setTexture(std::vector<rs2::frame_queue> colorQ, cv::Mat &colorMat);
 	void setTexture(float * imageArray);
@@ -96,7 +101,13 @@ public:
 		//return m_sumFlow;
 
 		return m_textureU_x_y;
+		return mTextureFlowXY->getID();
 	}
+	gl::Texture::Ptr getFlowTextureFrame()
+	{
+		return mTextureFlowXY;
+	}
+
 	GLuint getColorTexture()
 	{
 		return m_textureI1;
@@ -336,6 +347,11 @@ private:
 
 	GLuint m_textureI0_xs_ys;
 	//GLuint m_textureI0ys;
+
+	gl::Texture::Ptr mTextureFlowXY;
+
+
+
 
 	GLuint m_textureU_x_y;
 	GLuint m_texture_init_U_x_y;

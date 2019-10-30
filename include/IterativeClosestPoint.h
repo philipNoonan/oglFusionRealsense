@@ -83,7 +83,8 @@ namespace rgbd
 			const rgbd::Frame &prevFrame,
 			const rgbd::Frame &currFrame,
 			glm::mat4 &T,
-			Eigen::Matrix<double, 6, 6, Eigen::RowMajor> &lastA,
+			float &alignmentEnergy,
+			float &lastICPCount,
 			const float finThresh = 1.0e-4F
 		);
 

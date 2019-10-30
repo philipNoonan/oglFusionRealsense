@@ -88,7 +88,7 @@ private:
 
 	void initP2PFusion();
 	void initP2VFusion();
-	int getRenderOptions(bool depth, bool normal, bool color, bool infra);
+	int getRenderOptions(bool depth, bool normal, bool color, bool infra, bool flow);
 	void renderGlobal(bool reset);
 
 
@@ -411,8 +411,8 @@ private:
 	float windowWidth = 5.0f;
 	std::map<int, std::deque<std::valarray<float>>> rollingAverage;
 
-
-
+	float sharpnessValue = 0.0f;
+	bool useSharp = false;
 
 
 public:

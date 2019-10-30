@@ -70,31 +70,23 @@ namespace rgbd
 	)
 	{
 		Eigen::Matrix<double, 6, 6, Eigen::RowMajor> lastA;
+		float ae, icpCount;
 
 		for (int lv = ICPConstParam::MAX_LEVEL - 1; lv >= 0; --lv)
 		{
 
 
-			icp[lv]->calc(lv, prevFrame, currFrame, T, lastA);
+			icp[lv]->calc(lv, prevFrame, currFrame, T, ae, icpCount);
 
 
 		}
+		// || ((icpCount / (currFrame.getWidth() * currFrame.getHeight())) < 0.15)
+		std::cout << "ae : " << ae << " : count : " << icpCount << std::endl;
+		if (ae > 2e-2 || isnan(ae) || ae == 0)
+		{
+			tracked = false;
+		}
 
-		//Eigen::MatrixXd covariance = lastA.cast<double>().lu().inverse();
-		//std::cout << "cov : ";
-
-		//for (int i = 0; i < 6; i++)
-		//{
-		//	if (covariance(i, i) > 5e-02)
-		//	{
-		//		std::cout << covariance(i, i) << " ";
-
-		//		tracked = false;
-		//		break;
-		//	}
-		//}
-
-		//std::cout << std::endl;
 	}
 
 	void PyramidricalICP::calcP2P(

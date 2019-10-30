@@ -17,6 +17,7 @@ namespace rgbd
 	)
 	{
 		progs.insert(std::make_pair("BilateralFilter", std::make_shared<gl::Shader>(folderPath + "BilateralFilter.comp")));
+		progs.insert(std::make_pair("CASFilter", std::make_shared<gl::Shader>(folderPath + "contrastAdaptiveSharpening.comp")));
 		progs.insert(std::make_pair("alignDepthColor", std::make_shared<gl::Shader>(folderPath + "alignDepthColor.comp")));
 		progs.insert(std::make_pair("CalcVertexMap", std::make_shared<gl::Shader>(folderPath + "CalcVertexMap.comp")));
 		progs.insert(std::make_pair("CalcNormalMap", std::make_shared<gl::Shader>(folderPath + "CalcNormalMap.comp")));
@@ -77,7 +78,8 @@ namespace rgbd
 
 	glm::mat4 splatterFusion::calcDevicePose(
 		const rgbd::Frame &currentFrame,
-		const rgbd::Frame &virtualFrame
+		const rgbd::Frame &virtualFrame,
+		bool &tracked
 	)
 	{
 
@@ -85,7 +87,7 @@ namespace rgbd
 
 		clock_t start_icp = clock();
 		//static glm::mat4 T(1.0f);
-		bool tracked = true;
+		//bool tracked = true;
 		icp->calc(currentFrame, virtualFrame, T, tracked); // 0.1 ms
 		if (tracked)
 		{

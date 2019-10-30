@@ -47,7 +47,8 @@ namespace rgbd
 
 		glm::mat4 calcDevicePose(
 			const rgbd::Frame &currentFrame,
-			const rgbd::Frame &virtualFrame
+			const rgbd::Frame &virtualFrame,
+			bool &tracked
 		);
 
 		void updateGlobalMap(

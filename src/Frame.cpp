@@ -34,6 +34,11 @@ namespace rgbd
 		frameData[0].colorMap->setFiltering(gl::TextureFilter::NEAREST);
 		frameData[0].colorMap->setWarp(gl::TextureWarp::CLAMP_TO_EDGE);
 
+		frameData[0].colorFilteredMap = std::make_shared<gl::Texture>();
+		frameData[0].colorFilteredMap->create(0, width, height, 4, gl::TextureType::COLOR);
+		frameData[0].colorFilteredMap->setFiltering(gl::TextureFilter::NEAREST);
+		frameData[0].colorFilteredMap->setWarp(gl::TextureWarp::CLAMP_TO_EDGE);
+
 		frameData[0].colorAlignedToDepthMap = std::make_shared<gl::Texture>();
 		frameData[0].colorAlignedToDepthMap->create(0, width, height, 4, gl::TextureType::COLOR);
 		frameData[0].colorAlignedToDepthMap->setFiltering(gl::TextureFilter::NEAREST);
@@ -96,7 +101,13 @@ namespace rgbd
 		testMap->setFiltering(gl::TextureFilter::NEAREST);
 		testMap->setWarp(gl::TextureWarp::CLAMP_TO_EDGE);
 
+		mappingMap = std::make_shared<gl::Texture>();
+		mappingMap->createStorage(1, width, height, 2, GL_RG16UI, gl::TextureType::UINT16, 0);
+		mappingMap->setFiltering(gl::TextureFilter::NEAREST);
+		mappingMap->setWarp(gl::TextureWarp::CLAMP_TO_EDGE);
+
 		bilateralFilter = std::make_shared<rgbd::BilateralFilter>(progs["BilateralFilter"]);
+		casFilter = std::make_shared<rgbd::CASFilter>(progs["CASFilter"]);
 		alignDC = std::make_shared<rgbd::AlignDepthColor>(progs["alignDepthColor"]);
 
 		vertexMapProc = std::make_shared<rgbd::CalcVertexMap>(minDepth, maxDepth, K, progs["CalcVertexMap"]);
@@ -121,6 +132,7 @@ namespace rgbd
 		const glm::ivec2 pixel,
 		glm::vec3 &vertex,
 		cv::Mat &depthM,
+		float sharpness,
 		float bfSigma,
 		float bfDSigma
 	) 
@@ -178,6 +190,7 @@ namespace rgbd
 		}
 
 		std::dynamic_pointer_cast<rgbd::BilateralFilter>(bilateralFilter)->execute(shortDepthMap, rawDepthMap, frameData[0].depthMap, depthScale, bfSigma, bfDSigma);
+		std::dynamic_pointer_cast<rgbd::CASFilter>(casFilter)->execute(frameData[0].colorMap, frameData[0].colorFilteredMap, sharpness);
 		std::dynamic_pointer_cast<rgbd::CalcVertexMap>(vertexMapProc)->execute(frameData[0].depthMap, frameData[0].vertexMap);
 		std::dynamic_pointer_cast<rgbd::CalcNormalMap>(normalMapProc)->execute(frameData[0].vertexMap, frameData[0].normalMap);
 
@@ -213,7 +226,7 @@ namespace rgbd
 		// project from 3D to color space using color intrins
 		// read color from color map and update color map for the original vertID in the vertex map
 
-		std::dynamic_pointer_cast<rgbd::AlignDepthColor>(alignDC)->execute(frameData[0].vertexMap, frameData[0].colorMap, frameData[0].colorAlignedToDepthMap, extrins, colorIntrins);
+		std::dynamic_pointer_cast<rgbd::AlignDepthColor>(alignDC)->execute(frameData[0].vertexMap, frameData[0].colorMap, frameData[0].colorAlignedToDepthMap, this->mappingMap, extrins, colorIntrins);
 
 
 		colorVec.resize(width * height * 4);
@@ -270,16 +283,22 @@ namespace rgbd
 		return height / int(pow(2, lv));
 	}
 
-	gl::Texture::Ptr Frame::getColorAlignedToDepthMap(int lv) const
-	{
-		return frameData[lv].colorAlignedToDepthMap;
-	}
+
 
 	gl::Texture::Ptr Frame::getColorMap(int lv) const
 	{
 		return frameData[lv].colorMap;
 	}
 	
+	gl::Texture::Ptr Frame::getColorFilteredMap(int lv) const
+	{
+		return frameData[lv].colorFilteredMap;
+	}
+
+	gl::Texture::Ptr Frame::getColorAlignedToDepthMap(int lv) const
+	{
+		return frameData[lv].colorAlignedToDepthMap;
+	}
 
 	gl::Texture::Ptr Frame::getDepthMap(int lv) const
 	{
@@ -309,5 +328,10 @@ namespace rgbd
 	gl::Texture::Ptr Frame::getInfraMap() const
 	{
 		return infraMap;
+	}
+
+	gl::Texture::Ptr Frame::getMappingMap() const
+	{
+		return mappingMap;
 	}
 }

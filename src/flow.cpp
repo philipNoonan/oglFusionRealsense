@@ -199,6 +199,37 @@ void gFlow::allocateOffscreenRendering()
 
 }
 
+void gFlow::setFrameTexture(gl::Texture::Ptr inTex)
+{
+
+	glCopyImageSubData(inTex->getID(), GL_TEXTURE_2D, 0, 0, 0, 0,
+		m_textureI1, GL_TEXTURE_2D, 0, 0, 0, 0,
+		m_texture_width, m_texture_height, 1);
+
+	glActiveTexture(GL_TEXTURE1);
+	glBindTexture(GL_TEXTURE_2D, m_textureI1);
+	glGenerateMipmap(GL_TEXTURE_2D);
+
+
+	if (firstFrame)
+	{
+
+		glCopyImageSubData(m_textureI1, GL_TEXTURE_2D, 0, 0, 0, 0,
+			m_textureI0, GL_TEXTURE_2D, 0, 0, 0, 0,
+			m_texture_width, m_texture_height, 1);
+		firstFrame = false;
+
+		//I1im.copyTo(I0im);
+	}
+
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, m_textureI0);
+	glGenerateMipmap(GL_TEXTURE_2D);
+
+}
+
+
+
 void gFlow::setDepthTexture(std::vector<rs2::frame_queue> depthQ)
 {
 	rs2::frame depthFrame;
@@ -665,8 +696,8 @@ void gFlow::allocateTextures(int nChn)
 	}
 	else
 	{
-		//m_textureI0 = createTexture(m_textureI0, GL_TEXTURE_2D, m_numLevels, m_texture_width, m_texture_height, 0, GL_RGBA8);
-		//m_textureI1 = createTexture(m_textureI1, GL_TEXTURE_2D, m_numLevels, m_texture_width, m_texture_height, 0, GL_RGBA8);
+		m_textureI0 = GLHelper::createTexture(m_textureI0, GL_TEXTURE_2D, m_numLevels, m_texture_width, m_texture_height, 0, GL_RGBA8, GL_LINEAR, GL_LINEAR_MIPMAP_NEAREST);
+		m_textureI1 = GLHelper::createTexture(m_textureI1, GL_TEXTURE_2D, m_numLevels, m_texture_width, m_texture_height, 0, GL_RGBA8, GL_LINEAR, GL_LINEAR_MIPMAP_NEAREST);
 	}
 
 	m_textureDepth = GLHelper::createTexture(m_textureDepth, GL_TEXTURE_2D, m_numLevels, m_texture_width, m_texture_height, 0, GL_R16, GL_NEAREST, GL_NEAREST_MIPMAP_NEAREST);
@@ -685,6 +716,9 @@ void gFlow::allocateTextures(int nChn)
 	glBindTexture(GL_TEXTURE_2D, m_textureS_x_y);
 	glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, m_texture_width / m_patch_stride, m_texture_height / m_patch_stride, GL_RG, GL_FLOAT, zeroValues.data());
 	glGenerateMipmap(GL_TEXTURE_2D);
+
+	mTextureFlowXY = std::make_shared<gl::Texture>();
+	mTextureFlowXY->createStorage(m_numLevels, m_texture_width, m_texture_height, 2, GL_RG32F, gl::TextureType::FLOAT32, 0);
 
 	m_textureU_x_y = GLHelper::createTexture(m_textureU_x_y, GL_TEXTURE_2D, m_numLevels, m_texture_width, m_texture_height, 0, GL_RG32F, GL_LINEAR, GL_LINEAR_MIPMAP_NEAREST);
 	glBindTexture(GL_TEXTURE_2D, m_textureU_x_y);
@@ -1178,15 +1212,19 @@ bool gFlow::patchInverseSearch(int level, bool useInfrared)
 	glActiveTexture(GL_TEXTURE3);
 	glBindTexture(GL_TEXTURE_2D, m_textureI0_sum_x_y);
 	//
-	glActiveTexture(GL_TEXTURE4);
-	glBindTexture(GL_TEXTURE_2D, m_textureU_x_y);
+	//glActiveTexture(GL_TEXTURE4);
+	//glBindTexture(GL_TEXTURE_2D, m_textureU_x_y);
+
+	mTextureFlowXY->use(4);
 
 	glActiveTexture(GL_TEXTURE5);
 	glBindTexture(GL_TEXTURE_2D, m_texture_init_U_x_y);
 
 	glBindImageTexture(0, m_textureI0_grad_x_y, level, GL_FALSE, 0, GL_READ_ONLY, GL_RG32F);
 
-	glBindImageTexture(1, m_textureU_x_y, level, GL_FALSE, 0, GL_READ_ONLY, GL_RG32F);
+	//glBindImageTexture(1, m_textureU_x_y, level, GL_FALSE, 0, GL_READ_ONLY, GL_RG32F);
+	mTextureFlowXY->bindImage(1, level, GL_READ_ONLY);
+
 	glBindImageTexture(2, m_texture_init_U_x_y, level, GL_FALSE, 0, GL_READ_ONLY, GL_RG32F);
 
 	glBindImageTexture(4, m_textureI0_prod_xx_yy_xy, level, GL_FALSE, 0, GL_READ_ONLY, GL_RGBA32F);
@@ -1229,7 +1267,8 @@ bool gFlow::densification(int level)
 	glBindTexture(GL_TEXTURE_2D, m_textureI1);
 
 	glBindImageTexture(6, m_textureS_x_y, level, GL_FALSE, 0, GL_READ_ONLY, GL_RG32F);
-	glBindImageTexture(1, m_textureU_x_y, level, GL_FALSE, 0, GL_WRITE_ONLY, GL_RG32F);
+	//glBindImageTexture(1, m_textureU_x_y, level, GL_FALSE, 0, GL_WRITE_ONLY, GL_RG32F);
+	mTextureFlowXY->bindImage(1, level, GL_WRITE_ONLY);
 
 	int compWidth = divup(m_texture_width >> level, 4);
 	int compHeight = divup(m_texture_height >> level, 4);
@@ -1248,7 +1287,10 @@ void gFlow::medianFilter(int level)
 	glUniform1i(m_level_dis_ID, level);
 	glUniformSubroutinesuiv(GL_COMPUTE_SHADER, 1, &m_medianFilterID);
 
-	glBindImageTexture(2, m_textureU_x_y, level, GL_FALSE, 0, GL_READ_ONLY, GL_RG32F);
+	//glBindImageTexture(2, m_textureU_x_y, level, GL_FALSE, 0, GL_READ_ONLY, GL_RG32F);
+	mTextureFlowXY->bindImage(2, level, GL_READ_ONLY);
+
+	
 	glBindImageTexture(1, m_texture_total_flow, level, GL_FALSE, 0, GL_WRITE_ONLY, GL_RG32F);
 
 	if (level == 0)
@@ -1264,8 +1306,12 @@ void gFlow::medianFilter(int level)
 	glMemoryBarrier(GL_ALL_BARRIER_BITS);
 
 	glCopyImageSubData(m_texture_total_flow, GL_TEXTURE_2D, level, 0, 0, 0,
-		m_textureU_x_y, GL_TEXTURE_2D, level, 0, 0, 0,
+		mTextureFlowXY->getID(), GL_TEXTURE_2D, level, 0, 0, 0,
 		m_texture_width >> level, m_texture_height >> level, 1);
+
+	//glCopyImageSubData(m_texture_total_flow, GL_TEXTURE_2D, level, 0, 0, 0,
+	//	m_textureU_x_y, GL_TEXTURE_2D, level, 0, 0, 0,
+	//	m_texture_width >> level, m_texture_height >> level, 1);
 
 	glMemoryBarrier(GL_ALL_BARRIER_BITS);
 
@@ -1290,7 +1336,9 @@ void gFlow::calcStandardDeviation(int level)
 	prefixSumProg.use();
 	glUniform1i(m_useRGBAID, 0);
 
-	glBindImageTexture(0, m_textureU_x_y, level, GL_FALSE, 0, GL_READ_ONLY, GL_RG32F);
+	//glBindImageTexture(0, m_textureU_x_y, level, GL_FALSE, 0, GL_READ_ONLY, GL_RG32F);
+	mTextureFlowXY->bindImage(0, level, GL_READ_ONLY);
+
 	glBindImageTexture(2, m_texture_prefixSumTemp, level, GL_FALSE, 0, GL_WRITE_ONLY, GL_RG32F);
 
 	glDispatchCompute(m_texture_width, 1, 1);
@@ -1382,8 +1430,10 @@ void gFlow::calcStandardDeviation(int level)
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 	glViewport(0, 0, m_texture_width, m_texture_height);
-	glActiveTexture(GL_TEXTURE0);
-	glBindTexture(GL_TEXTURE_2D, m_textureU_x_y);
+
+	//glActiveTexture(GL_TEXTURE0);
+	//glBindTexture(GL_TEXTURE_2D, m_textureU_x_y);
+	mTextureFlowXY->use(0);
 
 	glEnable(GL_VERTEX_PROGRAM_POINT_SIZE);
 
@@ -1570,7 +1620,9 @@ void gFlow::variationalRefinement(int level)
 	cv::Mat sxx4 = cv::Mat(m_texture_height >> level, m_texture_width >> level, CV_32FC2);
 
 	glActiveTexture(GL_TEXTURE0);
-	glBindTexture(GL_TEXTURE_2D, m_textureU_x_y);
+	glBindTexture(GL_TEXTURE_2D, mTextureFlowXY->getID());
+	// 	glBindTexture(GL_TEXTURE_2D, m_textureU_x_y);
+
 	glGetTexImage(GL_TEXTURE_2D, level, GL_RG, GL_FLOAT, sxx3.data);
 	glBindTexture(GL_TEXTURE_2D, 0);
 	//glActiveTexture(0);  
@@ -1590,7 +1642,11 @@ void gFlow::variationalRefinement(int level)
 	////glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, m_texture_width >> level, m_texture_height >> level, GL_RG, GL_FLOAT, sxx3.ptr());
 	//  
 
-	glBindTexture(GL_TEXTURE_2D, m_textureU_x_y);
+	glBindTexture(GL_TEXTURE_2D, mTextureFlowXY->getID());
+	// 	glBindTexture(GL_TEXTURE_2D, m_textureU_x_y);
+
+
+
 	//if (imageArray != NULL)
 	//{
 
@@ -1637,7 +1693,10 @@ void gFlow::variRef(int level)
 	glActiveTexture(GL_TEXTURE1);
 	glBindTexture(GL_TEXTURE_2D, m_textureI1); // CHANGE ME TO I1 EXT 
 
-	glBindImageTexture(0, m_textureU_x_y, level, GL_FALSE, 0, GL_READ_ONLY, GL_RG32F);
+	//glBindImageTexture(0, m_textureU_x_y, level, GL_FALSE, 0, GL_READ_ONLY, GL_RG32F);
+	mTextureFlowXY->bindImage(0, level, GL_READ_ONLY);
+
+
 	//glBindImageTexture(2, m_textureWarp_I1, level, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA8);
 
 	glBindImageTexture(2, m_textureI_mix_diff_warp, level, GL_TRUE, NULL, GL_WRITE_ONLY, GL_RGBA8);
@@ -1717,7 +1776,9 @@ void gFlow::variRef(int level)
 
 		if (inner_iter == 0)
 		{
-			glBindImageTexture(1, m_textureU_x_y, level, GL_FALSE, 0, GL_READ_ONLY, GL_RG32F); // SHOULD THIS BE DELTA FLOW
+			//glBindImageTexture(1, m_textureU_x_y, level, GL_FALSE, 0, GL_READ_ONLY, GL_RG32F); // SHOULD THIS BE DELTA FLOW
+			mTextureFlowXY->bindImage(1, level, GL_READ_ONLY);
+
 		}
 		else
 		{
@@ -1774,7 +1835,8 @@ void gFlow::variRef(int level)
 		glUniform1i(m_level_var_ID, level);
 
 		//	m_texture_smoothness_terms
-		glBindImageTexture(0, m_textureU_x_y, level, GL_FALSE, 0, GL_READ_ONLY, GL_RG32F); // SHOULD THIS BE DELTA FLOW
+		//glBindImageTexture(0, m_textureU_x_y, level, GL_FALSE, 0, GL_READ_ONLY, GL_RG32F); // SHOULD THIS BE DELTA FLOW
+		mTextureFlowXY->bindImage(0, level, GL_READ_ONLY);
 
 		glBindImageTexture(1, m_texture_dup_dvp, level, GL_FALSE, 0, GL_READ_WRITE, GL_RGBA32F);
 		glBindImageTexture(7, m_texture_total_flow, level, GL_FALSE, 0, GL_WRITE_ONLY, GL_RG32F); // SHOULD THIS BE DELTA FLOW
@@ -1851,8 +1913,13 @@ void gFlow::variRef(int level)
 	//else
 	//{
 	glCopyImageSubData(m_texture_total_flow, GL_TEXTURE_2D, level, 0, 0, 0,
-		m_textureU_x_y, GL_TEXTURE_2D, level, 0, 0, 0,
+		mTextureFlowXY->getID(), GL_TEXTURE_2D, level, 0, 0, 0,
 		m_texture_width >> level, m_texture_height >> level, 1);
+
+	//glCopyImageSubData(m_texture_total_flow, GL_TEXTURE_2D, level, 0, 0, 0,
+	//	m_textureU_x_y, GL_TEXTURE_2D, level, 0, 0, 0,
+	//	m_texture_width >> level, m_texture_height >> level, 1);
+
 	//}
 
 
@@ -1872,8 +1939,10 @@ void gFlow::sumFlowTexture()
 
 	glUniformSubroutinesuiv(GL_COMPUTE_SHADER, 1, &m_sumFlowTextureID);
 
-	glActiveTexture(GL_TEXTURE0);
-	glBindTexture(GL_TEXTURE_2D, m_textureU_x_y);
+	//glActiveTexture(GL_TEXTURE0);
+	//glBindTexture(GL_TEXTURE_2D, m_textureU_x_y);
+	mTextureFlowXY->use(0);
+
 	glUniform2iv(m_texSizeID, 1, glm::value_ptr(imageSize));
 
 	glBindImageTexture(0, m_sumFlow, 0, GL_FALSE, 0, GL_READ_WRITE, GL_RG32F);
@@ -2014,7 +2083,9 @@ bool gFlow::calc(bool useInfrared)
 
 	glMemoryBarrier(GL_ALL_BARRIER_BITS);
 
-	glBindTexture(GL_TEXTURE_2D, m_textureU_x_y);
+	//glBindTexture(GL_TEXTURE_2D, m_textureU_x_y);
+	glBindTexture(GL_TEXTURE_2D, mTextureFlowXY->getID());
+	// THIS IS VERY WASTEFUL, DO THIS IN SHADER
 	glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, m_texture_width, m_texture_height, GL_RG, GL_FLOAT, zeroValues.data());
 	glGenerateMipmap(GL_TEXTURE_2D);
 
@@ -2060,9 +2131,13 @@ bool gFlow::calc(bool useInfrared)
 
 
 	int level = 0;
-	glCopyImageSubData(m_textureU_x_y, GL_TEXTURE_2D, level, 0, 0, 0,
+	glCopyImageSubData(mTextureFlowXY->getID(), GL_TEXTURE_2D, level, 0, 0, 0,
 		m_texture_init_U_x_y, GL_TEXTURE_2D, level, 0, 0, 0,
 		m_texture_width >> level, m_texture_height >> level, 1);
+
+	//glCopyImageSubData(m_textureU_x_y, GL_TEXTURE_2D, level, 0, 0, 0,
+	//	m_texture_init_U_x_y, GL_TEXTURE_2D, level, 0, 0, 0,
+	//	m_texture_width >> level, m_texture_height >> level, 1);
 
 	glBindTexture(GL_TEXTURE_2D, m_texture_init_U_x_y);
 	glGenerateMipmap(GL_TEXTURE_2D);
@@ -2185,7 +2260,8 @@ void gFlow::track()
 	glUniform2iv(m_texSizeID, 1, glm::value_ptr(imageSize));
 
 
-	glBindTexture(GL_TEXTURE_2D, m_textureU_x_y);
+	//glBindTexture(GL_TEXTURE_2D, m_textureU_x_y);
+	mTextureFlowXY->bind();
 	// bind ssbo for tracked points
 	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 7, m_trackedPointsBuffer);
 

@@ -116,7 +116,7 @@ namespace rgbd
 		// elapsed time in nanoseconds
 		GLuint64 elapsed;
 		glGetQueryObjectui64vEXT(query, GL_QUERY_RESULT, &elapsed);
-		std::cout << "gen id time : " << elapsed / 1000000.0 << std::endl;
+		//std::cout << "gen id time : " << elapsed / 1000000.0 << std::endl;
 
 	}
 
@@ -164,7 +164,7 @@ namespace rgbd
 		// elapsed time in nanoseconds
 		GLuint64 elapsed;
 		glGetQueryObjectui64vEXT(query, GL_QUERY_RESULT, &elapsed);
-		std::cout << "gmu time : " << elapsed / 1000000.0 << std::endl;
+		//std::cout << "gmu time : " << elapsed / 1000000.0 << std::endl;
 
 	}
 
@@ -203,7 +203,7 @@ namespace rgbd
 		// elapsed time in nanoseconds
 		GLuint64 elapsed;
 		glGetQueryObjectui64vEXT(query, GL_QUERY_RESULT, &elapsed);
-		std::cout << "upr time : " << elapsed / 1000000.0 << std::endl;
+		//std::cout << "upr time : " << elapsed / 1000000.0 << std::endl;
 
 	}
 
@@ -258,7 +258,7 @@ namespace rgbd
 		// elapsed time in nanoseconds
 		GLuint64 elapsed;
 		glGetQueryObjectui64vEXT(query, GL_QUERY_RESULT, &elapsed);
-		std::cout << "ss time : " << elapsed / 1000000.0 << std::endl;
+		//std::cout << "ss time : " << elapsed / 1000000.0 << std::endl;
 
 	}
 

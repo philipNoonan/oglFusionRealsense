@@ -7,6 +7,8 @@ layout(binding = 0, rgba32f) readonly uniform image2D srcVertexMap;
 layout(binding = 1, rgba8) readonly uniform image2D srcColorMap;
 layout(binding = 2, rgba8) writeonly uniform image2D dstColorMap;
 
+layout(binding = 3, rg16ui) writeonly uniform uimage2D mappingMap;
+
 uniform mat4 d2c;
 uniform vec4 cam;
 
@@ -23,6 +25,7 @@ vec3 projectPointImage(vec3 p)
 void main()
 {
 	ivec2 pix = ivec2(gl_GlobalInvocationID.xy);
+	imageStore(mappingMap, ivec2(pix.xy), uvec4(10000, 0, 0, 0));
 
 	vec4 vertex = imageLoad(srcVertexMap, pix);
 
@@ -38,11 +41,15 @@ void main()
 	if (any(lessThan(colPix.xy, vec2(0))) || any(greaterThan(colPix.xy, vec2(imageSize(srcColorMap).xy))))
 	{
 		imageStore(dstColorMap, pix, vec4(0,0,0,1.0)); 
+
 	}
 	else
 	{
 		imageStore(dstColorMap, pix, imageLoad(srcColorMap, ivec2(colPix.x + 0.5f, colPix.y + 0.5f))); 
+		imageStore(mappingMap, ivec2(pix.xy), uvec4(colPix.xy, 0, 0));
+
 	}
+	
 
 
 	//imageStore(dstColorMap, pix, vec4(vertex.xyz, 1.0f)); 

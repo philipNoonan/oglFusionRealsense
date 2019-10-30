@@ -22,7 +22,14 @@ namespace gl
 		~Quad();
 
 		void render(gl::Texture::Ptr tex);
-		void renderMulti(gl::Texture::Ptr depthTex, gl::Texture::Ptr normalTex, gl::Texture::Ptr colorTex, gl::Texture::Ptr infraTex);
+		void renderMulti(
+			gl::Texture::Ptr depthTex, 
+			gl::Texture::Ptr normalTex, 
+			gl::Texture::Ptr colorTex, 
+			gl::Texture::Ptr infraTex,
+			gl::Texture::Ptr mappingTex,
+			gl::Texture::Ptr flowTex
+		);
 
 	};
 }
