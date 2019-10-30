@@ -374,8 +374,8 @@ private:
 
 	int imageNumber = 0;
 
-	bool imguiFocus2D = false;
-
+	bool imguiFocusLW = false;
+	bool imguiFocusRW = false;
 
 	float mouseX = 0;
 	float mouseY = 0;

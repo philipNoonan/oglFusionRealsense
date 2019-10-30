@@ -95,7 +95,7 @@ namespace rgbd
 		}
 		else
 		{
-			std::cout << "tracking lost" << std::endl;
+			//std::cout << "tracking lost" << std::endl;
 		}
 
 
@@ -141,7 +141,7 @@ namespace rgbd
 			gMap->removeUnnecessaryPoints(static_cast<int>(vT.size())); // 3.5 ms
 			//std::cout << "  Remove points: " << (clock() - start_remove_pts) / (double)CLOCKS_PER_SEC << " sec" << std::endl;
 
-			std::cout << "  --> Removed map size: " << gMap->getMapSize() << std::endl;
+			//std::cout << "  --> Removed map size: " << gMap->getMapSize() << std::endl;
 
 		}
 

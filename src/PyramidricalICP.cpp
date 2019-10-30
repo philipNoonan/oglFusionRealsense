@@ -81,7 +81,7 @@ namespace rgbd
 
 		}
 		// || ((icpCount / (currFrame.getWidth() * currFrame.getHeight())) < 0.15)
-		std::cout << "ae : " << ae << " : count : " << icpCount << std::endl;
+		//std::cout << "ae : " << ae << " : count : " << icpCount << std::endl;
 		if (ae > 2e-2 || isnan(ae) || ae == 0)
 		{
 			tracked = false;

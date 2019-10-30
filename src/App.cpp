@@ -772,7 +772,7 @@ void App::setUI()
 		window_flags |= ImGuiWindowFlags_NoCollapse;
 
 		ImGui::Begin("Video ", &display2DWindow.visible, window_flags);
-		imguiFocus2D = ImGui::IsWindowHovered();
+		imguiFocusLW = ImGui::IsWindowHovered();
 		ImGui::End();
 	}
 
@@ -789,6 +789,8 @@ void App::setUI()
 		window_flags |= ImGuiWindowFlags_NoCollapse;
 
 		ImGui::Begin("Video Sources", &display3DWindow.visible, window_flags);
+		imguiFocusRW = ImGui::IsWindowHovered();
+
 		//ImGui::ShowDemoWindow();
 
 		ImGui::End();
@@ -1374,7 +1376,7 @@ void App::setUI()
 	}
 
 	ImGuiIO& io = ImGui::GetIO();
-	if (ImGui::IsMouseClicked(0) && imguiFocus2D == true)
+	if (ImGui::IsMouseClicked(0) && imguiFocusLW == true)
 	{
 		int devNumber = 0;
 		ImVec2 mPos = ImGui::GetMousePos();
@@ -1428,6 +1430,8 @@ void App::renderGlobal(bool reset)
 {
 	bool imguiFocus = ImGui::IsAnyItemActive();
 
+	//std::cout << "focus : " << imguiFocusLW << std::endl;
+
 	ImGuiIO& io = ImGui::GetIO();
 	if (ImGui::IsMouseClicked(0) || ImGui::IsMouseClicked(1) && imguiFocus == false)
 	{
@@ -1436,7 +1440,7 @@ void App::renderGlobal(bool reset)
 		mousePos.y = mPos.y;
 	}
 
-	if (ImGui::IsMouseDragging(0))
+	if (ImGui::IsMouseDragging(0) && imguiFocusRW == true)
 	{
 		// get mouse dragging states and pixel locations
 		ImVec2 mPos = ImGui::GetMousePos();

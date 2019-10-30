@@ -114,7 +114,7 @@ bool closeEachOther(int idxSelect, int idxCandi)
 	float distC = abs(calcLuminance(elems[idxSelect].color.xyz) - calcLuminance(elems[idxCandi].color.xyz));
 
 	// NOTE: I'm not sure if these parameters are proper or not...
-	if (distV <= 0.005 && distN > 0.999 && distR < 1.4f && distC > 0.5) 
+	if (distV <= 0.005 && distN > 0.9 && distR < 1.4f && distC > 0.5) 
 	{
 		return true;
 	}
@@ -176,7 +176,7 @@ void main(void)
 		vec3 _v[16];
 		vec3 _n[16];
 
-		float bestDist = 1000.0f;
+		float bestDist = 1000000.0f;
 
 		for (int i = 0; i < 16; ++i)
 		{
@@ -195,7 +195,7 @@ void main(void)
 					// cos(PI * 20.0 / 180.0) = 0.93969262078
 					if (dot(inputNorm, _n[i]) > 0.93969262078 && candiConf > tmpConf && dist < bestDist)
 					{
-						// find the id of the closest point in the index map 
+						// find the id of the closest points that are facing the same way (to 20 degrees)
 						idxSelect = idxCandi[i];
 						tmpConf = candiConf;
 						bestDist = dist;
@@ -205,6 +205,7 @@ void main(void)
 			}
 		}
 
+		// clean foreground objects when a background object is the only thing in the line of sight
 
 		// MEMO: Do we REALLY need "4.1 Data Association: Condition #4"??
 
@@ -243,7 +244,7 @@ void main(void)
 			//     --> in "removePoints.comp"
 
 			// if merging has occured, and the global vertex's onfidence is greater than the threshold
-			if (bAveraged && elems[idxSelect].data.x >= c_stable)
+			if (elems[idxSelect].data.x >= c_stable)
 			{
 
 
