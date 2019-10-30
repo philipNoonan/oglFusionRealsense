@@ -45,6 +45,9 @@ namespace rgbd
 		int width;
 		int height;
 
+		uint64_t colorTime;
+		uint64_t depthTime;
+
 		gl::Texture::Ptr shortDepthMap;
 		gl::Texture::Ptr rawDepthMap;
 		gl::Texture::Ptr trackMap;
@@ -122,6 +125,9 @@ namespace rgbd
 
 		int getWidth(int lv = 0) const;
 		int getHeight(int lv = 0) const;
+
+		uint64_t getColorTime();
+		uint64_t getDepthTime();
 
 		gl::Texture::Ptr getColorMap(int lv = 0) const;
 		gl::Texture::Ptr getColorFilteredMap(int lv = 0) const;

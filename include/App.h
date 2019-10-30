@@ -415,6 +415,8 @@ private:
 	bool useSharp = false;
 
 
+	uint64_t previousColorTime = 0;
+
 public:
 
 	App(int width, int height, const std::string &windowName);

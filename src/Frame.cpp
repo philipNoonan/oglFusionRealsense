@@ -148,7 +148,11 @@ namespace rgbd
 			if (colorFrame[camNumber] != NULL)
 			{
 				frameData[0].colorMap->update(colorFrame[camNumber].get_data());
-				
+				if (colorFrame[camNumber].supports_frame_metadata(RS2_FRAME_METADATA_SENSOR_TIMESTAMP))
+				{
+					colorTime = colorFrame[camNumber].get_frame_metadata(RS2_FRAME_METADATA_SENSOR_TIMESTAMP);
+				}
+
 			}
 
 			infraQ[camNumber].poll_for_frame(&infraFrame[camNumber]);
@@ -162,6 +166,10 @@ namespace rgbd
 			{
 				shortDepthMap->update(depthFrame[camNumber].get_data());
 
+				if (depthFrame[camNumber].supports_frame_metadata(RS2_FRAME_METADATA_SENSOR_TIMESTAMP))
+				{
+					depthTime = depthFrame[camNumber].get_frame_metadata(RS2_FRAME_METADATA_SENSOR_TIMESTAMP);
+				}
 
 				const uint16_t* p_depth_frame = reinterpret_cast<const uint16_t*>(depthFrame[camNumber].get_data());
 				//float z = float(depthArray[pointY * depthWidth + pointX]) * (float)cameraInterface.getDepthUnit(cameraDevice) / 1000000.0f;
@@ -195,6 +203,17 @@ namespace rgbd
 		std::dynamic_pointer_cast<rgbd::CalcNormalMap>(normalMapProc)->execute(frameData[0].vertexMap, frameData[0].normalMap);
 
 		update();
+	}
+
+
+	uint64_t Frame::getColorTime()
+	{
+		return colorTime;
+	}
+
+	uint64_t Frame::getDepthTime()
+	{
+		return depthTime;
 	}
 
 	void Frame::getDepthAndColorMats(cv::Mat &depth, cv::Mat &color)

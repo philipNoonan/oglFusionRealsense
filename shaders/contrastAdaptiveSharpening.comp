@@ -48,24 +48,24 @@ void main()
 	float minB = min3(min3(d.b, e.b, f.b), b.b, h.b);
 
 	// if using diagonals too ...
-	// float minR2 = min3(min3(minR, a.r, c.r), g.r, i.r);
-	// float minG2 = min3(min3(minG, a.g, c.g), g.g, i.g);
-	// float minB2 = min3(min3(minB, a.b, c.b), g.b, i.b);
-	// minR = minR + minR2;
-	// minG = minG + minG2;
-	// minB = minB + minB2;
+	float minR2 = min3(min3(minR, a.r, c.r), g.r, i.r);
+	float minG2 = min3(min3(minG, a.g, c.g), g.g, i.g);
+	float minB2 = min3(min3(minB, a.b, c.b), g.b, i.b);
+	minR = minR + minR2;
+	minG = minG + minG2;
+	minB = minB + minB2;
 
 	float maxR = max3(max3(d.r, e.r, f.r), b.r, h.r);
 	float maxG = max3(max3(d.g, e.g, f.g), b.g, h.g);
 	float maxB = max3(max3(d.b, e.b, f.b), b.b, h.b);
 
 	// if using diagonals too ...
-	// float maxR2 = max3(max3(maxR, a.r, c.r), g.r, i.r);
-	// float maxG2 = max3(max3(maxG, a.g, c.g), g.g, i.g);
-	// float maxB2 = max3(max3(maxB, a.b, c.b), g.b, i.b);
-	// maxR = maxR + maxR2;
-	// maxG = maxG + maxG2;
-	// maxB = maxB + maxB2;
+	float maxR2 = max3(max3(maxR, a.r, c.r), g.r, i.r);
+	float maxG2 = max3(max3(maxG, a.g, c.g), g.g, i.g);
+	float maxB2 = max3(max3(maxB, a.b, c.b), g.b, i.b);
+	maxR = maxR + maxR2;
+	maxG = maxG + maxG2;
+	maxB = maxB + maxB2;
 
 	float dMinR = 0 + minR;
 	float dMaxR = 1.0 - maxR;
@@ -76,9 +76,13 @@ void main()
 	float dMinB = 0 + minB;
 	float dMaxB = 1.0 - maxB;
 
-	float bsaR = dMinR < dMaxR ? dMinR / maxR : dMaxR / maxR;
-	float bsaG = dMinG < dMaxG ? dMinG / maxG : dMaxG / maxG;
-	float bsaB = dMinB < dMaxB ? dMinB / maxB : dMaxB / maxB;
+	float bsaR = clamp(min(minR, 2.0f - maxR) / maxR, 0.0f, 1.0f);
+	float bsaG = clamp(min(minG, 2.0f - maxG) / maxG, 0.0f, 1.0f);
+	float bsaB = clamp(min(minB, 2.0f - maxB) / maxB, 0.0f, 1.0f);
+
+	// float bsaR = dMinR < dMaxR ? dMinR / maxR : dMaxR / maxR;
+	// float bsaG = dMinG < dMaxG ? dMinG / maxG : dMaxG / maxG;
+	// float bsaB = dMinB < dMaxB ? dMinB / maxB : dMaxB / maxB;
 
 	bsaR = sqrt(bsaR);
 	bsaG = sqrt(bsaG);

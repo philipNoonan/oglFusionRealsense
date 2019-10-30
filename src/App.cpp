@@ -1673,7 +1673,6 @@ void App::mainLoop()
 					krender.setMarkerData(markerMats);
 					//}
 				}
-
 			}
 
 			if (numberOfCameras > 1 && mTracker.getGemStatus() == 5)
@@ -1697,7 +1696,6 @@ void App::mainLoop()
 				{
 					krender.setOtherMarkerData(markerMats);
 				}
-
 			}
 
 			double currentTime = epchTime();
@@ -1709,14 +1707,22 @@ void App::mainLoop()
 			{
 				//gflow.setTexture();
 				//gflow.setColorTexture(cameraInterface.getColorQueues(), col);
-				if (useSharp)
+
+				if (frame[rgbd::FRAME::CURRENT].getColorTime() > previousColorTime) // WILL THIS OVERFOW?
 				{
-					gflow.setFrameTexture(frame[rgbd::FRAME::CURRENT].getColorFilteredMap());
+					previousColorTime = frame[rgbd::FRAME::CURRENT].getColorTime();
+
+					if (useSharp)
+					{
+						gflow.setFrameTexture(frame[rgbd::FRAME::CURRENT].getColorFilteredMap());
+					}
+					else
+					{
+						gflow.setFrameTexture(frame[rgbd::FRAME::CURRENT].getColorMap());
+					}
 				}
-				else
-				{
-					gflow.setFrameTexture(frame[rgbd::FRAME::CURRENT].getColorMap());
-				}
+
+
 
 				//gflow.setFrameTexture(frame[rgbd::FRAME::CURRENT].getColorAlignedToDepthMap());
 				gflow.calc(false);
@@ -2062,9 +2068,6 @@ void App::mainLoop()
 
 				glEnable(GL_DEPTH_TEST);
 			}
-
-
-	
 
 
 		if (useSplatter && cameraRunning)
