@@ -34,6 +34,10 @@ namespace rgbd
 		progs.insert(std::make_pair("UnnecessaryPointRemoval", std::make_shared<gl::Shader>(folderPath + "UnnecessaryPointRemoval.comp")));
 		progs.insert(std::make_pair("p2pTrack", std::make_shared<gl::Shader>(folderPath + "p2pTrack.comp")));
 		progs.insert(std::make_pair("p2pReduce", std::make_shared<gl::Shader>(folderPath + "p2pReduce.comp")));
+		progs.insert(std::make_pair("rgbOdometry", std::make_shared<gl::Shader>(folderPath + "rgbOdometry.comp")));
+		progs.insert(std::make_pair("rgbOdometryReduce", std::make_shared<gl::Shader>(folderPath + "rgbOdometryReduce.comp")));
+		//progs.insert(std::make_pair("rgbStep", std::make_shared<gl::Shader>(folderPath + "rgbStep.comp")));
+		//progs.insert(std::make_pair("rgbStepReduce", std::make_shared<gl::Shader>(folderPath + "rgbStepReduce.comp")));
 
 	}
 
@@ -52,6 +56,7 @@ namespace rgbd
 
 		icp = std::make_shared<rgbd::PyramidricalICP>(width, height, K, rgbd::FUSIONTYPE::SPLATTER, progs);
 		gMap = std::make_shared<rgbd::GlobalMap>(width, height, K, progs);
+		rgbOdo = std::make_shared<rgbd::RGBOdometry>(width, height, progs);
 
 		//std::cout << "map initialization..." << std::endl;
 		for (int idx = 0; idx < 1; ++idx)
@@ -73,6 +78,22 @@ namespace rgbd
 	void splatterFusion::renderGlobalMap(glm::mat4 renderPose, const rgbd::Frame &globalFrame)
 	{
 		gMap->genVirtualFrame(globalFrame, renderPose);
+	}
+
+	void splatterFusion::performColorTracking(
+		const rgbd::Frame &currentFrame,
+		const rgbd::Frame &virtualFrame 
+		)
+	{
+		glm::vec4 kT;
+		glm::mat3 krkinv;
+
+		rgbOdo->computeResiduals(
+			currentFrame,
+			virtualFrame,
+			kT,
+			krkinv
+		);
 	}
 
 

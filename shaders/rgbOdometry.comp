@@ -1,0 +1,151 @@
+#version 430
+
+layout(local_size_x = 32, local_size_y = 32) in;
+
+layout(binding = 0, rgba8) uniform image2D lastColorMap;
+layout(binding = 1, rgba8) uniform image2D nextColorMap;
+
+layout(binding = 2, rgba8) uniform image2D gradientMap;
+
+layout(binding = 3, r16ui) uniform uimage2D lastDepthMap;
+layout(binding = 4, r16ui) uniform uimage2D nextDepthMap;
+
+
+
+
+uniform int functionID;
+uniform float depthScale;
+uniform float minScale;
+uniform vec4 kt;
+uniform mat3 krkinv;
+uniform float maxDepthDelta;
+
+struct DataTerm
+{
+	ivec2 zero;
+    ivec2 one;
+    float diff;
+    bool valid;
+};
+
+layout(std430, binding = 0) buffer corresData
+{
+    DataTerm corresImg[];
+};
+
+float luminance(vec3 rgb)
+{
+    return 0.299f * float(rgb.x) + 0.587f * float(rgb.y) + 0.114f * float(rgb.z);
+}
+
+void computeDerivatives()
+{
+
+}
+
+void computeResiduals()
+{
+	
+	ivec2 pix = ivec2(gl_GlobalInvocationID.xy);
+	ivec2 imSize = ivec2(imageSize(lastDepthMap).xy);
+	
+	DataTerm corres;
+
+	ivec2 value = ivec2(0,0);
+
+	corres.valid = false;
+
+	if (pix.x >= 0 && pix.y >= 0 && pix.x < imSize.x && pix.y < imSize.y)
+	{
+		bool valid = true;
+
+		for (int u = pix.x - 2; u < pix.x + 2; u++)
+		{
+			for (int v = pix.y - 2; v < pix.y + 2; v++)
+			{
+				valid = valid && (luminance(imageLoad(nextColorMap, ivec2(u,v)).xyz) > 0);
+			}
+		}
+
+		if (valid)
+		{
+			vec2 gradXY = imageLoad(gradientMap, pix).xy;
+
+			float mTwo = (gradXY.x * gradXY.x) + (gradXY.y * gradXY.y);
+	
+			if (mTwo >= minScale)
+			{
+				int x = pix.x;
+				int y = pix.y;
+
+				float d1 = float(imageLoad(nextDepthMap, pix).x) * depthScale;
+
+				if (!isnan(d1))
+				{
+					float transformed_d1 = float(d1 * (krkinv[2].x * x + krkinv[2].y * y + krkinv[2].z) + kt.z);
+					int u0 = int(((d1 * (krkinv[0].x * x + krkinv[0].y * y + krkinv[0].z) + kt.x) / transformed_d1) + 0.5f); // do i want to round to nearest even?
+					int v0 = int(((d1 * (krkinv[1].x * x + krkinv[1].y * y + krkinv[1].z) + kt.y) / transformed_d1) + 0.5f);
+			
+					if (u0 >= 0 && v0 >= 0 && u0 < imSize.x && v0 < imSize.y)
+					{
+						float d0 = float(imageLoad(lastDepthMap, ivec2(u0, v0)).x) * depthScale;
+						float lastColor = luminance(imageLoad(lastColorMap, ivec2(u0, v0)).xyz);
+
+						if (d0 > 0 && abs(transformed_d1 - d0) <= maxDepthDelta && lastColor != 0)
+						{
+							corres.zero.x = u0;
+							corres.zero.y = v0;
+							corres.one.x = x;
+							corres.one.y = y;
+							corres.diff = luminance(imageLoad(lastColorMap, ivec2(x, y)).xyz) - lastColor;
+							corres.valid = true;
+							value.x = 1;
+							value.y = int(corres.diff * corres.diff);
+						}
+				
+				
+					}
+			
+				}
+
+
+
+
+
+			}
+	
+		}
+
+	}
+
+	
+
+
+	corresImg[pix.y * imSize.x + pix.x] = corres;
+
+}
+
+void computeTrack()
+{
+
+}
+
+void main()
+{
+	if (functionID == 0)
+	{
+		computeDerivatives(); // do this in sobel edge .comp, but make sure the coefs make sense
+	}
+	else if (functionID == 1)
+	{
+		computeResiduals();
+	}
+	else if (functionID == 2)
+	{
+		computeTrack();
+	}
+
+
+
+
+}

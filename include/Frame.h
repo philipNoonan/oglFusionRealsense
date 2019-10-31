@@ -35,6 +35,7 @@ namespace rgbd
 		gl::Texture::Ptr depthMap;
 		gl::Texture::Ptr vertexMap;
 		gl::Texture::Ptr normalMap;
+		gl::Texture::Ptr gradientMap;
 
 		typedef std::shared_ptr<rgbd::FrameData> Ptr;
 	};
@@ -136,6 +137,7 @@ namespace rgbd
 		gl::Texture::Ptr getDepthMap(int lv = 0) const;
 		gl::Texture::Ptr getVertexMap(int lv = 0) const;
 		gl::Texture::Ptr getNormalMap(int lv = 0) const;
+		gl::Texture::Ptr getGradientMap(int lv = 0) const;
 		gl::Texture::Ptr getTrackMap() const;
 		gl::Texture::Ptr getTestMap() const;
 		gl::Texture::Ptr getInfraMap() const;

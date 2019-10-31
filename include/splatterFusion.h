@@ -18,6 +18,7 @@
 //#include "SLAM/Utilities/TUMRGBDUtilities.h"
 #include "PyramidricalICP.h"
 #include "GlobalMap.h"
+#include "rgbOdometry.h"
 
 namespace rgbd
 {
@@ -26,6 +27,7 @@ namespace rgbd
 	private:
 		rgbd::PyramidricalICP::Ptr icp;
 		rgbd::GlobalMap::Ptr gMap;
+		rgbd::RGBOdometry::Ptr rgbOdo;
 		std::vector<glm::mat4> vT;
 		glm::mat4 T;
 
@@ -43,6 +45,11 @@ namespace rgbd
 			const rgbd::Frame &virtualFrame,
 			const glm::mat4 &K,
 			const std::map<std::string, const gl::Shader::Ptr> &progs
+		);
+
+		void performColorTracking(
+			const rgbd::Frame &currentFrame,
+			const rgbd::Frame &virtualFrame
 		);
 
 		glm::mat4 calcDevicePose(

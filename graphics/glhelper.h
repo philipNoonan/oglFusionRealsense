@@ -55,6 +55,25 @@ namespace rgbd
 		}
 	};
 
+	struct BufferReductionRGB
+	{
+		GLint zero[2];
+		GLint one[2];
+		GLfloat diff;
+		bool valid;
+
+		BufferReductionRGB()
+		{
+			zero[0] = 0;
+			zero[1] = 0;
+			one[0] = 0;
+			one[1] = 0;
+
+			diff = 0.0f;
+			valid = false;
+		}
+	};
+
 
 }
 

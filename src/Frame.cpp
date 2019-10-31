@@ -334,6 +334,11 @@ namespace rgbd
 		return frameData[lv].normalMap;
 	}
 
+	gl::Texture::Ptr Frame::getGradientMap(int lv) const
+	{
+		return frameData[lv].gradientMap;
+	}
+
 	gl::Texture::Ptr Frame::getTrackMap() const
 	{
 		return trackMap;

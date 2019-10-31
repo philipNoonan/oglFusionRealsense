@@ -67,8 +67,11 @@ void getGradients()
     float lesser = 3.0f;
     float upper = 10.0f;
 
-    float sx = - (lesser * localData[p.x - 1][p.y - 1] + upper * localData[p.x - 1][p.y] + lesser * localData[p.x - 1][p.y + 1]) + (lesser * localData[p.x + 1][p.y - 1] + upper * localData[p.x + 1][p.y] + lesser * localData[p.x + 1][p.y + 1]);
-    float sy =  (lesser * localData[p.x - 1][p.y + 1] + upper * localData[p.x][p.y + 1] + lesser * localData[p.x + 1][p.y + 1]) - (lesser * localData[p.x - 1][p.y - 1] + upper * localData[p.x][p.y - 1] + lesser * localData[p.x + 1][p.y - 1]);
+    float norm = 1.0f;// / (4 * lesser + 2 * upper); // why does applying the correct norm introduce a lot more noise?
+
+
+    float sx = norm * (- (lesser * localData[p.x - 1][p.y - 1] + upper * localData[p.x - 1][p.y] + lesser * localData[p.x - 1][p.y + 1]) + (lesser * localData[p.x + 1][p.y - 1] + upper * localData[p.x + 1][p.y] + lesser * localData[p.x + 1][p.y + 1]));
+    float sy = norm * (  (lesser * localData[p.x - 1][p.y + 1] + upper * localData[p.x][p.y + 1] + lesser * localData[p.x + 1][p.y + 1]) - (lesser * localData[p.x - 1][p.y - 1] + upper * localData[p.x][p.y - 1] + lesser * localData[p.x + 1][p.y - 1]));
 
   //  float sx = (3.0 * localData[p.x + 1][p.y - 1] + 10.0 * localData[p.x + 1][p.y] + 3.0 * localData[p.x + 1][p.y + 1]) - (3.0 * localData[p.x - 1][p.y - 1] + 10.0 * localData[p.x - 1][p.y] + 3.0 * localData[p.x - 1][p.y + 1]);
  //   float sy = (3.0 * localData[p.x - 1][p.y + 1] + 10.0 * localData[p.x][p.y + 1] + 3.0 * localData[p.x + 1][p.y + 1]) - (3.0 * localData[p.x - 1][p.y - 1] + 10.0 * localData[p.x][p.y - 1] + 3.0 * localData[p.x + 1][p.y - 1]);
@@ -90,7 +93,7 @@ void getGradients()
         imageStore(outputGradientArray, ivec3(gl_GlobalInvocationID.xy, 0), vec4(sx, sy, 0, 0));
 
         //float sxY = -(lesser * localDataY[p.x - 1][p.y - 1] + upper * localDataY[p.x - 1][p.y] + lesser * localDataY[p.x - 1][p.y + 1]) + (lesser * localDataY[p.x + 1][p.y - 1] + upper * localDataY[p.x + 1][p.y] + lesser * localDataY[p.x + 1][p.y + 1]);
-        float syY = (lesser * localDataY[p.x - 1][p.y + 1] + upper * localDataY[p.x][p.y + 1] + lesser * localDataY[p.x + 1][p.y + 1]) - (lesser * localDataY[p.x - 1][p.y - 1] + upper * localDataY[p.x][p.y - 1] + lesser * localDataY[p.x + 1][p.y - 1]);
+        float syY = norm * ((lesser * localDataY[p.x - 1][p.y + 1] + upper * localDataY[p.x][p.y + 1] + lesser * localDataY[p.x + 1][p.y + 1]) - (lesser * localDataY[p.x - 1][p.y - 1] + upper * localDataY[p.x][p.y - 1] + lesser * localDataY[p.x + 1][p.y - 1]));
 
         //float syY = (lesser * localDataY[p.x - 1][p.y + 1] + upper * localDataY[p.x][p.y + 1] + lesser * localDataY[p.x + 1][p.y + 1]) - (lesser * localDataY[p.x - 1][p.y - 1] + upper * localDataY[p.x][p.y - 1] + lesser * localDataY[p.x + 1][p.y - 1]);
         //float syY = (1.0 * localDataY[p.x - 1][p.y + 1] + 2.0 * localDataY[p.x][p.y + 1] + 1.0 * localDataY[p.x + 1][p.y + 1]) - (1.0 * localDataY[p.x - 1][p.y - 1] + 2.0 * localDataY[p.x][p.y - 1] + 1.0 * localDataY[p.x + 1][p.y - 1]);

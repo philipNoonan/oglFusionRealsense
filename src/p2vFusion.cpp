@@ -30,6 +30,10 @@ namespace rgbd
 		progs.insert(std::make_pair("DownSamplingN", std::make_shared<gl::Shader>(folderPath + "DownSamplingN.comp")));
 		progs.insert(std::make_pair("p2vTrack", std::make_shared<gl::Shader>(folderPath + "p2vTrack.comp")));
 		progs.insert(std::make_pair("p2vReduce", std::make_shared<gl::Shader>(folderPath + "p2vReduce.comp")));
+		progs.insert(std::make_pair("rgbOdometry", std::make_shared<gl::Shader>(folderPath + "rgbOdometry.comp")));
+		progs.insert(std::make_pair("rgbOdometryReduce", std::make_shared<gl::Shader>(folderPath + "rgbOdometryReduce.comp")));
+		//progs.insert(std::make_pair("rgbStep", std::make_shared<gl::Shader>(folderPath + "rgbStep.comp")));
+		//progs.insert(std::make_pair("rgbStepReduce", std::make_shared<gl::Shader>(folderPath + "rgbStepReduce.comp")));
 
 	}
 	void p2vFusion::init(
