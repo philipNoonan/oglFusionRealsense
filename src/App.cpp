@@ -181,10 +181,10 @@ bool App::runSLAM()
 		glm::vec4(cameraInterface.getColorIntrinsics(0).cx, cameraInterface.getColorIntrinsics(0).cy, cameraInterface.getColorIntrinsics(0).fx, cameraInterface.getColorIntrinsics(0).fy),
 		colorVec
 	);
-	bool tracked;
+	bool tracked = true;
 	glm::mat4 T = slam.calcDevicePose(frame[rgbd::FRAME::CURRENT], frame[rgbd::FRAME::VIRTUAL], tracked);
 
-	if (counter < 50 || tracked)
+	if (counter < 100 || tracked)
 	{
 		slam.updateGlobalMap(frame[rgbd::FRAME::CURRENT], frame[rgbd::FRAME::VIRTUAL], integratingFlag);
 	}
@@ -1472,7 +1472,7 @@ void App::renderGlobal(bool reset)
 
 
 
-	if (io.MouseWheel != 0.0f)
+	if (io.MouseWheel != 0.0f && imguiFocusRW == true)
 	{
 		cameraPos.z += io.MouseWheel * 0.01f;
 	}
@@ -2066,6 +2066,7 @@ void App::mainLoop()
 				progs["ScreenQuad"]->setUniform("maxDepth", 10.0f);
 				progs["ScreenQuad"]->setUniform("depthRange", glm::vec2(depthMin, depthMax));
 				progs["ScreenQuad"]->setUniform("renderType", 0);
+				progs["ScreenQuad"]->setUniform("flowType", 1);
 
 				quad.renderMulti(frame[rgbd::FRAME::CURRENT].getDepthMap(), frame[rgbd::FRAME::VIRTUAL].getNormalMap(), frame[rgbd::FRAME::CURRENT].getColorAlignedToDepthMap(), frame[rgbd::FRAME::CURRENT].getInfraMap(), frame[rgbd::FRAME::CURRENT].getMappingMap(), gflow.getFlowTextureFrame());
 				progs["ScreenQuad"]->disuse();
@@ -2076,7 +2077,7 @@ void App::mainLoop()
 
 		if (useSplatter && cameraRunning)
 		{
-			renderOpts = getRenderOptions(0, showNormalFlag, showColorFlag, 0, 0);
+			renderOpts = getRenderOptions(0, showNormalFlag, showColorFlag, 0, showFlowFlag);
 
 			glDisable(GL_DEPTH_TEST);
 			glViewport(display3DWindow.x, display_h - display3DWindow.y - display3DWindow.h, display3DWindow.w, display3DWindow.h);
@@ -2086,6 +2087,7 @@ void App::mainLoop()
 			progs["ScreenQuad"]->setUniform("maxDepth", 10.0f);
 			progs["ScreenQuad"]->setUniform("depthRange", glm::vec2(depthMin, depthMax));
 			progs["ScreenQuad"]->setUniform("renderType", 0);
+			progs["ScreenQuad"]->setUniform("flowType", 0);
 
 			quad.renderMulti(frame[rgbd::FRAME::GLOBAL].getDepthMap(), frame[rgbd::FRAME::GLOBAL].getNormalMap(), useSharp == 1 ? frame[rgbd::FRAME::CURRENT].getColorFilteredMap() : frame[rgbd::FRAME::CURRENT].getColorMap(), frame[rgbd::FRAME::CURRENT].getInfraMap(), frame[rgbd::FRAME::CURRENT].getMappingMap(), gflow.getFlowTextureFrame());
 			progs["ScreenQuad"]->disuse();

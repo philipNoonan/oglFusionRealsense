@@ -18,7 +18,7 @@ uniform float maxDepth;
 uniform int renderOptions;
 uniform float depthScale;
 uniform vec2 depthRange;
-
+uniform int flowType;
 uniform int renderType;
 
 
@@ -70,9 +70,19 @@ void main()
 
 			uvec2 mapLoc = uvec2(texelFetch(mappingTex, ivec2(vsTexCoord.x * texSize.x, vsTexCoord.y * texSize.y), 0).xy);
 
-			if (mapLoc.x != 10000)
+			if (mapLoc.x != 10000 || flowType == 0)
 			{
-				vec4 tFlow = texelFetch(flowTex, ivec2(mapLoc), 0);
+
+				vec4 tFlow = vec4(0);
+
+				if (flowType == 1)
+				{
+					tFlow = texelFetch(flowTex, ivec2(mapLoc), 0);
+				}
+				else if (flowType == 0)
+				{
+					tFlow = texture(flowTex, vsTexCoord);
+				}
 
 
 				//vec4 tFlow = texture(flowTex, ivec2(TexCoord.x * texSize.x, TexCoord.y * texSize.y), 0);
@@ -98,7 +108,10 @@ void main()
 
 				vec3 rgb = mix(K.xxx, clamp(p - K.xxx, 0.0, 1.0), mag * ((0 + 1.0) / 1.0));
 
-				outColor = vec4((1.0 - rgb)*1.0, mag > 0.05 ? (mag < 0.50 ? mag / 0.50 : 1.0) : 0.0 * 0.5);
+				if (mag > 0.5)
+				{
+					outColor = vec4((1.0 - rgb)*1.0, mag > 0.05 ? (mag < 0.50 ? mag / 0.50 : 1.0) : 0.0 * 0.5);
+				}
 			
 			}
 			

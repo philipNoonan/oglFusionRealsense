@@ -411,8 +411,8 @@ private:
 	float windowWidth = 5.0f;
 	std::map<int, std::deque<std::valarray<float>>> rollingAverage;
 
-	float sharpnessValue = 0.0f;
-	bool useSharp = false;
+	float sharpnessValue = 1.0f;
+	bool useSharp = true;
 
 
 	uint64_t previousColorTime = 0;

@@ -246,7 +246,10 @@ namespace rgbd
 		alignmentEnergy = AE;
 		lastICPcount = icpCount;
 
+		//std::cout << glm::to_string(glm::transpose(T)) << std::endl;
+
 		//std::cout << "AE : " << AE << " count : " << icpCount << std::endl;
+
 		//glm::mat4 dT(1.0f);
 		//for (int loop = 0; loop < ICPConstParam::MAX_ITR_NUM[level]; ++loop)
 		//{
