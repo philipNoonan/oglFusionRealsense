@@ -108,7 +108,7 @@ void main()
 
 				vec3 rgb = mix(K.xxx, clamp(p - K.xxx, 0.0, 1.0), mag * ((0 + 1.0) / 1.0));
 
-				if (mag > 0.1)
+				if (mag > 0.5)
 				{
 					outColor = vec4((1.0 - rgb)*1.0, mag > 0.05 ? (mag < 0.50 ? mag / 0.50 : 1.0) : 0.0 * 0.5);
 				}

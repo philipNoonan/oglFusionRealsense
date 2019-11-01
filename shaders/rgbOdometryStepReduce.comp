@@ -1,0 +1,83 @@
+#version 430
+
+layout(local_size_x = 112, local_size_y = 1) in;
+
+uniform ivec2 imSize;
+
+struct DataTerm
+{
+	ivec2 zero;
+    ivec2 one;
+    float diff;
+    bool valid;
+};
+
+layout(std430, binding = 0) buffer corresData
+{
+    DataTerm corresImg[];
+};
+
+layout(std430, binding = 1) buffer reductionOutputData
+{
+	float outputData[];
+};
+
+shared float S[112];
+
+
+void main()
+{
+	int devNumber = 0;
+    uint sline = gl_LocalInvocationID.x; // 0 - 111
+
+    float sums = 0.0f;//[32];
+
+    //for (int i = 0; i < 32; ++i)
+    //{
+   //     sums[i] = 0.0f;
+    //}
+
+    for (uint y = gl_WorkGroupID.x; y < imSize.y; y += gl_NumWorkGroups.x) // y = (0:8); y < 424; y += 8
+    {
+        for (uint x = sline; x < imSize.x; x += gl_WorkGroupSize.x) // x = (0:112); x < 512; x += 112
+        {
+            DataTerm row = corresImg[(y * imSize.x) + x];
+
+
+
+            if (row.valid == false)
+            {
+                continue;
+            }
+
+            sums += row.diff * row.diff;
+
+            
+
+           // sums[28] += 1.0f;
+
+
+        }
+    }
+
+
+    S[sline] = sums;
+  
+
+    barrier(); // wait for threads to finish
+
+    if (sline == 0)
+    {
+        for (uint i = 1; i < gl_WorkGroupSize.x; ++i)
+        {
+            S[0] += S[i];
+        }
+
+        outputData[sline + gl_WorkGroupID.x] = S[0];
+
+    }
+
+
+}
+
+

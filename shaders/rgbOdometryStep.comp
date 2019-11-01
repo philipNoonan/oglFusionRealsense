@@ -1,0 +1,102 @@
+#version 430
+
+layout(local_size_x = 32, local_size_y = 32) in;
+
+layout(binding = 0, rgba8) uniform image2D lastColorMap;
+layout(binding = 1, rgba8) uniform image2D nextColorMap;
+
+layout(binding = 2, rgba8) uniform image2D gradientMap;
+
+layout(binding = 3, r16ui) uniform uimage2D lastDepthMap;
+layout(binding = 4, r16ui) uniform uimage2D nextDepthMap;
+
+layout(binding = 5, rgba32f) uniform image2D nextVertexMap; // is this next?
+
+
+
+
+uniform float depthScale;
+uniform float minScale;
+uniform vec4 kt;
+uniform mat3 krkinv;
+uniform float maxDepthDelta;
+
+struct DataTerm
+{
+	ivec2 zero;
+    ivec2 one;
+    float diff;
+    bool valid;
+};
+
+layout(std430, binding = 0) buffer corresData
+{
+    DataTerm corresImg[];
+};
+
+float luminance(vec3 rgb)
+{
+    return 0.299f * float(rgb.x) + 0.587f * float(rgb.y) + 0.114f * float(rgb.z);
+}
+
+void main()
+{
+	ivec2 pix = ivec2(gl_GlobalInvocationID.xy);
+	ivec2 imSize = imageSize(lastColorMap);
+
+	DataTerm corresp = corresImg[pix.y * imSize.x + pix.x];
+
+	bool found_coresp = corresp.valid;
+
+	if (found_corresp)
+	{
+		float w = sigma + abs(corresp.diff);
+
+		w = w > FLT_EPSILON ? 1.0 / w : 1.0f;
+
+		if (sigma == -1)
+		{
+			w = 1;
+		}
+
+		float row6 = -w * corresp.diff;
+
+		vec3 cloudPoint = imageLoad(nextVertexMap, corresp.zero).xyz;
+
+		float invZ = 1.0f / cloudPoint.z;
+
+		vec2 dI_dxdy_val = w * sobelScale * imageLoad(gradientMap, corresp.one).xy;
+
+		float v0 = dI_dxdy_val.x * fx * invZ;
+		float v1 = dI_dxdy_val.y * fy * invZ;
+		float v2 -(v0 * cloudPoint.x + v1 * cloudPoint.y) * invZ;
+
+
+
+
+	}
+
+	/*
+	
+
+        float row[7];
+
+
+ 
+
+            row[0] = v0;
+            row[1] = v1;
+            row[2] = v2;
+            row[3] = -cloudPoint.z * v1 + cloudPoint.y * v2;
+            row[4] =  cloudPoint.z * v0 - cloudPoint.x * v2;
+            row[5] = -cloudPoint.y * v0 + cloudPoint.x * v1;
+        }
+        else
+        {
+            row[0] = row[1] = row[2] = row[3] = row[4] = row[5] = row[6] = 0.f;
+        }
+
+	*/
+
+
+}
