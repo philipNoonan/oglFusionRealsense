@@ -168,9 +168,9 @@ void App::initP2VFusion()
 
 bool App::runSLAM()
 {
-	//GLuint query;
-	//glGenQueries(1, &query);
-	//glBeginQuery(GL_TIME_ELAPSED, query);
+	GLuint query;
+	glGenQueries(1, &query);
+	glBeginQuery(GL_TIME_ELAPSED, query);
 
 	glViewport(0, 0, width, height);
 	bool status = true;
@@ -184,31 +184,35 @@ bool App::runSLAM()
 	bool tracked = true;
 	glm::mat4 T = slam.calcDevicePose(frame[rgbd::FRAME::CURRENT], frame[rgbd::FRAME::VIRTUAL], tracked);
 
-	if (counter < 100 || tracked)
-	{
+	//if (counter < 100 || tracked)
+	//{
 		slam.updateGlobalMap(frame[rgbd::FRAME::CURRENT], frame[rgbd::FRAME::VIRTUAL], integratingFlag);
-	}
+	//}
 	
 
 	//std::cout << glm::to_string(glm::transpose(T)) << std::endl;
 
 
 
-	//glEndQuery(GL_TIME_ELAPSED);
-	//GLuint available = 0;
-	//while (!available) {
-	//	glGetQueryObjectuiv(query, GL_QUERY_RESULT_AVAILABLE, &available);
-	//}
-	//// elapsed time in nanoseconds
-	//GLuint64 elapsed;
-	//glGetQueryObjectui64vEXT(query, GL_QUERY_RESULT, &elapsed);
-	//std::cout << "time : " << elapsed / 1000000.0 << std::endl;
+	glEndQuery(GL_TIME_ELAPSED);
+	GLuint available = 0;
+	while (!available) {
+		glGetQueryObjectuiv(query, GL_QUERY_RESULT_AVAILABLE, &available);
+	}
+	// elapsed time in nanoseconds
+	GLuint64 elapsed;
+	glGetQueryObjectui64vEXT(query, GL_QUERY_RESULT, &elapsed);
+	std::cout << "splat time : " << elapsed / 1000000.0 << std::endl;
 
 	return status;
 }
 
 bool App::runP2P()
 {
+	GLuint query;
+	glGenQueries(1, &query);
+	glBeginQuery(GL_TIME_ELAPSED, query);
+
 	glViewport(0, 0, width, height);
 	bool status = true;
 	frame[rgbd::FRAME::CURRENT].update(cameraInterface.getColorQueues(), cameraInterface.getDepthQueues(), cameraInterface.getInfraQueues(), numberOfCameras, cameraInterface.getDepthUnit(0) / 1000000.0f, glm::ivec2(m_pointX, m_pointY), iOff, depthMat, sharpnessValue);
@@ -229,6 +233,15 @@ bool App::runP2P()
 	}
 
 
+	glEndQuery(GL_TIME_ELAPSED);
+	GLuint available = 0;
+	while (!available) {
+		glGetQueryObjectuiv(query, GL_QUERY_RESULT_AVAILABLE, &available);
+	}
+	// elapsed time in nanoseconds
+	GLuint64 elapsed;
+	glGetQueryObjectui64vEXT(query, GL_QUERY_RESULT, &elapsed);
+	std::cout << "time : " << elapsed / 1000000.0 << std::endl;
 	//std::cout << glm::to_string(glm::transpose(T)) << std::endl;
 
 	return status;
@@ -236,6 +249,10 @@ bool App::runP2P()
 
 bool App::runP2V()
 {
+	GLuint query;
+	glGenQueries(1, &query);
+	glBeginQuery(GL_TIME_ELAPSED, query);
+
 	glViewport(0, 0, width, height);
 	bool status = true;
 	frame[rgbd::FRAME::CURRENT].update(cameraInterface.getColorQueues(), cameraInterface.getDepthQueues(), cameraInterface.getInfraQueues(), numberOfCameras, cameraInterface.getDepthUnit(0) / 1000000.0f, glm::ivec2(m_pointX, m_pointY), iOff, depthMat, sharpnessValue);
@@ -252,6 +269,16 @@ bool App::runP2V()
 	{
 		p2vFusion.integrate(frame[rgbd::FRAME::CURRENT]);
 	}
+
+	glEndQuery(GL_TIME_ELAPSED);
+	GLuint available = 0;
+	while (!available) {
+		glGetQueryObjectuiv(query, GL_QUERY_RESULT_AVAILABLE, &available);
+	}
+	// elapsed time in nanoseconds
+	GLuint64 elapsed;
+	glGetQueryObjectui64vEXT(query, GL_QUERY_RESULT, &elapsed);
+	std::cout << "p2v time : " << elapsed / 1000000.0 << std::endl;
 
 	return status;
 

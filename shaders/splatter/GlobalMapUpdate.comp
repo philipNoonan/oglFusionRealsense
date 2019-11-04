@@ -114,7 +114,7 @@ bool closeEachOther(int idxSelect, int idxCandi)
 	float distC = abs(calcLuminance(elems[idxSelect].color.xyz) - calcLuminance(elems[idxCandi].color.xyz));
 
 	// NOTE: I'm not sure if these parameters are proper or not...
-	if (distV <= 0.005 && distN > 0.9 && distR < 1.4f && distC > 0.5) 
+	if (distV <= 0.05 && distN > 0.9 && distR < 1.4f && distC > 0.85) 
 	{
 		return true;
 	}
@@ -262,7 +262,7 @@ void main(void)
 				{
 					if (idxCandi[i] >= 0 
 						&& idxCandi[i] != idxSelect
-						&& _v[i].z < mergedDepth
+						&& _v[i].z > mergedDepth
 						&& abs(mergedNormZ) > 0.85f)
 					{
 						//imageStore(statusMap, ivec2((bestPix / 4.0f) + 0.5f), vec4(mergedDepth, _v[i].z, 0, 1));

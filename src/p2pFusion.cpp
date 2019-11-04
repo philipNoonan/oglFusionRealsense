@@ -75,9 +75,23 @@ namespace rgbd
 		const rgbd::Frame &virtualFrame
 	)
 	{
+		GLuint query;
+		glGenQueries(1, &query);
+		glBeginQuery(GL_TIME_ELAPSED, query);
+
 		icp->calcP2P(currentFrame, virtualFrame, T);
 		//vT.push_back(vT.back() * T);
 		vT.push_back(T);
+
+		glEndQuery(GL_TIME_ELAPSED);
+		GLuint available = 0;
+		while (!available) {
+			glGetQueryObjectuiv(query, GL_QUERY_RESULT_AVAILABLE, &available);
+		}
+		// elapsed time in nanoseconds
+		GLuint64 elapsed;
+		glGetQueryObjectui64vEXT(query, GL_QUERY_RESULT, &elapsed);
+		std::cout << "p2p time : " << elapsed / 1000000.0 << std::endl;
 
 		return vT.back();
 	}

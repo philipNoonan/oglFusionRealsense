@@ -51,6 +51,8 @@ namespace rgbd
 		gl::Framebuffer indexMapFBO;
 		gl::Framebuffer virtualFrameFBO;
 
+		gl::Texture::Ptr indexMap;
+
 		std::array<gl::AtomicCounterBuffer, 2> atomic;
 		std::array<gl::ShaderStorageBuffer<GlobalMapData>, 2> ssbo;
 

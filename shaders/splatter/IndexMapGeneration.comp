@@ -1,0 +1,56 @@
+#version 430 core
+
+layout(local_size_x = 512, local_size_y = 1) in; // 
+
+layout(binding=0, r32f) uniform image2D outIndexMap;
+// Data structure
+struct gMapData
+{
+	vec4 data;	// Confidence, radius, timestamp, and empty data 
+	vec4 vert;	// Vertex
+	vec4 norm;	// Normal
+	vec4 color;	// Color
+};
+// Distance global map
+layout(std430, binding = 0) buffer gMap
+{
+	gMapData elems[];
+};
+uniform mat4 invT;
+uniform mat4 P;
+
+uniform vec2 imSize;
+uniform vec4 cam;
+uniform float maxDepth;
+
+
+vec3 projectPoint(vec3 p)
+{
+    return vec3(((((cam.z * p.x) / p.z) + cam.x) - (imSize.x * 0.5)) / (imSize.x * 0.5),
+                ((((cam.w * p.y) / p.z) + cam.y) - (imSize.y * 0.5)) / (imSize.y * 0.5),
+                p.z / maxDepth);
+}
+
+vec3 projectPointImage(vec3 p)
+{
+    return vec3(((cam.z * p.x) / p.z) + cam.x,
+                ((cam.w * p.y) / p.z) + cam.y,
+                p.z);
+}
+vec4 transPtForGL(vec4 v)
+{
+	v = invT * v;
+	return vec4(projectPointImage(vec3(v.xy, v.z)), 1.0f);
+	//return P * vec4(v.xy, -v.z, 1.0);
+}
+
+void main()
+{
+	uint vertIdx = gl_GlobalInvocationID.x;
+
+	vec4 position = transPtForGL(elems[vertIdx].vert);
+
+	imageStore(outIndexMap, ivec2(position.x + 0.5f, position.y + 0.5f), vec4(vertIdx));
+
+	
+}

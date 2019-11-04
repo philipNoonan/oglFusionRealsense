@@ -29,6 +29,8 @@ namespace rgbd
 		progs.insert(std::make_pair("DownSamplingV", std::make_shared<gl::Shader>(folderPath + "DownSamplingV.comp")));
 		progs.insert(std::make_pair("DownSamplingN", std::make_shared<gl::Shader>(folderPath + "DownSamplingN.comp")));
 		progs.insert(std::make_pair("IndexMapGeneration", std::make_shared<gl::Shader>(folderPath + "IndexMapGeneration.vert", folderPath + "IndexMapGeneration.frag")));
+
+		//progs.insert(std::make_pair("IndexMapGeneration", std::make_shared<gl::Shader>(folderPath + "IndexMapGeneration.comp")));
 		progs.insert(std::make_pair("GlobalMapUpdate", std::make_shared<gl::Shader>(folderPath + "GlobalMapUpdate.comp")));
 		progs.insert(std::make_pair("SurfaceSplatting", std::make_shared<gl::Shader>(folderPath + "SurfaceSplatting.vert", folderPath + "SurfaceSplatting.frag")));
 		progs.insert(std::make_pair("UnnecessaryPointRemoval", std::make_shared<gl::Shader>(folderPath + "UnnecessaryPointRemoval.comp")));
@@ -104,6 +106,10 @@ namespace rgbd
 	)
 	{
 
+		//GLuint query;
+		//glGenQueries(1, &query);
+		//glBeginQuery(GL_TIME_ELAPSED, query);
+
 
 
 		clock_t start_icp = clock();
@@ -120,8 +126,17 @@ namespace rgbd
 		}
 
 
+		//glEndQuery(GL_TIME_ELAPSED);
+		//GLuint available = 0;
+		//while (!available) {
+		//	glGetQueryObjectuiv(query, GL_QUERY_RESULT_AVAILABLE, &available);
+		//}
+		//// elapsed time in nanoseconds
+		//GLuint64 elapsed;
+		//glGetQueryObjectui64vEXT(query, GL_QUERY_RESULT, &elapsed);
+		//std::cout << "calc time : " << elapsed / 1000000.0 << std::endl;
 
-		clock_t start_update_frame2 = clock();
+		//clock_t start_update_frame2 = clock();
 		virtualFrame.update(); // 0.06 ms
 		//std::cout << "  Update frame #2: " << (clock() - start_update_frame2) / (double)CLOCKS_PER_SEC << " sec" << std::endl;
 
@@ -142,27 +157,38 @@ namespace rgbd
 	{
 
 
+
+
+
 		glm::mat4 invT = glm::inverse(vT.back());
 
-		clock_t start_idx_map = clock();
-		gMap->genIndexMap(invT); // 4 -5 ms 
+
+
+		//clock_t start_idx_map = clock();
+		gMap->genIndexMap(invT); // 1 - 2 ms 
 		//std::cout << "  Index map: " << (clock() - start_idx_map) / (double)CLOCKS_PER_SEC << " sec" << std::endl;
+
+
 
 
 		if (integrate)
 		{
-			clock_t start_update_map = clock();
+
+
+			//clock_t start_update_map = clock();
 			gMap->updateGlobalMap(currentFrame, vT.back(), static_cast<int>(vT.size())); // 2 ms
 			//std::cout << "  Update map: " << (clock() - start_update_map) / (double)CLOCKS_PER_SEC << " sec" << std::endl;
-			//std::cout << "  --> Map size: " << gMap->getMapSize() << std::endl;
+			std::cout << "  --> Map size: " << gMap->getMapSize() << std::endl;
 
 
 
-			clock_t start_remove_pts = clock();
+			//clock_t start_remove_pts = clock();
 			gMap->removeUnnecessaryPoints(static_cast<int>(vT.size())); // 3.5 ms
 			//std::cout << "  Remove points: " << (clock() - start_remove_pts) / (double)CLOCKS_PER_SEC << " sec" << std::endl;
 
 			//std::cout << "  --> Removed map size: " << gMap->getMapSize() << std::endl;
+
+
 
 		}
 
@@ -170,10 +196,9 @@ namespace rgbd
 
 
 
-		clock_t start_virtual_frame = clock();
+		//clock_t start_virtual_frame = clock();
 		gMap->genVirtualFrame(virtualFrame, invT); // 1.5 ms
 		//std::cout << "  Virtual frame: " << (clock() - start_virtual_frame) / (double)CLOCKS_PER_SEC << " sec" << std::endl;
-
 
 
 	}

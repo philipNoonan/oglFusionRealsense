@@ -84,7 +84,7 @@ namespace rgbd
 		//std::cout << "ae : " << ae << " : count : " << icpCount << std::endl;
 		if (ae > 2e-2 || isnan(ae) || ae == 0)
 		{
-		  	tracked = false;
+		  	//tracked = false;
 			//std::cout << "tracking lost" << std::endl;
 		}
 

@@ -16,7 +16,7 @@ namespace rgbd
 		{ "UnnecessaryPointRemoval", progs.at("UnnecessaryPointRemoval") },
 		{ "SurfaceSplatting", progs.at("SurfaceSplatting") } }
 	{
-		gl::Texture::Ptr indexMap = std::make_shared<gl::Texture>();
+		indexMap = std::make_shared<gl::Texture>();
 		indexMap->create(0, width * 4, height * 4, 1, gl::TextureType::FLOAT32);
 		indexMap->setFiltering(gl::TextureFilter::NEAREST);
 		indexMap->setWarp(gl::TextureWarp::CLAMP_TO_EDGE);
@@ -57,7 +57,7 @@ namespace rgbd
 		this->progs["IndexMapGeneration"]->setUniform("P", P);
 		this->progs["IndexMapGeneration"]->setUniform("maxDepth", 10.0f);
 		this->progs["IndexMapGeneration"]->setUniform("imSize", glm::vec2(width, height));
-		this->progs["IndexMapGeneration"]->setUniform("cam", glm::vec4(K[2][0], K[2][1], K[0][0], K[1][1]));
+		this->progs["IndexMapGeneration"]->setUniform("cam", glm::vec4(K[2][0] * 1.0, K[2][1] * 1.0, K[0][0] * 1.0, K[1][1] * 1.0));
 
 
 		this->progs["GlobalMapUpdate"]->setUniform("timestamp", 0);
@@ -87,9 +87,10 @@ namespace rgbd
 
 	void GlobalMap::genIndexMap(const glm::mat4 &invT)
 	{
-		GLuint query;
-		glGenQueries(1, &query);
-		glBeginQuery(GL_TIME_ELAPSED, query);
+
+		//GLuint query;
+		//glGenQueries(1, &query);
+		//glBeginQuery(GL_TIME_ELAPSED, query);
 
 		glEnable(GL_DEPTH_TEST);
 
@@ -108,15 +109,55 @@ namespace rgbd
 		progs["IndexMapGeneration"]->disuse();
 		indexMapFBO.unbind();
 
-		glEndQuery(GL_TIME_ELAPSED);
-		GLuint available = 0;
-		while (!available) {
-			glGetQueryObjectuiv(query, GL_QUERY_RESULT_AVAILABLE, &available);
-		}
-		// elapsed time in nanoseconds
-		GLuint64 elapsed;
-		glGetQueryObjectui64vEXT(query, GL_QUERY_RESULT, &elapsed);
+
+
+		//glEndQuery(GL_TIME_ELAPSED);
+		//GLuint available = 0;
+		//while (!available) {
+		//	glGetQueryObjectuiv(query, GL_QUERY_RESULT_AVAILABLE, &available);
+		//}
+		//// elapsed time in nanoseconds
+		//GLuint64 elapsed;
+		//glGetQueryObjectui64vEXT(query, GL_QUERY_RESULT, &elapsed);
 		//std::cout << "gen id time : " << elapsed / 1000000.0 << std::endl;
+
+		//GLuint query;
+		//glGenQueries(1, &query);
+		//glBeginQuery(GL_TIME_ELAPSED, query);
+
+
+		//glEnable(GL_DEPTH_TEST);
+
+		//indexMapFBO.bind();
+		//glClearColor(-1.0f, -1.0f, -1.0f, -1.0f);
+		//glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+		//glViewport(0, 0, indexMapFBO.getWidth(), indexMapFBO.getHeight());
+
+		//indexMapFBO.unbind();
+
+
+		//progs["IndexMapGeneration"]->use();
+		//progs["IndexMapGeneration"]->setUniform("invT", invT);
+
+		//ssbo[buffSwitch].bindBase(0);
+		//indexMap->bindImage(0, 0, GL_READ_WRITE);
+
+		//glDrawArrays(GL_POINTS, 0, getMapSize());
+		//glDispatchCompute(GLHelper::divup(getMapSize(), 512) ,1 , 1);
+
+		//progs["IndexMapGeneration"]->disuse();
+
+		//glEndQuery(GL_TIME_ELAPSED);
+		//GLuint available = 0;
+		//while (!available) {
+		//	glGetQueryObjectuiv(query, GL_QUERY_RESULT_AVAILABLE, &available);
+		//}
+		//// elapsed time in nanoseconds
+		//GLuint64 elapsed;
+		//glGetQueryObjectui64vEXT(query, GL_QUERY_RESULT, &elapsed);
+		//std::cout << "gen id time : " << elapsed / 1000000.0 << std::endl;
+
+
 
 	}
 
@@ -127,9 +168,9 @@ namespace rgbd
 	)
 	{
 
-		GLuint query;
-		glGenQueries(1, &query);
-		glBeginQuery(GL_TIME_ELAPSED, query);
+		//GLuint query;
+		//glGenQueries(1, &query);
+		//glBeginQuery(GL_TIME_ELAPSED, query);
 
 
 
@@ -156,54 +197,57 @@ namespace rgbd
 		atomic[buffSwitch].read(&mapSize, 0, 1);
 		progs["GlobalMapUpdate"]->disuse();
 
-		glEndQuery(GL_TIME_ELAPSED);
-		GLuint available = 0;
-		while (!available) {
-			glGetQueryObjectuiv(query, GL_QUERY_RESULT_AVAILABLE, &available);
-		}
-		// elapsed time in nanoseconds
-		GLuint64 elapsed;
-		glGetQueryObjectui64vEXT(query, GL_QUERY_RESULT, &elapsed);
-		//std::cout << "gmu time : " << elapsed / 1000000.0 << std::endl;
+		//glEndQuery(GL_TIME_ELAPSED);
+		//GLuint available = 0;
+		//while (!available) {
+		//	glGetQueryObjectuiv(query, GL_QUERY_RESULT_AVAILABLE, &available);
+		//}
+		//// elapsed time in nanoseconds
+		//GLuint64 elapsed;
+		//glGetQueryObjectui64vEXT(query, GL_QUERY_RESULT, &elapsed);
+		////std::cout << "gmu time : " << elapsed / 1000000.0 << std::endl;
 
 	}
 
 	void GlobalMap::removeUnnecessaryPoints(int timestamp)
 	{
+		//if (timestamp % 10)
+		//{
+		//	GLuint query;
+		//	glGenQueries(1, &query);
+		//	glBeginQuery(GL_TIME_ELAPSED, query);
 
-		GLuint query;
-		glGenQueries(1, &query);
-		glBeginQuery(GL_TIME_ELAPSED, query);
 
+			std::array<int, 2> _buffSwitch = { buffSwitch, (buffSwitch + 1) % 2 };
 
-		std::array<int, 2> _buffSwitch = { buffSwitch, (buffSwitch + 1) % 2 };
+			progs["UnnecessaryPointRemoval"]->use();
+			progs["UnnecessaryPointRemoval"]->setUniform("timestamp", timestamp);
+			progs["UnnecessaryPointRemoval"]->setUniform("c_stable", GlobalMapConstParam::CSTABLE);
 
-		progs["UnnecessaryPointRemoval"]->use();
-		progs["UnnecessaryPointRemoval"]->setUniform("timestamp", timestamp);
-		progs["UnnecessaryPointRemoval"]->setUniform("c_stable", GlobalMapConstParam::CSTABLE);
+			GLuint valueZero(0);
+			atomic[_buffSwitch.back()].bindBase(1);
+			atomic[_buffSwitch.back()].update(&valueZero, 0, 1);
+			ssbo[_buffSwitch.front()].bindBase(0);
+			ssbo[_buffSwitch.back()].bindBase(1);
 
-		GLuint valueZero(0);
-		atomic[_buffSwitch.back()].bindBase(1);
-		atomic[_buffSwitch.back()].update(&valueZero, 0, 1);
-		ssbo[_buffSwitch.front()].bindBase(0);
-		ssbo[_buffSwitch.back()].bindBase(1);
+			glDispatchCompute(GLHelper::divup(mapSize, 400), 1, 1);
 
-		glDispatchCompute(GLHelper::divup(mapSize, 400), 1, 1);
+			atomic[_buffSwitch.back()].read(&mapSize, 0, 1);
+			progs["UnnecessaryPointRemoval"]->disuse();
 
-		atomic[_buffSwitch.back()].read(&mapSize, 0, 1);
-		progs["UnnecessaryPointRemoval"]->disuse();
+			buffSwitch = _buffSwitch.back();
 
-		buffSwitch = _buffSwitch.back();
+		//	glEndQuery(GL_TIME_ELAPSED);
+		//	GLuint available = 0;
+		//	while (!available) {
+		//		glGetQueryObjectuiv(query, GL_QUERY_RESULT_AVAILABLE, &available);
+		//	}
+		//	// elapsed time in nanoseconds
+		//	GLuint64 elapsed;
+		//	glGetQueryObjectui64vEXT(query, GL_QUERY_RESULT, &elapsed);
+		//	//std::cout << timestamp << " upr time : " << elapsed / 1000000.0 << std::endl;
+		//}
 
-		glEndQuery(GL_TIME_ELAPSED);
-		GLuint available = 0;
-		while (!available) {
-			glGetQueryObjectuiv(query, GL_QUERY_RESULT_AVAILABLE, &available);
-		}
-		// elapsed time in nanoseconds
-		GLuint64 elapsed;
-		glGetQueryObjectui64vEXT(query, GL_QUERY_RESULT, &elapsed);
-		//std::cout << "upr time : " << elapsed / 1000000.0 << std::endl;
 
 	}
 
@@ -213,9 +257,9 @@ namespace rgbd
 	)
 	{
 
-		GLuint query;
-		glGenQueries(1, &query);
-		glBeginQuery(GL_TIME_ELAPSED, query);
+		//GLuint query;
+		//glGenQueries(1, &query);
+		//glBeginQuery(GL_TIME_ELAPSED, query);
 
 
 
@@ -250,14 +294,14 @@ namespace rgbd
 		glDisable(GL_PROGRAM_POINT_SIZE);
 		glDisable(GL_POINT_SPRITE);
 
-		glEndQuery(GL_TIME_ELAPSED);
-		GLuint available = 0;
-		while (!available) {
-			glGetQueryObjectuiv(query, GL_QUERY_RESULT_AVAILABLE, &available);
-		}
-		// elapsed time in nanoseconds
-		GLuint64 elapsed;
-		glGetQueryObjectui64vEXT(query, GL_QUERY_RESULT, &elapsed);
+		//glEndQuery(GL_TIME_ELAPSED);
+		//GLuint available = 0;
+		//while (!available) {
+		//	glGetQueryObjectuiv(query, GL_QUERY_RESULT_AVAILABLE, &available);
+		//}
+		//// elapsed time in nanoseconds
+		//GLuint64 elapsed;
+		//glGetQueryObjectui64vEXT(query, GL_QUERY_RESULT, &elapsed);
 		//std::cout << "ss time : " << elapsed / 1000000.0 << std::endl;
 
 	}
