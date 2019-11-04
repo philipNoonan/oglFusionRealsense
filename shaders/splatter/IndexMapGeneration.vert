@@ -46,7 +46,16 @@ void main()
 {
 	idx = gl_VertexID;
 
-	gl_Position = transPtForGL(elems[idx].vert);
+	vec4 tempPos = transPtForGL(elems[idx].vert);
+
+	if (tempPos.z < 0)
+	{
+		gl_Position = vec4(10000,10000,0,0);
+	}
+	else
+	{
+		gl_Position = tempPos;
+	}
 
 	
 }
