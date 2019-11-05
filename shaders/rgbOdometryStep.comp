@@ -7,8 +7,8 @@ layout(binding = 1, rgba8) uniform image2D nextColorMap;
 
 layout(binding = 2, rgba8) uniform image2D gradientMap;
 
-layout(binding = 3, r16ui) uniform uimage2D lastDepthMap;
-layout(binding = 4, r16ui) uniform uimage2D nextDepthMap;
+layout(binding = 3, r32f) uniform image2D lastDepthMap;
+layout(binding = 4, r32f) uniform image2D nextDepthMap;
 
 layout(binding = 5, rgba32f) uniform image2D nextVertexMap; // is this next?
 
@@ -17,9 +17,8 @@ float FLT_EPSILON = 1.19209290E-07f;
 
 uniform float sigma;
 uniform float sobelScale;
-uniform float depthScale;
 uniform float minScale;
-uniform vec4 kt;
+uniform vec3 kt;
 uniform mat3 krkinv;
 uniform float maxDepthDelta;
 uniform vec4 cam; // cx cy fx fy

@@ -62,6 +62,10 @@ namespace rgbd
 		frameData[0].vertexMap->createStorage(maxLevel, width, height, 4, GL_RGBA32F, gl::TextureType::FLOAT32, 0);
 		frameData[0].normalMap->createStorage(maxLevel, width, height, 4, GL_RGBA32F, gl::TextureType::FLOAT32, 0);
 
+		frameData[0].depthPreviousMap = std::make_shared<gl::Texture>();
+		frameData[0].depthPreviousMap->createStorage(maxLevel, width, height, 1, GL_R32F, gl::TextureType::FLOAT32, 0);
+
+
 
 		/*for (int lv = 0; lv < frameData.size(); ++lv)
 		{
@@ -162,6 +166,11 @@ namespace rgbd
 					frameData[0].colorPreviousMap->getID(), GL_TEXTURE_2D, lvl, 0, 0, 0,
 					frameData[0].colorFilteredMap->getWidth() >> lvl, frameData[0].colorFilteredMap->getHeight() >> lvl, 1);
 			}
+
+			glCopyImageSubData(frameData[0].depthMap->getID(), GL_TEXTURE_2D, 0, 0, 0, 0,
+				frameData[0].depthPreviousMap->getID(), GL_TEXTURE_2D, 0, 0, 0, 0,
+				frameData[0].depthMap->getWidth(), frameData[0].depthMap->getHeight(), 1);
+
 		}
 
 
@@ -238,6 +247,10 @@ namespace rgbd
 					frameData[0].colorFilteredMap->getWidth() >> lvl, frameData[0].colorFilteredMap->getHeight() >> lvl, 1);
 			}
 			
+			glCopyImageSubData(frameData[0].depthMap->getID(), GL_TEXTURE_2D, 0, 0, 0, 0,
+				frameData[0].depthPreviousMap->getID(), GL_TEXTURE_2D, 0, 0, 0, 0,
+				frameData[0].depthMap->getWidth(), frameData[0].depthMap->getHeight(), 1);
+
 			firstFrame = false;
 		}
 
@@ -364,6 +377,11 @@ namespace rgbd
 	gl::Texture::Ptr Frame::getDepthMap(int lv) const
 	{
 		return frameData[lv].depthMap;
+	}
+
+	gl::Texture::Ptr Frame::getDepthPreviousMap(int lv) const
+	{
+		return frameData[lv].depthPreviousMap;
 	}
 
 	gl::Texture::Ptr Frame::getVertexMap(int lv) const

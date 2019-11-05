@@ -26,9 +26,9 @@ namespace rgbd
 		ssboRGBReductionOutput.unbind();
 
 		ssboRGBRGBJtJJtrSE3Output.bind();
-		ssboRGBReductionOutput.create(tempJtJOutputData.data(), 29, GL_DYNAMIC_DRAW);
-		ssboRGBReductionOutput.bindBase(2);
-		ssboRGBReductionOutput.unbind();
+		ssboRGBRGBJtJJtrSE3Output.create(tempJtJOutputData.data(), 29, GL_DYNAMIC_DRAW);
+		ssboRGBRGBJtJJtrSE3Output.bindBase(2);
+		ssboRGBRGBJtJJtrSE3Output.unbind();
 
 
 	}
@@ -50,24 +50,23 @@ namespace rgbd
 
 	void RGBOdometry::computeResiduals(
 		const rgbd::Frame &currentFrame,
-		const rgbd::Frame &virtualFrame,
 		const gl::Texture::Ptr & gradientMap,
 		const glm::vec3 kT,
 		const glm::mat3 krkinv
 	)
 	{
-		progs["rgbOdometry"]->setUniform("functionID", 1);
-		progs["rgbOdometry"]->setUniform("minScale", 1.0f);
-		progs["rgbOdometry"]->setUniform("depthScale", 1.0f);
+		progs["rgbOdometry"]->setUniform("functionID", 0);
+		progs["rgbOdometry"]->setUniform("minScale", 0.0f);
+		progs["rgbOdometry"]->setUniform("maxDepthDelta", 0.07f);
 		progs["rgbOdometry"]->setUniform("kt", kT);
 		progs["rgbOdometry"]->setUniform("krkinv", krkinv);
 
 		progs["rgbOdometry"]->use();
-		currentFrame.getColorMap()->bindImage(0, 0, GL_READ_ONLY);
-		virtualFrame.getColorMap()->bindImage(1, 0, GL_READ_ONLY);
+		currentFrame.getColorPreviousMap()->bindImage(0, 0, GL_READ_ONLY);
+		currentFrame.getColorFilteredMap()->bindImage(1, 0, GL_READ_ONLY);
 		gradientMap->bindImage(2, 0, GL_READ_ONLY);
-		currentFrame.getDepthMap()->bindImage(3, 0, GL_READ_ONLY);
-		virtualFrame.getDepthMap()->bindImage(4, 0, GL_READ_ONLY);
+		currentFrame.getDepthPreviousMap()->bindImage(3, 0, GL_READ_ONLY);
+		currentFrame.getDepthMap()->bindImage(4, 0, GL_READ_ONLY);
 
 		ssboRGBReduction.bindBase(0);
 
@@ -83,6 +82,14 @@ namespace rgbd
 
 		glDispatchCompute(8, 1, 1);
 		progs["rgbOdometryReduce"]->disuse();
+
+		std::vector<float> tmpOutputData(8);
+		std::vector<BufferReductionRGB> tmpMapData(currentFrame.getColorMap()->getWidth() * currentFrame.getColorMap()->getHeight());
+
+		ssboRGBReductionOutput.read(tmpOutputData.data(), 0, 8);
+		ssboRGBReduction.read(tmpMapData.data(), 0, currentFrame.getColorMap()->getWidth() * currentFrame.getColorMap()->getHeight());
+
+
 	}
 
 	void RGBOdometry::computeStep(

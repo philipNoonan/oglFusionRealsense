@@ -35,6 +35,7 @@ namespace rgbd
 		gl::Texture::Ptr colorFilteredMap;
 		gl::Texture::Ptr colorAlignedToDepthMap;
 		gl::Texture::Ptr depthMap;
+		gl::Texture::Ptr depthPreviousMap;
 		gl::Texture::Ptr vertexMap;
 		gl::Texture::Ptr normalMap;
 
@@ -139,6 +140,7 @@ namespace rgbd
 		gl::Texture::Ptr getColorAlignedToDepthMap(int lv = 0) const;
 
 		gl::Texture::Ptr getDepthMap(int lv = 0) const;
+		gl::Texture::Ptr getDepthPreviousMap(int lv = 0) const;
 		gl::Texture::Ptr getVertexMap(int lv = 0) const;
 		gl::Texture::Ptr getNormalMap(int lv = 0) const;
 		gl::Texture::Ptr getTrackMap() const;

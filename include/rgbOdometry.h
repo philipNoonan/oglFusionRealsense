@@ -30,7 +30,6 @@ namespace rgbd
 		);
 		void computeResiduals(
 			const rgbd::Frame &currentFrame,
-			const rgbd::Frame &virtualFrame,
 			const gl::Texture::Ptr & gradientMap,
 			const glm::vec3 kT,
 			const glm::mat3 krkinv

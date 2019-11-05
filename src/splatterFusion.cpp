@@ -97,7 +97,7 @@ namespace rgbd
 		K[2][0] = cam.x;
 		K[2][1] = cam.y;
 
-		glm::mat4 Rt = glm::inverse(pose);
+		glm::mat4 Rt = glm::mat4(1.0f);// glm::inverse(pose);
 		glm::mat3 R = glm::mat3(Rt);
 
 		glm::mat3 KRK_inv = K * R  * glm::inverse(K);
@@ -109,7 +109,6 @@ namespace rgbd
 
 		rgbOdo->computeResiduals(
 			currentFrame,
-			virtualFrame,
 			gradientMap,
 			kT,
 			KRK_inv
