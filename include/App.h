@@ -56,6 +56,7 @@
 #include "p2pFusion.h"
 #include "p2vFusion.h"
 #include "GlobalVolume.h"
+#include "GradientFilter.h"
 
 
 class App : gl::Window
@@ -68,6 +69,7 @@ private:
 
 	std::array<rgbd::Frame, 3> frame;
 	rgbd::splatterFusion slam;
+	rgbd::GradientFilter gradFilter;
 	rgbd::p2pFusion p2pFusion;
 	rgbd::p2vFusion p2vFusion;
 	gl::Quad quad;
@@ -85,7 +87,7 @@ private:
 	bool runP2V();
 	void initSplatter();
 	void clearSplatter();
-
+	void initGradient();
 	void initP2PFusion();
 	void initP2VFusion();
 	int getRenderOptions(bool depth, bool normal, bool color, bool infra, bool flow);

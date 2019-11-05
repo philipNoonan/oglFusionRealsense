@@ -15,6 +15,9 @@ namespace rgbd
 		gl::ShaderStorageBuffer<BufferReductionRGB> ssboRGBReduction;
 		gl::ShaderStorageBuffer<float> ssboRGBReductionOutput;
 
+		//gl::ShaderStorageBuffer<BufferReductionRGB> ssboRGBJtJJtrSE3;
+		gl::ShaderStorageBuffer<float> ssboRGBRGBJtJJtrSE3Output;
+
 	public:
 		RGBOdometry(
 			int width,
@@ -28,7 +31,8 @@ namespace rgbd
 		void computeResiduals(
 			const rgbd::Frame &currentFrame,
 			const rgbd::Frame &virtualFrame,
-			const glm::vec4 kT,
+			const gl::Texture::Ptr & gradientMap,
+			const glm::vec3 kT,
 			const glm::mat3 krkinv
 		);
 

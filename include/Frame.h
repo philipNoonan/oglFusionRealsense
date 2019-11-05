@@ -13,6 +13,7 @@
 #include "GLCore/Texture.h"
 #include "ComputeShader.h"
 #include "BilateralFilter.h"
+#include "GradientFilter.h"
 #include "contrastAdaptiveSharpening.h"
 #include "CalcVertexMap.h"
 #include "CalcNormalMap.h"
@@ -30,12 +31,12 @@ namespace rgbd
 	struct FrameData
 	{
 		gl::Texture::Ptr colorMap;
+		gl::Texture::Ptr colorPreviousMap;
 		gl::Texture::Ptr colorFilteredMap;
 		gl::Texture::Ptr colorAlignedToDepthMap;
 		gl::Texture::Ptr depthMap;
 		gl::Texture::Ptr vertexMap;
 		gl::Texture::Ptr normalMap;
-		gl::Texture::Ptr gradientMap;
 
 		typedef std::shared_ptr<rgbd::FrameData> Ptr;
 	};
@@ -45,6 +46,8 @@ namespace rgbd
 	private:
 		int width;
 		int height;
+
+		bool firstFrame = true;
 
 		uint64_t colorTime;
 		uint64_t depthTime;
@@ -131,17 +134,18 @@ namespace rgbd
 		uint64_t getDepthTime();
 
 		gl::Texture::Ptr getColorMap(int lv = 0) const;
+		gl::Texture::Ptr getColorPreviousMap(int lv = 0) const;
 		gl::Texture::Ptr getColorFilteredMap(int lv = 0) const;
 		gl::Texture::Ptr getColorAlignedToDepthMap(int lv = 0) const;
 
 		gl::Texture::Ptr getDepthMap(int lv = 0) const;
 		gl::Texture::Ptr getVertexMap(int lv = 0) const;
 		gl::Texture::Ptr getNormalMap(int lv = 0) const;
-		gl::Texture::Ptr getGradientMap(int lv = 0) const;
 		gl::Texture::Ptr getTrackMap() const;
 		gl::Texture::Ptr getTestMap() const;
 		gl::Texture::Ptr getInfraMap() const;
 		gl::Texture::Ptr getMappingMap() const;
+
 
 		typedef std::shared_ptr<rgbd::Frame> Ptr;
 	};

@@ -38,8 +38,8 @@ namespace rgbd
 		progs.insert(std::make_pair("p2pReduce", std::make_shared<gl::Shader>(folderPath + "p2pReduce.comp")));
 		progs.insert(std::make_pair("rgbOdometry", std::make_shared<gl::Shader>(folderPath + "rgbOdometry.comp")));
 		progs.insert(std::make_pair("rgbOdometryReduce", std::make_shared<gl::Shader>(folderPath + "rgbOdometryReduce.comp")));
-		//progs.insert(std::make_pair("rgbStep", std::make_shared<gl::Shader>(folderPath + "rgbStep.comp")));
-		//progs.insert(std::make_pair("rgbStepReduce", std::make_shared<gl::Shader>(folderPath + "rgbStepReduce.comp")));
+		progs.insert(std::make_pair("rgbOdometryStep", std::make_shared<gl::Shader>(folderPath + "rgbOdometryStep.comp")));
+		progs.insert(std::make_pair("rgbOdometryStepReduce", std::make_shared<gl::Shader>(folderPath + "rgbOdometryStepReduce.comp")));
 
 	}
 
@@ -84,17 +84,35 @@ namespace rgbd
 
 	void splatterFusion::performColorTracking(
 		const rgbd::Frame &currentFrame,
-		const rgbd::Frame &virtualFrame 
+		const rgbd::Frame &virtualFrame,
+		const gl::Texture::Ptr &gradientMap,
+		glm::mat4 pose,
+		glm::vec4 cam // cx, cy, fx, fy
 		)
 	{
-		glm::vec4 kT;
-		glm::mat3 krkinv;
+
+		glm::mat3 K = glm::mat3(1.0f);
+		K[0][0] = cam.z;
+		K[1][1] = cam.w;
+		K[2][0] = cam.x;
+		K[2][1] = cam.y;
+
+		glm::mat4 Rt = glm::inverse(pose);
+		glm::mat3 R = glm::mat3(Rt);
+
+		glm::mat3 KRK_inv = K * R  * glm::inverse(K);
+
+		glm::vec3 kT = glm::vec3(Rt[3][0], Rt[3][1], Rt[3][2]);
+
+		kT = K * kT;
+
 
 		rgbOdo->computeResiduals(
 			currentFrame,
 			virtualFrame,
+			gradientMap,
 			kT,
-			krkinv
+			KRK_inv
 		);
 	}
 
@@ -178,7 +196,7 @@ namespace rgbd
 			//clock_t start_update_map = clock();
 			gMap->updateGlobalMap(currentFrame, vT.back(), static_cast<int>(vT.size())); // 2 ms
 			//std::cout << "  Update map: " << (clock() - start_update_map) / (double)CLOCKS_PER_SEC << " sec" << std::endl;
-			std::cout << "  --> Map size: " << gMap->getMapSize() << std::endl;
+			//std::cout << "  --> Map size: " << gMap->getMapSize() << std::endl;
 
 
 

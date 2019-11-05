@@ -7,11 +7,14 @@ namespace rgbd
 		int height,
 		const std::map<std::string, const gl::Shader::Ptr> &progs
 		) : progs{ { "rgbOdometry", progs.at("rgbOdometry") },
-			   { "rgbOdometryReduce", progs.at("rgbOdometryReduce") } }
+			       { "rgbOdometryReduce", progs.at("rgbOdometryReduce") },
+			       { "rgbOdometryStep", progs.at("rgbOdometryStep") },
+				   { "rgbOdometryStepReduce", progs.at("rgbOdometryStepReduce") } }
 	{
 		std::vector<BufferReductionRGB> tmpMapData(width * height);
 		std::vector<float> tempOutputData(8);
-		
+		std::vector<float> tempJtJOutputData(29);
+
 		ssboRGBReduction.bind();
 		ssboRGBReduction.create(tmpMapData.data(), width * height, GL_DYNAMIC_DRAW);
 		ssboRGBReduction.bindBase(0);
@@ -21,6 +24,13 @@ namespace rgbd
 		ssboRGBReductionOutput.create(tempOutputData.data(), 8, GL_DYNAMIC_DRAW);
 		ssboRGBReductionOutput.bindBase(1);
 		ssboRGBReductionOutput.unbind();
+
+		ssboRGBRGBJtJJtrSE3Output.bind();
+		ssboRGBReductionOutput.create(tempJtJOutputData.data(), 29, GL_DYNAMIC_DRAW);
+		ssboRGBReductionOutput.bindBase(2);
+		ssboRGBReductionOutput.unbind();
+
+
 	}
 
 	void RGBOdometry::computeDerivativeImages(
@@ -41,7 +51,8 @@ namespace rgbd
 	void RGBOdometry::computeResiduals(
 		const rgbd::Frame &currentFrame,
 		const rgbd::Frame &virtualFrame,
-		const glm::vec4 kT,
+		const gl::Texture::Ptr & gradientMap,
+		const glm::vec3 kT,
 		const glm::mat3 krkinv
 	)
 	{
@@ -54,7 +65,7 @@ namespace rgbd
 		progs["rgbOdometry"]->use();
 		currentFrame.getColorMap()->bindImage(0, 0, GL_READ_ONLY);
 		virtualFrame.getColorMap()->bindImage(1, 0, GL_READ_ONLY);
-		virtualFrame.getGradientMap()->bindImage(2, 0, GL_READ_ONLY);
+		gradientMap->bindImage(2, 0, GL_READ_ONLY);
 		currentFrame.getDepthMap()->bindImage(3, 0, GL_READ_ONLY);
 		virtualFrame.getDepthMap()->bindImage(4, 0, GL_READ_ONLY);
 
@@ -72,5 +83,14 @@ namespace rgbd
 
 		glDispatchCompute(8, 1, 1);
 		progs["rgbOdometryReduce"]->disuse();
+	}
+
+	void RGBOdometry::computeStep(
+		const rgbd::Frame &currentFrame,
+		const rgbd::Frame &virtualFrame
+	)
+	{
+
+
 	}
 }

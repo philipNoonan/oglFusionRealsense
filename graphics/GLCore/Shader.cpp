@@ -243,6 +243,10 @@ namespace gl
 		glUseProgram(0);
 	}
 
+	template<> void Shader::setUniform<bool>(const std::string &name, const bool &value)
+	{
+		glProgramUniform1i(prog, getUniformLoc(name), value);
+	}
 	template<> void Shader::setUniform<GLfloat>(const std::string &name, const GLfloat &value)
 	{
 		glProgramUniform1f(prog, getUniformLoc(name), value);

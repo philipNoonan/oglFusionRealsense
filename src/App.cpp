@@ -23,6 +23,14 @@ App::~App()
 {
 }
 
+void App::initGradient()
+{
+	std::map<std::string, const gl::Shader::Ptr> progsForGrdient;
+	std::string pathToShaders("./shaders/");
+	gradFilter.loadShaders(progsForGrdient, pathToShaders);
+
+	gradFilter.init(frame[rgbd::FRAME::CURRENT].getWidth(), frame[rgbd::FRAME::CURRENT].getHeight(), progsForGrdient);
+}
 
 void App::initSplatter()
 {
@@ -172,6 +180,7 @@ bool App::runSLAM()
 	glGenQueries(1, &query);
 	glBeginQuery(GL_TIME_ELAPSED, query);
 
+	
 	glViewport(0, 0, width, height);
 	bool status = true;
 	frame[rgbd::FRAME::CURRENT].update(cameraInterface.getColorQueues(), cameraInterface.getDepthQueues(), cameraInterface.getInfraQueues(), numberOfCameras, cameraInterface.getDepthUnit(0) / 1000000.0f, glm::ivec2(m_pointX, m_pointY), iOff, depthMat, sharpnessValue);
@@ -188,11 +197,8 @@ bool App::runSLAM()
 	//{
 		slam.updateGlobalMap(frame[rgbd::FRAME::CURRENT], frame[rgbd::FRAME::VIRTUAL], integratingFlag);
 	//}
-	
 
 	//std::cout << glm::to_string(glm::transpose(T)) << std::endl;
-
-
 
 	glEndQuery(GL_TIME_ELAPSED);
 	GLuint available = 0;
@@ -203,6 +209,18 @@ bool App::runSLAM()
 	GLuint64 elapsed;
 	glGetQueryObjectui64vEXT(query, GL_QUERY_RESULT, &elapsed);
 	std::cout << "splat time : " << elapsed / 1000000.0 << std::endl;
+
+
+
+	gradFilter.setFrames(frame[rgbd::FRAME::CURRENT].getColorFilteredMap(), frame[rgbd::FRAME::CURRENT].getColorPreviousMap());
+	gradFilter.execute(gradFilter.getGradientMap(), 0, 3.0f, 10.0f, false);
+
+	slam.performColorTracking(frame[rgbd::FRAME::CURRENT], frame[rgbd::FRAME::VIRTUAL], gradFilter.getGradientMap(), slam.getPose(), glm::vec4(cameraInterface.getDepthIntrinsics(0).cx, cameraInterface.getDepthIntrinsics(0).cy, cameraInterface.getDepthIntrinsics(0).fx, cameraInterface.getDepthIntrinsics(0).fy));
+
+
+
+
+
 
 	return status;
 }
@@ -1433,12 +1451,16 @@ void App::setUpGPU()
 	kRenderInit();
 
 	gFloodInit();
+
 	
 	initSplatter();
 	
 	initP2PFusion();
 
 	initP2VFusion();
+
+	initGradient();
+
 
 }
 

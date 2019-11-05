@@ -80,7 +80,7 @@ namespace gl
 		return internalFormat;
 	}
 
-	GLenum Texture::getFormat(TextureType type, int channels, bool invertChannels)
+	GLenum Texture::getFormat(TextureType type, int channels, bool invertChannels, bool normalized)
 	{
 		GLenum format = GL_RGB;
 
@@ -140,7 +140,7 @@ namespace gl
 		this->height = height;
 
 		internalFormat = getInternalFormat(type, channels);
-		format = getFormat(type, channels, invertChannels);
+		format = getFormat(type, channels, invertChannels, 0);
 		if (type == TextureType::DEPTH || type == TextureType::FLOAT16 || type == TextureType::FLOAT32)
 		{
 			dataType = GL_FLOAT;
@@ -167,7 +167,8 @@ namespace gl
 		this->height = h;
 
 		internalFormat = intFormat;// getInternalFormat(type, channels);
-		format = getFormat(type, channels, normalized);
+		bool inverted = false;
+		format = getFormat(type, channels, inverted, normalized);
 		if (type == TextureType::FLOAT16 || type == TextureType::FLOAT32)
 		{
 			dataType = GL_FLOAT;
@@ -179,6 +180,10 @@ namespace gl
 		else if (type == TextureType::UINT32)
 		{
 			dataType = GL_UNSIGNED_INT;
+		}
+		else if (type == TextureType::COLOR)
+		{
+			dataType = GL_UNSIGNED_BYTE;
 		}
 
 		bind();

@@ -4,6 +4,29 @@ layout(local_size_x = 112, local_size_y = 1) in;
 
 uniform ivec2 imSize;
 
+struct JtJJtrSE3
+{
+    // // 27 floats for each product (27)
+    //float aa, ab, ac, ad, ae, af, ag,
+    //          bb, bc, bd, be, bf, bg,
+    //              cc, cd, ce, cf, cg,
+    //                  dd, de, df, dg,
+    //                      ee, ef, eg,
+    //                          ff, fg;
+
+	float data[27];
+
+    //Extra data needed (29)
+    float residual;
+	float inliers;
+};
+
+struct rowSE3
+{
+	float data[7];
+	float inliers;
+};
+
 struct DataTerm
 {
 	ivec2 zero;
@@ -12,9 +35,9 @@ struct DataTerm
     bool valid;
 };
 
-layout(std430, binding = 0) buffer corresData
+layout(std430, binding = 0) buffer JtJJtrSE3Data
 {
-    DataTerm corresImg[];
+    rowSE3 JtJJtrSE3buffer[];
 };
 
 layout(std430, binding = 1) buffer reductionOutputData
@@ -22,7 +45,7 @@ layout(std430, binding = 1) buffer reductionOutputData
 	float outputData[];
 };
 
-shared float S[112];
+shared float S[112][29];
 
 
 void main()
@@ -30,52 +53,84 @@ void main()
 	int devNumber = 0;
     uint sline = gl_LocalInvocationID.x; // 0 - 111
 
-    float sums = 0.0f;//[32];
+    float sums[29];
 
-    //for (int i = 0; i < 32; ++i)
-    //{
-   //     sums[i] = 0.0f;
-    //}
+    for (int i = 0; i < 29; ++i)
+    {
+        sums[i] = 0.0f;
+    }
 
     for (uint y = gl_WorkGroupID.x; y < imSize.y; y += gl_NumWorkGroups.x) // y = (0:8); y < 424; y += 8
     {
         for (uint x = sline; x < imSize.x; x += gl_WorkGroupSize.x) // x = (0:112); x < 512; x += 112
         {
-            DataTerm row = corresImg[(y * imSize.x) + x];
+            rowSE3 row = JtJJtrSE3buffer[(y * imSize.x) + x];
 
+			if (row.inliers == 0)
+			{
+				continue;
+			}
 
+			sums[0] += row.data[0] * row.data[0],
+            sums[1] += row.data[0] * row.data[1],
+            sums[2] += row.data[0] * row.data[2],
+            sums[3] += row.data[0] * row.data[3],
+            sums[4] += row.data[0] * row.data[4],
+            sums[5] += row.data[0] * row.data[5],
+            sums[6] += row.data[0] * row.data[6],
 
-            if (row.valid == false)
-            {
-                continue;
-            }
+            sums[7] += row.data[1] * row.data[1],
+            sums[8] += row.data[1] * row.data[2],
+            sums[9] += row.data[1] * row.data[3],
+            sums[10] += row.data[1] * row.data[4],
+            sums[11] += row.data[1] * row.data[5],
+            sums[12] += row.data[1] * row.data[6],
 
-            sums += row.diff * row.diff;
+            sums[13] += row.data[2] * row.data[2],
+            sums[14] += row.data[2] * row.data[3],
+            sums[15] += row.data[2] * row.data[4],
+            sums[16] += row.data[2] * row.data[5],
+            sums[17] += row.data[2] * row.data[6],
+			
+			sums[18] += row.data[3] * row.data[3],
+            sums[19] += row.data[3] * row.data[4],
+            sums[20] += row.data[3] * row.data[5],
+            sums[21] += row.data[3] * row.data[6],
 
-            
+            sums[22] += row.data[4] * row.data[4],
+            sums[23] += row.data[4] * row.data[5],
+            sums[24] += row.data[4] * row.data[6],
 
-           // sums[28] += 1.0f;
+            sums[25] += row.data[5] * row.data[5],
+            sums[26] += row.data[5] * row.data[6],
+
+            sums[27] += row.data[6] * row.data[6],
+            sums[28] += row.inliers;
 
 
         }
     }
 
 
-    S[sline] = sums;
-  
+    for (int i = 0; i < 29; ++i)
+    {
+        S[sline][i] = sums[i];
+    }  
 
     barrier(); // wait for threads to finish
 
-    if (sline == 0)
-    {
-        for (uint i = 1; i < gl_WorkGroupSize.x; ++i)
-        {
-            S[0] += S[i];
-        }
+	if (sline < 29)
+	{
+		for (uint i = 1; i < gl_WorkGroupSize.x; ++i)
+		{
+			S[0][sline] += S[i][sline];
+		}
 
-        outputData[sline + gl_WorkGroupID.x] = S[0];
+		outputData[sline + gl_WorkGroupID.x * 29] = S[0][sline];
+		//imageStore(outputData, ivec2(sline, gl_WorkGroupID.x), vec4(S[0][sline]));
 
-    }
+	}
+
 
 
 }

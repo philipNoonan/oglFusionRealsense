@@ -45,7 +45,7 @@ namespace gl
 		GLenum dataType;
 
 		GLint getInternalFormat(TextureType type, int channels);
-		GLenum getFormat(TextureType type, int channels, bool invertChannels);
+		GLenum getFormat(TextureType type, int channels, bool invertChannels, bool normalized);
 
 	public:
 		Texture();

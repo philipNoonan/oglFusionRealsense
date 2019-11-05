@@ -49,7 +49,10 @@ namespace rgbd
 
 		void performColorTracking(
 			const rgbd::Frame &currentFrame,
-			const rgbd::Frame &virtualFrame
+			const rgbd::Frame &virtualFrame,
+			const gl::Texture::Ptr &gradientMap,
+			glm::mat4 pose,
+			glm::vec4 cam
 		);
 
 		glm::mat4 calcDevicePose(

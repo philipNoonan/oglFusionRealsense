@@ -13,13 +13,16 @@ layout(binding = 4, r16ui) uniform uimage2D nextDepthMap;
 layout(binding = 5, rgba32f) uniform image2D nextVertexMap; // is this next?
 
 
+float FLT_EPSILON = 1.19209290E-07f;
 
-
+uniform float sigma;
+uniform float sobelScale;
 uniform float depthScale;
 uniform float minScale;
 uniform vec4 kt;
 uniform mat3 krkinv;
 uniform float maxDepthDelta;
+uniform vec4 cam; // cx cy fx fy
 
 struct DataTerm
 {
@@ -29,9 +32,37 @@ struct DataTerm
     bool valid;
 };
 
+struct JtJJtrSE3
+{
+    // // 27 floats for each product (27)
+    //float aa, ab, ac, ad, ae, af, ag,
+    //          bb, bc, bd, be, bf, bg,
+    //              cc, cd, ce, cf, cg,
+    //                  dd, de, df, dg,
+    //                      ee, ef, eg,
+    //                          ff, fg;
+
+	float data[27];
+
+    //Extra data needed (29)
+    float residual;
+	float inliers;
+};
+
+struct rowSE3
+{
+	float data[7];
+	float inliers;
+};
+
 layout(std430, binding = 0) buffer corresData
 {
     DataTerm corresImg[];
+};
+
+layout(std430, binding = 0) buffer outputData
+{
+    rowSE3 outputBuffer[];
 };
 
 float luminance(vec3 rgb)
@@ -44,9 +75,12 @@ void main()
 	ivec2 pix = ivec2(gl_GlobalInvocationID.xy);
 	ivec2 imSize = imageSize(lastColorMap);
 
+	rowSE3 row;
+
+
 	DataTerm corresp = corresImg[pix.y * imSize.x + pix.x];
 
-	bool found_coresp = corresp.valid;
+	bool found_corresp = corresp.valid;
 
 	if (found_corresp)
 	{
@@ -59,7 +93,7 @@ void main()
 			w = 1;
 		}
 
-		float row6 = -w * corresp.diff;
+		row.data[6] = -w * corresp.diff;
 
 		vec3 cloudPoint = imageLoad(nextVertexMap, corresp.zero).xyz;
 
@@ -67,36 +101,27 @@ void main()
 
 		vec2 dI_dxdy_val = w * sobelScale * imageLoad(gradientMap, corresp.one).xy;
 
-		float v0 = dI_dxdy_val.x * fx * invZ;
-		float v1 = dI_dxdy_val.y * fy * invZ;
-		float v2 -(v0 * cloudPoint.x + v1 * cloudPoint.y) * invZ;
+		float v0 = dI_dxdy_val.x * cam.z * invZ;
+		float v1 = dI_dxdy_val.y * cam.w * invZ;
+		float v2 = -(v0 * cloudPoint.x + v1 * cloudPoint.y) * invZ;
 
 
+		row.data[0] = v0;
+        row.data[1] = v1;
+        row.data[2] = v2;
+        row.data[3] = -cloudPoint.z * v1 + cloudPoint.y * v2;
+        row.data[4] =  cloudPoint.z * v0 - cloudPoint.x * v2;
+        row.data[5] = -cloudPoint.y * v0 + cloudPoint.x * v1;
 
 
 	}
+	else
+	{
+	    row.data[0] = row.data[1] = row.data[2] = row.data[3] = row.data[4] = row.data[5] = row.data[6] = row.inliers = 0.f;
+	}
 
-	/*
-	
 
-        float row[7];
-
-
- 
-
-            row[0] = v0;
-            row[1] = v1;
-            row[2] = v2;
-            row[3] = -cloudPoint.z * v1 + cloudPoint.y * v2;
-            row[4] =  cloudPoint.z * v0 - cloudPoint.x * v2;
-            row[5] = -cloudPoint.y * v0 + cloudPoint.x * v1;
-        }
-        else
-        {
-            row[0] = row[1] = row[2] = row[3] = row[4] = row[5] = row[6] = 0.f;
-        }
-
-	*/
+	outputBuffer[pix.y * imSize.x + pix.x] = row;
 
 
 }

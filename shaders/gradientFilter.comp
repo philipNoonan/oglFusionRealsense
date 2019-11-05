@@ -1,0 +1,201 @@
+#version 430
+
+layout(local_size_x = 32, local_size_y = 32) in;
+
+uniform float EdgeThreshold = 0.1;
+uniform float lesser;
+uniform float upper;
+uniform int imageType;
+uniform int level;
+
+uniform bool useGaussian;
+
+
+// PLEASE REMEMBER THE DOUBLE LINE PROBLEM https://docs.opencv.org/3.2.0/d5/d0f/tutorial_py_gradients.html
+
+
+
+float luminance(vec3 color)
+{
+    return 0.299 * float(color.x) + 0.587 * float(color.y) + 0.114 * float(color.z);
+}
+
+shared float localData[gl_WorkGroupSize.x + 2][gl_WorkGroupSize.y + 2];
+shared float localDataY[gl_WorkGroupSize.x + 2][gl_WorkGroupSize.y + 2];
+
+layout (binding = 0) uniform sampler2D lastColorTex;
+layout (binding = 0) uniform sampler2D nextColorTex;
+
+
+layout(binding = 0, rg32f) uniform image2D gradientMap;
+
+void getGradients()  
+{ 
+    uvec2 p = gl_LocalInvocationID.xy + uvec2(1, 1);
+    //float lesser = 3.0f;
+    //float upper = 10.0f;
+
+    float norm = 1.0f;// / (4 * lesser + 2 * upper); // why does applying the correct norm introduce a lot more noise?
+
+
+    float sx = norm * (- (lesser * localData[p.x - 1][p.y - 1] + upper * localData[p.x - 1][p.y] + lesser * localData[p.x - 1][p.y + 1]) + (lesser * localData[p.x + 1][p.y - 1] + upper * localData[p.x + 1][p.y] + lesser * localData[p.x + 1][p.y + 1]));
+    float sy = norm * (  (lesser * localData[p.x - 1][p.y + 1] + upper * localData[p.x][p.y + 1] + lesser * localData[p.x + 1][p.y + 1]) - (lesser * localData[p.x - 1][p.y - 1] + upper * localData[p.x][p.y - 1] + lesser * localData[p.x + 1][p.y - 1]));
+
+  //  float sx = (3.0 * localData[p.x + 1][p.y - 1] + 10.0 * localData[p.x + 1][p.y] + 3.0 * localData[p.x + 1][p.y + 1]) - (3.0 * localData[p.x - 1][p.y - 1] + 10.0 * localData[p.x - 1][p.y] + 3.0 * localData[p.x - 1][p.y + 1]);
+ //   float sy = (3.0 * localData[p.x - 1][p.y + 1] + 10.0 * localData[p.x][p.y + 1] + 3.0 * localData[p.x + 1][p.y + 1]) - (3.0 * localData[p.x - 1][p.y - 1] + 10.0 * localData[p.x][p.y - 1] + 3.0 * localData[p.x + 1][p.y - 1]);
+
+
+    imageStore(gradientMap, ivec2(gl_GlobalInvocationID.xy), vec4(sx, sy, 0, 0));
+
+   
+
+}
+
+
+
+void loadImage(ivec2 pos, ivec2 localDataLoc)
+{ 
+
+	if (useGaussian == true)
+	{
+	 localData[localDataLoc.x][localDataLoc.y] = luminance(texelFetch(lastColorTex, ivec2(pos.x - 1, pos.y - 1), level).xyz) * 0.077847f + luminance(texelFetch(lastColorTex, ivec2(pos.x, pos.y - 1), level).xyz) * 0.123317f + luminance(texelFetch(lastColorTex, ivec2(pos.x + 1, pos.y - 1), level).xyz) * 0.077847f +
+                                                 luminance(texelFetch(lastColorTex, ivec2(pos.x - 1, pos.y), level).xyz)     * 0.123317f + luminance(texelFetch(lastColorTex, ivec2(pos.x, pos.y), level).xyz)     * 0.195346f + luminance(texelFetch(lastColorTex, ivec2(pos.x + 1, pos.y), level).xyz)     * 0.123317f +
+                                                 luminance(texelFetch(lastColorTex, ivec2(pos.x - 1, pos.y + 1), level).xyz) * 0.077847f + luminance(texelFetch(lastColorTex, ivec2(pos.x, pos.y + 1), level).xyz) * 0.123317f + luminance(texelFetch(lastColorTex, ivec2(pos.x + 1, pos.y + 1), level).xyz) * 0.077847f;
+	}
+	else
+	{
+		localData[localDataLoc.x][localDataLoc.y] = luminance(texelFetch(lastColorTex, pos, level).xyz);
+	}
+}
+
+void main()
+{
+	
+    uvec2 gSize = gl_WorkGroupSize.xy * gl_NumWorkGroups.xy;
+
+    // Copy into local memory
+    loadImage(ivec2(gl_GlobalInvocationID.xy), ivec2(gl_LocalInvocationID.x + 1, gl_LocalInvocationID.y + 1));
+
+    // Handle the edges
+    // Bottom edge
+    if (gl_LocalInvocationID.y == 0)
+    {
+        if (gl_GlobalInvocationID.y > 0)
+        {
+            loadImage(ivec2(gl_GlobalInvocationID.xy + ivec2(0, -1)), ivec2(gl_LocalInvocationID.x + 1, 0));
+
+            // Lower left corner
+            if (gl_LocalInvocationID.x == 0)
+            {
+                if (gl_GlobalInvocationID.x > 0)
+                {
+                    loadImage(ivec2(gl_GlobalInvocationID.xy + ivec2(-1, -1)), ivec2(0, 0));
+                }
+                else
+                {
+                    localData[0][0] = 0.0;
+                    localDataY[0][0] = 0.0;
+                }
+            }
+                
+
+            // Lower right corner
+            if (gl_LocalInvocationID.x == gl_WorkGroupSize.x - 1)
+            {
+                if (gl_GlobalInvocationID.x < gSize.x - 1)
+                {
+                    loadImage(ivec2(gl_GlobalInvocationID.xy + ivec2(1, -1)), ivec2(gl_WorkGroupSize.x + 1, 0));
+                }
+                else
+                {
+                    localData[gl_WorkGroupSize.x + 1][0] = 0.0;
+                    localDataY[gl_WorkGroupSize.x + 1][0] = 0.0;
+                }
+            }
+
+        }
+        else
+        {
+            localData[gl_LocalInvocationID.x + 1][0] = 0.0;
+            localDataY[gl_LocalInvocationID.x + 1][0] = 0.0;
+        }
+
+    }
+    // Top edge
+    if (gl_LocalInvocationID.y == gl_WorkGroupSize.y - 1)
+    {
+        if (gl_GlobalInvocationID.y < gSize.y - 1)
+        {
+            loadImage(ivec2(gl_GlobalInvocationID.xy + ivec2(0, 1)), ivec2(gl_LocalInvocationID.x + 1, gl_WorkGroupSize.y + 1));
+            // Upper left corner
+            if (gl_LocalInvocationID.x == 0)
+            {
+                if (gl_GlobalInvocationID.x > 0)
+                {
+                    loadImage(ivec2(gl_GlobalInvocationID.xy) + ivec2(-1, 1), ivec2(0, gl_WorkGroupSize.y + 1));
+                }
+                else
+                {
+                    localData[0][gl_WorkGroupSize.y + 1] = 0.0;
+                    localDataY[0][gl_WorkGroupSize.y + 1] = 0.0;
+                }
+            }
+
+            // Lower right corner
+            if (gl_LocalInvocationID.x == gl_WorkGroupSize.x - 1)
+            {
+                if (gl_GlobalInvocationID.x < gSize.x - 1)
+                {
+                    loadImage(ivec2(gl_GlobalInvocationID.xy) + ivec2(1, 1), ivec2(gl_WorkGroupSize.x + 1, gl_WorkGroupSize.y + 1));
+                }
+                else
+                {
+                    localData[gl_WorkGroupSize.x + 1][gl_WorkGroupSize.y + 1] = 0.0;
+                    localDataY[gl_WorkGroupSize.x + 1][gl_WorkGroupSize.y + 1] = 0.0;
+                }
+
+            }
+
+        }
+        else
+        {
+            localData[gl_LocalInvocationID.x + 1][gl_WorkGroupSize.y + 1] = 0.0;
+            localDataY[gl_LocalInvocationID.x + 1][gl_WorkGroupSize.y + 1] = 0.0;
+        }
+    }
+    // Left edge
+    if (gl_LocalInvocationID.x == 0)
+    {
+        if (gl_GlobalInvocationID.x > 0)
+        {
+            loadImage(ivec2(gl_GlobalInvocationID.xy) + ivec2(-1, 0), ivec2(0, gl_LocalInvocationID.y + 1));
+        }
+        else
+        {
+            localData[0][gl_LocalInvocationID.y + 1] = 0.0;
+            localDataY[0][gl_LocalInvocationID.y + 1] = 0.0;
+        }
+
+    }
+    // Right edge
+    if (gl_LocalInvocationID.x == gl_WorkGroupSize.x - 1)
+    {
+        if (gl_GlobalInvocationID.x < gSize.x - 1)
+        {
+            loadImage(ivec2(gl_GlobalInvocationID.xy) + ivec2(1, 0), ivec2(gl_WorkGroupSize.x + 1, gl_LocalInvocationID.y + 1));
+        }
+        else
+        {
+            localData[gl_WorkGroupSize.x + 1][gl_LocalInvocationID.y + 1] = 0.0;
+            localDataY[gl_WorkGroupSize.x + 1][gl_LocalInvocationID.y + 1] = 0.0;
+        }
+        
+
+
+    }
+
+    barrier();
+
+    getGradients();
+	
+}

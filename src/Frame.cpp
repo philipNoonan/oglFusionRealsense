@@ -26,21 +26,31 @@ namespace rgbd
 		this->K = K;
 
 		frameData.resize(1);
+		int numberOfLevels = GLHelper::numberOfLevels(glm::ivec3(width, height, 1));
 
 		// Color needs only "one" level
 		// Note: Color must be 4ch since compute shader does not support rgb8 internal format.
 		frameData[0].colorMap = std::make_shared<gl::Texture>();
-		frameData[0].colorMap->create(0, width, height, 4, gl::TextureType::COLOR);
+		frameData[0].colorMap->createStorage(numberOfLevels, width, height, 4, GL_RGBA8, gl::TextureType::COLOR, 1);
+		//frameData[0].colorMap->create(0, width, height, 4, gl::TextureType::COLOR);
 		frameData[0].colorMap->setFiltering(gl::TextureFilter::NEAREST);
 		frameData[0].colorMap->setWarp(gl::TextureWarp::CLAMP_TO_EDGE);
 
+		frameData[0].colorPreviousMap = std::make_shared<gl::Texture>();
+		frameData[0].colorPreviousMap->createStorage(numberOfLevels, width, height, 4, GL_RGBA8, gl::TextureType::COLOR, 1);
+		//frameData[0].colorPreviousMap->create(0, width, height, 4, gl::TextureType::COLOR);
+		frameData[0].colorPreviousMap->setFiltering(gl::TextureFilter::NEAREST);
+		frameData[0].colorPreviousMap->setWarp(gl::TextureWarp::CLAMP_TO_EDGE);
+
 		frameData[0].colorFilteredMap = std::make_shared<gl::Texture>();
-		frameData[0].colorFilteredMap->create(0, width, height, 4, gl::TextureType::COLOR);
+		frameData[0].colorFilteredMap->createStorage(numberOfLevels, width, height, 4, GL_RGBA8, gl::TextureType::COLOR, 1);
+		//frameData[0].colorFilteredMap->create(0, width, height, 4, gl::TextureType::COLOR);
 		frameData[0].colorFilteredMap->setFiltering(gl::TextureFilter::NEAREST);
 		frameData[0].colorFilteredMap->setWarp(gl::TextureWarp::CLAMP_TO_EDGE);
 
 		frameData[0].colorAlignedToDepthMap = std::make_shared<gl::Texture>();
-		frameData[0].colorAlignedToDepthMap->create(0, width, height, 4, gl::TextureType::COLOR);
+		frameData[0].colorAlignedToDepthMap->createStorage(numberOfLevels, width, height, 4, GL_RGBA8, gl::TextureType::COLOR, 1);
+		//frameData[0].colorAlignedToDepthMap->create(0, width, height, 4, gl::TextureType::COLOR);
 		frameData[0].colorAlignedToDepthMap->setFiltering(gl::TextureFilter::NEAREST);
 		frameData[0].colorAlignedToDepthMap->setWarp(gl::TextureWarp::CLAMP_TO_EDGE);
 
@@ -106,9 +116,12 @@ namespace rgbd
 		mappingMap->setFiltering(gl::TextureFilter::NEAREST);
 		mappingMap->setWarp(gl::TextureWarp::CLAMP_TO_EDGE);
 
+
+
 		bilateralFilter = std::make_shared<rgbd::BilateralFilter>(progs["BilateralFilter"]);
 		casFilter = std::make_shared<rgbd::CASFilter>(progs["CASFilter"]);
 		alignDC = std::make_shared<rgbd::AlignDepthColor>(progs["alignDepthColor"]);
+
 
 		vertexMapProc = std::make_shared<rgbd::CalcVertexMap>(minDepth, maxDepth, K, progs["CalcVertexMap"]);
 		normalMapProc = std::make_shared<rgbd::CalcNormalMap>(progs["CalcNormalMap"]);
@@ -140,6 +153,17 @@ namespace rgbd
 		std::vector<rs2::frame> depthFrame(numberOfCameras);
 		std::vector<rs2::frame> colorFrame(numberOfCameras);
 		std::vector<rs2::frame> infraFrame(numberOfCameras);
+
+		if (!firstFrame)
+		{
+			for (int lvl = 0; lvl < GLHelper::numberOfLevels(glm::ivec3(frameData[0].colorFilteredMap->getWidth(), frameData[0].colorFilteredMap->getHeight(), 1)); lvl++)
+			{
+				glCopyImageSubData(frameData[0].colorFilteredMap->getID(), GL_TEXTURE_2D, lvl, 0, 0, 0,
+					frameData[0].colorPreviousMap->getID(), GL_TEXTURE_2D, lvl, 0, 0, 0,
+					frameData[0].colorFilteredMap->getWidth() >> lvl, frameData[0].colorFilteredMap->getHeight() >> lvl, 1);
+			}
+		}
+
 
 		for (int camNumber = 0; camNumber < numberOfCameras; camNumber++)
 		{
@@ -202,6 +226,22 @@ namespace rgbd
 		std::dynamic_pointer_cast<rgbd::CalcVertexMap>(vertexMapProc)->execute(frameData[0].depthMap, frameData[0].vertexMap);
 		std::dynamic_pointer_cast<rgbd::CalcNormalMap>(normalMapProc)->execute(frameData[0].vertexMap, frameData[0].normalMap);
 
+		frameData[0].colorFilteredMap->mipmap();
+
+
+		if (firstFrame)
+		{
+			for (int lvl = 0; lvl < GLHelper::numberOfLevels(glm::ivec3(frameData[0].colorFilteredMap->getWidth(), frameData[0].colorFilteredMap->getHeight(), 1)); lvl++)
+			{
+				glCopyImageSubData(frameData[0].colorFilteredMap->getID(), GL_TEXTURE_2D, lvl, 0, 0, 0,
+					frameData[0].colorPreviousMap->getID(), GL_TEXTURE_2D, lvl, 0, 0, 0,
+					frameData[0].colorFilteredMap->getWidth() >> lvl, frameData[0].colorFilteredMap->getHeight() >> lvl, 1);
+			}
+			
+			firstFrame = false;
+		}
+
+
 		update();
 	}
 
@@ -262,11 +302,9 @@ namespace rgbd
 	void Frame::update() const
 	{
 
-
 		frameData[0].depthMap->mipmap();
 		frameData[0].vertexMap->mipmap();
 		frameData[0].normalMap->mipmap();
-
 
 		/*for (int lv = 0; lv < downSampling.size(); ++lv)
 		{
@@ -308,6 +346,10 @@ namespace rgbd
 	{
 		return frameData[lv].colorMap;
 	}
+	gl::Texture::Ptr Frame::getColorPreviousMap(int lv) const
+	{
+		return frameData[lv].colorPreviousMap;
+	}
 	
 	gl::Texture::Ptr Frame::getColorFilteredMap(int lv) const
 	{
@@ -334,10 +376,7 @@ namespace rgbd
 		return frameData[lv].normalMap;
 	}
 
-	gl::Texture::Ptr Frame::getGradientMap(int lv) const
-	{
-		return frameData[lv].gradientMap;
-	}
+
 
 	gl::Texture::Ptr Frame::getTrackMap() const
 	{
@@ -358,4 +397,5 @@ namespace rgbd
 	{
 		return mappingMap;
 	}
+
 }
