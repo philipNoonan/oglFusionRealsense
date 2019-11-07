@@ -65,6 +65,8 @@ namespace rgbd
 		frameData[0].depthPreviousMap = std::make_shared<gl::Texture>();
 		frameData[0].depthPreviousMap->createStorage(maxLevel, width, height, 1, GL_R32F, gl::TextureType::FLOAT32, 0);
 
+		frameData[0].vertexPreviousMap = std::make_shared<gl::Texture>();
+		frameData[0].vertexPreviousMap->createStorage(maxLevel, width, height, 4, GL_RGBA32F, gl::TextureType::FLOAT32, 0);
 
 
 		/*for (int lv = 0; lv < frameData.size(); ++lv)
@@ -171,6 +173,10 @@ namespace rgbd
 				frameData[0].depthPreviousMap->getID(), GL_TEXTURE_2D, 0, 0, 0, 0,
 				frameData[0].depthMap->getWidth(), frameData[0].depthMap->getHeight(), 1);
 
+			glCopyImageSubData(frameData[0].vertexMap->getID(), GL_TEXTURE_2D, 0, 0, 0, 0,
+				frameData[0].vertexPreviousMap->getID(), GL_TEXTURE_2D, 0, 0, 0, 0,
+				frameData[0].vertexMap->getWidth(), frameData[0].vertexMap->getHeight(), 1);
+
 		}
 
 
@@ -240,6 +246,9 @@ namespace rgbd
 
 		if (firstFrame)
 		{
+			frameCount++;
+			// CAN WE JUST SWAP IDs?
+
 			for (int lvl = 0; lvl < GLHelper::numberOfLevels(glm::ivec3(frameData[0].colorFilteredMap->getWidth(), frameData[0].colorFilteredMap->getHeight(), 1)); lvl++)
 			{
 				glCopyImageSubData(frameData[0].colorFilteredMap->getID(), GL_TEXTURE_2D, lvl, 0, 0, 0,
@@ -250,6 +259,10 @@ namespace rgbd
 			glCopyImageSubData(frameData[0].depthMap->getID(), GL_TEXTURE_2D, 0, 0, 0, 0,
 				frameData[0].depthPreviousMap->getID(), GL_TEXTURE_2D, 0, 0, 0, 0,
 				frameData[0].depthMap->getWidth(), frameData[0].depthMap->getHeight(), 1);
+
+			glCopyImageSubData(frameData[0].vertexMap->getID(), GL_TEXTURE_2D, 0, 0, 0, 0,
+				frameData[0].vertexPreviousMap->getID(), GL_TEXTURE_2D, 0, 0, 0, 0,
+				frameData[0].vertexMap->getWidth(), frameData[0].vertexMap->getHeight(), 1);
 
 			firstFrame = false;
 		}
@@ -387,6 +400,11 @@ namespace rgbd
 	gl::Texture::Ptr Frame::getVertexMap(int lv) const
 	{
 		return frameData[lv].vertexMap;
+	}
+
+	gl::Texture::Ptr Frame::getVertexPreviousMap(int lv) const
+	{
+		return frameData[lv].vertexPreviousMap;
 	}
 
 	gl::Texture::Ptr Frame::getNormalMap(int lv) const

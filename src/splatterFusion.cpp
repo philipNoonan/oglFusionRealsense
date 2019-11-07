@@ -86,10 +86,13 @@ namespace rgbd
 		const rgbd::Frame &currentFrame,
 		const rgbd::Frame &virtualFrame,
 		const gl::Texture::Ptr &gradientMap,
-		glm::mat4 pose,
+		glm::mat4 &pose,
 		glm::vec4 cam // cx, cy, fx, fy
 		)
 	{
+
+		float sigma;
+		float rgbError;
 
 		glm::mat3 K = glm::mat3(1.0f);
 		K[0][0] = cam.z;
@@ -97,22 +100,93 @@ namespace rgbd
 		K[2][0] = cam.x;
 		K[2][1] = cam.y;
 
-		glm::mat4 Rt = glm::mat4(1.0f);// glm::inverse(pose);
-		glm::mat3 R = glm::mat3(Rt);
+		glm::mat4 resultRt = glm::mat4(1.0f);
 
-		glm::mat3 KRK_inv = K * R  * glm::inverse(K);
+		Eigen::Matrix<float, 3, 3, Eigen::RowMajor> Rprev;
+		for (int i = 0; i < 3; i++)
+		{
+			for (int j = 0; j < 3; j++)
+			{
+				Rprev(i, j) = pose[j][i];
+			}
+		}
 
-		glm::vec3 kT = glm::vec3(Rt[3][0], Rt[3][1], Rt[3][2]);
+		Eigen::Vector3f tprev;
+		tprev(0) = pose[3][0];
+		tprev(1) = pose[3][1];
+		tprev(2) = pose[3][2];
 
-		kT = K * kT;
+		Eigen::Matrix<float, 3, 3, Eigen::RowMajor> Rcurr = Rprev;
+		Eigen::Vector3f tcurr = tprev;
+
+		for (int iter = 0; iter < 1; iter++)
+		{
+
+			glm::mat4 Rt = glm::inverse(resultRt);
+			glm::mat3 R = glm::mat3(Rt);
+
+			glm::mat3 KRK_inv = K * R  * glm::inverse(K);
+
+			glm::vec3 kT = glm::vec3(Rt[3][0], Rt[3][1], Rt[3][2]);
+
+			kT = K * kT;
+
+			Eigen::Isometry3f rgbodomiso3f;
+
+			rgbOdo->computeResiduals(
+				currentFrame,
+				gradientMap,
+				kT,
+				KRK_inv,
+				sigma,
+				rgbError
+			);
+
+			rgbOdo->computeStep(
+				currentFrame,
+				gradientMap,
+				cam,
+				sigma,
+				rgbError,
+				resultRt,
+				rgbodomiso3f
+			);
+
+			Eigen::Isometry3f currentT;
+			currentT.setIdentity();
+			currentT.rotate(Rprev);
+			currentT.translation() = tprev;
+
+			currentT = currentT * rgbodomiso3f.inverse();
+
+			tcurr = currentT.translation();
+			Rcurr = currentT.rotation();
 
 
-		rgbOdo->computeResiduals(
-			currentFrame,
-			gradientMap,
-			kT,
-			KRK_inv
-		);
+		}
+
+		if (sigma == 0 || (tcurr - tprev).norm() > 0.3 || isnan(tcurr(0)))
+		{
+			Rcurr = Rprev;
+			tcurr = tprev;
+		}
+
+		for (int i = 0; i < 3; i++)
+		{
+			for (int j = 0; j < 3; j++)
+			{
+				pose[i][j] = Rcurr(j, i);
+			}
+		}
+
+		pose[3][0] = tcurr(0);
+		pose[3][1] = tcurr(1);
+		pose[3][2] = tcurr(2);
+
+		std::cout << tcurr << std::endl;
+		std::cout << glm::to_string(glm::transpose(pose)) << std::endl;
+
+
 	}
 
 

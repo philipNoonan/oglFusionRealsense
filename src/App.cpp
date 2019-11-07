@@ -67,6 +67,14 @@ void App::clearSplatter()
 	}
 }
 
+
+// this is done on the coursest level in elasticfusion
+void App::initDTAM()
+{
+
+}
+
+
 void App::initP2PFusion()
 {
 	glm::mat4 K(1.0f);
@@ -174,6 +182,27 @@ void App::initP2VFusion()
 
 }
 
+bool App::runDTAM()
+{
+	glViewport(0, 0, width, height);
+	bool status = true;
+	frame[rgbd::FRAME::CURRENT].update(cameraInterface.getColorQueues(), cameraInterface.getDepthQueues(), cameraInterface.getInfraQueues(), numberOfCameras, cameraInterface.getDepthUnit(0) / 1000000.0f, glm::ivec2(m_pointX, m_pointY), iOff, depthMat, sharpnessValue);
+	frame[rgbd::FRAME::CURRENT].alignDepthTocolor(
+		cameraInterface.getDepthToColorExtrinsics(0),
+		glm::vec4(cameraInterface.getDepthIntrinsics(0).cx, cameraInterface.getDepthIntrinsics(0).cy, cameraInterface.getDepthIntrinsics(0).fx, cameraInterface.getDepthIntrinsics(0).fy),
+		glm::vec4(cameraInterface.getColorIntrinsics(0).cx, cameraInterface.getColorIntrinsics(0).cy, cameraInterface.getColorIntrinsics(0).fx, cameraInterface.getColorIntrinsics(0).fy),
+		colorVec
+	);
+	bool tracked = true;
+	glm::mat4 T = dtam.calcDevicePose(
+		frame[rgbd::FRAME::CURRENT],
+		glm::vec4(cameraInterface.getColorIntrinsics(0).cx, cameraInterface.getColorIntrinsics(0).cy, cameraInterface.getColorIntrinsics(0).fx, cameraInterface.getColorIntrinsics(0).fy),
+		tracked);
+
+	return tracked;
+}
+
+
 bool App::runSLAM()
 {
 	GLuint query;
@@ -208,14 +237,13 @@ bool App::runSLAM()
 	// elapsed time in nanoseconds
 	GLuint64 elapsed;
 	glGetQueryObjectui64vEXT(query, GL_QUERY_RESULT, &elapsed);
-	std::cout << "splat time : " << elapsed / 1000000.0 << std::endl;
+	//std::cout << "splat time : " << elapsed / 1000000.0 << std::endl;
 
 
 
-	gradFilter.setFrames(frame[rgbd::FRAME::CURRENT].getColorFilteredMap(), frame[rgbd::FRAME::CURRENT].getColorPreviousMap());
-	gradFilter.execute(gradFilter.getGradientMap(), 0, 3.0f, 10.0f, false);
+	gradFilter.execute(frame[rgbd::FRAME::CURRENT].getColorFilteredMap(), 0, 3.0f, 10.0f, false);
 
-	slam.performColorTracking(frame[rgbd::FRAME::CURRENT], frame[rgbd::FRAME::VIRTUAL], gradFilter.getGradientMap(), slam.getPose(), glm::vec4(cameraInterface.getDepthIntrinsics(0).cx, cameraInterface.getDepthIntrinsics(0).cy, cameraInterface.getDepthIntrinsics(0).fx, cameraInterface.getDepthIntrinsics(0).fy));
+	slam.performColorTracking(frame[rgbd::FRAME::CURRENT], frame[rgbd::FRAME::VIRTUAL], gradFilter.getGradientMap(), colorPose, glm::vec4(cameraInterface.getDepthIntrinsics(0).cx, cameraInterface.getDepthIntrinsics(0).cy, cameraInterface.getDepthIntrinsics(0).fx, cameraInterface.getDepthIntrinsics(0).fy));
 
 
 
@@ -1460,6 +1488,8 @@ void App::setUpGPU()
 	initP2VFusion();
 
 	initGradient();
+
+	initDTAM();
 
 
 }

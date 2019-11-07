@@ -57,6 +57,7 @@
 #include "p2vFusion.h"
 #include "GlobalVolume.h"
 #include "GradientFilter.h"
+#include "rgbDTAM.h"
 
 
 class App : gl::Window
@@ -66,8 +67,9 @@ private:
 	Camera* camera;
 
 	rgbd::GlobalVolume::Ptr volume;
-
+	glm::mat4 colorPose = glm::mat4(1.0f);
 	std::array<rgbd::Frame, 3> frame;
+	rgbd::RGBDtam dtam;
 	rgbd::splatterFusion slam;
 	rgbd::GradientFilter gradFilter;
 	rgbd::p2pFusion p2pFusion;
@@ -82,12 +84,14 @@ private:
 
 	bool poseFound = false;
 
+	bool runDTAM();
 	bool runSLAM();
 	bool runP2P();
 	bool runP2V();
 	void initSplatter();
 	void clearSplatter();
 	void initGradient();
+	void initDTAM();
 	void initP2PFusion();
 	void initP2VFusion();
 	int getRenderOptions(bool depth, bool normal, bool color, bool infra, bool flow);

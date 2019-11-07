@@ -13,6 +13,8 @@
 #include <glm/gtx/euler_angles.hpp>
 #include <glm/gtx/transform.hpp>
 
+#include <Eigen/Dense>
+
 #include <algorithm>
 
 
@@ -74,6 +76,21 @@ namespace rgbd
 		}
 	};
 
+	struct BufferReductionDTAM
+	{
+		GLfloat row[4];
+		bool valid;
+		BufferReductionDTAM()
+		{
+			for (int i = 0; i < 4; i++)
+			{
+				row[i] = 0.0f;
+			}
+			valid = false;
+		}
+
+	};
+
 
 }
 
@@ -81,7 +98,30 @@ namespace rgbd
 namespace GLHelper
 {
 
+	//template<typename T, int m, int n>
+	//inline glm::mat<m, n, float, glm::precision::highp> E2GLM(const Eigen::Matrix<T, m, n>& em)
+	//{
+	//	glm::mat<m, n, float, glm::precision::highp> mat;
+	//	for (int i = 0; i < m; ++i)
+	//	{
+	//		for (int j = 0; j < n; ++j)
+	//		{
+	//			mat[j][i] = em(i, j);
+	//		}
+	//	}
+	//	return mat;
+	//}
 
+	//template<typename T, int m>
+	//inline glm::vec<m, float, glm::precision::highp> E2GLM(const Eigen::Matrix<T, m, 1>& em)
+	//{
+	//	glm::vec<m, float, glm::precision::highp> v;
+	//	for (int i = 0; i < m; ++i)
+	//	{
+	//		v[i] = em(i);
+	//	}
+	//	return v;
+	//}
 
 
 

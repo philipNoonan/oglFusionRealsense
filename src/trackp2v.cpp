@@ -120,7 +120,7 @@ namespace rgbd
 		{
 			for (int col = 0; col < 32; col++)
 			{
-				outputReductionData[col + 0 * 32] = outputReductionData[col + row * 32];
+				outputReductionData[col + 0 * 32] += outputReductionData[col + row * 32];
 			}
 		}
 

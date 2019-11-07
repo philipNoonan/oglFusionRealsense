@@ -20,6 +20,13 @@
 #include "GlobalMap.h"
 #include "rgbOdometry.h"
 
+
+#include <Eigen/Core>
+#include <Eigen/Dense>
+#include <Eigen/Geometry> 
+#include <unsupported/Eigen/MatrixFunctions>
+#include "eigen_utils.h"
+
 namespace rgbd
 {
 	class splatterFusion
@@ -51,7 +58,7 @@ namespace rgbd
 			const rgbd::Frame &currentFrame,
 			const rgbd::Frame &virtualFrame,
 			const gl::Texture::Ptr &gradientMap,
-			glm::mat4 pose,
+			glm::mat4 &pose,
 			glm::vec4 cam
 		);
 

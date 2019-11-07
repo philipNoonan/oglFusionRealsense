@@ -5,6 +5,12 @@
 #include "GLCore/Buffer.h"
 #include "Frame.h"
 
+#include <Eigen/Core>
+#include <Eigen/Dense>
+#include <Eigen/Geometry> 
+#include <unsupported/Eigen/MatrixFunctions>
+#include "eigen_utils.h"
+
 namespace rgbd
 {
 	// Ref: https://github.com/GPUOpen-Effects/FidelityFX
@@ -14,9 +20,21 @@ namespace rgbd
 		std::map<std::string, const gl::Shader::Ptr> progs;
 		gl::ShaderStorageBuffer<BufferReductionRGB> ssboRGBReduction;
 		gl::ShaderStorageBuffer<float> ssboRGBReductionOutput;
+		gl::ShaderStorageBuffer<float> ssboRGBRGBJtJJtrSE3;
 
 		//gl::ShaderStorageBuffer<BufferReductionRGB> ssboRGBJtJJtrSE3;
 		gl::ShaderStorageBuffer<float> ssboRGBRGBJtJJtrSE3Output;
+
+		Eigen::Matrix<double, 3, 3, Eigen::RowMajor> rodrigues(
+			const Eigen::Vector3d & src
+		);
+
+		void computeUpdateSE3(
+			Eigen::Matrix<double, 4, 4, Eigen::RowMajor> & resultRt,
+			const Eigen::Matrix<double, 6, 1> & result,
+			Eigen::Isometry3f & rgbOdom
+		);
+
 
 	public:
 		RGBOdometry(
@@ -32,7 +50,9 @@ namespace rgbd
 			const rgbd::Frame &currentFrame,
 			const gl::Texture::Ptr & gradientMap,
 			const glm::vec3 kT,
-			const glm::mat3 krkinv
+			const glm::mat3 krkinv,
+			float &sigmaVal,
+			float &rgbError
 		);
 
 
@@ -54,7 +74,12 @@ namespace rgbd
 			 */
 		void computeStep(
 			const rgbd::Frame &currentFrame,
-			const rgbd::Frame &virtualFrame
+			const gl::Texture::Ptr &gradientMap,
+			const glm::vec4 &cam,
+			float sigmaVal,
+			float rgbError,
+			glm::mat4 &resultRt,
+			Eigen::Isometry3f &rgbodomiso3f
 		);
 		//void getProducts(
 		//	gl::Texture::Ptr srcColorMap,

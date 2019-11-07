@@ -14,8 +14,6 @@ namespace rgbd
 	private:
 		std::map<std::string, const gl::Shader::Ptr> progs;
 
-		gl::Texture::Ptr I0;
-		gl::Texture::Ptr I1;
 		gl::Texture::Ptr gradientMap;
 
 
@@ -35,13 +33,10 @@ namespace rgbd
 			const std::map<std::string, const gl::Shader::Ptr> &progs
 		);
 
-		void setFrames(
-			gl::Texture::Ptr lastFrame,
-			gl::Texture::Ptr nextFrame
-		);
+
 
 		void execute(
-			gl::Texture::Ptr gradientMap,
+			gl::Texture::Ptr imageMap,
 			int level,
 			float lower,
 			float upper,

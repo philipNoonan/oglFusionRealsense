@@ -37,6 +37,7 @@ namespace rgbd
 		gl::Texture::Ptr depthMap;
 		gl::Texture::Ptr depthPreviousMap;
 		gl::Texture::Ptr vertexMap;
+		gl::Texture::Ptr vertexPreviousMap;
 		gl::Texture::Ptr normalMap;
 
 		typedef std::shared_ptr<rgbd::FrameData> Ptr;
@@ -70,6 +71,7 @@ namespace rgbd
 		std::vector<rgbd::ComputeShader::Ptr> downSampling;
 
 		glm::mat4 K;
+		int frameCount = 0;
 
 
 	public:
@@ -142,6 +144,8 @@ namespace rgbd
 		gl::Texture::Ptr getDepthMap(int lv = 0) const;
 		gl::Texture::Ptr getDepthPreviousMap(int lv = 0) const;
 		gl::Texture::Ptr getVertexMap(int lv = 0) const;
+		gl::Texture::Ptr getVertexPreviousMap(int lv = 0) const;
+
 		gl::Texture::Ptr getNormalMap(int lv = 0) const;
 		gl::Texture::Ptr getTrackMap() const;
 		gl::Texture::Ptr getTestMap() const;

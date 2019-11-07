@@ -22,7 +22,7 @@ layout(std430, binding = 1) buffer reductionOutputData
 	float outputData[];
 };
 
-shared float S[112];
+shared float S[112][2];
 
 
 void main()
@@ -30,12 +30,12 @@ void main()
 	int devNumber = 0;
     uint sline = gl_LocalInvocationID.x; // 0 - 111
 
-    float sums = 0.0f;//[32];
+    float sums[2];
 
-    //for (int i = 0; i < 32; ++i)
-    //{
-   //     sums[i] = 0.0f;
-    //}
+    for (int i = 0; i < 2; ++i)
+    {
+        sums[i] = 0.0f;
+    }
 
     for (uint y = gl_WorkGroupID.x; y < imSize.y; y += gl_NumWorkGroups.x) // y = (0:8); y < 424; y += 8
     {
@@ -50,7 +50,8 @@ void main()
                 continue;
             }
 
-            sums += row.diff * row.diff;
+			sums[0] += 1.0f;
+            sums[1] += row.diff * row.diff;
 
             
 
@@ -61,19 +62,21 @@ void main()
     }
 
 
-    S[sline] = sums;
-  
+    for (int i = 0; i < 2; ++i)
+    {
+        S[sline][i] = sums[i];
+    }    
 
     barrier(); // wait for threads to finish
 
-    if (sline == 0)
+    if (sline < 2)
     {
         for (uint i = 1; i < gl_WorkGroupSize.x; ++i)
         {
-            S[0] += S[i];
+            S[0][sline] += S[i][sline];
         }
 
-        outputData[sline + gl_WorkGroupID.x] = S[0];
+        outputData[sline + gl_WorkGroupID.x * 2] = S[0][sline];
 
     }
 

@@ -38,17 +38,9 @@ namespace rgbd
 
 	}
 
-	void GradientFilter::setFrames(
-		gl::Texture::Ptr lastFrame,
-		gl::Texture::Ptr nextFrame
-	)
-	{
-		I0 = lastFrame;
-		I1 = nextFrame;
-	}
 
 	void GradientFilter::execute(
-		gl::Texture::Ptr gradientMap,
+		gl::Texture::Ptr imageMap,
 		int level,
 		float lesser,
 		float upper,
@@ -60,14 +52,15 @@ namespace rgbd
 		progs["GradientFilter"]->setUniform("useGaussian", useGaussian);
 
 		progs["GradientFilter"]->use();
-		I0->use(0);
-		I1->use(1);
+
+		imageMap->use(0);
+
 		for (int lvl = 0; lvl < 3; lvl++)
 		{
 			gradientMap->bindImage(0, lvl, GL_WRITE_ONLY);
 			progs["GradientFilter"]->setUniform("level", lvl);
 
-			glDispatchCompute(GLHelper::divup(I0->getWidth() >> lvl, 32), GLHelper::divup(I0->getHeight() >> lvl, 32), 1);
+			glDispatchCompute(GLHelper::divup(imageMap->getWidth() >> lvl, 32), GLHelper::divup(imageMap->getHeight() >> lvl, 32), 1);
 		}
 
 		progs["GradientFilter"]->disuse();
