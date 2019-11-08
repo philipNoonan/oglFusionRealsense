@@ -19,7 +19,8 @@ namespace rgbd
 			gl::Texture::Ptr srcVertexMap,
 			gl::Texture::Ptr srcColorMap,
 			gl::Texture::Ptr dstColorMap,
-			gl::Texture::Ptr mappingMap,
+			gl::Texture::Ptr mappingC2DMap,
+			gl::Texture::Ptr mappingD2CMap,
 			const glm::mat4 &depthToColorExtrins,
 			const glm::vec4 &colorIntrins
 		);

@@ -7,8 +7,13 @@ layout(binding = 1, rgba8) uniform image2D nextColorMap;
 
 layout(binding = 2, rg32f) uniform image2D gradientMap;
 
-layout(binding = 3, r32f) uniform image2D lastDepthMap;
-layout(binding = 4, r32f) uniform image2D nextDepthMap;
+layout(binding = 3, rg16ui) uniform uimage2D mappingC2DMap;
+layout(binding = 4, rg16ui) uniform uimage2D mappingD2CMap;
+
+layout(binding = 5, r32f) uniform image2D lastDepthMap;
+layout(binding = 6, r32f) uniform image2D nextDepthMap;
+
+layout(binding = 7, rgba32f) uniform image2D outputTestImage;
 
 
 
@@ -33,7 +38,7 @@ layout(std430, binding = 0) buffer corresData
 
 float luminance(vec3 rgb)
 {
-    return (0.299f * float(rgb.x) + 0.587f * float(rgb.y) + 0.114f * float(rgb.z));
+    return 255.0f * (0.299f * float(rgb.x) + 0.587f * float(rgb.y) + 0.114f * float(rgb.z));
 }
 
 void computeDerivatives()
@@ -44,7 +49,7 @@ void computeDerivatives()
 void computeResiduals()
 {
 	
-	ivec2 pix = ivec2(gl_GlobalInvocationID.xy);
+	ivec2 nextColorLoc = ivec2(gl_GlobalInvocationID.xy);
 	ivec2 imSize = ivec2(imageSize(lastDepthMap).xy);
 	
 	DataTerm corres;
@@ -57,55 +62,82 @@ void computeResiduals()
 	corres.valid = false;
 
 
-	if (pix.x >= 0 && pix.y >= 0 && pix.x < imSize.x && pix.y < imSize.y)
+	if (nextColorLoc.x >= 0 && nextColorLoc.y >= 0 && nextColorLoc.x < imSize.x && nextColorLoc.y < imSize.y)
 	{
 		bool valid = true;
 
-		for (int u = pix.x - 2; u < pix.x + 2; u++)
+		for (int u = nextColorLoc.x - 2; u < nextColorLoc.x + 2; u++)
 		{
-			for (int v = pix.y - 2; v < pix.y + 2; v++)
+			for (int v = nextColorLoc.y - 2; v < nextColorLoc.y + 2; v++)
 			{
 				valid = valid && (luminance(imageLoad(nextColorMap, ivec2(u,v)).xyz) > 0);
 			}
 		}
 
+		//imageStore(outputTestImage, ivec2(nextColorLoc), vec4(0)); 
+
 		if (valid)
 		{
-			vec2 gradXY = imageLoad(gradientMap, pix).xy;
+			// if there is a gradient, then we can look at detecting motion from it, so the gradient should be over a threshold
+			vec2 gradXY = imageLoad(gradientMap, nextColorLoc).xy;
 
 			float mTwo = (gradXY.x * gradXY.x) + (gradXY.y * gradXY.y);
 	
 			if (mTwo >= minScale)
 			{
-				int x = pix.x;
-				int y = pix.y;
 
-				float d1 = float(imageLoad(nextDepthMap, pix).x);
+
+				uvec2 depthLoc = uvec2(imageLoad(mappingC2DMap, nextColorLoc).xy);
+
+				ivec2 nextDepthLoc = ivec2(int(depthLoc.x), int(depthLoc.y));
+
+				float d1 = float(imageLoad(nextDepthMap, ivec2(nextDepthLoc.x, nextDepthLoc.y)).x);
 				
+				//if (depthLoc.x < 1000)
+				//{
+				//	imageStore(outputTestImage, nextColorLoc, vec4(depthLoc, 0, 1)); 
+				//}
 
 
-				if (!isnan(d1))
+				// if the pixels with good gradient actually have valid depth associated with them, is this an issue with pixels on depth boundaries that are noisy?
+				if (!isnan(d1) || d1 != 0)
 				{
-					float transformed_d1 = float(d1 * (krkinv[2].x * x + krkinv[2].y * y + krkinv[2].z) + kt.z);
-					int u0 = int(((d1 * (krkinv[0].x * x + krkinv[0].y * y + krkinv[0].z) + kt.x) / transformed_d1) + 0.5f); // do i want to round to nearest even?
-					int v0 = int(((d1 * (krkinv[1].x * x + krkinv[1].y * y + krkinv[1].z) + kt.y) / transformed_d1) + 0.5f);
+					float transformed_d1 = float(d1 * (krkinv[2].x * nextDepthLoc.x + krkinv[2].y * nextDepthLoc.y + krkinv[2].z) + kt.z);
+					ivec2 lastDepthLoc;
+					lastDepthLoc.x = int(((d1 * (krkinv[0].x * nextDepthLoc.x + krkinv[0].y * nextDepthLoc.y + krkinv[0].z) + kt.x) / transformed_d1) + 0.5f); // do i want to round to nearest even?
+					lastDepthLoc.y = int(((d1 * (krkinv[1].x * nextDepthLoc.x + krkinv[1].y * nextDepthLoc.y + krkinv[1].z) + kt.y) / transformed_d1) + 0.5f);
 			
-					if (u0 >= 0 && v0 >= 0 && u0 < imSize.x && v0 < imSize.y)
+					if (lastDepthLoc.x >= 0 && lastDepthLoc.y >= 0 && lastDepthLoc.x < imSize.x && lastDepthLoc.y < imSize.y)
 					{
-						float d0 = float(imageLoad(lastDepthMap, ivec2(u0, v0)).x);
-						float lastColor = luminance(imageLoad(lastColorMap, ivec2(u0, v0)).xyz);
+						float d0 = float(imageLoad(lastDepthMap, lastDepthLoc).x);
 
-						if (d0 > 0 && abs(transformed_d1 - d0) <= maxDepthDelta && lastColor != 0)
+						if (d0 != 0)
 						{
-							corres.zero.x = u0;
-							corres.zero.y = v0;
-							corres.one.x = x;
-							corres.one.y = y;
-							corres.diff = luminance(imageLoad(lastColorMap, ivec2(x, y)).xyz) - lastColor;
-							corres.valid = true;
-							value.x = 1;
-							value.y = int(corres.diff * corres.diff);
+							uvec2 lastColorLoc = uvec2(imageLoad(mappingD2CMap, lastDepthLoc).xy);
+
+							//imageStore(outputTestImage, nextColorLoc, vec4(lastColorLoc, 0, 1)); 
+
+							float lastColor = luminance(imageLoad(lastColorMap, ivec2(lastColorLoc)).xyz);
+
+							//imageStore(outputTestImage, ivec2(depthLoc), vec4(lastColorLoc.x, nextColorLoc.x, lastColorLoc.y, nextColorLoc.y)); 
+
+
+							if (d0 > 0 && abs(transformed_d1 - d0) <= maxDepthDelta && lastColor != 0)
+							{
+
+								//imageStore(outputTestImage, ivec2(depthLoc), vec4(luminance(imageLoad(nextColorMap, ivec2(nextColorLoc.x, nextColorLoc.y)).xyz) - lastColor, 0, 0, 1)); 
+
+								corres.zero.x = int(lastColorLoc.x);
+								corres.zero.y = int(lastColorLoc.y);
+								corres.one.x = nextColorLoc.x;
+								corres.one.y = nextColorLoc.y;
+								corres.diff = luminance(imageLoad(nextColorMap, ivec2(nextColorLoc.x, nextColorLoc.y)).xyz) - lastColor;
+								corres.valid = true;
+								value.x = 1;
+								value.y = int(corres.diff * corres.diff);
+							}
 						}
+						
 				
 				
 					}
@@ -124,7 +156,7 @@ void computeResiduals()
 
 	
 
-	corresImg[pix.y * imSize.x + pix.x] = corres;
+	corresImg[nextColorLoc.y * imSize.x + nextColorLoc.x] = corres;
 
 }
 

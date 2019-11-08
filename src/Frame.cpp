@@ -117,12 +117,15 @@ namespace rgbd
 		testMap->setFiltering(gl::TextureFilter::NEAREST);
 		testMap->setWarp(gl::TextureWarp::CLAMP_TO_EDGE);
 
-		mappingMap = std::make_shared<gl::Texture>();
-		mappingMap->createStorage(1, width, height, 2, GL_RG16UI, gl::TextureType::UINT16, 0);
-		mappingMap->setFiltering(gl::TextureFilter::NEAREST);
-		mappingMap->setWarp(gl::TextureWarp::CLAMP_TO_EDGE);
+		mappingD2CMap = std::make_shared<gl::Texture>();
+		mappingD2CMap->createStorage(1, width, height, 2, GL_RG16UI, gl::TextureType::UINT16, 0);
+		mappingD2CMap->setFiltering(gl::TextureFilter::NEAREST);
+		mappingD2CMap->setWarp(gl::TextureWarp::CLAMP_TO_EDGE);
 
-
+		mappingC2DMap = std::make_shared<gl::Texture>();
+		mappingC2DMap->createStorage(1, width, height, 2, GL_RG16UI, gl::TextureType::UINT16, 0);
+		mappingC2DMap->setFiltering(gl::TextureFilter::NEAREST);
+		mappingC2DMap->setWarp(gl::TextureWarp::CLAMP_TO_EDGE);
 
 		bilateralFilter = std::make_shared<rgbd::BilateralFilter>(progs["BilateralFilter"]);
 		casFilter = std::make_shared<rgbd::CASFilter>(progs["CASFilter"]);
@@ -311,7 +314,7 @@ namespace rgbd
 		// project from 3D to color space using color intrins
 		// read color from color map and update color map for the original vertID in the vertex map
 
-		std::dynamic_pointer_cast<rgbd::AlignDepthColor>(alignDC)->execute(frameData[0].vertexMap, frameData[0].colorMap, frameData[0].colorAlignedToDepthMap, this->mappingMap, extrins, colorIntrins);
+		std::dynamic_pointer_cast<rgbd::AlignDepthColor>(alignDC)->execute(frameData[0].vertexMap, frameData[0].colorMap, frameData[0].colorAlignedToDepthMap, this->mappingC2DMap, this->mappingD2CMap, extrins, colorIntrins);
 
 
 		colorVec.resize(width * height * 4);
@@ -429,9 +432,12 @@ namespace rgbd
 		return infraMap;
 	}
 
-	gl::Texture::Ptr Frame::getMappingMap() const
+	gl::Texture::Ptr Frame::getMappingC2DMap() const
 	{
-		return mappingMap;
+		return mappingC2DMap;
 	}
-
+	gl::Texture::Ptr Frame::getMappingD2CMap() const
+	{
+		return mappingD2CMap;
+	}
 }

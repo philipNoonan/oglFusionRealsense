@@ -130,7 +130,7 @@ namespace rgbd
 		float &rgbError
 	)
 	{
-		progs["rgbOdometry"]->setUniform("minScale", 1.0f);
+		progs["rgbOdometry"]->setUniform("minScale", 0.05f); // THINK ON THIS ONE!!!!
 		progs["rgbOdometry"]->setUniform("maxDepthDelta", 0.07f);
 		progs["rgbOdometry"]->setUniform("kt", kT);
 		progs["rgbOdometry"]->setUniform("krkinv", krkinv);
@@ -140,8 +140,13 @@ namespace rgbd
 		currentFrame.getColorFilteredMap()->bindImage(1, 0, GL_READ_ONLY);
 
 		gradientMap->bindImage(2, 0, GL_READ_ONLY);
-		currentFrame.getDepthPreviousMap()->bindImage(3, 0, GL_READ_ONLY);
-		currentFrame.getDepthMap()->bindImage(4, 0, GL_READ_ONLY);
+		currentFrame.getMappingC2DMap()->bindImage(3, 0, GL_READ_ONLY);
+		currentFrame.getMappingD2CMap()->bindImage(4, 0, GL_READ_ONLY);
+
+		currentFrame.getDepthPreviousMap()->bindImage(5, 0, GL_READ_ONLY);
+		currentFrame.getDepthMap()->bindImage(6, 0, GL_READ_ONLY);
+
+		currentFrame.getTestMap()->bindImage(7, 0, GL_WRITE_ONLY);
 
 		ssboRGBReduction.bindBase(0);
 
@@ -176,7 +181,7 @@ namespace rgbd
 		sigmaVal = std::sqrt((float)sigma / count == 0 ? 1 : count);
 		rgbError = std::sqrt(sigma) / (count == 0 ? 1 : count);
 
-		//std::cout << sigmaVal << " " << rgbError << std::endl;
+		std::cout << sigmaVal << " " << rgbError << std::endl;
 	}
 
 	void RGBOdometry::computeStep(
@@ -195,8 +200,14 @@ namespace rgbd
 
 		progs["rgbOdometryStep"]->use();
 		currentFrame.getVertexPreviousMap()->bindImage(0, 0, GL_READ_ONLY);
+
 		gradientMap->bindImage(1, 0, GL_READ_ONLY);
-		
+
+		currentFrame.getMappingC2DMap()->bindImage(2, 0, GL_READ_ONLY);
+		currentFrame.getMappingD2CMap()->bindImage(3, 0, GL_READ_ONLY);
+
+		currentFrame.getTestMap()->bindImage(4, 0, GL_WRITE_ONLY);
+
 		ssboRGBReduction.bindBase(0);
 		ssboRGBRGBJtJJtrSE3.bindBase(1);
 		glDispatchCompute(GLHelper::divup(currentFrame.getColorMap()->getWidth(), 32), GLHelper::divup(currentFrame.getColorMap()->getHeight(), 32), 1);
@@ -286,6 +297,7 @@ namespace rgbd
 		lastb = db_rgbd;
 		result = lastA.ldlt().solve(lastb);
 
+		//std::cout << "A_rgbd" << std::endl;
 		//std::cout << A_rgbd << std::endl;
 
 		Eigen::Matrix<double, 4, 4, Eigen::RowMajor> resultRt_eig = Eigen::Matrix<double, 4, 4, Eigen::RowMajor>::Identity();

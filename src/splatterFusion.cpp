@@ -100,7 +100,17 @@ namespace rgbd
 		K[2][0] = cam.x;
 		K[2][1] = cam.y;
 
+		Eigen::Matrix<double, 3, 3, Eigen::RowMajor> K_eig = Eigen::Matrix<double, 3, 3, Eigen::RowMajor>::Zero();
+
+		K_eig(0, 0) = cam.z;
+		K_eig(1, 1) = cam.w;
+		K_eig(0, 2) = cam.x;
+		K_eig(1, 2) = cam.y;
+		K_eig(2, 2) = 1;
+
 		glm::mat4 resultRt = glm::mat4(1.0f);
+		Eigen::Matrix<double, 4, 4, Eigen::RowMajor> resultRt_eig = Eigen::Matrix<double, 4, 4, Eigen::RowMajor>::Identity();
+
 
 		Eigen::Matrix<float, 3, 3, Eigen::RowMajor> Rprev;
 		for (int i = 0; i < 3; i++)
@@ -121,11 +131,27 @@ namespace rgbd
 
 		for (int iter = 0; iter < 1; iter++)
 		{
+			Eigen::Matrix<double, 4, 4, Eigen::RowMajor> Rt_eig = resultRt_eig.inverse();
+
+			Eigen::Matrix<double, 3, 3, Eigen::RowMajor> R_eig = Rt_eig.topLeftCorner(3, 3);
+
+			Eigen::Matrix<double, 3, 3, Eigen::RowMajor> KRK_inv_eig = K_eig * R_eig * K_eig.inverse();
+
+			glm::mat3 KRK_inv;// = K * R  * glm::inverse(K);
+
+
+			for (int i = 0; i < 3; i++)
+			{
+				for (int j = 0; j < 3; j++)
+				{
+					KRK_inv[i][j] = KRK_inv_eig(j, i);
+				}
+			}
 
 			glm::mat4 Rt = glm::inverse(resultRt);
 			glm::mat3 R = glm::mat3(Rt);
 
-			glm::mat3 KRK_inv = K * R  * glm::inverse(K);
+			//glm::mat3 KRK_inv = K * R  * glm::inverse(K);
 
 			glm::vec3 kT = glm::vec3(Rt[3][0], Rt[3][1], Rt[3][2]);
 
@@ -183,7 +209,7 @@ namespace rgbd
 		pose[3][1] = tcurr(1);
 		pose[3][2] = tcurr(2);
 
-		std::cout << tcurr << std::endl;
+		//std::cout << tcurr << std::endl;
 		std::cout << glm::to_string(glm::transpose(pose)) << std::endl;
 
 

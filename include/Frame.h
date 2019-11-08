@@ -59,7 +59,8 @@ namespace rgbd
 		gl::Texture::Ptr trackMap;
 		gl::Texture::Ptr testMap;
 		gl::Texture::Ptr infraMap;
-		gl::Texture::Ptr mappingMap;
+		gl::Texture::Ptr mappingC2DMap;
+		gl::Texture::Ptr mappingD2CMap;
 
 		std::vector<rgbd::FrameData> frameData;
 
@@ -150,7 +151,8 @@ namespace rgbd
 		gl::Texture::Ptr getTrackMap() const;
 		gl::Texture::Ptr getTestMap() const;
 		gl::Texture::Ptr getInfraMap() const;
-		gl::Texture::Ptr getMappingMap() const;
+		gl::Texture::Ptr getMappingC2DMap() const;
+		gl::Texture::Ptr getMappingD2CMap() const;
 
 
 		typedef std::shared_ptr<rgbd::Frame> Ptr;

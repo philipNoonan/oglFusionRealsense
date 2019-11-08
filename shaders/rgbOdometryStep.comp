@@ -3,12 +3,17 @@
 layout(local_size_x = 32, local_size_y = 32) in;
 
 
-layout(binding = 0, rg32f) uniform image2D gradientMap;
 
 
 
-layout(binding = 1, rgba32f) uniform image2D nextVertexMap; // is this next?
+layout(binding = 0, rgba32f) uniform image2D lastVertexMap; 
 
+layout(binding = 1, rg32f) uniform image2D gradientMap;
+
+layout(binding = 2, rg16ui) uniform uimage2D mappingC2DMap;
+layout(binding = 3, rg16ui) uniform uimage2D mappingD2CMap;
+
+layout(binding = 4, rgba32f) uniform image2D outputTestImage;
 
 float FLT_EPSILON = 1.19209290E-07f;
 
@@ -68,14 +73,18 @@ void main()
 	ivec2 imSize = imageSize(gradientMap);
 
 	rowSE3 row;
+			imageStore(outputTestImage, pix, vec4(0)); 
 
 
 	DataTerm corresp = corresImg[pix.y * imSize.x + pix.x];
 
 	bool found_corresp = corresp.valid;
 
+
+
 	if (found_corresp)
 	{
+
 		float w = sigma + abs(corresp.diff);
 
 		w = w > FLT_EPSILON ? 1.0 / w : 1.0f;
@@ -87,7 +96,9 @@ void main()
 
 		row.data[6] = -w * corresp.diff;
 
-		vec3 cloudPoint = imageLoad(nextVertexMap, corresp.zero).xyz;
+		ivec2 lastDepthLoc = ivec2(imageLoad(mappingC2DMap, corresp.zero).xy);
+
+		vec3 cloudPoint = imageLoad(lastVertexMap, lastDepthLoc).xyz;
 
 		float invZ = 1.0f / cloudPoint.z;
 
@@ -97,7 +108,13 @@ void main()
 		}
 		else
 		{
-			vec2 dI_dxdy_val = w * sobelScale * imageLoad(gradientMap, corresp.one).xy;
+			w = 1; // FOR TESTING
+			//sobelScale = 1;
+
+			vec2 dI_dxdy_val = w * 1 * imageLoad(gradientMap, corresp.one).xy;
+
+			imageStore(outputTestImage, pix, vec4(dI_dxdy_val, 0, 1)); 
+
 
 			float v0 = dI_dxdy_val.x * cam.z * invZ;
 			float v1 = dI_dxdy_val.y * cam.w * invZ;
