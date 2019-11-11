@@ -18,8 +18,8 @@ namespace rgbd
 	{
 	private:
 		std::map<std::string, const gl::Shader::Ptr> progs;
-		gl::ShaderStorageBuffer<BufferReductionDTAM> ssboDTAMReduction;
-		gl::ShaderStorageBuffer<float> ssboDTAMReductionOutput;
+		gl::ShaderStorageBuffer<BufferReductionDTAM> ssboSO3;
+		gl::ShaderStorageBuffer<float> ssboSO3Output;
 
 
 		//gl::ShaderStorageBuffer<BufferReductionRGB> ssboRGBJtJJtrSE3;
@@ -35,6 +35,11 @@ namespace rgbd
 		RGBDtam();
 		~RGBDtam();
 
+		void RGBDtam::loadShaders(
+			std::map<std::string, const gl::Shader::Ptr> &progs,
+			const std::string &folderPath
+		);
+
 		void init(
 			int width,
 			int height,
@@ -44,6 +49,7 @@ namespace rgbd
 		glm::mat4 calcDevicePose(
 			const rgbd::Frame &currentFrame,
 			const glm::vec4 cam,
+			glm::mat4 colorPose,
 			bool &tracked
 			);
 

@@ -27,9 +27,9 @@ void App::initGradient()
 {
 	std::map<std::string, const gl::Shader::Ptr> progsForGrdient;
 	std::string pathToShaders("./shaders/");
-	gradFilter.loadShaders(progsForGrdient, pathToShaders);
+	dtam.loadShaders(progsForGrdient, pathToShaders);
 
-	gradFilter.init(frame[rgbd::FRAME::CURRENT].getWidth(), frame[rgbd::FRAME::CURRENT].getHeight(), progsForGrdient);
+	dtam.init(frame[rgbd::FRAME::CURRENT].getWidth(), frame[rgbd::FRAME::CURRENT].getHeight(), progsForGrdient);
 }
 
 void App::initSplatter()
@@ -71,6 +71,11 @@ void App::clearSplatter()
 // this is done on the coursest level in elasticfusion
 void App::initDTAM()
 {
+	std::map<std::string, const gl::Shader::Ptr> progsForDtam;
+	std::string pathToShaders("./shaders/");
+	gradFilter.loadShaders(progsForDtam, pathToShaders);
+
+	gradFilter.init(frame[rgbd::FRAME::CURRENT].getWidth(), frame[rgbd::FRAME::CURRENT].getHeight(), progsForDtam);
 
 }
 
@@ -186,17 +191,18 @@ bool App::runDTAM()
 {
 	glViewport(0, 0, width, height);
 	bool status = true;
-	frame[rgbd::FRAME::CURRENT].update(cameraInterface.getColorQueues(), cameraInterface.getDepthQueues(), cameraInterface.getInfraQueues(), numberOfCameras, cameraInterface.getDepthUnit(0) / 1000000.0f, glm::ivec2(m_pointX, m_pointY), iOff, depthMat, sharpnessValue);
-	frame[rgbd::FRAME::CURRENT].alignDepthTocolor(
-		cameraInterface.getDepthToColorExtrinsics(0),
-		glm::vec4(cameraInterface.getDepthIntrinsics(0).cx, cameraInterface.getDepthIntrinsics(0).cy, cameraInterface.getDepthIntrinsics(0).fx, cameraInterface.getDepthIntrinsics(0).fy),
-		glm::vec4(cameraInterface.getColorIntrinsics(0).cx, cameraInterface.getColorIntrinsics(0).cy, cameraInterface.getColorIntrinsics(0).fx, cameraInterface.getColorIntrinsics(0).fy),
-		colorVec
-	);
+	//frame[rgbd::FRAME::CURRENT].update(cameraInterface.getColorQueues(), cameraInterface.getDepthQueues(), cameraInterface.getInfraQueues(), numberOfCameras, cameraInterface.getDepthUnit(0) / 1000000.0f, glm::ivec2(m_pointX, m_pointY), iOff, depthMat, sharpnessValue);
+	//frame[rgbd::FRAME::CURRENT].alignDepthTocolor(
+	//	cameraInterface.getDepthToColorExtrinsics(0),
+	//	glm::vec4(cameraInterface.getDepthIntrinsics(0).cx, cameraInterface.getDepthIntrinsics(0).cy, cameraInterface.getDepthIntrinsics(0).fx, cameraInterface.getDepthIntrinsics(0).fy),
+	//	glm::vec4(cameraInterface.getColorIntrinsics(0).cx, cameraInterface.getColorIntrinsics(0).cy, cameraInterface.getColorIntrinsics(0).fx, cameraInterface.getColorIntrinsics(0).fy),
+	//	colorVec
+	//);
 	bool tracked = true;
-	glm::mat4 T = dtam.calcDevicePose(
+	so3Pose = dtam.calcDevicePose(
 		frame[rgbd::FRAME::CURRENT],
 		glm::vec4(cameraInterface.getColorIntrinsics(0).cx, cameraInterface.getColorIntrinsics(0).cy, cameraInterface.getColorIntrinsics(0).fx, cameraInterface.getColorIntrinsics(0).fy),
+		so3Pose,
 		tracked);
 
 	return tracked;
@@ -1725,7 +1731,7 @@ void App::mainLoop()
 
 				glDisable(GL_CULL_FACE);
 
-
+				runDTAM();
 			}
 
 			if (colorVec.size() > 0)
@@ -2031,7 +2037,10 @@ void App::mainLoop()
 				" " << currentPose[3].x << " " << currentPose[3].y << " " << currentPose[3].z << " " << currentPose[3].w << std::endl;
 
 			//graphPoints.push_back(gfusion.getTransPose());
-			glm::vec4 transformedInitOff = currentPose * glm::vec4(initOff, 1.0f);
+			//glm::vec4 transformedInitOff = currentPose * glm::vec4(initOff, 1.0f);
+
+			//glm::vec4 transformedInitOff = colorPose * glm::vec4(0,0,0, 1.0f);
+			glm::vec4 transformedInitOff = so3Pose * glm::vec4(0, 0, 100, 1.0f);
 
 			graphPoints.push_back(transformedInitOff);
 			if (graphPoints.size() > graphWindow.w)

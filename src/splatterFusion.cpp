@@ -210,7 +210,7 @@ namespace rgbd
 		pose[3][2] = tcurr(2);
 
 		//std::cout << tcurr << std::endl;
-		std::cout << glm::to_string(glm::transpose(pose)) << std::endl;
+		//std::cout << glm::to_string(glm::transpose(pose)) << std::endl;
 
 
 	}

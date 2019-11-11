@@ -16,7 +16,7 @@ namespace rgbd
 	)
 	{
 		progs.insert(std::make_pair("GradientFilter", std::make_shared<gl::Shader>(folderPath + "GradientFilter.comp")));
-		}
+	}
 
 
 	void GradientFilter::init(

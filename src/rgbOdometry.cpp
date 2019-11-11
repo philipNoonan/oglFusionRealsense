@@ -181,7 +181,7 @@ namespace rgbd
 		sigmaVal = std::sqrt((float)sigma / count == 0 ? 1 : count);
 		rgbError = std::sqrt(sigma) / (count == 0 ? 1 : count);
 
-		std::cout << sigmaVal << " " << rgbError << std::endl;
+		//std::cout << sigmaVal << " " << rgbError << std::endl;
 	}
 
 	void RGBOdometry::computeStep(
@@ -214,9 +214,9 @@ namespace rgbd
 
 		progs["rgbOdometryStep"]->disuse();
 
-		std::vector<float> tmpData(8 * currentFrame.getColorMap()->getWidth() * currentFrame.getColorMap()->getHeight());
+		//std::vector<float> tmpData(8 * currentFrame.getColorMap()->getWidth() * currentFrame.getColorMap()->getHeight());
 
-		ssboRGBRGBJtJJtrSE3.read(tmpData.data(), 0, 8 * currentFrame.getColorMap()->getWidth() * currentFrame.getColorMap()->getHeight());
+		//ssboRGBRGBJtJJtrSE3.read(tmpData.data(), 0, 8 * currentFrame.getColorMap()->getWidth() * currentFrame.getColorMap()->getHeight());
 
 		progs["rgbOdometryStepReduce"]->use();
 		progs["rgbOdometryStepReduce"]->setUniform("imSize", glm::ivec2(currentFrame.getColorMap()->getWidth(), currentFrame.getColorMap()->getHeight()));

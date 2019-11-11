@@ -68,6 +68,7 @@ private:
 
 	rgbd::GlobalVolume::Ptr volume;
 	glm::mat4 colorPose = glm::mat4(1.0f);
+	glm::mat4 so3Pose = glm::mat4(1.0f);
 	std::array<rgbd::Frame, 3> frame;
 	rgbd::RGBDtam dtam;
 	rgbd::splatterFusion slam;

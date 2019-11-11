@@ -2,126 +2,112 @@
 
 layout(local_size_x = 32, local_size_y = 32) in;
 
+layout(binding = 0, rgba8) uniform image2D lastColorMap;
+layout(binding = 1, rgba8) uniform image2D nextColorMap;
 
-layout(binding = 0, rg32f) uniform image2D gradientMap;
+//layout(binding = 0, rg32f) uniform image2D gradientMap;
+
+uniform mat3 imageBasis;
+uniform mat3 kinv;
+uniform mat3 krlr;
 
 
-
-layout(binding = 1, rgba32f) uniform image2D nextVertexMap; // is this next?
-
-
-float FLT_EPSILON = 1.19209290E-07f;
-
-uniform float sigma;
-uniform float sobelScale;
-uniform float minScale;
-uniform vec4 cam; // cx cy fx fy
-
-struct DataTerm
+layout(std430, binding = 0) buffer rowSO3data
 {
-	ivec2 zero;
-    ivec2 one;
-    float diff;
-    bool valid;
+    vec4 rowSO3[];
 };
 
-struct JtJJtrSE3
-{
-    // // 27 floats for each product (27)
-    //float aa, ab, ac, ad, ae, af, ag,
-    //          bb, bc, bd, be, bf, bg,
-    //              cc, cd, ce, cf, cg,
-    //                  dd, de, df, dg,
-    //                      ee, ef, eg,
-    //                          ff, fg;
-
-	float data[27];
-
-    //Extra data needed (29)
-    float residual;
-	float inliers;
-};
-
-struct rowSE3
-{
-	float data[7];
-	float inliers;
-};
-
-layout(std430, binding = 0) buffer corresData
-{
-    DataTerm corresImg[];
-};
-
-layout(std430, binding = 1) buffer outputData
-{
-    rowSE3 outputBuffer[];
-};
 
 float luminance(vec3 rgb)
 {
     return 0.299f * float(rgb.x) + 0.587f * float(rgb.y) + 0.114f * float(rgb.z);
 }
 
+vec2 getGradient(layout (rgba8) image2D image, ivec2 pixel)
+{
+	vec2 gradient;
+
+	float lumi = luminance(imageLoad(image, pixel).xyz);
+
+	float back = luminance(imageLoad(image, ivec2(pixel.x - 1, pixel.y)).xyz);
+	float fore = luminance(imageLoad(image, ivec2(pixel.x + 1, pixel.y)).xyz);
+
+	gradient.x = ((back + lumi) / 2.0f) - ((fore + lumi) / 2.0f);
+
+	back = luminance(imageLoad(image, ivec2(pixel.x, pixel.y - 1)).xyz);
+	fore = luminance(imageLoad(image, ivec2(pixel.x, pixel.y + 1)).xyz);
+
+	gradient.y = ((back + lumi) / 2.0f) - ((fore + lumi) / 2.0f);
+
+	return gradient;
+}
+
+
 void main()
 {
 	ivec2 pix = ivec2(gl_GlobalInvocationID.xy);
-	ivec2 imSize = imageSize(gradientMap);
-
-	rowSE3 row;
+	ivec2 imSize = imageSize(lastColorMap);
 
 
-	DataTerm corresp = corresImg[pix.y * imSize.x + pix.x];
+	bool found_coresp = false;
 
-	bool found_corresp = corresp.valid;
+	vec3 unwarpedReferencePoint = vec3(pix.xy, 1.0f);
 
-	if (found_corresp)
+	vec3 warpedReferencePoint = imageBasis * unwarpedReferencePoint;
+
+	ivec2 wrPixel = ivec2((warpedReferencePoint.x / warpedReferencePoint.z) + 0.5f,
+					      (warpedReferencePoint.y / warpedReferencePoint.z) + 0.5f);
+
+	if(wrPixel.x >= 1 &&
+       wrPixel.x < imSize.x - 1 &&
+       wrPixel.y >= 1 &&
+       wrPixel.y < imSize.y - 1 &&
+       pix.x >= 1 &&
+       pix.x < imSize.x - 1 &&
+       pix.y >= 1 &&
+       pix.y < imSize.y - 1)
 	{
-		float w = sigma + abs(corresp.diff);
+		found_coresp = true;
+    }
 
-		w = w > FLT_EPSILON ? 1.0 / w : 1.0f;
+	vec4 row = vec4(0.0f);
 
-		if (sigma == -1)
-		{
-			w = 1;
-		}
+	if (found_coresp)
+	{
+		vec2 gradNext = getGradient(nextColorMap, wrPixel);
+		vec2 gradLast = getGradient(lastColorMap, wrPixel);
 
-		row.data[6] = -w * corresp.diff;
+	    float gx = (gradNext.x + gradLast.x) / 2.0f;
+        float gy = (gradNext.y + gradLast.y) / 2.0f;
 
-		vec3 cloudPoint = imageLoad(nextVertexMap, corresp.zero).xyz;
+		vec3 point = kinv * unwarpedReferencePoint;
 
-		float invZ = 1.0f / cloudPoint.z;
+        float z2 = point.z * point.z;
 
-		if (cloudPoint.z == 0 || isnan(cloudPoint.z))
-		{
-			row.data[0] = row.data[1] = row.data[2] = row.data[3] = row.data[4] = row.data[5] = row.data[6] = row.inliers = 0.f;
-		}
-		else
-		{
-			vec2 dI_dxdy_val = w * sobelScale * imageLoad(gradientMap, corresp.one).xy;
+        float a = krlr[0].x;
+        float b = krlr[0].y;
+        float c = krlr[0].z;
 
-			float v0 = dI_dxdy_val.x * cam.z * invZ;
-			float v1 = dI_dxdy_val.y * cam.w * invZ;
-			float v2 = -(v0 * cloudPoint.x + v1 * cloudPoint.y) * invZ;
+        float d = krlr[1].x;
+        float e = krlr[1].y;
+        float f = krlr[1].z;
 
+        float g = krlr[2].x;
+        float h = krlr[2].y;
+        float i = krlr[2].z;
 
-			row.data[0] = v0;
-			row.data[1] = v1;
-			row.data[2] = v2;
-			row.data[3] = -cloudPoint.z * v1 + cloudPoint.y * v2;
-			row.data[4] =  cloudPoint.z * v0 - cloudPoint.x * v2;
-			row.data[5] = -cloudPoint.y * v0 + cloudPoint.x * v1;
-			row.inliers = 1.0f;
-		}
+        vec3 leftProduct = {((point.z * (d * gy + a * gx)) - (gy * g * pix.y) - (gx * g * pix.x)) / z2,
+                            ((point.z * (e * gy + b * gx)) - (gy * h * pix.y) - (gx * h * pix.x)) / z2,
+                            ((point.z * (f * gy + c * gx)) - (gy * i * pix.y) - (gx * i * pix.x)) / z2};
+
+		vec3 jacRow = cross(leftProduct, point);
+
+		row = vec4(jacRow.xyz, -(luminance(imageLoad(nextColorMap, wrPixel).xyz) - luminance(imageLoad(lastColorMap, pix).xyz)) );
 
 	}
-	else
-	{
-	    row.data[0] = row.data[1] = row.data[2] = row.data[3] = row.data[4] = row.data[5] = row.data[6] = row.inliers = 0.f;
-	}
 
 
-	outputBuffer[pix.y * imSize.x + pix.x] = row;
+	rowSO3[pix.y * imSize.x + pix.x] = row;
 
 
 }
