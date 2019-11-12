@@ -18,7 +18,6 @@
 //#include "SLAM/Utilities/TUMRGBDUtilities.h"
 #include "PyramidricalICP.h"
 #include "GlobalMap.h"
-#include "rgbOdometry.h"
 
 
 #include <Eigen/Core>
@@ -34,7 +33,6 @@ namespace rgbd
 	private:
 		rgbd::PyramidricalICP::Ptr icp;
 		rgbd::GlobalMap::Ptr gMap;
-		rgbd::RGBOdometry::Ptr rgbOdo;
 		std::vector<glm::mat4> vT;
 		glm::mat4 T;
 

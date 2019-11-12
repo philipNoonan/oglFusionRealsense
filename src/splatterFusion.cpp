@@ -58,7 +58,6 @@ namespace rgbd
 
 		icp = std::make_shared<rgbd::PyramidricalICP>(width, height, K, rgbd::FUSIONTYPE::SPLATTER, progs);
 		gMap = std::make_shared<rgbd::GlobalMap>(width, height, K, progs);
-		rgbOdo = std::make_shared<rgbd::RGBOdometry>(width, height, progs);
 
 		//std::cout << "map initialization..." << std::endl;
 		for (int idx = 0; idx < 1; ++idx)
@@ -82,138 +81,7 @@ namespace rgbd
 		gMap->genVirtualFrame(globalFrame, renderPose);
 	}
 
-	void splatterFusion::performColorTracking(
-		const rgbd::Frame &currentFrame,
-		const rgbd::Frame &virtualFrame,
-		const gl::Texture::Ptr &gradientMap,
-		glm::mat4 &pose,
-		glm::vec4 cam // cx, cy, fx, fy
-		)
-	{
-
-		float sigma;
-		float rgbError;
-
-		glm::mat3 K = glm::mat3(1.0f);
-		K[0][0] = cam.z;
-		K[1][1] = cam.w;
-		K[2][0] = cam.x;
-		K[2][1] = cam.y;
-
-		Eigen::Matrix<double, 3, 3, Eigen::RowMajor> K_eig = Eigen::Matrix<double, 3, 3, Eigen::RowMajor>::Zero();
-
-		K_eig(0, 0) = cam.z;
-		K_eig(1, 1) = cam.w;
-		K_eig(0, 2) = cam.x;
-		K_eig(1, 2) = cam.y;
-		K_eig(2, 2) = 1;
-
-		glm::mat4 resultRt = glm::mat4(1.0f);
-		Eigen::Matrix<double, 4, 4, Eigen::RowMajor> resultRt_eig = Eigen::Matrix<double, 4, 4, Eigen::RowMajor>::Identity();
-
-
-		Eigen::Matrix<float, 3, 3, Eigen::RowMajor> Rprev;
-		for (int i = 0; i < 3; i++)
-		{
-			for (int j = 0; j < 3; j++)
-			{
-				Rprev(i, j) = pose[j][i];
-			}
-		}
-
-		Eigen::Vector3f tprev;
-		tprev(0) = pose[3][0];
-		tprev(1) = pose[3][1];
-		tprev(2) = pose[3][2];
-
-		Eigen::Matrix<float, 3, 3, Eigen::RowMajor> Rcurr = Rprev;
-		Eigen::Vector3f tcurr = tprev;
-
-		for (int iter = 0; iter < 1; iter++)
-		{
-			Eigen::Matrix<double, 4, 4, Eigen::RowMajor> Rt_eig = resultRt_eig.inverse();
-
-			Eigen::Matrix<double, 3, 3, Eigen::RowMajor> R_eig = Rt_eig.topLeftCorner(3, 3);
-
-			Eigen::Matrix<double, 3, 3, Eigen::RowMajor> KRK_inv_eig = K_eig * R_eig * K_eig.inverse();
-
-			glm::mat3 KRK_inv;// = K * R  * glm::inverse(K);
-
-
-			for (int i = 0; i < 3; i++)
-			{
-				for (int j = 0; j < 3; j++)
-				{
-					KRK_inv[i][j] = KRK_inv_eig(j, i);
-				}
-			}
-
-			glm::mat4 Rt = glm::inverse(resultRt);
-			glm::mat3 R = glm::mat3(Rt);
-
-			//glm::mat3 KRK_inv = K * R  * glm::inverse(K);
-
-			glm::vec3 kT = glm::vec3(Rt[3][0], Rt[3][1], Rt[3][2]);
-
-			kT = K * kT;
-
-			Eigen::Isometry3f rgbodomiso3f;
-
-			rgbOdo->computeResiduals(
-				currentFrame,
-				gradientMap,
-				kT,
-				KRK_inv,
-				sigma,
-				rgbError
-			);
-
-			rgbOdo->computeStep(
-				currentFrame,
-				gradientMap,
-				cam,
-				sigma,
-				rgbError,
-				resultRt,
-				rgbodomiso3f
-			);
-
-			Eigen::Isometry3f currentT;
-			currentT.setIdentity();
-			currentT.rotate(Rprev);
-			currentT.translation() = tprev;
-
-			currentT = currentT * rgbodomiso3f.inverse();
-
-			tcurr = currentT.translation();
-			Rcurr = currentT.rotation();
-
-
-		}
-
-		if (sigma == 0 || (tcurr - tprev).norm() > 0.3 || isnan(tcurr(0)))
-		{
-			Rcurr = Rprev;
-			tcurr = tprev;
-		}
-
-		for (int i = 0; i < 3; i++)
-		{
-			for (int j = 0; j < 3; j++)
-			{
-				pose[i][j] = Rcurr(j, i);
-			}
-		}
-
-		pose[3][0] = tcurr(0);
-		pose[3][1] = tcurr(1);
-		pose[3][2] = tcurr(2);
-
-		//std::cout << tcurr << std::endl;
-		//std::cout << glm::to_string(glm::transpose(pose)) << std::endl;
-
-
-	}
+	
 
 
 	glm::mat4 splatterFusion::calcDevicePose(

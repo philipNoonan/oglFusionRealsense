@@ -37,6 +37,13 @@
 #include "opencv2/imgproc.hpp"
 #include "opencv2/optflow.hpp"
 
+
+#include <Eigen/Core>
+#include <Eigen/Dense>
+#include <Eigen/Geometry> 
+#include <unsupported/Eigen/MatrixFunctions>
+#include "eigen_utils.h"
+
 #include "markerTracking.h"
 
 
@@ -58,6 +65,7 @@
 #include "GlobalVolume.h"
 #include "GradientFilter.h"
 #include "rgbDTAM.h"
+#include "rgbOdometry.h"
 
 
 class App : gl::Window
@@ -67,9 +75,11 @@ private:
 	Camera* camera;
 
 	rgbd::GlobalVolume::Ptr volume;
-	glm::mat4 colorPose = glm::mat4(1.0f);
+	glm::mat4 initPose;
+	glm::mat4 se3Pose = glm::mat4(1.0f); 
 	glm::mat4 so3Pose = glm::mat4(1.0f);
 	std::array<rgbd::Frame, 3> frame;
+	rgbd::RGBOdometry rgbodo;
 	rgbd::RGBDtam dtam;
 	rgbd::splatterFusion slam;
 	rgbd::GradientFilter gradFilter;
@@ -85,7 +95,9 @@ private:
 
 	bool poseFound = false;
 
+	void updateFrames();
 	bool runDTAM();
+	bool runRGBOdo();
 	bool runSLAM();
 	bool runP2P();
 	bool runP2V();
@@ -93,6 +105,7 @@ private:
 	void clearSplatter();
 	void initGradient();
 	void initDTAM();
+	void initRGBodo();
 	void initP2PFusion();
 	void initP2VFusion();
 	int getRenderOptions(bool depth, bool normal, bool color, bool infra, bool flow);
@@ -302,6 +315,8 @@ private:
 	bool trackDepthToPoint = false;
 	bool trackDepthToVolume = false;
 	bool useSplatter = false;
+	bool useSO3 = false;
+	bool useSE3 = false;
 	bool useMultipleFusion = false;
 	bool performFlood = false;
 	bool performFlow = false;

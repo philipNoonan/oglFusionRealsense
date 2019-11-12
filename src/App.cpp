@@ -79,6 +79,18 @@ void App::initDTAM()
 
 }
 
+void App::initRGBodo()
+{
+	std::map<std::string, const gl::Shader::Ptr> progsForDtam;
+	std::string pathToShaders("./shaders/");
+	rgbodo.loadShaders(progsForDtam, pathToShaders);
+
+	rgbodo.init(frame[rgbd::FRAME::CURRENT].getWidth(), frame[rgbd::FRAME::CURRENT].getHeight(), progsForDtam);
+
+
+
+}
+
 
 void App::initP2PFusion()
 {
@@ -187,8 +199,27 @@ void App::initP2VFusion()
 
 }
 
+void App::updateFrames()
+{
+	glViewport(0, 0, width, height);
+	frame[rgbd::FRAME::CURRENT].update(cameraInterface.getColorQueues(), cameraInterface.getDepthQueues(), cameraInterface.getInfraQueues(), numberOfCameras, cameraInterface.getDepthUnit(0) / 1000000.0f, glm::ivec2(m_pointX, m_pointY), iOff, depthMat, sharpnessValue);
+	frame[rgbd::FRAME::CURRENT].alignDepthTocolor(
+		cameraInterface.getDepthToColorExtrinsics(0),
+		glm::vec4(cameraInterface.getDepthIntrinsics(0).cx, cameraInterface.getDepthIntrinsics(0).cy, cameraInterface.getDepthIntrinsics(0).fx, cameraInterface.getDepthIntrinsics(0).fy),
+		glm::vec4(cameraInterface.getColorIntrinsics(0).cx, cameraInterface.getColorIntrinsics(0).cy, cameraInterface.getColorIntrinsics(0).fx, cameraInterface.getColorIntrinsics(0).fy),
+		colorVec
+	);
+
+}
+
+
+// its not full dtam, just so3 alignment using just rgb
 bool App::runDTAM()
 {
+	GLuint query;
+	glGenQueries(1, &query);
+	glBeginQuery(GL_TIME_ELAPSED, query);
+
 	glViewport(0, 0, width, height);
 	bool status = true;
 	//frame[rgbd::FRAME::CURRENT].update(cameraInterface.getColorQueues(), cameraInterface.getDepthQueues(), cameraInterface.getInfraQueues(), numberOfCameras, cameraInterface.getDepthUnit(0) / 1000000.0f, glm::ivec2(m_pointX, m_pointY), iOff, depthMat, sharpnessValue);
@@ -205,26 +236,54 @@ bool App::runDTAM()
 		so3Pose,
 		tracked);
 
+	glEndQuery(GL_TIME_ELAPSED);
+	GLuint available = 0;
+	while (!available) {
+		glGetQueryObjectuiv(query, GL_QUERY_RESULT_AVAILABLE, &available);
+	}
+	// elapsed time in nanoseconds
+	GLuint64 elapsed;
+	glGetQueryObjectui64vEXT(query, GL_QUERY_RESULT, &elapsed);
+	//std::cout << "dtam time : " << elapsed / 1000000.0 << std::endl; // 3 ms for 10 iter at full reso
+
 	return tracked;
 }
 
-
-bool App::runSLAM()
+bool App::runRGBOdo()
 {
+	bool tracked = true; // CHECK THIS!
 	GLuint query;
 	glGenQueries(1, &query);
 	glBeginQuery(GL_TIME_ELAPSED, query);
 
+	////gradFilter.execute(frame[rgbd::FRAME::CURRENT].getColorFilteredMap(), 0, 0.52201f, 0.79451f, false);
+	gradFilter.execute(frame[rgbd::FRAME::CURRENT].getColorFilteredMap(), 0, 3.0f, 10.0f, false);
+
+	rgbodo.performColorTracking(frame[rgbd::FRAME::CURRENT], frame[rgbd::FRAME::VIRTUAL], gradFilter.getGradientMap(), se3Pose, glm::vec4(cameraInterface.getDepthIntrinsics(0).cx, cameraInterface.getDepthIntrinsics(0).cy, cameraInterface.getDepthIntrinsics(0).fx, cameraInterface.getDepthIntrinsics(0).fy));
+
+
+	glEndQuery(GL_TIME_ELAPSED);
+	GLuint available = 0;
+	while (!available) {
+		glGetQueryObjectuiv(query, GL_QUERY_RESULT_AVAILABLE, &available);
+	}
+	// elapsed time in nanoseconds
+	GLuint64 elapsed;
+	glGetQueryObjectui64vEXT(query, GL_QUERY_RESULT, &elapsed);
+	//std::cout << "se3 time : " << elapsed / 1000000.0 << std::endl; // 1 ms for 1 iter at full reso
+
+	//std::cout << " se3\n " << glm::to_string(se3Pose) << std::endl;
+
+
+	return tracked;
+}
+
+bool App::runSLAM()
+{
+
+
 	
-	glViewport(0, 0, width, height);
-	bool status = true;
-	frame[rgbd::FRAME::CURRENT].update(cameraInterface.getColorQueues(), cameraInterface.getDepthQueues(), cameraInterface.getInfraQueues(), numberOfCameras, cameraInterface.getDepthUnit(0) / 1000000.0f, glm::ivec2(m_pointX, m_pointY), iOff, depthMat, sharpnessValue);
-	frame[rgbd::FRAME::CURRENT].alignDepthTocolor(
-		cameraInterface.getDepthToColorExtrinsics(0),
-		glm::vec4(cameraInterface.getDepthIntrinsics(0).cx, cameraInterface.getDepthIntrinsics(0).cy, cameraInterface.getDepthIntrinsics(0).fx, cameraInterface.getDepthIntrinsics(0).fy),
-		glm::vec4(cameraInterface.getColorIntrinsics(0).cx, cameraInterface.getColorIntrinsics(0).cy, cameraInterface.getColorIntrinsics(0).fx, cameraInterface.getColorIntrinsics(0).fy),
-		colorVec
-	);
+	
 	bool tracked = true;
 	glm::mat4 T = slam.calcDevicePose(frame[rgbd::FRAME::CURRENT], frame[rgbd::FRAME::VIRTUAL], tracked);
 
@@ -235,50 +294,35 @@ bool App::runSLAM()
 
 	//std::cout << glm::to_string(glm::transpose(T)) << std::endl;
 
-	glEndQuery(GL_TIME_ELAPSED);
-	GLuint available = 0;
-	while (!available) {
-		glGetQueryObjectuiv(query, GL_QUERY_RESULT_AVAILABLE, &available);
-	}
-	// elapsed time in nanoseconds
-	GLuint64 elapsed;
-	glGetQueryObjectui64vEXT(query, GL_QUERY_RESULT, &elapsed);
-	//std::cout << "splat time : " << elapsed / 1000000.0 << std::endl;
 
 
-
-	////gradFilter.execute(frame[rgbd::FRAME::CURRENT].getColorFilteredMap(), 0, 0.52201f, 0.79451f, false);
-	gradFilter.execute(frame[rgbd::FRAME::CURRENT].getColorFilteredMap(), 0, 3.0f, 10.0f, false);
-
-	slam.performColorTracking(frame[rgbd::FRAME::CURRENT], frame[rgbd::FRAME::VIRTUAL], gradFilter.getGradientMap(), colorPose, glm::vec4(cameraInterface.getDepthIntrinsics(0).cx, cameraInterface.getDepthIntrinsics(0).cy, cameraInterface.getDepthIntrinsics(0).fx, cameraInterface.getDepthIntrinsics(0).fy));
+	
 
 
-
-
-
-
-	return status;
+	return tracked;
 }
 
 bool App::runP2P()
 {
+	bool tracked = true;
 	GLuint query;
 	glGenQueries(1, &query);
 	glBeginQuery(GL_TIME_ELAPSED, query);
 
-	glViewport(0, 0, width, height);
-	bool status = true;
-	frame[rgbd::FRAME::CURRENT].update(cameraInterface.getColorQueues(), cameraInterface.getDepthQueues(), cameraInterface.getInfraQueues(), numberOfCameras, cameraInterface.getDepthUnit(0) / 1000000.0f, glm::ivec2(m_pointX, m_pointY), iOff, depthMat, sharpnessValue);
-	frame[rgbd::FRAME::CURRENT].alignDepthTocolor(
-		cameraInterface.getDepthToColorExtrinsics(0),
-		glm::vec4(cameraInterface.getDepthIntrinsics(0).cx, cameraInterface.getDepthIntrinsics(0).cy, cameraInterface.getDepthIntrinsics(0).fx, cameraInterface.getDepthIntrinsics(0).fy),
-		glm::vec4(cameraInterface.getColorIntrinsics(0).cx, cameraInterface.getColorIntrinsics(0).cy, cameraInterface.getColorIntrinsics(0).fx, cameraInterface.getColorIntrinsics(0).fy),
-		colorVec
-	);
+	if (useSO3)
+	{
+		p2pFusion.setT(so3Pose);
+	}
+
+	if (useSE3)
+	{
+
+		p2pFusion.setT(glm::translate(se3Pose, glm::vec3(-initOff.x + gconfig.volumeDimensions.x / 2.0f, -initOff.y + gconfig.volumeDimensions.y / 2.0f, -initOff.z + dimension / 2.0)));
+	}
 
 	p2pFusion.raycast(frame[rgbd::FRAME::VIRTUAL]);
-
-	glm::mat4 T = p2pFusion.calcDevicePose(frame[rgbd::FRAME::CURRENT], frame[rgbd::FRAME::VIRTUAL]);
+	
+	//glm::mat4 T = p2pFusion.calcDevicePose(frame[rgbd::FRAME::CURRENT], frame[rgbd::FRAME::VIRTUAL]);
 
 	if (integratingFlag)
 	{
@@ -294,10 +338,10 @@ bool App::runP2P()
 	// elapsed time in nanoseconds
 	GLuint64 elapsed;
 	glGetQueryObjectui64vEXT(query, GL_QUERY_RESULT, &elapsed);
-	std::cout << "time : " << elapsed / 1000000.0 << std::endl;
-	//std::cout << glm::to_string(glm::transpose(T)) << std::endl;
+	//std::cout << "time : " << elapsed / 1000000.0 << std::endl;
+	//std::cout << " p2p\n " << glm::to_string(T) << std::endl;
 
-	return status;
+	return tracked;
 }
 
 bool App::runP2V()
@@ -306,16 +350,8 @@ bool App::runP2V()
 	glGenQueries(1, &query);
 	glBeginQuery(GL_TIME_ELAPSED, query);
 
-	glViewport(0, 0, width, height);
-	bool status = true;
-	frame[rgbd::FRAME::CURRENT].update(cameraInterface.getColorQueues(), cameraInterface.getDepthQueues(), cameraInterface.getInfraQueues(), numberOfCameras, cameraInterface.getDepthUnit(0) / 1000000.0f, glm::ivec2(m_pointX, m_pointY), iOff, depthMat, sharpnessValue);
-	frame[rgbd::FRAME::CURRENT].alignDepthTocolor(
-		cameraInterface.getDepthToColorExtrinsics(0),
-		glm::vec4(cameraInterface.getDepthIntrinsics(0).cx, cameraInterface.getDepthIntrinsics(0).cy, cameraInterface.getDepthIntrinsics(0).fx, cameraInterface.getDepthIntrinsics(0).fy),
-		glm::vec4(cameraInterface.getColorIntrinsics(0).cx, cameraInterface.getColorIntrinsics(0).cy, cameraInterface.getColorIntrinsics(0).fx, cameraInterface.getColorIntrinsics(0).fy),
-		colorVec
-	);
-
+	bool tracked = true;
+	
 	glm::mat4 T = p2vFusion.calcDevicePose(frame[rgbd::FRAME::CURRENT], frame[rgbd::FRAME::VIRTUAL]);
 
 	if (integratingFlag)
@@ -331,9 +367,9 @@ bool App::runP2V()
 	// elapsed time in nanoseconds
 	GLuint64 elapsed;
 	glGetQueryObjectui64vEXT(query, GL_QUERY_RESULT, &elapsed);
-	std::cout << "p2v time : " << elapsed / 1000000.0 << std::endl;
+	//std::cout << "p2v time : " << elapsed / 1000000.0 << std::endl;
 
-	return status;
+	return tracked;
 
 }
 
@@ -477,16 +513,18 @@ void App::resetVolume()
 	//std::cout << glm::to_string(iOff) << std::endl;
 
 	// AND THE OTHER ONE
-	glm::mat4 initPose;
+
 	if (!useSplatter)
 	{
 		initPose = glm::translate(glm::mat4(1.0f), glm::vec3(-iOff.x + gconfig.volumeDimensions.x / 2.0f, -iOff.y + gconfig.volumeDimensions.y / 2.0f, -iOff.z + dimension / 2.0));
-
+		so3Pose = initPose;
+		se3Pose = initPose;
 	}
 	else
 	{
 		initPose = glm::mat4(1.0f);// glm::translate(glm::mat4(1.0f), glm::vec3(gconfig.volumeDimensions.x / 2.0f, gconfig.volumeDimensions.y / 2.0f, 0.0f));
-
+		so3Pose = initPose;
+		se3Pose = initPose;
 	}
 
 
@@ -1123,6 +1161,10 @@ void App::setUI()
 			if (ImGui::Button("P2P")) trackDepthToPoint ^= 1; ImGui::SameLine(); ImGui::Checkbox("", &trackDepthToPoint); ImGui::SameLine();
 			if (ImGui::Button("P2V")) trackDepthToVolume ^= 1; ImGui::SameLine(); ImGui::Checkbox("", &trackDepthToVolume);
 			if (ImGui::Button("Splat")) useSplatter ^= 1; ImGui::SameLine(); ImGui::Checkbox("", &useSplatter);
+			ImGui::Text("Prealignment");
+
+			if (ImGui::Button("RGB")) useSO3 ^= 1; ImGui::SameLine(); ImGui::Checkbox("", &useSO3); ImGui::SameLine();
+			if (ImGui::Button("RGB+D")) useSE3 ^= 1; ImGui::SameLine(); ImGui::Checkbox("", &useSE3); 
 
 
 			ImGui::Text("Resolution");
@@ -1498,6 +1540,8 @@ void App::setUpGPU()
 
 	initDTAM();
 
+	initRGBodo();
+
 
 }
 
@@ -1692,6 +1736,7 @@ void App::mainLoop()
 
 		if (frameReady)
 		{
+			updateFrames();
 
 			//gfusion.splatterModel();
 
@@ -1707,6 +1752,8 @@ void App::mainLoop()
 
 
 			bool tracked = false;
+			bool so3Tracked = false;
+			bool se3Tracked = false;
 
 			if (trackDepthToPoint)
 			{
@@ -1723,6 +1770,16 @@ void App::mainLoop()
 				tracked = runP2V();
 			}
 
+			if (useSO3)
+			{
+				so3Tracked = runDTAM();
+			}
+
+			if (useSE3)
+			{
+				se3Tracked = runRGBOdo();
+			}
+
 			if (useSplatter)
 			{
 				glEnable(GL_CULL_FACE);
@@ -1731,7 +1788,7 @@ void App::mainLoop()
 
 				glDisable(GL_CULL_FACE);
 
-				runDTAM();
+				//runDTAM();
 			}
 
 			if (colorVec.size() > 0)
@@ -2030,6 +2087,7 @@ void App::mainLoop()
 			{
 				currentPose = p2vFusion.getPose();
 			}
+			
 
 			outputFile << " " << currentPose[0].x << " " << currentPose[0].y << " " << currentPose[0].z << " " << currentPose[0].w << \
 				" " << currentPose[1].x << " " << currentPose[1].y << " " << currentPose[1].z << " " << currentPose[1].w << \
@@ -2040,7 +2098,16 @@ void App::mainLoop()
 			//glm::vec4 transformedInitOff = currentPose * glm::vec4(initOff, 1.0f);
 
 			//glm::vec4 transformedInitOff = colorPose * glm::vec4(0,0,0, 1.0f);
-			glm::vec4 transformedInitOff = so3Pose * glm::vec4(0, 0, 100, 1.0f);
+			glm::vec4 transformedInitOff;
+			if (useSE3)
+			{
+				transformedInitOff = se3Pose * glm::vec4(0, 0, 100, 1.0f);
+
+			}
+			else if (useSO3)
+			{
+				transformedInitOff = so3Pose * glm::vec4(0, 0, 100, 1.0f);
+			}
 
 			graphPoints.push_back(transformedInitOff);
 			if (graphPoints.size() > graphWindow.w)
@@ -2164,7 +2231,7 @@ void App::mainLoop()
 			}
 
 
-		if (useSplatter && cameraRunning)
+		if (cameraRunning)
 		{
 			renderOpts = getRenderOptions(0, showNormalFlag, showColorFlag, 0, showFlowFlag);
 

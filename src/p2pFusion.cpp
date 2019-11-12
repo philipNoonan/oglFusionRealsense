@@ -75,23 +75,23 @@ namespace rgbd
 		const rgbd::Frame &virtualFrame
 	)
 	{
-		GLuint query;
-		glGenQueries(1, &query);
-		glBeginQuery(GL_TIME_ELAPSED, query);
+		//GLuint query;
+		//glGenQueries(1, &query);
+		//glBeginQuery(GL_TIME_ELAPSED, query);
 
 		icp->calcP2P(currentFrame, virtualFrame, T);
 		//vT.push_back(vT.back() * T);
 		vT.push_back(T);
 
-		glEndQuery(GL_TIME_ELAPSED);
-		GLuint available = 0;
-		while (!available) {
-			glGetQueryObjectuiv(query, GL_QUERY_RESULT_AVAILABLE, &available);
-		}
+		//glEndQuery(GL_TIME_ELAPSED);
+		//GLuint available = 0;
+		//while (!available) {
+		//	glGetQueryObjectuiv(query, GL_QUERY_RESULT_AVAILABLE, &available);
+		//}
 		// elapsed time in nanoseconds
-		GLuint64 elapsed;
-		glGetQueryObjectui64vEXT(query, GL_QUERY_RESULT, &elapsed);
-		std::cout << "p2p time : " << elapsed / 1000000.0 << std::endl;
+		//GLuint64 elapsed;
+		//glGetQueryObjectui64vEXT(query, GL_QUERY_RESULT, &elapsed);
+		//std::cout << "p2p time : " << elapsed / 1000000.0 << std::endl;
 
 		return vT.back();
 	}
@@ -124,6 +124,15 @@ namespace rgbd
 		gVol->reset();
 		vT.resize(1, resetPose);
 		T = resetPose;
+	}
+
+	void p2pFusion::setT(
+		glm::mat4 pose
+	)
+	{
+		T = pose;
+		vT.push_back(T);
+
 	}
 
 } // namespace rgbd

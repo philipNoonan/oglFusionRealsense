@@ -92,6 +92,8 @@ namespace rgbd
 			glm::vec3 vSize
 		);
 
+
+
 		typedef std::shared_ptr<rgbd::PyramidricalICP> Ptr;
 	};
 }

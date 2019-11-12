@@ -37,15 +37,33 @@ namespace rgbd
 
 
 	public:
-		RGBOdometry(
+		RGBOdometry();
+		~RGBOdometry();
+
+		void loadShaders(
+			std::map<std::string, const gl::Shader::Ptr> &progs,
+			const std::string &folderPath
+		);
+		
+		void init(
 			int width,
 			int height,
 			const std::map<std::string, const gl::Shader::Ptr> &progs
 			);
+
+		void performColorTracking(
+			const rgbd::Frame &currentFrame,
+			const rgbd::Frame &virtualFrame,
+			const gl::Texture::Ptr &gradientMap,
+			glm::mat4 &pose,
+			glm::vec4 cam // cx, cy, fx, fy
+		);
+
 		void computeDerivativeImages(
 			gl::Texture::Ptr srcNextImage,
 			gl::Texture::Ptr dstNextIdxy
 		);
+
 		void computeResiduals(
 			const rgbd::Frame &currentFrame,
 			const gl::Texture::Ptr & gradientMap,

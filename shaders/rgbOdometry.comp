@@ -91,22 +91,25 @@ void computeResiduals()
 
 				ivec2 nextDepthLoc = ivec2(int(depthLoc.x), int(depthLoc.y));
 
-				float d1 = float(imageLoad(nextDepthMap, ivec2(nextDepthLoc.x, nextDepthLoc.y)).x);
+				float d1 = imageLoad(nextDepthMap, nextDepthLoc).x;
 				
 				//if (depthLoc.x < 1000)
 				//{
 				//	imageStore(outputTestImage, nextColorLoc, vec4(depthLoc, 0, 1)); 
 				//}
 
+				
 
 				// if the pixels with good gradient actually have valid depth associated with them, is this an issue with pixels on depth boundaries that are noisy?
 				if (!isnan(d1) || d1 != 0)
 				{
-					float transformed_d1 = float(d1 * (krkinv[2].x * nextDepthLoc.x + krkinv[2].y * nextDepthLoc.y + krkinv[2].z) + kt.z);
+					float transformed_d1 = float(d1 * (krkinv[0].z * float(nextDepthLoc.x) + krkinv[1].z * float(nextDepthLoc.y) + krkinv[2].z) + kt.z);
 					ivec2 lastDepthLoc;
-					lastDepthLoc.x = int(((d1 * (krkinv[0].x * nextDepthLoc.x + krkinv[0].y * nextDepthLoc.y + krkinv[0].z) + kt.x) / transformed_d1) + 0.5f); // do i want to round to nearest even?
-					lastDepthLoc.y = int(((d1 * (krkinv[1].x * nextDepthLoc.x + krkinv[1].y * nextDepthLoc.y + krkinv[1].z) + kt.y) / transformed_d1) + 0.5f);
+					lastDepthLoc.x = int(((d1 * (krkinv[0].x * float(nextDepthLoc.x) + krkinv[1].x * float(nextDepthLoc.y) + krkinv[2].x) + kt.x) / transformed_d1) + 0.5f); // do i want to round to nearest even?
+					lastDepthLoc.y = int(((d1 * (krkinv[0].y * float(nextDepthLoc.x) + krkinv[1].y * float(nextDepthLoc.y) + krkinv[2].y) + kt.y) / transformed_d1) + 0.5f);
 			
+					imageStore(outputTestImage, nextColorLoc, vec4(lastDepthLoc, 0, 1)); 
+
 					if (lastDepthLoc.x >= 0 && lastDepthLoc.y >= 0 && lastDepthLoc.x < imSize.x && lastDepthLoc.y < imSize.y)
 					{
 						float d0 = float(imageLoad(lastDepthMap, lastDepthLoc).x);

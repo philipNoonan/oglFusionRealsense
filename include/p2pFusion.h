@@ -82,5 +82,9 @@ namespace rgbd
 			glm::vec3 volumeSize
 		);
 
+		void setT(
+			glm::mat4 pose
+		);
+
 	};
 }
