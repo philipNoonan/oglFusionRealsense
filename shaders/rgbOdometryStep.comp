@@ -20,6 +20,7 @@ float FLT_EPSILON = 1.19209290E-07f;
 uniform float sigma;
 uniform float sobelScale;
 uniform vec4 cam; // cx cy fx fy
+uniform int level;
 
 struct DataTerm
 {
@@ -80,7 +81,7 @@ void main()
 
 	bool found_corresp = corresp.valid;
 
-
+	//imageStore(outputTestImage, pix, vec4(0.1, 0.3, 0, 1)); 
 
 	if (found_corresp)
 	{
@@ -94,9 +95,12 @@ void main()
 			w = 1;
 		}
 
+		//	imageStore(outputTestImage, pix, vec4(1.0, 0.9, 0, 1)); 
+
+
 		row.data[6] = -w * corresp.diff;
 
-		ivec2 lastDepthLoc = ivec2(imageLoad(mappingC2DMap, corresp.zero).xy);
+		ivec2 lastDepthLoc = ivec2(imageLoad(mappingC2DMap, corresp.zero << level).xy >> level);
 
 		vec3 cloudPoint = imageLoad(lastVertexMap, lastDepthLoc).xyz;
 

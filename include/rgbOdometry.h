@@ -67,6 +67,7 @@ namespace rgbd
 		void computeResiduals(
 			const rgbd::Frame &currentFrame,
 			const gl::Texture::Ptr & gradientMap,
+			const int level,
 			const glm::vec3 kT,
 			const glm::mat3 krkinv,
 			float &sigmaVal,
@@ -93,6 +94,7 @@ namespace rgbd
 		void computeStep(
 			const rgbd::Frame &currentFrame,
 			const gl::Texture::Ptr &gradientMap,
+			const int level,
 			const glm::vec4 &cam,
 			float sigmaVal,
 			float rgbError,

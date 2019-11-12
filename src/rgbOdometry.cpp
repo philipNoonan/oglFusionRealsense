@@ -141,38 +141,43 @@ namespace rgbd
 	void RGBOdometry::computeResiduals(
 		const rgbd::Frame &currentFrame,
 		const gl::Texture::Ptr & gradientMap,
+		const int level,
 		const glm::vec3 kT,
 		const glm::mat3 krkinv,
 		float &sigmaVal,
 		float &rgbError
 	)
 	{
+
+
+		progs["rgbOdometry"]->use();
+
 		progs["rgbOdometry"]->setUniform("minScale", 0.05f); // THINK ON THIS ONE!!!!
 		progs["rgbOdometry"]->setUniform("maxDepthDelta", 0.07f);
 		progs["rgbOdometry"]->setUniform("kt", kT);
 		progs["rgbOdometry"]->setUniform("krkinv", krkinv);
+		progs["rgbOdometry"]->setUniform("level", level);
 
-		progs["rgbOdometry"]->use();
-		currentFrame.getColorPreviousMap()->bindImage(0, 0, GL_READ_ONLY);
-		currentFrame.getColorFilteredMap()->bindImage(1, 0, GL_READ_ONLY);
+		currentFrame.getColorPreviousMap()->bindImage(0, level, GL_READ_ONLY);
+		currentFrame.getColorFilteredMap()->bindImage(1, level, GL_READ_ONLY);
 
-		gradientMap->bindImage(2, 0, GL_READ_ONLY);
+		gradientMap->bindImage(2, level, GL_READ_ONLY);
 		currentFrame.getMappingC2DMap()->bindImage(3, 0, GL_READ_ONLY);
 		currentFrame.getMappingD2CMap()->bindImage(4, 0, GL_READ_ONLY);
 
-		currentFrame.getDepthPreviousMap()->bindImage(5, 0, GL_READ_ONLY);
-		currentFrame.getDepthMap()->bindImage(6, 0, GL_READ_ONLY);
+		currentFrame.getDepthPreviousMap()->bindImage(5, level, GL_READ_ONLY);
+		currentFrame.getDepthMap()->bindImage(6, level, GL_READ_ONLY);
 
-		currentFrame.getTestMap()->bindImage(7, 0, GL_WRITE_ONLY);
+		currentFrame.getTestMap()->bindImage(7, level, GL_WRITE_ONLY);
 
 		ssboRGBReduction.bindBase(0);
 
 
-		glDispatchCompute(GLHelper::divup(currentFrame.getColorMap()->getWidth(), 32), GLHelper::divup(currentFrame.getColorMap()->getHeight(), 32), 1);
+		glDispatchCompute(GLHelper::divup(currentFrame.getColorMap()->getWidth() >> level, 32), GLHelper::divup(currentFrame.getColorMap()->getHeight() >> level, 32), 1);
 		progs["rgbOdometry"]->disuse();
 
 		progs["rgbOdometryReduce"]->use();
-		progs["rgbOdometryReduce"]->setUniform("imSize", glm::ivec2(currentFrame.getColorMap()->getWidth(), currentFrame.getColorMap()->getHeight()));
+		progs["rgbOdometryReduce"]->setUniform("imSize", glm::ivec2(currentFrame.getColorMap()->getWidth() >> level, currentFrame.getColorMap()->getHeight() >> level));
 
 		ssboRGBReduction.bindBase(0);
 		ssboRGBReductionOutput.bindBase(1);
@@ -204,6 +209,7 @@ namespace rgbd
 	void RGBOdometry::computeStep(
 		const rgbd::Frame &currentFrame,
 		const gl::Texture::Ptr &gradientMap,
+		const int level,
 		const glm::vec4 &cam,
 		float sigmaVal,
 		float rgbError,
@@ -211,23 +217,25 @@ namespace rgbd
 		Eigen::Isometry3f &rgbodomiso3f
 		)
 	{
+
 		progs["rgbOdometryStep"]->setUniform("sigma", -1);
 		progs["rgbOdometryStep"]->setUniform("sobelScale", 0.125f);
 		progs["rgbOdometryStep"]->setUniform("cam", cam);
+		progs["rgbOdometryStep"]->setUniform("level", level);
 
 		progs["rgbOdometryStep"]->use();
-		currentFrame.getVertexPreviousMap()->bindImage(0, 0, GL_READ_ONLY);
+		currentFrame.getVertexPreviousMap()->bindImage(0, level, GL_READ_ONLY);
 
-		gradientMap->bindImage(1, 0, GL_READ_ONLY);
+		gradientMap->bindImage(1, level, GL_READ_ONLY);
 
 		currentFrame.getMappingC2DMap()->bindImage(2, 0, GL_READ_ONLY);
 		currentFrame.getMappingD2CMap()->bindImage(3, 0, GL_READ_ONLY);
 
-		currentFrame.getTestMap()->bindImage(4, 0, GL_WRITE_ONLY);
+		currentFrame.getTestMap()->bindImage(4, level, GL_WRITE_ONLY);
 
 		ssboRGBReduction.bindBase(0);
 		ssboRGBRGBJtJJtrSE3.bindBase(1);
-		glDispatchCompute(GLHelper::divup(currentFrame.getColorMap()->getWidth(), 32), GLHelper::divup(currentFrame.getColorMap()->getHeight(), 32), 1);
+		glDispatchCompute(GLHelper::divup(currentFrame.getColorMap()->getWidth() >> level, 32), GLHelper::divup(currentFrame.getColorMap()->getHeight() >> level, 32), 1);
 
 		progs["rgbOdometryStep"]->disuse();
 
@@ -236,7 +244,7 @@ namespace rgbd
 		//ssboRGBRGBJtJJtrSE3.read(tmpData.data(), 0, 8 * currentFrame.getColorMap()->getWidth() * currentFrame.getColorMap()->getHeight());
 
 		progs["rgbOdometryStepReduce"]->use();
-		progs["rgbOdometryStepReduce"]->setUniform("imSize", glm::ivec2(currentFrame.getColorMap()->getWidth(), currentFrame.getColorMap()->getHeight()));
+		progs["rgbOdometryStepReduce"]->setUniform("imSize", glm::ivec2(currentFrame.getColorMap()->getWidth() >> level, currentFrame.getColorMap()->getHeight() >> level));
 
 		ssboRGBRGBJtJJtrSE3.bindBase(0);
 		ssboRGBRGBJtJJtrSE3Output.bindBase(1);
@@ -364,23 +372,6 @@ namespace rgbd
 		float sigma;
 		float rgbError;
 
-		glm::mat3 K = glm::mat3(1.0f);
-		K[0][0] = cam.z;
-		K[1][1] = cam.w;
-		K[2][0] = cam.x;
-		K[2][1] = cam.y;
-
-		Eigen::Matrix<double, 3, 3, Eigen::RowMajor> K_eig = Eigen::Matrix<double, 3, 3, Eigen::RowMajor>::Zero();
-
-		K_eig(0, 0) = cam.z;
-		K_eig(1, 1) = cam.w;
-		K_eig(0, 2) = cam.x;
-		K_eig(1, 2) = cam.y;
-		K_eig(2, 2) = 1;
-
-		glm::mat4 resultRt = glm::mat4(1.0f);
-		Eigen::Matrix<double, 4, 4, Eigen::RowMajor> resultRt_eig = Eigen::Matrix<double, 4, 4, Eigen::RowMajor>::Identity();
-
 
 		Eigen::Matrix<float, 3, 3, Eigen::RowMajor> Rprev;
 		for (int i = 0; i < 3; i++)
@@ -399,80 +390,115 @@ namespace rgbd
 		Eigen::Matrix<float, 3, 3, Eigen::RowMajor> Rcurr = Rprev;
 		Eigen::Vector3f tcurr = tprev;
 
-		for (int iter = 0; iter < 5; iter++)
+
+		for (int pyrLevel = 2; pyrLevel >= 0; pyrLevel--)
 		{
-			Eigen::Matrix<double, 4, 4, Eigen::RowMajor> Rt_eig = resultRt_eig.inverse();
+			glm::mat3 K = glm::mat3(1.0f);
 
-			Eigen::Matrix<double, 3, 3, Eigen::RowMajor> R_eig = Rt_eig.topLeftCorner(3, 3);
+			glm::vec4 levelCam = glm::vec4(
+				cam.x / (std::pow(2.0f, pyrLevel)),
+				cam.y / (std::pow(2.0f, pyrLevel)),
+				cam.z / (std::pow(2.0f, pyrLevel)),
+				cam.w / (std::pow(2.0f, pyrLevel))
+				);
 
-			Eigen::Matrix<double, 3, 3, Eigen::RowMajor> KRK_inv_eig = K_eig * R_eig * K_eig.inverse();
+			K[0][0] = levelCam.z;
+			K[1][1] = levelCam.w;
+			K[2][0] = levelCam.x;
+			K[2][1] = levelCam.y;
 
-			glm::mat3 KRK_inv;// = K * R  * glm::inverse(K);
+			Eigen::Matrix<double, 3, 3, Eigen::RowMajor> K_eig = Eigen::Matrix<double, 3, 3, Eigen::RowMajor>::Zero();
 
-			std::cout << " iter : " << iter << " krk_inv \n" << KRK_inv_eig << std::endl;
+			K_eig(0, 0) = levelCam.z;
+			K_eig(1, 1) = levelCam.w;
+			K_eig(0, 2) = levelCam.x;
+			K_eig(1, 2) = levelCam.y;
+			K_eig(2, 2) = 1;
 
-			for (int i = 0; i < 3; i++)
+			glm::mat4 resultRt = glm::mat4(1.0f);
+			Eigen::Matrix<double, 4, 4, Eigen::RowMajor> resultRt_eig = Eigen::Matrix<double, 4, 4, Eigen::RowMajor>::Identity();
+
+
+
+
+			for (int iter = 0; iter < 5; iter++)
 			{
-				for (int j = 0; j < 3; j++)
+				Eigen::Matrix<double, 4, 4, Eigen::RowMajor> Rt_eig = resultRt_eig.inverse();
+
+				Eigen::Matrix<double, 3, 3, Eigen::RowMajor> R_eig = Rt_eig.topLeftCorner(3, 3);
+
+				Eigen::Matrix<double, 3, 3, Eigen::RowMajor> KRK_inv_eig = K_eig * R_eig * K_eig.inverse();
+
+				glm::mat3 KRK_inv;// = K * R  * glm::inverse(K);
+
+				//std::cout << " iter : " << iter << " krk_inv \n" << KRK_inv_eig << std::endl;
+
+				for (int i = 0; i < 3; i++)
 				{
-					KRK_inv[i][j] = KRK_inv_eig(j, i);
+					for (int j = 0; j < 3; j++)
+					{
+						KRK_inv[i][j] = KRK_inv_eig(j, i);
+					}
 				}
-			}
 
-			Eigen::Vector3d Kt_eig = Rt_eig.topRightCorner(3, 1);
-			Kt_eig = K_eig * Kt_eig;
+				Eigen::Vector3d Kt_eig = Rt_eig.topRightCorner(3, 1);
+				Kt_eig = K_eig * Kt_eig;
 
-			glm::vec3 kT(Kt_eig(0), Kt_eig(1), Kt_eig(2));
+				glm::vec3 kT(Kt_eig(0), Kt_eig(1), Kt_eig(2));
 
-			//glm::mat4 Rt = glm::inverse(resultRt);
-			//glm::mat3 R = glm::mat3(Rt);
+				//glm::mat4 Rt = glm::inverse(resultRt);
+				//glm::mat3 R = glm::mat3(Rt);
 
-			////glm::mat3 KRK_inv = K * R  * glm::inverse(K);
+				////glm::mat3 KRK_inv = K * R  * glm::inverse(K);
 
-			//glm::vec3 kT = glm::vec3(Rt[3][0], Rt[3][1], Rt[3][2]);
+				//glm::vec3 kT = glm::vec3(Rt[3][0], Rt[3][1], Rt[3][2]);
 
-			//kT = K * kT;
+				//kT = K * kT;
 
-			Eigen::Isometry3f rgbodomiso3f;
+				Eigen::Isometry3f rgbodomiso3f;
 
-			computeResiduals(
-				currentFrame,
-				gradientMap,
-				kT,
-				KRK_inv,
-				sigma,
-				rgbError
-			);
+				computeResiduals(
+					currentFrame,
+					gradientMap,
+					pyrLevel,
+					kT,
+					KRK_inv,
+					sigma,
+					rgbError
+				);
 
-			computeStep(
-				currentFrame,
-				gradientMap,
-				cam,
-				sigma,
-				rgbError,
-				resultRt,
-				rgbodomiso3f
-			);
+				computeStep(
+					currentFrame,
+					gradientMap,
+					pyrLevel,
+					levelCam,
+					sigma,
+					rgbError,
+					resultRt,
+					rgbodomiso3f
+				);
 
-			Eigen::Isometry3f currentT;
-			currentT.setIdentity();
-			currentT.rotate(Rprev);
-			currentT.translation() = tprev;
+				Eigen::Isometry3f currentT;
+				currentT.setIdentity();
+				currentT.rotate(Rprev);
+				currentT.translation() = tprev;
 
-			currentT = currentT * rgbodomiso3f.inverse();
+				currentT = currentT * rgbodomiso3f.inverse();
 
-			tcurr = currentT.translation();
-			Rcurr = currentT.rotation();
+				tcurr = currentT.translation();
+				Rcurr = currentT.rotation();
 
-			for (int i = 0; i < 4; i++)
-			{
-				for (int j = 0; j < 4; j++)
+				for (int i = 0; i < 4; i++)
 				{
-					resultRt_eig(i, j) = resultRt[j][i];
+					for (int j = 0; j < 4; j++)
+					{
+						resultRt_eig(i, j) = resultRt[j][i];
+					}
 				}
-			}
 
+			}
 		}
+
 
 		if (sigma == 0 || (tcurr - tprev).norm() > 0.3 || isnan(tcurr(0)))
 		{

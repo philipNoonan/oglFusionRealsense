@@ -256,8 +256,8 @@ bool App::runRGBOdo()
 	glGenQueries(1, &query);
 	glBeginQuery(GL_TIME_ELAPSED, query);
 
-	////gradFilter.execute(frame[rgbd::FRAME::CURRENT].getColorFilteredMap(), 0, 0.52201f, 0.79451f, false);
-	gradFilter.execute(frame[rgbd::FRAME::CURRENT].getColorFilteredMap(), 0, 3.0f, 10.0f, false);
+	gradFilter.execute(frame[rgbd::FRAME::CURRENT].getColorFilteredMap(), 0, 0.52201f, 0.79451f, false);
+	//gradFilter.execute(frame[rgbd::FRAME::CURRENT].getColorFilteredMap(), 0, 3.0f, 10.0f, false);
 
 	rgbodo.performColorTracking(frame[rgbd::FRAME::CURRENT], frame[rgbd::FRAME::VIRTUAL], gradFilter.getGradientMap(), se3Pose, glm::vec4(cameraInterface.getDepthIntrinsics(0).cx, cameraInterface.getDepthIntrinsics(0).cy, cameraInterface.getDepthIntrinsics(0).fx, cameraInterface.getDepthIntrinsics(0).fy));
 
@@ -317,7 +317,7 @@ bool App::runP2P()
 	if (useSE3)
 	{
 
-		p2pFusion.setT(glm::translate(se3Pose, glm::vec3(-initOff.x + gconfig.volumeDimensions.x / 2.0f, -initOff.y + gconfig.volumeDimensions.y / 2.0f, -initOff.z + dimension / 2.0)));
+		p2pFusion.setT(glm::inverse(initPose) * (colorToDepth[0] * se3Pose));
 	}
 
 	p2pFusion.raycast(frame[rgbd::FRAME::VIRTUAL]);
@@ -340,6 +340,7 @@ bool App::runP2P()
 	glGetQueryObjectui64vEXT(query, GL_QUERY_RESULT, &elapsed);
 	//std::cout << "time : " << elapsed / 1000000.0 << std::endl;
 	//std::cout << " p2p\n " << glm::to_string(T) << std::endl;
+	//std::cout << " dif\n " << glm::to_string(se3Pose * glm::inverse(T)) << std::endl;
 
 	return tracked;
 }

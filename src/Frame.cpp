@@ -118,12 +118,12 @@ namespace rgbd
 		testMap->setWarp(gl::TextureWarp::CLAMP_TO_EDGE);
 
 		mappingD2CMap = std::make_shared<gl::Texture>();
-		mappingD2CMap->createStorage(1, width, height, 2, GL_RG16UI, gl::TextureType::UINT16, 0);
+		mappingD2CMap->createStorage(maxLevel, width, height, 2, GL_RG16UI, gl::TextureType::UINT16, 0);
 		mappingD2CMap->setFiltering(gl::TextureFilter::NEAREST);
 		mappingD2CMap->setWarp(gl::TextureWarp::CLAMP_TO_EDGE);
 
 		mappingC2DMap = std::make_shared<gl::Texture>();
-		mappingC2DMap->createStorage(1, width, height, 2, GL_RG16UI, gl::TextureType::UINT16, 0);
+		mappingC2DMap->createStorage(maxLevel, width, height, 2, GL_RG16UI, gl::TextureType::UINT16, 0);
 		mappingC2DMap->setFiltering(gl::TextureFilter::NEAREST);
 		mappingC2DMap->setWarp(gl::TextureWarp::CLAMP_TO_EDGE);
 
@@ -170,16 +170,15 @@ namespace rgbd
 				glCopyImageSubData(frameData[0].colorFilteredMap->getID(), GL_TEXTURE_2D, lvl, 0, 0, 0,
 					frameData[0].colorPreviousMap->getID(), GL_TEXTURE_2D, lvl, 0, 0, 0,
 					frameData[0].colorFilteredMap->getWidth() >> lvl, frameData[0].colorFilteredMap->getHeight() >> lvl, 1);
+
+				glCopyImageSubData(frameData[0].depthMap->getID(), GL_TEXTURE_2D, lvl, 0, 0, 0,
+					frameData[0].depthPreviousMap->getID(), GL_TEXTURE_2D, lvl, 0, 0, 0,
+					frameData[0].depthMap->getWidth() >> lvl, frameData[0].depthMap->getHeight() >> lvl, 1);
+
+				glCopyImageSubData(frameData[0].vertexMap->getID(), GL_TEXTURE_2D, lvl, 0, 0, 0,
+					frameData[0].vertexPreviousMap->getID(), GL_TEXTURE_2D, lvl, 0, 0, 0,
+					frameData[0].vertexMap->getWidth() >> lvl, frameData[0].vertexMap->getHeight() >> lvl, 1);
 			}
-
-			glCopyImageSubData(frameData[0].depthMap->getID(), GL_TEXTURE_2D, 0, 0, 0, 0,
-				frameData[0].depthPreviousMap->getID(), GL_TEXTURE_2D, 0, 0, 0, 0,
-				frameData[0].depthMap->getWidth(), frameData[0].depthMap->getHeight(), 1);
-
-			glCopyImageSubData(frameData[0].vertexMap->getID(), GL_TEXTURE_2D, 0, 0, 0, 0,
-				frameData[0].vertexPreviousMap->getID(), GL_TEXTURE_2D, 0, 0, 0, 0,
-				frameData[0].vertexMap->getWidth(), frameData[0].vertexMap->getHeight(), 1);
-
 		}
 
 
@@ -257,15 +256,18 @@ namespace rgbd
 				glCopyImageSubData(frameData[0].colorFilteredMap->getID(), GL_TEXTURE_2D, lvl, 0, 0, 0,
 					frameData[0].colorPreviousMap->getID(), GL_TEXTURE_2D, lvl, 0, 0, 0,
 					frameData[0].colorFilteredMap->getWidth() >> lvl, frameData[0].colorFilteredMap->getHeight() >> lvl, 1);
+
+				glCopyImageSubData(frameData[0].depthMap->getID(), GL_TEXTURE_2D, lvl, 0, 0, 0,
+					frameData[0].depthPreviousMap->getID(), GL_TEXTURE_2D, lvl, 0, 0, 0,
+					frameData[0].depthMap->getWidth() >> lvl, frameData[0].depthMap->getHeight() >> lvl, 1);
+
+				glCopyImageSubData(frameData[0].vertexMap->getID(), GL_TEXTURE_2D, lvl, 0, 0, 0,
+					frameData[0].vertexPreviousMap->getID(), GL_TEXTURE_2D, lvl, 0, 0, 0,
+					frameData[0].vertexMap->getWidth() >> lvl, frameData[0].vertexMap->getHeight() >> lvl, 1);
+
 			}
 			
-			glCopyImageSubData(frameData[0].depthMap->getID(), GL_TEXTURE_2D, 0, 0, 0, 0,
-				frameData[0].depthPreviousMap->getID(), GL_TEXTURE_2D, 0, 0, 0, 0,
-				frameData[0].depthMap->getWidth(), frameData[0].depthMap->getHeight(), 1);
 
-			glCopyImageSubData(frameData[0].vertexMap->getID(), GL_TEXTURE_2D, 0, 0, 0, 0,
-				frameData[0].vertexPreviousMap->getID(), GL_TEXTURE_2D, 0, 0, 0, 0,
-				frameData[0].vertexMap->getWidth(), frameData[0].vertexMap->getHeight(), 1);
 
 			firstFrame = false;
 		}
@@ -314,7 +316,7 @@ namespace rgbd
 		// project from 3D to color space using color intrins
 		// read color from color map and update color map for the original vertID in the vertex map
 
-		std::dynamic_pointer_cast<rgbd::AlignDepthColor>(alignDC)->execute(frameData[0].vertexMap, frameData[0].colorMap, frameData[0].colorAlignedToDepthMap, this->mappingC2DMap, this->mappingD2CMap, extrins, colorIntrins);
+		std::dynamic_pointer_cast<rgbd::AlignDepthColor>(alignDC)->execute(frameData[0].vertexMap, frameData[0].colorFilteredMap, frameData[0].colorAlignedToDepthMap, this->mappingC2DMap, this->mappingD2CMap, extrins, colorIntrins);
 
 
 		colorVec.resize(width * height * 4);
