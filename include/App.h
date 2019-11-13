@@ -96,11 +96,12 @@ private:
 	bool poseFound = false;
 
 	void updateFrames();
-	bool runDTAM();
-	bool runRGBOdo();
-	bool runSLAM();
-	bool runP2P();
-	bool runP2V();
+	void getIncrementalTransform();
+	bool runDTAM(glm::mat4 &prePose);
+	bool runRGBOdo(glm::mat4 &prePose);
+	bool runSLAM(glm::mat4 &prePose);
+	bool runP2P(glm::mat4 &prePose);
+	bool runP2V(glm::mat4 &prePose);
 	void initSplatter();
 	void clearSplatter();
 	void initGradient();

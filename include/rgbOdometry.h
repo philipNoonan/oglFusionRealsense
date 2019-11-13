@@ -51,7 +51,7 @@ namespace rgbd
 			const std::map<std::string, const gl::Shader::Ptr> &progs
 			);
 
-		void performColorTracking(
+		glm::mat4 performColorTracking(
 			const rgbd::Frame &currentFrame,
 			const rgbd::Frame &virtualFrame,
 			const gl::Texture::Ptr &gradientMap,

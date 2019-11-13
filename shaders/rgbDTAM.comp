@@ -7,6 +7,9 @@ layout(binding = 1, rgba8) uniform image2D nextColorMap;
 
 //layout(binding = 0, rg32f) uniform image2D gradientMap;
 
+layout(binding = 2, rgba32f) uniform image2D outputTestImage;
+
+
 uniform mat3 imageBasis;
 uniform mat3 kinv;
 uniform mat3 krlr;
@@ -53,7 +56,7 @@ void main()
 
 	vec3 unwarpedReferencePoint = vec3(pix.xy, 1.0f);
 
-	vec3 warpedReferencePoint = imageBasis * unwarpedReferencePoint;
+	vec3 warpedReferencePoint = (imageBasis) * unwarpedReferencePoint;
 
 	ivec2 wrPixel = ivec2((warpedReferencePoint.x / warpedReferencePoint.z) + 0.5f,
 					      (warpedReferencePoint.y / warpedReferencePoint.z) + 0.5f);
@@ -80,20 +83,20 @@ void main()
 	    float gx = (gradNext.x + gradLast.x) / 2.0f;
         float gy = (gradNext.y + gradLast.y) / 2.0f;
 
-		vec3 point = kinv * unwarpedReferencePoint;
+		vec3 point = (kinv) * unwarpedReferencePoint;
 
         float z2 = point.z * point.z;
 
         float a = krlr[0].x;
-        float b = krlr[0].y;
-        float c = krlr[0].z;
+        float b = krlr[1].x;
+        float c = krlr[2].x;
 
-        float d = krlr[1].x;
+        float d = krlr[0].y;
         float e = krlr[1].y;
-        float f = krlr[1].z;
+        float f = krlr[2].y;
 
-        float g = krlr[2].x;
-        float h = krlr[2].y;
+        float g = krlr[0].z;
+        float h = krlr[1].z;
         float i = krlr[2].z;
 
         vec3 leftProduct = {((point.z * (d * gy + a * gx)) - (gy * g * pix.y) - (gx * g * pix.x)) / z2,
@@ -103,6 +106,8 @@ void main()
 		vec3 jacRow = cross(leftProduct, point);
 
 		row = vec4(jacRow.xyz, -(luminance(imageLoad(nextColorMap, wrPixel).xyz) - luminance(imageLoad(lastColorMap, pix).xyz)) );
+
+		imageStore(outputTestImage, ivec2(pix), vec4(row.www, 1.0));
 
 	}
 

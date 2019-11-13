@@ -117,7 +117,7 @@ void main()
 
 			vec2 dI_dxdy_val = w * 1 * imageLoad(gradientMap, corresp.one).xy;
 
-			imageStore(outputTestImage, pix, vec4(dI_dxdy_val, 0, 1)); 
+			imageStore(outputTestImage, pix, vec4(abs(corresp.diff).xxx, 1)); 
 
 
 			float v0 = dI_dxdy_val.x * cam.z * invZ;

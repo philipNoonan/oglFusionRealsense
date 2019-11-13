@@ -162,9 +162,8 @@ namespace rgbd
 	}
 
 	void GlobalMap::updateGlobalMap(
-		const rgbd::Frame &srcFrame,
-		const glm::mat4 &T,
-		const int timestamp
+		rgbd::Frame &srcFrame,
+		const glm::mat4 &T
 	)
 	{
 
@@ -172,7 +171,7 @@ namespace rgbd
 		//glGenQueries(1, &query);
 		//glBeginQuery(GL_TIME_ELAPSED, query);
 
-
+		int timestamp = srcFrame.getDepthFrameCount();
 
 		progs["GlobalMapUpdate"]->use();
 		progs["GlobalMapUpdate"]->setUniform("T", T);
@@ -252,7 +251,7 @@ namespace rgbd
 	}
 
 	void GlobalMap::genVirtualFrame(
-		const rgbd::Frame &dstFrame,
+		rgbd::Frame &dstFrame,
 		const glm::mat4 &invT
 	)
 	{

@@ -33,7 +33,10 @@ namespace rgbd
 	private:
 		rgbd::PyramidricalICP::Ptr icp;
 		rgbd::GlobalMap::Ptr gMap;
-		std::vector<glm::mat4> vT;
+		//std::vector<glm::mat4> vT;
+
+		glm::mat4 vT;
+
 		glm::mat4 T;
 
 	public:
@@ -46,35 +49,35 @@ namespace rgbd
 		);
 
 		void init(
-			const rgbd::Frame &currentFrame,
-			const rgbd::Frame &virtualFrame,
+			rgbd::Frame &currentFrame,
+			rgbd::Frame &virtualFrame,
 			const glm::mat4 &K,
 			const std::map<std::string, const gl::Shader::Ptr> &progs
 		);
 
 		void performColorTracking(
-			const rgbd::Frame &currentFrame,
-			const rgbd::Frame &virtualFrame,
+			rgbd::Frame &currentFrame,
+			rgbd::Frame &virtualFrame,
 			const gl::Texture::Ptr &gradientMap,
 			glm::mat4 &pose,
 			glm::vec4 cam
 		);
 
 		glm::mat4 calcDevicePose(
-			const rgbd::Frame &currentFrame,
-			const rgbd::Frame &virtualFrame,
+			rgbd::Frame &currentFrame,
+			rgbd::Frame &virtualFrame,
 			bool &tracked
 		);
 
 		void updateGlobalMap(
-			const rgbd::Frame &currentFrame,
-			const rgbd::Frame &virtualFrame,
+			rgbd::Frame &currentFrame,
+			rgbd::Frame &virtualFrame,
 			bool integrate
 		);
 
 		void renderGlobalMap(
 			glm::mat4 renderPose, 
-			const rgbd::Frame &virtualFrame
+			rgbd::Frame &virtualFrame
 		);
 
 
@@ -87,9 +90,13 @@ namespace rgbd
 
 		glm::mat4 getPose()
 		{
-			return vT.back();
+			return vT;
 		}
 
 		void clear();
+
+		void splatterFusion::SetPrePose(
+			glm::mat4 prePose
+		);
 	};
 }

@@ -212,6 +212,11 @@ namespace rgbd
 					depthTime = depthFrame[camNumber].get_frame_metadata(RS2_FRAME_METADATA_SENSOR_TIMESTAMP);
 				}
 
+				if (depthFrame[camNumber].supports_frame_metadata(RS2_FRAME_METADATA_FRAME_COUNTER))
+				{
+					depthCount++;// = depthFrame[camNumber].get_frame_metadata(RS2_FRAME_METADATA_FRAME_COUNTER);
+				}
+							
 				const uint16_t* p_depth_frame = reinterpret_cast<const uint16_t*>(depthFrame[camNumber].get_data());
 				//float z = float(depthArray[pointY * depthWidth + pointX]) * (float)cameraInterface.getDepthUnit(cameraDevice) / 1000000.0f;
 				int depth_pixel_index = (pixel.y * shortDepthMap->getWidth() + pixel.x);
@@ -286,6 +291,12 @@ namespace rgbd
 	{
 		return depthTime;
 	}
+
+	uint64_t Frame::getDepthFrameCount()
+	{
+		return depthCount;
+	}
+
 
 	void Frame::getDepthAndColorMats(cv::Mat &depth, cv::Mat &color)
 	{
@@ -441,5 +452,10 @@ namespace rgbd
 	gl::Texture::Ptr Frame::getMappingD2CMap() const
 	{
 		return mappingD2CMap;
+	}
+
+	void Frame::reset()
+	{
+		depthCount = 0;
 	}
 }

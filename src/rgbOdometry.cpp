@@ -360,7 +360,7 @@ namespace rgbd
 
 	}
 
-	void RGBOdometry::performColorTracking(
+	glm::mat4 RGBOdometry::performColorTracking(
 		const rgbd::Frame &currentFrame,
 		const rgbd::Frame &virtualFrame,
 		const gl::Texture::Ptr &gradientMap,
@@ -521,6 +521,6 @@ namespace rgbd
 		//std::cout << tcurr << std::endl;
 		//std::cout << glm::to_string(glm::transpose(pose)) << std::endl;
 
-
+		return pose;
 	}
 }

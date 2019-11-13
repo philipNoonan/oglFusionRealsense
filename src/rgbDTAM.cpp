@@ -100,10 +100,10 @@ namespace rgbd
 
 		Eigen::Matrix<double, 3, 3, Eigen::RowMajor> K = Eigen::Matrix<double, 3, 3, Eigen::RowMajor>::Zero();
 
-		K(0, 0) = cam.z / (std::pow(pyramidLevel + 1, 2));
-		K(1, 1) = cam.w / (std::pow(pyramidLevel + 1, 2));
-		K(0, 2) = cam.x / (std::pow(pyramidLevel + 1, 2));
-		K(1, 2) = cam.y / (std::pow(pyramidLevel + 1, 2));
+		K(0, 0) = cam.z / float(std::pow(2, pyramidLevel));
+		K(0, 2) = cam.x / float(std::pow(2, pyramidLevel));
+		K(1, 2) = cam.y / float(std::pow(2, pyramidLevel));
+		K(1, 1) = cam.w / float(std::pow(2, pyramidLevel));
 		K(2, 2) = 1;
 
 		float lastError = std::numeric_limits<float>::max() / 2;
@@ -160,10 +160,11 @@ namespace rgbd
 
 			currentFrame.getColorFilteredMap()->bindImage(0, pyramidLevel, GL_READ_ONLY);
 			currentFrame.getColorPreviousMap()->bindImage(1, pyramidLevel, GL_READ_ONLY);
+			currentFrame.getTestMap()->bindImage(2, pyramidLevel, GL_WRITE_ONLY);
 
 			ssboSO3.bindBase(0);
 
-			glDispatchCompute(GLHelper::divup(currentFrame.getColorFilteredMap()->getWidth(), 32), GLHelper::divup(currentFrame.getColorFilteredMap()->getHeight(), 32), 1);
+			glDispatchCompute(GLHelper::divup(currentFrame.getColorFilteredMap()->getWidth() >> pyramidLevel, 32), GLHelper::divup(currentFrame.getColorFilteredMap()->getHeight() >> pyramidLevel, 32), 1);
 
 			progs["rgbDTAM"]->disuse();
 
@@ -171,7 +172,7 @@ namespace rgbd
 
 			progs["rgbDTAMReduce"]->use();
 
-			progs["rgbDTAMReduce"]->setUniform("imSize", glm::ivec2(currentFrame.getColorFilteredMap()->getWidth(), currentFrame.getColorFilteredMap()->getHeight()));
+			progs["rgbDTAMReduce"]->setUniform("imSize", glm::ivec2(currentFrame.getColorFilteredMap()->getWidth() >> pyramidLevel, currentFrame.getColorFilteredMap()->getHeight() >> pyramidLevel));
 
 			ssboSO3.bindBase(0);
 			ssboSO3Output.bindBase(1);

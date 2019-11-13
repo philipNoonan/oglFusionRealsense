@@ -4,7 +4,8 @@ namespace rgbd
 {
 	splatterFusion::splatterFusion()
 	{
-		vT.push_back(glm::mat4(1.0f));
+		vT = glm::mat4(1.0f);
+		T = glm::mat4(1.0f);
 	}
 
 	splatterFusion::~splatterFusion()
@@ -44,8 +45,8 @@ namespace rgbd
 	}
 
 	void splatterFusion::init(
-		const rgbd::Frame &currentFrame,
-		const rgbd::Frame &virtualFrame,
+		rgbd::Frame &currentFrame,
+		rgbd::Frame &virtualFrame,
 		const glm::mat4 &K,
 		const std::map<std::string, const gl::Shader::Ptr> &progs
 	)
@@ -66,7 +67,7 @@ namespace rgbd
 			gMap->genVirtualFrame(virtualFrame, glm::mat4(1.0f));
 			virtualFrame.update();
 
-			gMap->updateGlobalMap(currentFrame, glm::mat4(1.0f), 0);
+			gMap->updateGlobalMap(currentFrame, glm::mat4(1.0f));
 			gMap->removeUnnecessaryPoints(0);
 			gMap->genIndexMap(glm::mat4(1.0f));
 		}
@@ -76,7 +77,13 @@ namespace rgbd
 
 	}
 
-	void splatterFusion::renderGlobalMap(glm::mat4 renderPose, const rgbd::Frame &globalFrame)
+
+
+
+	void splatterFusion::renderGlobalMap(
+		glm::mat4 renderPose, 
+		rgbd::Frame &globalFrame
+	)
 	{
 		gMap->genVirtualFrame(globalFrame, renderPose);
 	}
@@ -85,17 +92,21 @@ namespace rgbd
 
 
 	glm::mat4 splatterFusion::calcDevicePose(
-		const rgbd::Frame &currentFrame,
-		const rgbd::Frame &virtualFrame,
+		rgbd::Frame &currentFrame,
+		rgbd::Frame &virtualFrame,
 		bool &tracked
 	)
 	{
 
+
+		int t = currentFrame.getDepthFrameCount();
 		//GLuint query;
 		//glGenQueries(1, &query);
 		//glBeginQuery(GL_TIME_ELAPSED, query);
 
+		glm::mat4 oldT = T;
 
+		//glm::mat4 deltaT = glm::mat4(1.0f);
 
 		clock_t start_icp = clock();
 		//static glm::mat4 T(1.0f);
@@ -103,10 +114,12 @@ namespace rgbd
 		icp->calc(currentFrame, virtualFrame, T, tracked); // 0.1 ms
 		if (tracked)
 		{
-			vT.push_back(vT.back() * T);
+			//T = oldT * T;
+			vT = vT * T;
 		}
 		else
 		{
+			T = oldT;
 			//std::cout << "tracking lost" << std::endl;
 		}
 
@@ -131,12 +144,12 @@ namespace rgbd
 		//std::cout << glm::to_string(T) << std::endl;
 		//std::cout << glm::to_string(vT.back()) << std::endl;
 
-		return vT.back();
+		return T;
 	}
 
 	void splatterFusion::updateGlobalMap(
-		const rgbd::Frame &currentFrame,
-		const rgbd::Frame &virtualFrame,
+		rgbd::Frame &currentFrame,
+		rgbd::Frame &virtualFrame,
 		bool integrate
 	)
 	{
@@ -145,7 +158,7 @@ namespace rgbd
 
 
 
-		glm::mat4 invT = glm::inverse(vT.back());
+		glm::mat4 invT = glm::inverse(vT);
 
 
 
@@ -161,15 +174,17 @@ namespace rgbd
 
 
 			//clock_t start_update_map = clock();
-			gMap->updateGlobalMap(currentFrame, vT.back(), static_cast<int>(vT.size())); // 2 ms
+			gMap->updateGlobalMap(currentFrame, vT); // 2 ms
+			//gMap->updateGlobalMap(currentFrame, vT, static_cast<int>(vT.size())); // 2 ms
 			//std::cout << "  Update map: " << (clock() - start_update_map) / (double)CLOCKS_PER_SEC << " sec" << std::endl;
 			//std::cout << "  --> Map size: " << gMap->getMapSize() << std::endl;
 
 
 
 			//clock_t start_remove_pts = clock();
-			gMap->removeUnnecessaryPoints(static_cast<int>(vT.size())); // 3.5 ms
-			//std::cout << "  Remove points: " << (clock() - start_remove_pts) / (double)CLOCKS_PER_SEC << " sec" << std::endl;
+			gMap->removeUnnecessaryPoints(static_cast<int>(currentFrame.getDepthFrameCount())); // 3.5 ms
+			//gMap->removeUnnecessaryPoints(static_cast<int>(vT.size())); // 3.5 ms
+																								//std::cout << "  Remove points: " << (clock() - start_remove_pts) / (double)CLOCKS_PER_SEC << " sec" << std::endl;
 
 			//std::cout << "  --> Removed map size: " << gMap->getMapSize() << std::endl;
 
@@ -270,8 +285,15 @@ namespace rgbd
 	{
 		gMap->clearAll();
 		std::cout << "Global map buffers cleared" << std::endl;
-		vT.resize(1, glm::mat4(1.0f));
+		vT = glm::mat4(1.0f);
 		T = glm::mat4(1.0f);
 		std::cout << "Transform cleared" << std::endl;
+	}
+
+	void splatterFusion::SetPrePose(
+		glm::mat4 prePose
+	)
+	{
+		T = prePose;
 	}
 }

@@ -214,7 +214,8 @@ void App::updateFrames()
 
 
 // its not full dtam, just so3 alignment using just rgb
-bool App::runDTAM()
+bool App::runDTAM(
+	glm::mat4 &prePose)
 {
 	GLuint query;
 	glGenQueries(1, &query);
@@ -236,6 +237,8 @@ bool App::runDTAM()
 		so3Pose,
 		tracked);
 
+	prePose = so3Pose;
+
 	glEndQuery(GL_TIME_ELAPSED);
 	GLuint available = 0;
 	while (!available) {
@@ -249,27 +252,31 @@ bool App::runDTAM()
 	return tracked;
 }
 
-bool App::runRGBOdo()
+bool App::runRGBOdo(
+	glm::mat4 &prePose)
 {
 	bool tracked = true; // CHECK THIS!
-	GLuint query;
-	glGenQueries(1, &query);
-	glBeginQuery(GL_TIME_ELAPSED, query);
+	//GLuint query;
+	//glGenQueries(1, &query);
+	//glBeginQuery(GL_TIME_ELAPSED, query);
 
-	gradFilter.execute(frame[rgbd::FRAME::CURRENT].getColorFilteredMap(), 0, 0.52201f, 0.79451f, false);
-	//gradFilter.execute(frame[rgbd::FRAME::CURRENT].getColorFilteredMap(), 0, 3.0f, 10.0f, false);
-
-	rgbodo.performColorTracking(frame[rgbd::FRAME::CURRENT], frame[rgbd::FRAME::VIRTUAL], gradFilter.getGradientMap(), se3Pose, glm::vec4(cameraInterface.getDepthIntrinsics(0).cx, cameraInterface.getDepthIntrinsics(0).cy, cameraInterface.getDepthIntrinsics(0).fx, cameraInterface.getDepthIntrinsics(0).fy));
+	//gradFilter.execute(frame[rgbd::FRAME::CURRENT].getColorFilteredMap(), 0, 0.52201f, 0.79451f, false);
+	gradFilter.execute(frame[rgbd::FRAME::CURRENT].getColorFilteredMap(), 0, 3.0f, 10.0f, false);
 
 
-	glEndQuery(GL_TIME_ELAPSED);
-	GLuint available = 0;
-	while (!available) {
-		glGetQueryObjectuiv(query, GL_QUERY_RESULT_AVAILABLE, &available);
-	}
-	// elapsed time in nanoseconds
-	GLuint64 elapsed;
-	glGetQueryObjectui64vEXT(query, GL_QUERY_RESULT, &elapsed);
+
+
+	prePose = rgbodo.performColorTracking(frame[rgbd::FRAME::CURRENT], frame[rgbd::FRAME::VIRTUAL], gradFilter.getGradientMap(), se3Pose, glm::vec4(cameraInterface.getDepthIntrinsics(0).cx, cameraInterface.getDepthIntrinsics(0).cy, cameraInterface.getDepthIntrinsics(0).fx, cameraInterface.getDepthIntrinsics(0).fy));
+
+
+	//glEndQuery(GL_TIME_ELAPSED);
+	//GLuint available = 0;
+	//while (!available) {
+	//	glGetQueryObjectuiv(query, GL_QUERY_RESULT_AVAILABLE, &available);
+	//}
+	//// elapsed time in nanoseconds
+	//GLuint64 elapsed;
+	//glGetQueryObjectui64vEXT(query, GL_QUERY_RESULT, &elapsed);
 	//std::cout << "se3 time : " << elapsed / 1000000.0 << std::endl; // 1 ms for 1 iter at full reso
 
 	//std::cout << " se3\n " << glm::to_string(se3Pose) << std::endl;
@@ -278,11 +285,12 @@ bool App::runRGBOdo()
 	return tracked;
 }
 
-bool App::runSLAM()
+bool App::runSLAM(
+	glm::mat4 &prePose)
 {
 
 
-	
+	//slam.setPrePose(prePose)
 	
 	bool tracked = true;
 	glm::mat4 T = slam.calcDevicePose(frame[rgbd::FRAME::CURRENT], frame[rgbd::FRAME::VIRTUAL], tracked);
@@ -302,7 +310,8 @@ bool App::runSLAM()
 	return tracked;
 }
 
-bool App::runP2P()
+bool App::runP2P(
+	glm::mat4 &prePose)
 {
 	bool tracked = true;
 	GLuint query;
@@ -311,18 +320,18 @@ bool App::runP2P()
 
 	if (useSO3)
 	{
-		p2pFusion.setT(so3Pose);
+		//p2pFusion.setT(so3Pose);
 	}
 
 	if (useSE3)
 	{
 
-		p2pFusion.setT(glm::inverse(initPose) * (colorToDepth[0] * se3Pose));
+		//p2pFusion.setT( (colorToDepth[0] * se3Pose));
 	}
 
 	p2pFusion.raycast(frame[rgbd::FRAME::VIRTUAL]);
 	
-	//glm::mat4 T = p2pFusion.calcDevicePose(frame[rgbd::FRAME::CURRENT], frame[rgbd::FRAME::VIRTUAL]);
+	glm::mat4 T = p2pFusion.calcDevicePose(frame[rgbd::FRAME::CURRENT], frame[rgbd::FRAME::VIRTUAL]);
 
 	if (integratingFlag)
 	{
@@ -345,7 +354,8 @@ bool App::runP2P()
 	return tracked;
 }
 
-bool App::runP2V()
+bool App::runP2V(
+	glm::mat4 &prePose)
 {
 	GLuint query;
 	glGenQueries(1, &query);
@@ -488,6 +498,9 @@ void App::resetVolume()
 {
 	rotation = glm::vec3(0.0);
 	cameraPos = glm::vec3(0.0);
+
+	frame[rgbd::FRAME::CURRENT].reset();
+
 
 	int devNumber = 0;
 	//glm::mat4 initPose = glm::translate(glm::mat4(1.0f), glm::vec3(gconfig.volumeDimensions.x / 2.0f, gconfig.volumeDimensions.y / 2.0f, 0.0f));
@@ -1629,6 +1642,48 @@ void App::renderGlobal(bool reset)
 
 }
 
+void App::getIncrementalTransform()
+{
+	bool slammed = false;
+	bool tracked = false;
+	bool so3Tracked = false;
+	bool se3Tracked = false;
+
+	glm::mat4 prealignPose = glm::mat4(1.0f);
+
+	// prealignment using color (or perhaps inertial sensor?)
+	if (useSO3)
+	{
+		so3Tracked = runDTAM(prealignPose);
+	}
+
+	// if use color rgbd odometery
+	if (useSE3)
+	{
+		se3Tracked = runRGBOdo(prealignPose);
+	}
+
+	if (trackDepthToPoint)
+	{
+		tracked = runP2P(prealignPose);
+	}
+
+	if (trackDepthToVolume)
+	{
+		tracked = runP2V(prealignPose);
+	}
+
+	if (useSplatter)
+	{
+		glEnable(GL_CULL_FACE);
+
+		slammed = runSLAM(prealignPose);
+
+		glDisable(GL_CULL_FACE);
+
+		//runDTAM();
+	}
+}
 
 void App::mainLoop()
 {
@@ -1751,46 +1806,9 @@ void App::mainLoop()
 
 			//if ()
 
+			getIncrementalTransform();
 
-			bool tracked = false;
-			bool so3Tracked = false;
-			bool se3Tracked = false;
-
-			if (trackDepthToPoint)
-			{
-				//	tracked = gfusion.Track();
-				//	gfusion.raycast(cameraDevice);
-
-				tracked = runP2P();
-			}
-
-			if (trackDepthToVolume)
-			{
-				//	tracked = gfusion.TrackSDF();
-				//	gfusion.raycast(cameraDevice);
-				tracked = runP2V();
-			}
-
-			if (useSO3)
-			{
-				so3Tracked = runDTAM();
-			}
-
-			if (useSE3)
-			{
-				se3Tracked = runRGBOdo();
-			}
-
-			if (useSplatter)
-			{
-				glEnable(GL_CULL_FACE);
-
-				slammed = runSLAM();
-
-				glDisable(GL_CULL_FACE);
-
-				//runDTAM();
-			}
+			
 
 			if (colorVec.size() > 0)
 			{
@@ -2024,8 +2042,8 @@ void App::mainLoop()
 
 
 
-			if (tracked && integratingFlag && ((counter % 1) == 0) || reset)
-			{
+			//if (tracked && integratingFlag && ((counter % 1) == 0) || reset)
+			//{
 				//if (useMultipleFusion)
 				//{
 
@@ -2037,20 +2055,20 @@ void App::mainLoop()
 				//	gfusion.integrate(cameraDevice);
 				//}
 
-				if (counter > 2)
-					reset = false;
-			}
+			//	if (counter > 2)
+			//		reset = false;
+			//}
 
-			if (!tracked)
-			{
-				if (!poses.empty())
-				{
+			//if (!tracked)
+			//{
+			//	if (!poses.empty())
+			//	{
 				//	glm::mat4 recoveryPose = glm::translate(glm::mat4(1.0f), glm::vec3(-iOff.x + gconfig.volumeDimensions.x / 2.0f, -iOff.y + gconfig.volumeDimensions.y / 2.0f, -iOff.z + dimension / 2.0));
 
 
 				//	tracked = gfusion.recoverPose(recoveryPose);
-				}
-			}
+			//	}
+			//}
 
 
 

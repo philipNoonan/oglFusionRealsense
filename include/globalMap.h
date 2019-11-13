@@ -69,15 +69,14 @@ namespace rgbd
 			const glm::mat4 &invT
 		);
 		void updateGlobalMap(
-			const rgbd::Frame &srcFrame,
-			const glm::mat4 &T,
-			const int timestamp
+			rgbd::Frame &srcFrame,
+			const glm::mat4 &T
 		);
 		void removeUnnecessaryPoints(
 			int timestamp
 		);
 		void genVirtualFrame(
-			const rgbd::Frame &dstFrame,
+			rgbd::Frame &dstFrame,
 			const glm::mat4 &invT
 		);
 		void clearAll();

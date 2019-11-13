@@ -181,8 +181,10 @@ namespace rgbd
 			Eigen::Matrix<double, 6, 6, Eigen::RowMajor> dC_icp = C_icp.cast<double>();
 			Eigen::Matrix<double, 6, 1> db_icp = b_icp.cast<double>();
 
-			Eigen::JacobiSVD<Eigen::MatrixXd> svd(dC_icp, Eigen::ComputeFullU | Eigen::ComputeFullV);
-			result = svd.solve(db_icp); // TODO CHECK THIS WORKS, SHOULD WE MAKE A BACK SUB SOLVER?
+			//Eigen::JacobiSVD<Eigen::MatrixXd> svd(dC_icp, Eigen::ComputeFullU | Eigen::ComputeFullV);
+			//result = svd.solve(db_icp); // TODO CHECK THIS WORKS, SHOULD WE MAKE A BACK SUB SOLVER?
+
+			result = dC_icp.ldlt().solve(db_icp);
 
 			glm::mat4 delta = glm::eulerAngleXYZ(result(3), result(4), result(5));
 			delta[3][0] = result(0);

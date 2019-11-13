@@ -53,6 +53,7 @@ namespace rgbd
 
 		uint64_t colorTime;
 		uint64_t depthTime;
+		uint64_t depthCount;
 
 		gl::Texture::Ptr shortDepthMap;
 		gl::Texture::Ptr rawDepthMap;
@@ -136,6 +137,10 @@ namespace rgbd
 
 		uint64_t getColorTime();
 		uint64_t getDepthTime();
+
+		uint64_t getDepthFrameCount();
+
+		void reset();
 
 		gl::Texture::Ptr getColorMap(int lv = 0) const;
 		gl::Texture::Ptr getColorPreviousMap(int lv = 0) const;
