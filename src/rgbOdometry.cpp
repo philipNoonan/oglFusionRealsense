@@ -360,7 +360,7 @@ namespace rgbd
 
 	}
 
-	glm::mat4 RGBOdometry::performColorTracking(
+	void RGBOdometry::performColorTracking(
 		const rgbd::Frame &currentFrame,
 		const rgbd::Frame &virtualFrame,
 		const gl::Texture::Ptr &gradientMap,
@@ -391,15 +391,15 @@ namespace rgbd
 		Eigen::Vector3f tcurr = tprev;
 
 
-		for (int pyrLevel = 2; pyrLevel >= 0; pyrLevel--)
+		for (int lvl = ICPConstParam::MAX_LEVEL - 1; lvl >= 0; lvl--) 
 		{
 			glm::mat3 K = glm::mat3(1.0f);
 
 			glm::vec4 levelCam = glm::vec4(
-				cam.x / (std::pow(2.0f, pyrLevel)),
-				cam.y / (std::pow(2.0f, pyrLevel)),
-				cam.z / (std::pow(2.0f, pyrLevel)),
-				cam.w / (std::pow(2.0f, pyrLevel))
+				cam.x / (std::pow(2.0f, lvl)),
+				cam.y / (std::pow(2.0f, lvl)),
+				cam.z / (std::pow(2.0f, lvl)),
+				cam.w / (std::pow(2.0f, lvl))
 				);
 
 			K[0][0] = levelCam.z;
@@ -421,7 +421,8 @@ namespace rgbd
 
 
 
-			for (int iter = 0; iter < 5; iter++)
+
+			for (int iter = 0; iter < ICPConstParam::MAX_ITR_NUM[lvl]; iter++)
 			{
 				Eigen::Matrix<double, 4, 4, Eigen::RowMajor> Rt_eig = resultRt_eig.inverse();
 
@@ -460,7 +461,7 @@ namespace rgbd
 				computeResiduals(
 					currentFrame,
 					gradientMap,
-					pyrLevel,
+					lvl,
 					kT,
 					KRK_inv,
 					sigma,
@@ -470,7 +471,7 @@ namespace rgbd
 				computeStep(
 					currentFrame,
 					gradientMap,
-					pyrLevel,
+					lvl,
 					levelCam,
 					sigma,
 					rgbError,
@@ -521,6 +522,6 @@ namespace rgbd
 		//std::cout << tcurr << std::endl;
 		//std::cout << glm::to_string(glm::transpose(pose)) << std::endl;
 
-		return pose;
+		//return pose;
 	}
 }

@@ -220,7 +220,8 @@ void Realsense2Camera::setSensorOptions()
 
 
 	// rcolor
-	// m_sensors[1].set_option(RS2_OPTION_EXPOSURE, 100);
+	//m_sensors[1].set_option(RS2_OPTION_EXPOSURE, 50);
+	//m_sensors[1].set_option(RS2_OPTION_POWER_LINE_FREQUENCY, 1);
 	m_sensors[1].set_option(RS2_OPTION_ENABLE_AUTO_EXPOSURE, 1);
 }
 

@@ -1,5 +1,6 @@
 #pragma once
 
+#include "ConstantParameters.h"
 #include "ComputeShader.h"
 #include "glhelper.h"
 #include "GLCore/Buffer.h"
@@ -51,7 +52,7 @@ namespace rgbd
 			const std::map<std::string, const gl::Shader::Ptr> &progs
 			);
 
-		glm::mat4 performColorTracking(
+		void performColorTracking(
 			const rgbd::Frame &currentFrame,
 			const rgbd::Frame &virtualFrame,
 			const gl::Texture::Ptr &gradientMap,

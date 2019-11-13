@@ -88,7 +88,7 @@ namespace rgbd
 	glm::mat4 RGBDtam::calcDevicePose(
 		const rgbd::Frame &currentFrame,
 		const glm::vec4 cam,
-		glm::mat4 colorPose,
+		glm::mat4 pose,
 		bool &tracked
 	)
 	{
@@ -235,6 +235,7 @@ namespace rgbd
 			float lastSO3Error = sqrt(tmpOutputData[9] / tmpOutputData[10]);
 			float lastSO3Count = tmpOutputData[10];
 
+			//std::cout << " I : " << i << " " << lastSO3Error;
 			//Converged
 			if (lastSO3Error < lastError && lastCount == lastSO3Count)
 			{
@@ -279,7 +280,12 @@ namespace rgbd
 			}
 		}
 
-		return colorPose * outPose;
+
+		std::cout << std::endl;
+
+		// dont need both here
+		pose = outPose;
+		return outPose;
 
 	}
 

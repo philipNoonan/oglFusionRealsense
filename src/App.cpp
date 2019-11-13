@@ -266,8 +266,9 @@ bool App::runRGBOdo(
 
 
 
-	prePose = rgbodo.performColorTracking(frame[rgbd::FRAME::CURRENT], frame[rgbd::FRAME::VIRTUAL], gradFilter.getGradientMap(), se3Pose, glm::vec4(cameraInterface.getDepthIntrinsics(0).cx, cameraInterface.getDepthIntrinsics(0).cy, cameraInterface.getDepthIntrinsics(0).fx, cameraInterface.getDepthIntrinsics(0).fy));
+	rgbodo.performColorTracking(frame[rgbd::FRAME::CURRENT], frame[rgbd::FRAME::VIRTUAL], gradFilter.getGradientMap(), prePose, glm::vec4(cameraInterface.getDepthIntrinsics(0).cx, cameraInterface.getDepthIntrinsics(0).cy, cameraInterface.getDepthIntrinsics(0).fx, cameraInterface.getDepthIntrinsics(0).fy));
 
+	se3Pose = se3Pose * prePose;
 
 	//glEndQuery(GL_TIME_ELAPSED);
 	//GLuint available = 0;
@@ -326,12 +327,12 @@ bool App::runP2P(
 	if (useSE3)
 	{
 
-		//p2pFusion.setT( (colorToDepth[0] * se3Pose));
+		p2pFusion.setT( (colorToDepth[0] * se3Pose));
 	}
 
 	p2pFusion.raycast(frame[rgbd::FRAME::VIRTUAL]);
 	
-	glm::mat4 T = p2pFusion.calcDevicePose(frame[rgbd::FRAME::CURRENT], frame[rgbd::FRAME::VIRTUAL]);
+	//glm::mat4 T = p2pFusion.calcDevicePose(frame[rgbd::FRAME::CURRENT], frame[rgbd::FRAME::VIRTUAL]);
 
 	if (integratingFlag)
 	{
@@ -2120,13 +2121,12 @@ void App::mainLoop()
 			glm::vec4 transformedInitOff;
 			if (useSE3)
 			{
-				transformedInitOff = se3Pose * glm::vec4(0, 0, 100, 1.0f);
-
+				transformedInitOff = se3Pose * glm::vec4(0, 0, 1, 1.0f);
 			}
-			else if (useSO3)
-			{
-				transformedInitOff = so3Pose * glm::vec4(0, 0, 100, 1.0f);
-			}
+			//else if (useSO3)
+			//{
+			//	transformedInitOff = so3Pose * glm::vec4(0, 0, 100, 1.0f);
+			//}
 
 			graphPoints.push_back(transformedInitOff);
 			if (graphPoints.size() > graphWindow.w)
