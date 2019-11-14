@@ -41,6 +41,44 @@ namespace rgbd
 		std::vector<float> outputReductionData;
 
 
+
+
+
+		std::vector<float> makeJTJ(
+			std::vector<float> v
+		);
+
+
+	public:
+		p2pICP();
+		~p2pICP();
+
+		void loadShaders(
+			std::map<std::string, const gl::Shader::Ptr> &progs,
+			const std::string &folderPath
+		);
+
+		void init(
+			int width,
+			int height,
+			float distThresh,
+			float normThresh,
+			const glm::mat4 &K,
+			const std::map<std::string, const gl::Shader::Ptr> &progs
+		);
+
+
+
+		void calc(
+			const int level,
+			const rgbd::Frame &currentFrame,
+			const rgbd::Frame &virtualFrame,
+			glm::mat4 &T,
+			float &AE,
+			uint32_t &icpCount,
+			const float finThresh = 1.0e-4F
+		);
+
 		void track(
 			const rgbd::Frame &currentFrame,
 			const rgbd::Frame &virtualFrame,
@@ -58,35 +96,13 @@ namespace rgbd
 			float &AE,
 			uint32_t &icpCount
 		);
-
-
-		std::vector<float> makeJTJ(
-			std::vector<float> v
-		);
-
-
-	public:
-		p2pICP(
-			int width,
-			int height,
-			float distThresh,
-			float normThresh,
-			const glm::mat4 &K,
-			const std::map<std::string, const gl::Shader::Ptr> &progs
-		);
-		~p2pICP();
-
-
-
-		void calc(
-			const int level,
-			const rgbd::Frame &currentFrame,
-			const rgbd::Frame &virtualFrame,
-			glm::mat4 &T,
+		void getReduction(
+			float *matrixA_host,
+			float *vectorB_host,
 			float &AE,
-			uint32_t &icpCount,
-			const float finThresh = 1.0e-4F
+			uint32_t &icpCount
 		);
+
 
 		typedef std::shared_ptr<rgbd::p2pICP> Ptr;
 	};

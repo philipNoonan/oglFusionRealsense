@@ -33,7 +33,7 @@ namespace rgbd
 		gl::ShaderStorageBuffer<float> ssboReductionOutput;
 
 		std::vector<rgbd::PointToPlaneICP::Ptr> icp;
-		std::vector<rgbd::p2pICP::Ptr> p2picp;
+		//std::vector<rgbd::p2pICP::Ptr> p2picp;
 		std::vector<rgbd::p2vICP::Ptr> p2vicp;
 
 

@@ -102,7 +102,8 @@ void App::initP2PFusion()
 
 	std::map<std::string, const gl::Shader::Ptr> progsForP2P;
 	std::string pathToShaders("./shaders/");
-	p2pFusion.loadShaders(progsForP2P, pathToShaders);
+	p2picp.loadShaders(progsForP2P, pathToShaders);
+
 
 
 	for (auto &f : frame)
@@ -142,7 +143,9 @@ void App::initP2PFusion()
 		volume = std::make_shared<rgbd::GlobalVolume>(frame[rgbd::FRAME::CURRENT].getWidth(), frame[rgbd::FRAME::CURRENT].getHeight(), dim, size, K, maxWeight, largeStep, step, nearPlane, farPlane, progsForP2P);
 	}
 
-	p2pFusion.init(volume, frame[rgbd::FRAME::CURRENT], frame[rgbd::FRAME::VIRTUAL], dim, size, initPose, K, maxWeight, distThresh, normThresh, largeStep, step, nearPlane, farPlane, progsForP2P);
+	p2picp.init(width, height, distThresh, normThresh, K, progsForP2P);
+
+	//p2pFusion.init(volume, frame[rgbd::FRAME::CURRENT], frame[rgbd::FRAME::VIRTUAL], dim, size, initPose, K, maxWeight, distThresh, normThresh, largeStep, step, nearPlane, farPlane, progsForP2P);
 
 }
 
@@ -268,7 +271,7 @@ bool App::runRGBOdo(
 
 	rgbodo.performColorTracking(frame[rgbd::FRAME::CURRENT], frame[rgbd::FRAME::VIRTUAL], gradFilter.getGradientMap(), prePose, glm::vec4(cameraInterface.getDepthIntrinsics(0).cx, cameraInterface.getDepthIntrinsics(0).cy, cameraInterface.getDepthIntrinsics(0).fx, cameraInterface.getDepthIntrinsics(0).fy));
 
-	se3Pose = se3Pose * prePose;
+	se3Pose = se3Pose * glm::inverse(prePose);
 
 	//glEndQuery(GL_TIME_ELAPSED);
 	//GLuint available = 0;
@@ -311,6 +314,254 @@ bool App::runSLAM(
 	return tracked;
 }
 
+
+bool App::runOdoSplat(
+	glm::mat4 &prePose
+)
+{
+	//prePose = currPose;
+	volume->raycast(frame[rgbd::FRAME::VIRTUAL], currPose);
+
+	gradFilter.execute(frame[rgbd::FRAME::CURRENT].getColorFilteredMap(), 0, 3.0f, 10.0f, false);
+	glm::vec4 cam = glm::vec4(cameraInterface.getColorIntrinsics(0).cx, cameraInterface.getColorIntrinsics(0).cy, cameraInterface.getColorIntrinsics(0).fx, cameraInterface.getColorIntrinsics(0).fy);
+	
+	float sigma = 0;
+	float rgbError = 0;
+
+	Eigen::Matrix<double, 6, 6, Eigen::RowMajor> lastA; // make global?
+	Eigen::Matrix<double, 6, 1> lastb;
+
+	glm::mat4 prevPose = currPose;
+
+	Eigen::Matrix<float, 3, 3, Eigen::RowMajor> Rprev;
+	for (int i = 0; i < 3; i++)
+	{
+		for (int j = 0; j < 3; j++)
+		{
+			Rprev(i, j) = prevPose[j][i];
+		}
+	}
+
+	Eigen::Vector3f tprev;
+	tprev(0) = prevPose[3][0];
+	tprev(1) = prevPose[3][1];
+	tprev(2) = prevPose[3][2];
+
+	Eigen::Matrix<float, 3, 3, Eigen::RowMajor> Rcurr = Rprev;
+	Eigen::Vector3f tcurr = tprev;
+
+
+	for (int lvl = rgbd::ICPConstParam::MAX_LEVEL - 1; lvl >= 0; lvl--)
+	{
+		glm::mat3 K = glm::mat3(1.0f);
+
+		glm::vec4 levelCam = glm::vec4(
+			cam.x / (std::pow(2.0f, lvl)),
+			cam.y / (std::pow(2.0f, lvl)),
+			cam.z / (std::pow(2.0f, lvl)),
+			cam.w / (std::pow(2.0f, lvl))
+		);
+
+		K[0][0] = levelCam.z;
+		K[1][1] = levelCam.w;
+		K[2][0] = levelCam.x;
+		K[2][1] = levelCam.y;
+
+		Eigen::Matrix<double, 3, 3, Eigen::RowMajor> K_eig = Eigen::Matrix<double, 3, 3, Eigen::RowMajor>::Zero();
+
+		K_eig(0, 0) = levelCam.z;
+		K_eig(1, 1) = levelCam.w;
+		K_eig(0, 2) = levelCam.x;
+		K_eig(1, 2) = levelCam.y;
+		K_eig(2, 2) = 1;
+
+		//glm::mat4 resultRt = glm::mat4(1.0f);
+		Eigen::Matrix<double, 4, 4, Eigen::RowMajor> resultRt_eig = Eigen::Matrix<double, 4, 4, Eigen::RowMajor>::Identity();
+
+		for (int i = 0; i < 4; i++)
+		{
+			for (int j = 0; j < 4; j++)
+			{
+				resultRt_eig(i, j) = prePose[j][i];
+			}
+		}
+
+
+		for (int iter = 0; iter < rgbd::ICPConstParam::MAX_ITR_NUM[lvl]; iter++)
+		{
+			Eigen::Matrix<double, 4, 4, Eigen::RowMajor> Rt_eig = resultRt_eig.inverse();
+
+			Eigen::Matrix<double, 3, 3, Eigen::RowMajor> R_eig = Rt_eig.topLeftCorner(3, 3);
+
+			Eigen::Matrix<double, 3, 3, Eigen::RowMajor> KRK_inv_eig = K_eig * R_eig * K_eig.inverse();
+
+			glm::mat3 KRK_inv;
+
+			for (int i = 0; i < 3; i++)
+			{
+				for (int j = 0; j < 3; j++)
+				{
+					KRK_inv[i][j] = KRK_inv_eig(j, i);
+				}
+			}
+
+			Eigen::Vector3d Kt_eig = Rt_eig.topRightCorner(3, 1);
+			Kt_eig = K_eig * Kt_eig;
+
+			glm::vec3 kT(Kt_eig(0), Kt_eig(1), Kt_eig(2));
+
+			Eigen::Matrix<float, 6, 6, Eigen::RowMajor> A_rgbd;
+			Eigen::Matrix<float, 6, 1> b_rgbd;
+
+			rgbodo.computeResiduals(
+				frame[rgbd::FRAME::CURRENT],
+				gradFilter.getGradientMap(),
+				lvl,
+				kT,
+				KRK_inv,
+				sigma,
+				rgbError
+			);
+
+			rgbodo.computeStep(
+				frame[rgbd::FRAME::CURRENT],
+				gradFilter.getGradientMap(),
+				lvl,
+				levelCam,
+				sigma,
+				rgbError,
+				A_rgbd.data(),
+				b_rgbd.data()
+			);
+
+			// ICP time
+			Eigen::Matrix<float, 6, 6, Eigen::RowMajor> A_icp;
+			Eigen::Matrix<float, 6, 1> b_icp;
+
+			float AE;
+			uint32_t icpCount;
+
+			p2picp.track(
+				frame[rgbd::FRAME::CURRENT],
+				frame[rgbd::FRAME::VIRTUAL],
+				currPose,
+				lvl
+			);
+
+			p2picp.reduce(
+				glm::ivec2(frame[rgbd::FRAME::CURRENT].getWidth(lvl),
+						   frame[rgbd::FRAME::CURRENT].getHeight(lvl))
+			);
+
+			p2picp.getReduction(
+				A_icp.data(),
+				b_icp.data(),
+				AE,
+				icpCount
+			);
+
+			Eigen::Matrix<double, 6, 1> result;
+			Eigen::Matrix<double, 6, 6, Eigen::RowMajor> dA_rgbd = A_rgbd.cast<double>();
+			Eigen::Matrix<double, 6, 6, Eigen::RowMajor> dA_icp = A_icp.cast<double>();
+			Eigen::Matrix<double, 6, 1> db_rgbd = b_rgbd.cast<double>();
+			Eigen::Matrix<double, 6, 1> db_icp = b_icp.cast<double>();
+
+			//std::cout << "icp " << db_icp.transpose() << std::endl;
+			//std::cout << "rgb " << db_rgbd.transpose() << std::endl;
+
+
+			bool useBoth = true;
+
+			if (useBoth)
+			{
+				double w = 100;
+				lastA = dA_rgbd + w * w * dA_icp;
+				lastb = db_rgbd + w * db_icp;
+			}
+			else
+			{
+				lastA = dA_icp;
+				lastb = db_icp;
+			}
+
+			result = lastA.ldlt().solve(lastb);
+
+			//result = dA_icp.ldlt().solve(db_icp);
+			//result = dA_rgbd.ldlt().solve(db_rgbd);
+
+			glm::mat4 delta = glm::eulerAngleXYZ(result(3), result(4), result(5));
+			delta[3][0] = result(0);
+			delta[3][1] = result(1);
+			delta[3][2] = result(2);
+
+
+			currPose = delta * currPose;
+
+	
+			//for (int i = 0; i < 4; i++)
+			//{
+			//	for (int j = 0; j < 4; j++)
+			//	{
+			//		resultRt_eig(i, j) = delta[j][i];
+			//	}
+			//}
+
+			//Eigen::Isometry3f rgbOdom;
+
+			//rgbodo.computeUpdateSE3(resultRt_eig, result, rgbOdom);
+
+			//Eigen::Isometry3f currentT;
+			//currentT.setIdentity();
+			//currentT.rotate(Rprev);
+			//currentT.translation() = tprev;
+
+			//currentT = currentT * rgbOdom.inverse();
+
+			//tcurr = currentT.translation();
+			//Rcurr = currentT.rotation();
+
+			//glm::mat4 delta = glm::mat4(1.0f);
+
+			//for (int i = 0; i < 3; ++i)
+			//{
+			//	for (int j = 0; j < 3; ++j)
+			//	{
+			//		pose[j][i] = Rcurr(i, j);
+			//	}
+			//}
+
+			//pose[3][0] = tcurr(0);
+			//pose[3][1] = tcurr(1);
+			//pose[3][2] = tcurr(2);
+
+			//currPose = 
+
+
+		} // loop iterations
+
+	} // pyramid levels
+
+
+	//if (sigma == 0 || (tcurr - tprev).norm() > 0.3 || isnan(tcurr(0)))
+	//{
+		//Rcurr = Rprev;
+		//tcurr = tprev;
+
+	//	currPose = prevPose;
+	//}
+
+	if (integratingFlag)
+	{
+		volume->integrate(0, frame[rgbd::FRAME::CURRENT], currPose);
+	}
+
+
+
+	return false;
+
+}
+
+
 bool App::runP2P(
 	glm::mat4 &prePose)
 {
@@ -319,25 +570,82 @@ bool App::runP2P(
 	glGenQueries(1, &query);
 	glBeginQuery(GL_TIME_ELAPSED, query);
 
-	if (useSO3)
+	volume->raycast(frame[rgbd::FRAME::VIRTUAL], colorToDepth[0] * se3Pose);
+
+
+	for (int lvl = rgbd::ICPConstParam::MAX_LEVEL - 1; lvl >= 0; lvl--)
 	{
-		//p2pFusion.setT(so3Pose);
-	}
+		for (int iter = 0; iter < rgbd::ICPConstParam::MAX_ITR_NUM[lvl]; iter++)
+		{
 
-	if (useSE3)
-	{
+			Eigen::Matrix<float, 6, 6, Eigen::RowMajor> A_icp;
+			Eigen::Matrix<float, 6, 1> b_icp;
+			float AE;
+			uint32_t icpCount;
 
-		p2pFusion.setT( (colorToDepth[0] * se3Pose));
-	}
+			p2picp.track(
+				frame[rgbd::FRAME::CURRENT],
+				frame[rgbd::FRAME::VIRTUAL],
+				colorToDepth[0] * se3Pose,
+				lvl
+			);
 
-	p2pFusion.raycast(frame[rgbd::FRAME::VIRTUAL]);
-	
-	//glm::mat4 T = p2pFusion.calcDevicePose(frame[rgbd::FRAME::CURRENT], frame[rgbd::FRAME::VIRTUAL]);
+			p2picp.reduce(
+				glm::ivec2(frame[rgbd::FRAME::CURRENT].getWidth(lvl),
+					frame[rgbd::FRAME::CURRENT].getHeight(lvl))
+			);
+
+			p2picp.getReduction(
+				A_icp.data(),
+				b_icp.data(),
+				AE,
+				icpCount
+			);
+
+			Eigen::Matrix<double, 6, 1> result;
+			Eigen::Matrix<double, 6, 6, Eigen::RowMajor> dA_icp = A_icp.cast<double>();
+			Eigen::Matrix<double, 6, 1> db_icp = b_icp.cast<double>();
+
+			result = dA_icp.ldlt().solve(db_icp);
+
+			glm::mat4 delta = glm::eulerAngleXYZ(result(3), result(4), result(5));
+			delta[3][0] = result(0);
+			delta[3][1] = result(1);
+			delta[3][2] = result(2);
+
+			currPose = delta * currPose;
+
+			if (result.norm() < 1e-5 && result.norm() != 0)
+				break;
+
+		}// iter
+
+	} // lvl
 
 	if (integratingFlag)
 	{
-		p2pFusion.integrate(frame[rgbd::FRAME::CURRENT]);
+		volume->integrate(0, frame[rgbd::FRAME::CURRENT], colorToDepth[0] * se3Pose);
 	}
+
+	//if (useSO3)
+	//{
+	//	//p2pFusion.setT(so3Pose);
+	//}
+
+	//if (useSE3)
+	//{
+
+	////	p2pFusion.setT( (colorToDepth[0] * se3Pose ));
+	//}
+
+	//p2pFusion.raycast(frame[rgbd::FRAME::VIRTUAL]);
+	//
+	//glm::mat4 T = p2pFusion.calcDevicePose(frame[rgbd::FRAME::CURRENT], frame[rgbd::FRAME::VIRTUAL]);
+
+	//if (integratingFlag)
+	//{
+	//	p2pFusion.integrate(frame[rgbd::FRAME::CURRENT]);
+	//}
 
 
 	glEndQuery(GL_TIME_ELAPSED);
@@ -532,16 +840,25 @@ void App::resetVolume()
 	if (!useSplatter)
 	{
 		initPose = glm::translate(glm::mat4(1.0f), glm::vec3(-iOff.x + gconfig.volumeDimensions.x / 2.0f, -iOff.y + gconfig.volumeDimensions.y / 2.0f, -iOff.z + dimension / 2.0));
-		so3Pose = initPose;
+		so3Pose = glm::mat4(1.0f);
 		se3Pose = initPose;
+		currPose = initPose;
 	}
 	else
 	{
 		initPose = glm::mat4(1.0f);// glm::translate(glm::mat4(1.0f), glm::vec3(gconfig.volumeDimensions.x / 2.0f, gconfig.volumeDimensions.y / 2.0f, 0.0f));
 		so3Pose = initPose;
 		se3Pose = initPose;
+		currPose = initPose;
+
 	}
 
+	if (deleteFlag)
+	{
+		volume->resize(gconfig.volumeSize);
+	}
+	volume->setVolDim(gconfig.volumeDimensions);
+	volume->reset();
 
 
 
@@ -552,12 +869,12 @@ void App::resetVolume()
 
 	if (trackDepthToPoint)
 	{
-		if (deleteFlag)
-		{
-			volume->resize(gconfig.volumeSize);
-		}
-		volume->setVolDim(gconfig.volumeDimensions);
-		p2pFusion.clear(initPose, gconfig.volumeSize);
+		//if (deleteFlag)
+		//{
+		//	volume->resize(gconfig.volumeSize);
+		//}
+		//volume->setVolDim(gconfig.volumeDimensions);
+		//p2pFusion.clear(initPose, gconfig.volumeSize);
 	}
 
 	if (trackDepthToVolume)
@@ -1181,6 +1498,9 @@ void App::setUI()
 			if (ImGui::Button("RGB")) useSO3 ^= 1; ImGui::SameLine(); ImGui::Checkbox("", &useSO3); ImGui::SameLine();
 			if (ImGui::Button("RGB+D")) useSE3 ^= 1; ImGui::SameLine(); ImGui::Checkbox("", &useSE3); 
 
+			ImGui::Text("combo");
+			if (ImGui::Button("odop2p")) useODOP2P ^= 1; ImGui::SameLine(); ImGui::Checkbox("", &useODOP2P);
+
 
 			ImGui::Text("Resolution");
 			ImGui::PushItemWidth(-1);
@@ -1684,6 +2004,13 @@ void App::getIncrementalTransform()
 
 		//runDTAM();
 	}
+
+	if (useODOP2P)
+	{
+		so3Tracked = runDTAM(prealignPose);
+
+		runOdoSplat(prealignPose);
+	}
 }
 
 void App::mainLoop()
@@ -2101,7 +2428,7 @@ void App::mainLoop()
 			}
 			else if (trackDepthToPoint)
 			{
-				currentPose = p2pFusion.getPose();
+				//currentPose = p2pFusion.getPose();
 			}
 			else if (trackDepthToVolume)
 			{
@@ -2209,7 +2536,7 @@ void App::mainLoop()
 			GLuint volID = 0;
 			if (trackDepthToPoint)
 			{
-				volID = p2pFusion.getVolumeID();
+				//volID = p2pFusion.getVolumeID();
 			}
 			else if (trackDepthToVolume)
 			{

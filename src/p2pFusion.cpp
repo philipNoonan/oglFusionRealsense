@@ -62,6 +62,7 @@ namespace rgbd
 
 
 		icp = std::make_shared<rgbd::PyramidricalICP>(width, height, K, rgbd::FUSIONTYPE::P2P, progs, dim, size, distThresh, normThresh);
+		
 		gVol = volume; // std::make_shared<rgbd::GlobalVolume>(width, height, dim, size, dMin, dMax, K, maxWeight, largeStep, step, nearPlane, farPlane, progs);
 
 		integrate(currentFrame);

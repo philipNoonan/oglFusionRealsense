@@ -360,6 +360,108 @@ namespace rgbd
 
 	}
 
+	void RGBOdometry::computeStep(
+		const rgbd::Frame &currentFrame,
+		const gl::Texture::Ptr &gradientMap,
+		const int level,
+		const glm::vec4 &cam,
+		float sigmaVal,
+		float rgbError,
+		float *matrixA_host,
+		float *vectorB_host
+	)
+	{
+
+		progs["rgbOdometryStep"]->setUniform("sigma", -1);
+		progs["rgbOdometryStep"]->setUniform("sobelScale", 0.125f);
+		progs["rgbOdometryStep"]->setUniform("cam", cam);
+		progs["rgbOdometryStep"]->setUniform("level", level);
+
+		progs["rgbOdometryStep"]->use();
+		currentFrame.getVertexPreviousMap()->bindImage(0, level, GL_READ_ONLY);
+
+		gradientMap->bindImage(1, level, GL_READ_ONLY);
+
+		currentFrame.getMappingC2DMap()->bindImage(2, 0, GL_READ_ONLY);
+		currentFrame.getMappingD2CMap()->bindImage(3, 0, GL_READ_ONLY);
+
+		currentFrame.getTestMap()->bindImage(4, level, GL_WRITE_ONLY);
+
+		ssboRGBReduction.bindBase(0);
+		ssboRGBRGBJtJJtrSE3.bindBase(1);
+		glDispatchCompute(GLHelper::divup(currentFrame.getColorMap()->getWidth() >> level, 32), GLHelper::divup(currentFrame.getColorMap()->getHeight() >> level, 32), 1);
+
+		progs["rgbOdometryStep"]->disuse();
+
+		//std::vector<float> tmpData(8 * currentFrame.getColorMap()->getWidth() * currentFrame.getColorMap()->getHeight());
+
+		//ssboRGBRGBJtJJtrSE3.read(tmpData.data(), 0, 8 * currentFrame.getColorMap()->getWidth() * currentFrame.getColorMap()->getHeight());
+
+		progs["rgbOdometryStepReduce"]->use();
+		progs["rgbOdometryStepReduce"]->setUniform("imSize", glm::ivec2(currentFrame.getColorMap()->getWidth() >> level, currentFrame.getColorMap()->getHeight() >> level));
+
+		ssboRGBRGBJtJJtrSE3.bindBase(0);
+		ssboRGBRGBJtJJtrSE3Output.bindBase(1);
+
+		glDispatchCompute(8, 1, 1);
+		progs["rgbOdometryStepReduce"]->disuse();
+
+
+		std::vector<float> tmpOutputData(8 * 32);
+
+		ssboRGBRGBJtJJtrSE3Output.read(tmpOutputData.data(), 0, 8 * 32);
+
+		for (int row = 1; row < 8; row++)
+		{
+			for (int col = 0; col < 32; col++)
+			{
+				tmpOutputData[col + 0 * 32] += tmpOutputData[col + row * 32];
+			}
+		}
+
+		//float vectorB_host[6];
+		//float matrixA_host[6 * 6];
+
+
+		/*
+		vector b
+		| 6  |
+		| 12 |
+		| 17 |
+		| 21 |
+		| 24 |
+		| 26 |
+
+		and
+		matrix a
+		| 0  | 1  | 2  | 3  | 4  | 5  |
+		| 1  | 7  | 8  | 9  | 10 | 11 |
+		| 2  | 8  | 13 | 14 | 15 | 16 |
+		| 3  | 9  | 14 | 18 | 19 | 20 |
+		| 4  | 10 | 15 | 19 | 22 | 23 |
+		| 5  | 11 | 16 | 20 | 23 | 25 |
+
+		*/
+
+		int shift = 0;
+		for (int i = 0; i < 6; ++i)
+		{
+			for (int j = i; j < 7; ++j)
+			{
+				float value = tmpOutputData[shift++];
+				if (j == 6)
+					vectorB_host[i] = value;
+				else
+					matrixA_host[j * 6 + i] = matrixA_host[i * 6 + j] = value;
+			}
+		}
+
+
+
+		
+
+	}
+
 	void RGBOdometry::performColorTracking(
 		const rgbd::Frame &currentFrame,
 		const rgbd::Frame &virtualFrame,

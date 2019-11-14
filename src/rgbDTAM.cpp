@@ -158,8 +158,8 @@ namespace rgbd
 			progs["rgbDTAM"]->setUniform("kinv", kinv);
 			progs["rgbDTAM"]->setUniform("krlr", krlr);
 
-			currentFrame.getColorFilteredMap()->bindImage(0, pyramidLevel, GL_READ_ONLY);
-			currentFrame.getColorPreviousMap()->bindImage(1, pyramidLevel, GL_READ_ONLY);
+			currentFrame.getColorFilteredMap()->bindImage(1, pyramidLevel, GL_READ_ONLY);
+			currentFrame.getColorPreviousMap()->bindImage(0, pyramidLevel, GL_READ_ONLY);
 			currentFrame.getTestMap()->bindImage(2, pyramidLevel, GL_WRITE_ONLY);
 
 			ssboSO3.bindBase(0);
@@ -202,7 +202,7 @@ namespace rgbd
 			/*
 			vector b
 
-			| 3  |
+			| 3 |
 			| 6 |
 			| 8 |
 
@@ -281,7 +281,7 @@ namespace rgbd
 		}
 
 
-		std::cout << std::endl;
+		//std::cout << std::endl;
 
 		// dont need both here
 		pose = outPose;

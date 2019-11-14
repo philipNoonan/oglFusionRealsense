@@ -30,11 +30,7 @@ namespace rgbd
 			const Eigen::Vector3d & src
 		);
 
-		void computeUpdateSE3(
-			Eigen::Matrix<double, 4, 4, Eigen::RowMajor> & resultRt,
-			const Eigen::Matrix<double, 6, 1> & result,
-			Eigen::Isometry3f & rgbOdom
-		);
+
 
 
 	public:
@@ -102,6 +98,17 @@ namespace rgbd
 			glm::mat4 &resultRt,
 			Eigen::Isometry3f &rgbodomiso3f
 		);
+
+		void RGBOdometry::computeStep(
+			const rgbd::Frame &currentFrame,
+			const gl::Texture::Ptr &gradientMap,
+			const int level,
+			const glm::vec4 &cam,
+			float sigmaVal,
+			float rgbError,
+			float *matrixA_host,
+			float *vectorB_host
+		);
 		//void getProducts(
 		//	gl::Texture::Ptr srcColorMap,
 		//	gl::Texture::Ptr dstColorMap,
@@ -112,6 +119,13 @@ namespace rgbd
 		//	gl::Texture::Ptr dstColorMap,
 		//	const float sharpVal
 		//);
+
+		// move me somewhere sensible
+		void computeUpdateSE3(
+			Eigen::Matrix<double, 4, 4, Eigen::RowMajor> & resultRt,
+			const Eigen::Matrix<double, 6, 1> & result,
+			Eigen::Isometry3f & rgbOdom
+		);
 
 		typedef std::shared_ptr<rgbd::RGBOdometry> Ptr;
 

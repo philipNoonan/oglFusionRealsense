@@ -32,7 +32,7 @@ namespace rgbd
 		ssboReductionOutput.unbind();
 
 		icp.resize(ICPConstParam::MAX_LEVEL);
-		p2picp.resize(ICPConstParam::MAX_LEVEL);
+		//p2picp.resize(ICPConstParam::MAX_LEVEL);
 		p2vicp.resize(ICPConstParam::MAX_LEVEL);
 
 		for (int lv = 0; lv < ICPConstParam::MAX_LEVEL; ++lv)
@@ -46,7 +46,7 @@ namespace rgbd
 			switch (fType)
 			{
 			case FUSIONTYPE::P2P:
-				p2picp[lv] = std::make_shared<rgbd::p2pICP>(width / bias, height / bias, distThresh, normThresh, _K, progs);
+				//p2picp[lv] = std::make_shared<rgbd::p2pICP>(width / bias, height / bias, distThresh, normThresh, _K, progs);
 				break;
 			case FUSIONTYPE::P2V:
 				p2vicp[lv] = std::make_shared<rgbd::p2vICP>(width / bias, height / bias, distThresh, normThresh, _K, progs);
@@ -105,7 +105,7 @@ namespace rgbd
 
 		for (int lv = ICPConstParam::MAX_LEVEL - 1; lv >= 0; --lv)
 		{
-			p2picp[lv]->calc(lv, currentFrame, virtualFrame, T, AE, icpCount);
+			//p2picp[lv]->calc(lv, currentFrame, virtualFrame, T, AE, icpCount);
 		}
 
 

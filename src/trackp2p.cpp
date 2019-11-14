@@ -2,16 +2,41 @@
 
 namespace rgbd
 {
-	p2pICP::p2pICP(
+	p2pICP::p2pICP() {};
+	p2pICP::~p2pICP() {};
+
+	void p2pICP::loadShaders(
+		std::map<std::string, const gl::Shader::Ptr> &progs,
+		const std::string &folderPath
+	)
+	{
+		progs.insert(std::make_pair("Integrate", std::make_shared<gl::Shader>(folderPath + "integrate.comp")));
+		progs.insert(std::make_pair("Raycast", std::make_shared<gl::Shader>(folderPath + "raycast.comp")));
+		progs.insert(std::make_pair("BilateralFilter", std::make_shared<gl::Shader>(folderPath + "BilateralFilter.comp")));
+		progs.insert(std::make_pair("CASFilter", std::make_shared<gl::Shader>(folderPath + "contrastAdaptiveSharpening.comp")));
+		progs.insert(std::make_pair("alignDepthColor", std::make_shared<gl::Shader>(folderPath + "alignDepthColor.comp")));
+		progs.insert(std::make_pair("CalcVertexMap", std::make_shared<gl::Shader>(folderPath + "CalcVertexMap.comp")));
+		progs.insert(std::make_pair("CalcNormalMap", std::make_shared<gl::Shader>(folderPath + "CalcNormalMap.comp")));
+		progs.insert(std::make_pair("DownSamplingC", std::make_shared<gl::Shader>(folderPath + "DownSamplingC.comp")));
+		progs.insert(std::make_pair("DownSamplingD", std::make_shared<gl::Shader>(folderPath + "DownSamplingD.comp")));
+		progs.insert(std::make_pair("DownSamplingV", std::make_shared<gl::Shader>(folderPath + "DownSamplingV.comp")));
+		progs.insert(std::make_pair("DownSamplingN", std::make_shared<gl::Shader>(folderPath + "DownSamplingN.comp")));
+		progs.insert(std::make_pair("p2pTrack", std::make_shared<gl::Shader>(folderPath + "p2pTrack.comp")));
+		progs.insert(std::make_pair("p2pReduce", std::make_shared<gl::Shader>(folderPath + "p2pReduce.comp")));
+	}
+
+
+
+	void p2pICP::init(
 		int width,
 		int height,
 		float distThresh,
 		float normThresh,
 		const glm::mat4 &K,
-		const std::map<std::string, const gl::Shader::Ptr> &progs
-	) : progs{ { "p2pTrack", progs.at("p2pTrack") },
-			   { "p2pReduce", progs.at("p2pReduce") } }
+		const std::map<std::string, const gl::Shader::Ptr> &programs
+	)
 	{
+		progs = programs;
 
 		std::vector<BufferReduction> tmpMapData(width * height);
 		std::vector<float> tmpOutputData(32 * 8);
@@ -34,11 +59,6 @@ namespace rgbd
 		this->progs["p2pTrack"]->setUniform("invK", invK);
 		this->progs["p2pTrack"]->setUniform("distThresh", distThresh);
 		this->progs["p2pTrack"]->setUniform("normThresh", normThresh);
-	}
-
-	p2pICP::~p2pICP()
-	{
-
 	}
 
 	void p2pICP::track(
@@ -144,6 +164,68 @@ namespace rgbd
 		AE = sqrt(outputReductionData[0] / outputReductionData[28]);
 		icpCount = outputReductionData[28];
 
+
+	}
+
+	void p2pICP::getReduction(
+		float *matrixA_host,
+		float *vectorB_host,
+		float &AE,
+		uint32_t &icpCount
+	)
+	{
+		outputReductionData.resize(32 * 8);
+		ssboReductionOutput.read(outputReductionData.data(), 0, 32 * 8);
+
+		for (int row = 1; row < 8; row++)
+		{
+			for (int col = 0; col < 32; col++)
+			{
+				outputReductionData[col + 0 * 32] += outputReductionData[col + row * 32];
+			}
+		}
+
+		/*
+		vector b
+		| 1 |
+		| 2 |
+		| 3 |
+		| 4 |
+		| 5 |
+		| 6 |
+
+		and
+		matrix a
+		| 7  | 8  | 9  | 10 | 11 | 12 |
+		| 8  | 13 | 14 | 15 | 16 | 17 |
+		| 9  | 14 | 18 | 19 | 20 | 21 |
+		| 10 | 15 | 19 | 22 | 23 | 24 |
+		| 11 | 16 | 20 | 23 | 25 | 26 |
+		| 12 | 17 | 21 | 24 | 26 | 27 |
+
+		AE = sqrt( [0] / [28] )
+		count = [28]
+
+		*/
+
+		for (int i = 1; i <= 6; i++)
+		{
+			vectorB_host[i - 1] = outputReductionData[i];
+		}
+
+		int shift = 7;
+		for (int i = 0; i < 6; ++i)
+		{
+			for (int j = i; j < 6; ++j)
+			{
+				float value = outputReductionData[shift++];
+
+				matrixA_host[j * 6 + i] = matrixA_host[i * 6 + j] = value;
+			}
+		}
+
+		AE = sqrt(outputReductionData[0] / outputReductionData[28]);
+		icpCount = outputReductionData[28];
 
 	}
 

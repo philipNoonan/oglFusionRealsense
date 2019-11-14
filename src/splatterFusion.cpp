@@ -89,7 +89,18 @@ namespace rgbd
 	}
 
 	
+	void splatterFusion::calcDevicePose(
+		rgbd::Frame &currentFrame,
+		rgbd::Frame &virtualFrame,
+		float * matrixA_host,
+		float * vectorB_host
+	)
+	{
+		glm::mat4 oldT = T;
 
+	
+		//icp->calc(currentFrame, virtualFrame, T, matrixA_host, vectorB_host); // 0.1 ms
+	}
 
 	glm::mat4 splatterFusion::calcDevicePose(
 		rgbd::Frame &currentFrame,
@@ -98,8 +109,7 @@ namespace rgbd
 	)
 	{
 
-
-		int t = currentFrame.getDepthFrameCount();
+		//int t = currentFrame.getDepthFrameCount();
 		//GLuint query;
 		//glGenQueries(1, &query);
 		//glBeginQuery(GL_TIME_ELAPSED, query);
@@ -108,7 +118,7 @@ namespace rgbd
 
 		//glm::mat4 deltaT = glm::mat4(1.0f);
 
-		clock_t start_icp = clock();
+		//clock_t start_icp = clock();
 		//static glm::mat4 T(1.0f);
 		//bool tracked = true;
 		icp->calc(currentFrame, virtualFrame, T, tracked); // 0.1 ms

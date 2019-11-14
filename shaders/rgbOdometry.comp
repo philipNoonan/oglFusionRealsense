@@ -75,7 +75,7 @@ void computeResiduals()
 			}
 		}
 
-		//imageStore(outputTestImage, ivec2(nextColorLoc), vec4(0.3,0.6,0.9,1.0)); 
+		imageStore(outputTestImage, ivec2(nextColorLoc), vec4(0.3,0.6,0.9,1.0)); 
 
 		if (valid)
 		{
@@ -124,6 +124,8 @@ void computeResiduals()
 							float lastColor = luminance(imageLoad(lastColorMap, ivec2(lastColorLoc)).xyz);
 
 							//imageStore(outputTestImage, ivec2(depthLoc), vec4(lastColorLoc.x, nextColorLoc.x, lastColorLoc.y, nextColorLoc.y)); 
+							
+							//imageStore(outputTestImage, ivec2(nextColorLoc), vec4(luminance(imageLoad(nextColorMap, ivec2(nextColorLoc.x, nextColorLoc.y)).xyz) - lastColor, d0, transformed_d1, lastColor)); 
 
 
 							if (d0 > 0 && abs(transformed_d1 - d0) <= maxDepthDelta && lastColor != 0)

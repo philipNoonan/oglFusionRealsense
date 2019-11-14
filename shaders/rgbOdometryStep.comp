@@ -74,7 +74,8 @@ void main()
 	ivec2 imSize = imageSize(gradientMap);
 
 	rowSE3 row;
-			imageStore(outputTestImage, pix, vec4(0)); 
+	
+	imageStore(outputTestImage, pix, vec4(0)); 
 
 
 	DataTerm corresp = corresImg[pix.y * imSize.x + pix.x];
@@ -92,7 +93,7 @@ void main()
 
 		if (sigma == -1)
 		{
-			w = 1;
+			//w = 1;
 		}
 
 		//	imageStore(outputTestImage, pix, vec4(1.0, 0.9, 0, 1)); 
@@ -115,7 +116,7 @@ void main()
 			w = 1; // FOR TESTING
 			//sobelScale = 1;
 
-			vec2 dI_dxdy_val = w * 1 * imageLoad(gradientMap, corresp.one).xy;
+			vec2 dI_dxdy_val = w * 1.0f * imageLoad(gradientMap, corresp.one).xy;
 
 			imageStore(outputTestImage, pix, vec4(abs(corresp.diff).xxx, 1)); 
 

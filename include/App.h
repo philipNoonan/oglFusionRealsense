@@ -54,6 +54,8 @@
 #include <iomanip> 
 
 #include <map>
+#include "ConstantParameters.h"
+
 #include "GLCore/Shader.h"
 #include "GLCore/Quad.h"
 #include "GLCore/Lines.h"
@@ -76,11 +78,14 @@ private:
 
 	rgbd::GlobalVolume::Ptr volume;
 	glm::mat4 initPose;
+	glm::mat4 currPose = glm::mat4(1.0f);
 	glm::mat4 se3Pose = glm::mat4(1.0f); 
 	glm::mat4 so3Pose = glm::mat4(1.0f);
 	std::array<rgbd::Frame, 3> frame;
 	rgbd::RGBOdometry rgbodo;
 	rgbd::RGBDtam dtam;
+	rgbd::p2pICP p2picp;
+
 	rgbd::splatterFusion slam;
 	rgbd::GradientFilter gradFilter;
 	rgbd::p2pFusion p2pFusion;
@@ -102,6 +107,9 @@ private:
 	bool runSLAM(glm::mat4 &prePose);
 	bool runP2P(glm::mat4 &prePose);
 	bool runP2V(glm::mat4 &prePose);
+	bool runOdoSplat(
+		glm::mat4 &prePose
+	);
 	void initSplatter();
 	void clearSplatter();
 	void initGradient();
@@ -318,6 +326,7 @@ private:
 	bool useSplatter = false;
 	bool useSO3 = false;
 	bool useSE3 = false;
+	bool useODOP2P = false;
 	bool useMultipleFusion = false;
 	bool performFlood = false;
 	bool performFlow = false;

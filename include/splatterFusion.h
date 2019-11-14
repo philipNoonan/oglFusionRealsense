@@ -63,6 +63,13 @@ namespace rgbd
 			glm::vec4 cam
 		);
 
+		void calcDevicePose(
+			rgbd::Frame &currentFrame,
+			rgbd::Frame &virtualFrame,
+			float * matrixA_host,
+			float * vectorB_host
+		);
+
 		glm::mat4 calcDevicePose(
 			rgbd::Frame &currentFrame,
 			rgbd::Frame &virtualFrame,
