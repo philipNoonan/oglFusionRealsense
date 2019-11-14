@@ -241,6 +241,7 @@ bool App::runDTAM(
 		tracked);
 
 	prePose = so3Pose;
+	se3Pose = se3Pose * prePose;
 
 	glEndQuery(GL_TIME_ELAPSED);
 	GLuint available = 0;
@@ -271,7 +272,7 @@ bool App::runRGBOdo(
 
 	rgbodo.performColorTracking(frame[rgbd::FRAME::CURRENT], frame[rgbd::FRAME::VIRTUAL], gradFilter.getGradientMap(), prePose, glm::vec4(cameraInterface.getDepthIntrinsics(0).cx, cameraInterface.getDepthIntrinsics(0).cy, cameraInterface.getDepthIntrinsics(0).fx, cameraInterface.getDepthIntrinsics(0).fy));
 
-	se3Pose = se3Pose * glm::inverse(prePose);
+	se3Pose = se3Pose * prePose;
 
 	//glEndQuery(GL_TIME_ELAPSED);
 	//GLuint available = 0;
