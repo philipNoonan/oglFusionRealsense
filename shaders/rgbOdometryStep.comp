@@ -75,14 +75,14 @@ void main()
 
 	rowSE3 row;
 	
-	imageStore(outputTestImage, pix, vec4(0)); 
+	//imageStore(outputTestImage, pix, vec4(0)); 
 
 
 	DataTerm corresp = corresImg[pix.y * imSize.x + pix.x];
 
 	bool found_corresp = corresp.valid;
 
-	//imageStore(outputTestImage, pix, vec4(0.1, 0.3, 0, 1)); 
+	imageStore(outputTestImage, pix, vec4(0)); 
 
 	if (found_corresp)
 	{
@@ -96,7 +96,7 @@ void main()
 			w = 1;
 		}
 
-		//	imageStore(outputTestImage, pix, vec4(1.0, 0.9, 0, 1)); 
+		//imageStore(outputTestImage, pix, vec4(1.0, 0.9, 0, 1)); 
 
 
 		row.data[6] = -w * corresp.diff;
@@ -116,9 +116,10 @@ void main()
 			w = 1; // FOR TESTING
 			//sobelScale = 1;
 
-			vec2 dI_dxdy_val = w * 1.0f * imageLoad(gradientMap, corresp.one).xy;
+			vec2 dI_dxdy_val = w * sobelScale * imageLoad(gradientMap, corresp.one).xy;
 
-			imageStore(outputTestImage, pix, vec4(abs(corresp.diff).xxx, 1)); 
+			//imageStore(outputTestImage, pix, vec4(abs(corresp.diff).xxx, 1)); 
+			//imageStore(outputTestImage, pix, vec4(abs(dI_dxdy_val).xy, 0, 1)); 
 
 
 			float v0 = dI_dxdy_val.x * cam.z * invZ;
@@ -141,6 +142,7 @@ void main()
 	    row.data[0] = row.data[1] = row.data[2] = row.data[3] = row.data[4] = row.data[5] = row.data[6] = row.inliers = 0.f;
 	}
 
+	imageStore(outputTestImage, pix, vec4(abs(corresp.diff).xxx, 1)); 
 
 	outputBuffer[pix.y * imSize.x + pix.x] = row;
 

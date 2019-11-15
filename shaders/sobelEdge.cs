@@ -64,10 +64,10 @@ subroutine(launchSubroutine)
 void getGradients()  
 { 
     uvec2 p = gl_LocalInvocationID.xy + uvec2(1, 1);
-    float lesser = 3.0f;
-    float upper = 10.0f;
+    float lesser = 1.0f;
+    float upper = 2.0f;
 
-    float norm = 1.0f;// / (4 * lesser + 2 * upper); // why does applying the correct norm introduce a lot more noise?
+    float norm = 1.0f / (2 * lesser + 1 * upper); // why does applying the correct norm introduce a lot more noise?
 
 
     float sx = norm * (- (lesser * localData[p.x - 1][p.y - 1] + upper * localData[p.x - 1][p.y] + lesser * localData[p.x - 1][p.y + 1]) + (lesser * localData[p.x + 1][p.y - 1] + upper * localData[p.x + 1][p.y] + lesser * localData[p.x + 1][p.y + 1]));
@@ -134,10 +134,10 @@ void loadImage(ivec2 pos, ivec2 localDataLoc)
     if (imageType == 0) // rgba8ui
     {
         // gauss smoothed
-        localData[localDataLoc.x][localDataLoc.y] = luminance(imageLoad(InputImgUI, pos).xyz);
-        //localData[localDataLoc.x][localDataLoc.y] = luminance(imageLoad(InputImgUI, ivec2(pos.x - 1, pos.y - 1)).xyz) * 0.077847f + luminance(imageLoad(InputImgUI, ivec2(pos.x, pos.y - 1)).xyz) * 0.123317f + luminance(imageLoad(InputImgUI, ivec2(pos.x + 1, pos.y - 1)).xyz) * 0.077847f +
-        //                                     luminance(imageLoad(InputImgUI, ivec2(pos.x - 1, pos.y)).xyz) * 0.123317f + luminance(imageLoad(InputImgUI, ivec2(pos.x, pos.y)).xyz) * 0.195346f + luminance(imageLoad(InputImgUI, ivec2(pos.x + 1, pos.y)).xyz) * 0.123317f +
-        //                                     luminance(imageLoad(InputImgUI, ivec2(pos.x - 1, pos.y + 1)).xyz) * 0.077847f + luminance(imageLoad(InputImgUI, ivec2(pos.x, pos.y + 1)).xyz) * 0.123317f + luminance(imageLoad(InputImgUI, ivec2(pos.x + 1, pos.y + 1)).xyz) * 0.077847f;
+        //localData[localDataLoc.x][localDataLoc.y] = luminance(imageLoad(InputImgUI, pos).xyz);
+        localData[localDataLoc.x][localDataLoc.y] = luminance(imageLoad(InputImgUI, ivec2(pos.x - 1, pos.y - 1)).xyz) * 0.077847f + luminance(imageLoad(InputImgUI, ivec2(pos.x, pos.y - 1)).xyz) * 0.123317f + luminance(imageLoad(InputImgUI, ivec2(pos.x + 1, pos.y - 1)).xyz) * 0.077847f +
+                                             luminance(imageLoad(InputImgUI, ivec2(pos.x - 1, pos.y)).xyz) * 0.123317f + luminance(imageLoad(InputImgUI, ivec2(pos.x, pos.y)).xyz) * 0.195346f + luminance(imageLoad(InputImgUI, ivec2(pos.x + 1, pos.y)).xyz) * 0.123317f +
+                                             luminance(imageLoad(InputImgUI, ivec2(pos.x - 1, pos.y + 1)).xyz) * 0.077847f + luminance(imageLoad(InputImgUI, ivec2(pos.x, pos.y + 1)).xyz) * 0.123317f + luminance(imageLoad(InputImgUI, ivec2(pos.x + 1, pos.y + 1)).xyz) * 0.077847f;
 
     }
     else if (imageType == 1) // rg float 2 

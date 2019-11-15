@@ -241,7 +241,11 @@ bool App::runDTAM(
 		tracked);
 
 	prePose = so3Pose;
-	se3Pose = se3Pose * prePose;
+	if (!useSE3)
+	{
+		se3Pose = se3Pose * prePose;
+	}
+	
 
 	glEndQuery(GL_TIME_ELAPSED);
 	GLuint available = 0;
@@ -264,8 +268,8 @@ bool App::runRGBOdo(
 	//glGenQueries(1, &query);
 	//glBeginQuery(GL_TIME_ELAPSED, query);
 
-	//gradFilter.execute(frame[rgbd::FRAME::CURRENT].getColorFilteredMap(), 0, 0.52201f, 0.79451f, false);
-	gradFilter.execute(frame[rgbd::FRAME::CURRENT].getColorFilteredMap(), 0, 3.0f, 10.0f, false);
+	//gradFilter.execute(frame[rgbd::FRAME::CURRENT].getColorFilteredMap(), 0, 0.52201f, 0.79451f, true);
+	gradFilter.execute(frame[rgbd::FRAME::CURRENT].getColorFilteredMap(), 0, 3.0f, 10.0f, true);
 
 
 
@@ -571,61 +575,61 @@ bool App::runP2P(
 	glGenQueries(1, &query);
 	glBeginQuery(GL_TIME_ELAPSED, query);
 
-	volume->raycast(frame[rgbd::FRAME::VIRTUAL], colorToDepth[0] * se3Pose);
+	volume->raycast(frame[rgbd::FRAME::VIRTUAL], (colorToDepth[0] * se3Pose));
 
 
-	for (int lvl = rgbd::ICPConstParam::MAX_LEVEL - 1; lvl >= 0; lvl--)
-	{
-		for (int iter = 0; iter < rgbd::ICPConstParam::MAX_ITR_NUM[lvl]; iter++)
-		{
+	//for (int lvl = rgbd::ICPConstParam::MAX_LEVEL - 1; lvl >= 0; lvl--)
+	//{
+	//	for (int iter = 0; iter < rgbd::ICPConstParam::MAX_ITR_NUM[lvl]; iter++)
+	//	{
 
-			Eigen::Matrix<float, 6, 6, Eigen::RowMajor> A_icp;
-			Eigen::Matrix<float, 6, 1> b_icp;
-			float AE;
-			uint32_t icpCount;
+	//		Eigen::Matrix<float, 6, 6, Eigen::RowMajor> A_icp;
+	//		Eigen::Matrix<float, 6, 1> b_icp;
+	//		float AE;
+	//		uint32_t icpCount;
 
-			p2picp.track(
-				frame[rgbd::FRAME::CURRENT],
-				frame[rgbd::FRAME::VIRTUAL],
-				colorToDepth[0] * se3Pose,
-				lvl
-			);
+	//		p2picp.track(
+	//			frame[rgbd::FRAME::CURRENT],
+	//			frame[rgbd::FRAME::VIRTUAL],
+	//			currPose,
+	//			lvl
+	//		);
 
-			p2picp.reduce(
-				glm::ivec2(frame[rgbd::FRAME::CURRENT].getWidth(lvl),
-					frame[rgbd::FRAME::CURRENT].getHeight(lvl))
-			);
+	//		p2picp.reduce(
+	//			glm::ivec2(frame[rgbd::FRAME::CURRENT].getWidth(lvl),
+	//				frame[rgbd::FRAME::CURRENT].getHeight(lvl))
+	//		);
 
-			p2picp.getReduction(
-				A_icp.data(),
-				b_icp.data(),
-				AE,
-				icpCount
-			);
+	//		p2picp.getReduction(
+	//			A_icp.data(),
+	//			b_icp.data(),
+	//			AE,
+	//			icpCount
+	//		);
 
-			Eigen::Matrix<double, 6, 1> result;
-			Eigen::Matrix<double, 6, 6, Eigen::RowMajor> dA_icp = A_icp.cast<double>();
-			Eigen::Matrix<double, 6, 1> db_icp = b_icp.cast<double>();
+	//		Eigen::Matrix<double, 6, 1> result;
+	//		Eigen::Matrix<double, 6, 6, Eigen::RowMajor> dA_icp = A_icp.cast<double>();
+	//		Eigen::Matrix<double, 6, 1> db_icp = b_icp.cast<double>();
 
-			result = dA_icp.ldlt().solve(db_icp);
+	//		result = dA_icp.ldlt().solve(db_icp);
 
-			glm::mat4 delta = glm::eulerAngleXYZ(result(3), result(4), result(5));
-			delta[3][0] = result(0);
-			delta[3][1] = result(1);
-			delta[3][2] = result(2);
+	//		glm::mat4 delta = glm::eulerAngleXYZ(result(3), result(4), result(5));
+	//		delta[3][0] = result(0);
+	//		delta[3][1] = result(1);
+	//		delta[3][2] = result(2);
 
-			currPose = delta * currPose;
+	//		currPose = delta * currPose;
 
-			if (result.norm() < 1e-5 && result.norm() != 0)
-				break;
+	//		if (result.norm() < 1e-5 && result.norm() != 0)
+	//			break;
 
-		}// iter
+	//	}// iter
 
-	} // lvl
+	//} // lvl
 
 	if (integratingFlag)
 	{
-		volume->integrate(0, frame[rgbd::FRAME::CURRENT], colorToDepth[0] * se3Pose);
+		volume->integrate(0, frame[rgbd::FRAME::CURRENT], (colorToDepth[0] * se3Pose));
 	}
 
 	//if (useSO3)
@@ -2008,7 +2012,7 @@ void App::getIncrementalTransform()
 
 	if (useODOP2P)
 	{
-		so3Tracked = runDTAM(prealignPose);
+		//so3Tracked = runDTAM(prealignPose);
 
 		runOdoSplat(prealignPose);
 	}

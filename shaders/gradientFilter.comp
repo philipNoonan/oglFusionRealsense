@@ -2,199 +2,65 @@
 
 layout(local_size_x = 32, local_size_y = 32) in;
 
-uniform float EdgeThreshold = 0.1;
 uniform float lesser;
 uniform float upper;
-uniform int imageType;
 uniform int level;
 
 uniform bool useGaussian;
 
-
 // PLEASE REMEMBER THE DOUBLE LINE PROBLEM https://docs.opencv.org/3.2.0/d5/d0f/tutorial_py_gradients.html
-
-
 
 float luminance(vec3 color)
 {
     return 0.299 * float(color.x) + 0.587 * float(color.y) + 0.114 * float(color.z);
 }
 
-shared float localData[gl_WorkGroupSize.x + 2][gl_WorkGroupSize.y + 2];
-shared float localDataY[gl_WorkGroupSize.x + 2][gl_WorkGroupSize.y + 2];
-
 layout (binding = 0) uniform sampler2D colorTex;
-
 
 layout(binding = 0, rg32f) uniform image2D gradientMap;
 
-void getGradients()  
-{ 
-    uvec2 p = gl_LocalInvocationID.xy + uvec2(1, 1);
-    //float lesser = 3.0f;
-    //float upper = 10.0f;
-
-    float norm = 1.0f;// / (4.0 * lesser + 2.0 * upper); // why does applying the correct norm introduce a lot more noise?
 
 
-    float sx = norm * (- (lesser * localData[p.x - 1][p.y - 1] + upper * localData[p.x - 1][p.y] + lesser * localData[p.x - 1][p.y + 1]) + (lesser * localData[p.x + 1][p.y - 1] + upper * localData[p.x + 1][p.y] + lesser * localData[p.x + 1][p.y + 1]));
-    float sy = norm * (  (lesser * localData[p.x - 1][p.y + 1] + upper * localData[p.x][p.y + 1] + lesser * localData[p.x + 1][p.y + 1]) - (lesser * localData[p.x - 1][p.y - 1] + upper * localData[p.x][p.y - 1] + lesser * localData[p.x + 1][p.y - 1]));
-
-  //  float sx = (3.0 * localData[p.x + 1][p.y - 1] + 10.0 * localData[p.x + 1][p.y] + 3.0 * localData[p.x + 1][p.y + 1]) - (3.0 * localData[p.x - 1][p.y - 1] + 10.0 * localData[p.x - 1][p.y] + 3.0 * localData[p.x - 1][p.y + 1]);
- //   float sy = (3.0 * localData[p.x - 1][p.y + 1] + 10.0 * localData[p.x][p.y + 1] + 3.0 * localData[p.x + 1][p.y + 1]) - (3.0 * localData[p.x - 1][p.y - 1] + 10.0 * localData[p.x][p.y - 1] + 3.0 * localData[p.x + 1][p.y - 1]);
-
-
-    imageStore(gradientMap, ivec2(gl_GlobalInvocationID.xy), vec4(sx, sy, 0, 0));
-
-   
-
-}
-
-
-
-void loadImage(ivec2 pos, ivec2 localDataLoc)
-{ 
-
-	if (useGaussian == true)
-	{
-	 localData[localDataLoc.x][localDataLoc.y] = luminance(texelFetch(colorTex, ivec2(pos.x - 1, pos.y - 1), level).xyz) * 0.077847f + luminance(texelFetch(colorTex, ivec2(pos.x, pos.y - 1), level).xyz) * 0.123317f + luminance(texelFetch(colorTex, ivec2(pos.x + 1, pos.y - 1), level).xyz) * 0.077847f +
-                                                 luminance(texelFetch(colorTex, ivec2(pos.x - 1, pos.y), level).xyz)     * 0.123317f + luminance(texelFetch(colorTex, ivec2(pos.x, pos.y), level).xyz)     * 0.195346f + luminance(texelFetch(colorTex, ivec2(pos.x + 1, pos.y), level).xyz)     * 0.123317f +
-                                                 luminance(texelFetch(colorTex, ivec2(pos.x - 1, pos.y + 1), level).xyz) * 0.077847f + luminance(texelFetch(colorTex, ivec2(pos.x, pos.y + 1), level).xyz) * 0.123317f + luminance(texelFetch(colorTex, ivec2(pos.x + 1, pos.y + 1), level).xyz) * 0.077847f;
-	}
-	else
-	{
-		localData[localDataLoc.x][localDataLoc.y] = luminance(texelFetch(colorTex, pos, level).xyz);
-	}
-}
 
 void main()
 {
+	ivec2 pix = ivec2(gl_GlobalInvocationID).xy;
+
+	/*
 	
-    uvec2 gSize = gl_WorkGroupSize.xy * gl_NumWorkGroups.xy;
+	image kernel layout
+	| a02 a12 a22 |
+	| a01 a11 a21 |
+	| a00 a10 a20 |
+	dx
+	| -lw 0 lw |
+	| -hg 0 hg |
+	| -lw 0 lw |
+	dy
+	|  lw  hg  lw |
+	|  0   0   0  |
+	| -lw -hg -lw |
 
-    // Copy into local memory
-    loadImage(ivec2(gl_GlobalInvocationID.xy), ivec2(gl_LocalInvocationID.x + 1, gl_LocalInvocationID.y + 1));
+	*/
 
-    // Handle the edges
-    // Bottom edge
-    if (gl_LocalInvocationID.y == 0)
-    {
-        if (gl_GlobalInvocationID.y > 0)
-        {
-            loadImage(ivec2(gl_GlobalInvocationID.xy + ivec2(0, -1)), ivec2(gl_LocalInvocationID.x + 1, 0));
+	float a00 = luminance(texelFetch(colorTex, ivec2(pix.x - 1, pix.y - 1), level).xyz);
+	float a10 = luminance(texelFetch(colorTex, ivec2(pix.x - 1, pix.y    ), level).xyz);
+	float a20 = luminance(texelFetch(colorTex, ivec2(pix.x - 1, pix.y + 1), level).xyz);
 
-            // Lower left corner
-            if (gl_LocalInvocationID.x == 0)
-            {
-                if (gl_GlobalInvocationID.x > 0)
-                {
-                    loadImage(ivec2(gl_GlobalInvocationID.xy + ivec2(-1, -1)), ivec2(0, 0));
-                }
-                else
-                {
-                    localData[0][0] = 0.0;
-                    localDataY[0][0] = 0.0;
-                }
-            }
-                
+	float a01 = luminance(texelFetch(colorTex, ivec2(pix.x    , pix.y - 1), level).xyz);
+	float a21 = luminance(texelFetch(colorTex, ivec2(pix.x    , pix.y + 1), level).xyz);
 
-            // Lower right corner
-            if (gl_LocalInvocationID.x == gl_WorkGroupSize.x - 1)
-            {
-                if (gl_GlobalInvocationID.x < gSize.x - 1)
-                {
-                    loadImage(ivec2(gl_GlobalInvocationID.xy + ivec2(1, -1)), ivec2(gl_WorkGroupSize.x + 1, 0));
-                }
-                else
-                {
-                    localData[gl_WorkGroupSize.x + 1][0] = 0.0;
-                    localDataY[gl_WorkGroupSize.x + 1][0] = 0.0;
-                }
-            }
+	float a02 = luminance(texelFetch(colorTex, ivec2(pix.x + 1, pix.y - 1), level).xyz);
+	float a12 = luminance(texelFetch(colorTex, ivec2(pix.x + 1, pix.y    ), level).xyz);
+	float a22 = luminance(texelFetch(colorTex, ivec2(pix.x + 1, pix.y + 1), level).xyz);
 
-        }
-        else
-        {
-            localData[gl_LocalInvocationID.x + 1][0] = 0.0;
-            localDataY[gl_LocalInvocationID.x + 1][0] = 0.0;
-        }
+	float sx = -(lesser * a00) - (upper * a01) - (lesser * a02)
+			   +(lesser * a20) + (upper * a21) + (lesser * a22);
 
-    }
-    // Top edge
-    if (gl_LocalInvocationID.y == gl_WorkGroupSize.y - 1)
-    {
-        if (gl_GlobalInvocationID.y < gSize.y - 1)
-        {
-            loadImage(ivec2(gl_GlobalInvocationID.xy + ivec2(0, 1)), ivec2(gl_LocalInvocationID.x + 1, gl_WorkGroupSize.y + 1));
-            // Upper left corner
-            if (gl_LocalInvocationID.x == 0)
-            {
-                if (gl_GlobalInvocationID.x > 0)
-                {
-                    loadImage(ivec2(gl_GlobalInvocationID.xy) + ivec2(-1, 1), ivec2(0, gl_WorkGroupSize.y + 1));
-                }
-                else
-                {
-                    localData[0][gl_WorkGroupSize.y + 1] = 0.0;
-                    localDataY[0][gl_WorkGroupSize.y + 1] = 0.0;
-                }
-            }
-
-            // Lower right corner
-            if (gl_LocalInvocationID.x == gl_WorkGroupSize.x - 1)
-            {
-                if (gl_GlobalInvocationID.x < gSize.x - 1)
-                {
-                    loadImage(ivec2(gl_GlobalInvocationID.xy) + ivec2(1, 1), ivec2(gl_WorkGroupSize.x + 1, gl_WorkGroupSize.y + 1));
-                }
-                else
-                {
-                    localData[gl_WorkGroupSize.x + 1][gl_WorkGroupSize.y + 1] = 0.0;
-                    localDataY[gl_WorkGroupSize.x + 1][gl_WorkGroupSize.y + 1] = 0.0;
-                }
-
-            }
-
-        }
-        else
-        {
-            localData[gl_LocalInvocationID.x + 1][gl_WorkGroupSize.y + 1] = 0.0;
-            localDataY[gl_LocalInvocationID.x + 1][gl_WorkGroupSize.y + 1] = 0.0;
-        }
-    }
-    // Left edge
-    if (gl_LocalInvocationID.x == 0)
-    {
-        if (gl_GlobalInvocationID.x > 0)
-        {
-            loadImage(ivec2(gl_GlobalInvocationID.xy) + ivec2(-1, 0), ivec2(0, gl_LocalInvocationID.y + 1));
-        }
-        else
-        {
-            localData[0][gl_LocalInvocationID.y + 1] = 0.0;
-            localDataY[0][gl_LocalInvocationID.y + 1] = 0.0;
-        }
-
-    }
-    // Right edge
-    if (gl_LocalInvocationID.x == gl_WorkGroupSize.x - 1)
-    {
-        if (gl_GlobalInvocationID.x < gSize.x - 1)
-        {
-            loadImage(ivec2(gl_GlobalInvocationID.xy) + ivec2(1, 0), ivec2(gl_WorkGroupSize.x + 1, gl_LocalInvocationID.y + 1));
-        }
-        else
-        {
-            localData[gl_WorkGroupSize.x + 1][gl_LocalInvocationID.y + 1] = 0.0;
-            localDataY[gl_WorkGroupSize.x + 1][gl_LocalInvocationID.y + 1] = 0.0;
-        }
-        
+	float sy = +(lesser * a00) + (upper * a10) + (lesser * a20)
+			   -(lesser * a02) - (upper * a12) - (lesser * a22);
 
 
-    }
+	imageStore(gradientMap, ivec2(gl_GlobalInvocationID.xy), vec4(sx, sy, 0, 0));
 
-    barrier();
-
-    getGradients();
-	
 }

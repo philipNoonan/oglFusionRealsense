@@ -55,7 +55,7 @@ void computeResiduals()
 	
 	DataTerm corres;
 
-	ivec2 value = ivec2(0,0);
+	//ivec2 value = ivec2(0,0);
 
 	corres.zero = ivec2(0.0f);
 	corres.one = ivec2(0.0f);
@@ -74,8 +74,6 @@ void computeResiduals()
 				valid = valid && (luminance(imageLoad(nextColorMap, ivec2(u,v)).xyz) > 0);
 			}
 		}
-
-		imageStore(outputTestImage, ivec2(nextColorLoc), vec4(0.3,0.6,0.9,1.0)); 
 
 		if (valid)
 		{
@@ -139,8 +137,8 @@ void computeResiduals()
 								corres.one.y = nextColorLoc.y;
 								corres.diff = luminance(imageLoad(nextColorMap, ivec2(nextColorLoc.x, nextColorLoc.y)).xyz) - lastColor;
 								corres.valid = true;
-								value.x = 1;
-								value.y = int(corres.diff * corres.diff);
+								//value.x = 1;
+								//value.y = int(corres.diff * corres.diff);
 							}
 						}
 						

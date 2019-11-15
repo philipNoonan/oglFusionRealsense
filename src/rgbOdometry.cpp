@@ -152,8 +152,8 @@ namespace rgbd
 
 		progs["rgbOdometry"]->use();
 
-		progs["rgbOdometry"]->setUniform("minScale", 0.05f); // THINK ON THIS ONE!!!!
-		progs["rgbOdometry"]->setUniform("maxDepthDelta", 0.07f);
+		progs["rgbOdometry"]->setUniform("minScale", 0.005f); // THINK ON THIS ONE!!!!
+		progs["rgbOdometry"]->setUniform("maxDepthDelta", 0.005f);
 		progs["rgbOdometry"]->setUniform("kt", kT);
 		progs["rgbOdometry"]->setUniform("krkinv", krkinv);
 		progs["rgbOdometry"]->setUniform("level", level);
@@ -219,7 +219,7 @@ namespace rgbd
 	{
 
 		progs["rgbOdometryStep"]->setUniform("sigma", -1);
-		progs["rgbOdometryStep"]->setUniform("sobelScale", 0.125f);
+		progs["rgbOdometryStep"]->setUniform("sobelScale", 1.0f);
 		progs["rgbOdometryStep"]->setUniform("cam", cam);
 		progs["rgbOdometryStep"]->setUniform("level", level);
 
@@ -372,7 +372,7 @@ namespace rgbd
 	)
 	{
 
-		progs["rgbOdometryStep"]->setUniform("sigma", -1);
+		progs["rgbOdometryStep"]->setUniform("sigma", sigmaVal);
 		progs["rgbOdometryStep"]->setUniform("sobelScale", 0.125f);
 		progs["rgbOdometryStep"]->setUniform("cam", cam);
 		progs["rgbOdometryStep"]->setUniform("level", level);
@@ -471,8 +471,7 @@ namespace rgbd
 	)
 	{
 
-		float sigma;
-		float rgbError;
+
 
 
 		Eigen::Matrix<float, 3, 3, Eigen::RowMajor> Rprev;
@@ -495,7 +494,6 @@ namespace rgbd
 
 		for (int lvl = ICPConstParam::MAX_LEVEL - 1; lvl >= 0; lvl--) 
 		{
-			glm::mat3 K = glm::mat3(1.0f);
 
 			glm::vec4 levelCam = glm::vec4(
 				cam.x / (std::pow(2.0f, lvl)),
@@ -503,11 +501,6 @@ namespace rgbd
 				cam.z / (std::pow(2.0f, lvl)),
 				cam.w / (std::pow(2.0f, lvl))
 				);
-
-			K[0][0] = levelCam.z;
-			K[1][1] = levelCam.w;
-			K[2][0] = levelCam.x;
-			K[2][1] = levelCam.y;
 
 			Eigen::Matrix<double, 3, 3, Eigen::RowMajor> K_eig = Eigen::Matrix<double, 3, 3, Eigen::RowMajor>::Zero();
 
@@ -524,7 +517,7 @@ namespace rgbd
 
 
 
-			for (int iter = 0; iter < ICPConstParam::MAX_ITR_NUM[lvl]; iter++)
+			for (int iter = 0; iter < 5; iter++)
 			{
 				Eigen::Matrix<double, 4, 4, Eigen::RowMajor> Rt_eig = resultRt_eig.inverse();
 
@@ -560,6 +553,9 @@ namespace rgbd
 
 				Eigen::Isometry3f rgbodomiso3f;
 
+				float sigma = 0;
+				float rgbError = 0;
+
 				computeResiduals(
 					currentFrame,
 					gradientMap,
@@ -569,6 +565,8 @@ namespace rgbd
 					sigma,
 					rgbError
 				);
+
+				//std::cout << "sigma " << sigma << " error " << rgbError << std::endl;
 
 				computeStep(
 					currentFrame,
@@ -603,7 +601,7 @@ namespace rgbd
 		}
 
 
-		if (sigma == 0 || (tcurr - tprev).norm() > 0.3 || isnan(tcurr(0)))
+		if ((tcurr - tprev).norm() > 0.3)
 		{
 			Rcurr = Rprev;
 			tcurr = tprev;

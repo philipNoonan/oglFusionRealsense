@@ -107,10 +107,10 @@ void main()
 
 		row = vec4(jacRow.xyz, -(luminance(imageLoad(nextColorMap, wrPixel).xyz) - luminance(imageLoad(lastColorMap, pix).xyz)) );
 
-		//imageStore(outputTestImage, ivec2(pix), vec4(row.www, 1.0));
 
 	}
 
+	//imageStore(outputTestImage, ivec2(pix), vec4(row.www, 1.0));
 
 	rowSO3[pix.y * imSize.x + pix.x] = row;
 
