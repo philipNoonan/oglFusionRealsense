@@ -269,7 +269,7 @@ bool App::runRGBOdo(
 	//glBeginQuery(GL_TIME_ELAPSED, query);
 
 	//gradFilter.execute(frame[rgbd::FRAME::CURRENT].getColorFilteredMap(), 0, 0.52201f, 0.79451f, true);
-	gradFilter.execute(frame[rgbd::FRAME::CURRENT].getColorFilteredMap(), 0, 3.0f, 10.0f, true);
+	gradFilter.execute(frame[rgbd::FRAME::CURRENT].getColorFilteredMap(), 0, 3.0f, 10.0f, false);
 
 
 
@@ -479,7 +479,7 @@ bool App::runOdoSplat(
 
 			if (useBoth)
 			{
-				double w = 100;
+				double w = 10;
 				lastA = dA_rgbd + w * w * dA_icp;
 				lastb = db_rgbd + w * db_icp;
 			}
@@ -2453,7 +2453,7 @@ void App::mainLoop()
 			glm::vec4 transformedInitOff;
 			if (useSE3)
 			{
-				transformedInitOff = se3Pose * glm::vec4(0, 0, 1, 1.0f);
+				transformedInitOff = se3Pose * glm::vec4(initOff, 1.0f);
 			}
 			//else if (useSO3)
 			//{

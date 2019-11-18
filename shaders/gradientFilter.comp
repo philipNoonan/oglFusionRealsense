@@ -57,8 +57,8 @@ void main()
 	float sx = -(lesser * a00) - (upper * a01) - (lesser * a02)
 			   +(lesser * a20) + (upper * a21) + (lesser * a22);
 
-	float sy = +(lesser * a00) + (upper * a10) + (lesser * a20)
-			   -(lesser * a02) - (upper * a12) - (lesser * a22);
+	float sy = -(lesser * a00) - (upper * a10) - (lesser * a20)
+			   +(lesser * a02) + (upper * a12) + (lesser * a22);
 
 
 	imageStore(gradientMap, ivec2(gl_GlobalInvocationID.xy), vec4(sx, sy, 0, 0));

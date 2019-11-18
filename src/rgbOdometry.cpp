@@ -200,7 +200,7 @@ namespace rgbd
 			sigma += tmpOutputData[i + 1];
 		}
 
-		sigmaVal = std::sqrt((float)sigma / count == 0 ? 1 : count);
+		sigmaVal = std::sqrt( (float)sigma / count == 0 ? 1 : count);
 		rgbError = std::sqrt(sigma) / (count == 0 ? 1 : count);
 
 		//std::cout << sigmaVal << " " << rgbError << std::endl;
@@ -218,7 +218,7 @@ namespace rgbd
 		)
 	{
 
-		progs["rgbOdometryStep"]->setUniform("sigma", -1);
+		progs["rgbOdometryStep"]->setUniform("sigma", sigmaVal);
 		progs["rgbOdometryStep"]->setUniform("sobelScale", 1.0f);
 		progs["rgbOdometryStep"]->setUniform("cam", cam);
 		progs["rgbOdometryStep"]->setUniform("level", level);
@@ -492,7 +492,7 @@ namespace rgbd
 		Eigen::Vector3f tcurr = tprev;
 
 
-		for (int lvl = ICPConstParam::MAX_LEVEL - 1; lvl >= 0; lvl--) 
+		for (int lvl = 0; lvl >= 0; lvl--) 
 		{
 
 			glm::vec4 levelCam = glm::vec4(
@@ -517,7 +517,7 @@ namespace rgbd
 
 
 
-			for (int iter = 0; iter < 5; iter++)
+			for (int iter = 0; iter < 3; iter++)
 			{
 				Eigen::Matrix<double, 4, 4, Eigen::RowMajor> Rt_eig = resultRt_eig.inverse();
 
