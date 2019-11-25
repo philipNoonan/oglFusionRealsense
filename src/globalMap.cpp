@@ -163,6 +163,7 @@ namespace rgbd
 
 	void GlobalMap::updateGlobalMap(
 		rgbd::Frame &srcFrame,
+		bool firstFrame,
 		const glm::mat4 &T
 	)
 	{
@@ -173,10 +174,12 @@ namespace rgbd
 
 		int timestamp = srcFrame.getDepthFrameCount();
 
+		//std::cout << "ts " << timestamp << std::endl;
 		progs["GlobalMapUpdate"]->use();
 		progs["GlobalMapUpdate"]->setUniform("T", T);
 		progs["GlobalMapUpdate"]->setUniform("invT", glm::inverse(T));
 		progs["GlobalMapUpdate"]->setUniform("timestamp", timestamp);
+		progs["GlobalMapUpdate"]->setUniform("firstFrame", firstFrame);
 
 	
 		indexMapFBO.getColorAttachment(0)->bindImage(0, 0, GL_READ_ONLY);
@@ -345,6 +348,81 @@ namespace rgbd
 
 
 
+	}
+
+	void GlobalMap::savePointCloud(std::string filename)
+	{
+		std::vector<glm::vec4> outputVerts;
+		std::vector<glm::vec3> outputNorms;
+		std::vector<glm::vec3> outputColor;
+
+		exportPointCloud(outputVerts, outputNorms, outputColor);
+
+		std::ofstream outFile(filename, std::ios::out | std::ios::binary);
+
+		if (!outFile)
+		{
+			//cerr << "Error opening output file: " << FileName << "!" << endl;
+			printf("Error opening output file: %s!\n", filename);
+			exit(1);
+		}
+
+		int pointNum = outputVerts.size();
+
+		outFile << "ply" << std::endl;
+
+		// https://stackoverflow.com/questions/8571089/how-can-i-find-endian-ness-of-my-pc-programmatically-using-c
+		int num = 1;
+		if (*(char *)&num == 1)
+		{
+			outFile << "format binary_little_endian 1.0" << std::endl;
+		}
+		else
+		{
+			outFile << "format binary_big_endian 1.0" << std::endl;
+		}
+
+		// outFile << "format ascii 1.0" << std::endl;
+
+		outFile << "element vertex " << pointNum << std::endl;
+		outFile << "property float x" << std::endl;
+		outFile << "property float y" << std::endl;
+		outFile << "property float z" << std::endl;
+		outFile << "property uchar red" << std::endl;
+		outFile << "property uchar green" << std::endl;
+		outFile << "property uchar blue" << std::endl;
+		outFile << "property float nx" << std::endl;
+		outFile << "property float ny" << std::endl;
+		outFile << "property float nz" << std::endl;
+		outFile << "property float radius" << std::endl;
+
+		outFile << "end_header" << std::endl;
+
+		for (int i = 0; i < outputVerts.size(); i++)
+		{
+			outFile.write((char*)&outputVerts[i].x, sizeof(float));
+			outFile.write((char*)&outputVerts[i].y, sizeof(float));
+			outFile.write((char*)&outputVerts[i].z, sizeof(float));
+
+			unsigned char r = int(outputColor[i].x * 255.0f);
+			unsigned char g = int(outputColor[i].y * 255.0f);
+			unsigned char b = int(outputColor[i].z * 255.0f);
+
+			outFile.write((char*)&r, sizeof(unsigned char));
+			outFile.write((char*)&g, sizeof(unsigned char));
+			outFile.write((char*)&b, sizeof(unsigned char));
+
+			outFile.write((char*)&outputNorms[i].x, sizeof(float));
+			outFile.write((char*)&outputNorms[i].y, sizeof(float));
+			outFile.write((char*)&outputNorms[i].z, sizeof(float));
+
+
+
+			outFile.write((char*)&outputVerts[i].w, sizeof(float));
+
+		}
+
+		outFile.close();
 	}
 
 	GLuint GlobalMap::getGlobalBuffer(GLuint &mapsize)

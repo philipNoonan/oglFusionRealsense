@@ -27,20 +27,47 @@
 // Ref: "Linear Least - squares Optimization for Point-to-plane ICP Surface Registration"
 namespace rgbd
 {
-	class PointToPlaneICP
+	class splatterICP
 	{
 	private:
 
 		std::map<std::string, const gl::Shader::Ptr> progs;
 
-		VirtualFrameRenderer virtualFrameRenderer;
-		ProjectiveDataAssoc dataAssoc;
+		//VirtualFrameRenderer::Ptr virtualFrameRenderer;
+		//ProjectiveDataAssoc::Ptr dataAssoc;
 
 		std::vector<float> outputReductionData;
 
 		gl::ShaderStorageBuffer<BufferReduction> ssboReduction;
 		gl::ShaderStorageBuffer<float> ssboReductionOutput;
 
+
+
+
+		std::vector<float> makeJTJ(
+			std::vector<float> v
+		);
+
+	public:
+		splatterICP();
+		~splatterICP();
+
+		void loadShaders(std::map<std::string, const gl::Shader::Ptr> &progs,
+			const std::string &folderPath
+		);
+
+		void init(
+			int width,
+			int height,
+			const glm::mat4 &K,
+			const std::map<std::string, const gl::Shader::Ptr> &progs
+		);
+		
+		void paramToMat(
+			const cv::Mat &params,	// parameters (6 x 1 matrix)
+			glm::mat4 &T			// 4x4 matrix in glm::mat4
+		);
+		
 		void track(
 			const rgbd::Frame &currentFrame,
 			const rgbd::Frame &virtualFrame,
@@ -59,25 +86,13 @@ namespace rgbd
 			uint32_t &icpCount
 		);
 
-
-		std::vector<float> makeJTJ(
-			std::vector<float> v
+		void getReduction(
+			float *matrixA_host,
+			float *vectorB_host,
+			float &AE,
+			uint32_t &icpCount
 		);
 
-	public:
-		PointToPlaneICP(
-			int width,
-			int height,
-			const glm::mat4 &K,
-			const std::map<std::string, const gl::Shader::Ptr> &progs
-		);
-		~PointToPlaneICP();
-		
-		void paramToMat(
-			const cv::Mat &params,	// parameters (6 x 1 matrix)
-			glm::mat4 &T			// 4x4 matrix in glm::mat4
-		);
-		
 		void calc(
 			const int level,
 			const rgbd::Frame &prevFrame,
@@ -88,6 +103,6 @@ namespace rgbd
 			const float finThresh = 1.0e-4F
 		);
 
-		typedef std::shared_ptr<rgbd::PointToPlaneICP> Ptr;
+		typedef std::shared_ptr<rgbd::splatterICP> Ptr;
 	};
 }

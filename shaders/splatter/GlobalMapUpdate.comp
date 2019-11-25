@@ -38,6 +38,7 @@ uniform int timestamp;
 uniform float sigma;
 uniform uint maxMapSize;
 uniform float c_stable;	// points with "c >= c_stable" are considered stable
+uniform bool firstFrame;
 
 const float sqrt2 = 1.41421356237f;
 
@@ -160,7 +161,28 @@ void main(void)
 	vec4 status = imageLoad(mTrackStatusmap, uv).xyzw;
 	ivec2 bestPix;
 
+	if (firstFrame)
+	{
 
+		ivec2 res = imageSize(mVertMap);
+		vec2 res_2 = vec2(res.x / 2.0, res.y / 2.0);
+		float gamma = length(vec2((uv.x - K[2][0]) / res_2.x, (uv.y - K[2][1]) / res_2.y));
+		float alpha = exp(-pow(gamma, 2.0) / (2.0 * pow(sigma, 2.0)));
+		float rad = getRadius(inputVert.z, inputNorm.z, 1.0 / K[0][0], 1.0 / K[1][1]);
+
+		uint idx = atomicCounterIncrement(g_idx);
+
+		elems[idx].vert = T * vec4(inputVert, 1.0);
+		elems[idx].norm = vec4(mat3(T) * inputNorm, 0.0);
+		elems[idx].color = vec4(inputColor, 1.0);
+		elems[idx].data.x = alpha * 10.0f;		// confidence
+		elems[idx].data.y = rad;		// radius
+		elems[idx].data.z = timestamp;	// timestamp
+		elems[idx].data.w = timestamp;	// timestamp
+	
+	}
+	else
+	{
 	if (inputVert.z > 0.0 && inputNorm.z < 0.0) // should this have to be negative z for the norm?
 	{
 		// -----
@@ -316,4 +338,7 @@ void main(void)
 
 		}
 	}
+	}
+
+	
 }

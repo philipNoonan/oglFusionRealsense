@@ -70,6 +70,7 @@ namespace rgbd
 		);
 		void updateGlobalMap(
 			rgbd::Frame &srcFrame,
+			bool firstFrame,
 			const glm::mat4 &T
 		);
 		void removeUnnecessaryPoints(
@@ -84,6 +85,10 @@ namespace rgbd
 			std::vector<glm::vec4> &outputVertexData, 
 			std::vector<glm::vec3> &outputNormalData,
 			std::vector<glm::vec3> &outputColorData
+		);
+
+		void savePointCloud(
+			std::string filename
 		);
 
 		GLuint getMapSize();

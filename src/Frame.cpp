@@ -14,8 +14,6 @@ namespace rgbd
 		int width,
 		int height,
 		int maxLevel,
-		float minDepth,
-		float maxDepth,
 		glm::mat4 K,
 		float depthScale,
 		std::map<std::string, const gl::Shader::Ptr> &progs
@@ -132,7 +130,7 @@ namespace rgbd
 		alignDC = std::make_shared<rgbd::AlignDepthColor>(progs["alignDepthColor"]);
 
 
-		vertexMapProc = std::make_shared<rgbd::CalcVertexMap>(minDepth, maxDepth, K, progs["CalcVertexMap"]);
+		vertexMapProc = std::make_shared<rgbd::CalcVertexMap>(K, progs["CalcVertexMap"]);
 		normalMapProc = std::make_shared<rgbd::CalcNormalMap>(progs["CalcNormalMap"]);
 		downSampling.resize(maxLevel - 1);
 
@@ -151,6 +149,10 @@ namespace rgbd
 		std::vector<rs2::frame_queue> infraQ,
 		int numberOfCameras,
 		float depthScale,
+		float depthMin,
+		float depthMax,
+		glm::vec2 bottomLeft,
+		glm::vec2 topRight,
 		const glm::ivec2 pixel,
 		glm::vec3 &vertex,
 		cv::Mat &depthM,
@@ -167,9 +169,13 @@ namespace rgbd
 		{
 			for (int lvl = 0; lvl < GLHelper::numberOfLevels(glm::ivec3(frameData[0].colorFilteredMap->getWidth(), frameData[0].colorFilteredMap->getHeight(), 1)); lvl++)
 			{
-				glCopyImageSubData(frameData[0].colorFilteredMap->getID(), GL_TEXTURE_2D, lvl, 0, 0, 0,
-					frameData[0].colorPreviousMap->getID(), GL_TEXTURE_2D, lvl, 0, 0, 0,
-					frameData[0].colorFilteredMap->getWidth() >> lvl, frameData[0].colorFilteredMap->getHeight() >> lvl, 1);
+				if (colorFrameArrived)
+				{
+					glCopyImageSubData(frameData[0].colorFilteredMap->getID(), GL_TEXTURE_2D, lvl, 0, 0, 0,
+						frameData[0].colorPreviousMap->getID(), GL_TEXTURE_2D, lvl, 0, 0, 0,
+						frameData[0].colorFilteredMap->getWidth() >> lvl, frameData[0].colorFilteredMap->getHeight() >> lvl, 1);
+				}
+
 
 				glCopyImageSubData(frameData[0].depthMap->getID(), GL_TEXTURE_2D, lvl, 0, 0, 0,
 					frameData[0].depthPreviousMap->getID(), GL_TEXTURE_2D, lvl, 0, 0, 0,
@@ -179,12 +185,14 @@ namespace rgbd
 					frameData[0].vertexPreviousMap->getID(), GL_TEXTURE_2D, lvl, 0, 0, 0,
 					frameData[0].vertexMap->getWidth() >> lvl, frameData[0].vertexMap->getHeight() >> lvl, 1);
 			}
+
+			colorFrameArrived = false;
+
 		}
 
 
 		for (int camNumber = 0; camNumber < numberOfCameras; camNumber++)
 		{
-
 			colorQ[camNumber].poll_for_frame(&colorFrame[camNumber]);
 			if (colorFrame[camNumber] != NULL)
 			{
@@ -194,6 +202,7 @@ namespace rgbd
 					colorTime = colorFrame[camNumber].get_frame_metadata(RS2_FRAME_METADATA_SENSOR_TIMESTAMP);
 				}
 
+				colorFrameArrived = true;
 			}
 
 			infraQ[camNumber].poll_for_frame(&infraFrame[camNumber]);
@@ -218,38 +227,29 @@ namespace rgbd
 				}
 							
 				const uint16_t* p_depth_frame = reinterpret_cast<const uint16_t*>(depthFrame[camNumber].get_data());
-				//float z = float(depthArray[pointY * depthWidth + pointX]) * (float)cameraInterface.getDepthUnit(cameraDevice) / 1000000.0f;
+
 				int depth_pixel_index = (pixel.y * shortDepthMap->getWidth() + pixel.x);
 
 				glm::vec4 tempPoint(0.0f, 0.0f, 0.0f, 1.0f);
 
 				tempPoint.z = p_depth_frame[depth_pixel_index] * depthScale;
-				//std::cout << tempPoint.z << std::endl;
 
 				tempPoint = tempPoint.z * (glm::inverse(K) * glm::vec4(pixel, 1.0f, 0.0f));
-
-
-				//tempPoint.x = (pixel.x - K[2][0]) * (1.0f / K[0][0]) * tempPoint.z;
-				//tempPoint.y = (pixel.y - K[2][1]) * (1.0f / K[1][1]) * tempPoint.z;
-
 
 				vertex.x = tempPoint.x;
 				vertex.y = tempPoint.y;
 				vertex.z = tempPoint.z;
 
-				depthM = cv::Mat(height, width, CV_16SC1, (void*)depthFrame[camNumber].get_data());
-
-				
+				//depthM = cv::Mat(height, width, CV_16SC1, (void*)depthFrame[camNumber].get_data());
 			}
 		}
 
 		std::dynamic_pointer_cast<rgbd::BilateralFilter>(bilateralFilter)->execute(shortDepthMap, rawDepthMap, frameData[0].depthMap, depthScale, bfSigma, bfDSigma);
 		std::dynamic_pointer_cast<rgbd::CASFilter>(casFilter)->execute(frameData[0].colorMap, frameData[0].colorFilteredMap, sharpness);
-		std::dynamic_pointer_cast<rgbd::CalcVertexMap>(vertexMapProc)->execute(frameData[0].depthMap, frameData[0].vertexMap);
+		std::dynamic_pointer_cast<rgbd::CalcVertexMap>(vertexMapProc)->execute(frameData[0].depthMap, frameData[0].vertexMap, depthMin, depthMax, bottomLeft, topRight);
 		std::dynamic_pointer_cast<rgbd::CalcNormalMap>(normalMapProc)->execute(frameData[0].vertexMap, frameData[0].normalMap);
 
 		frameData[0].colorFilteredMap->mipmap();
-
 
 		if (firstFrame)
 		{
@@ -271,13 +271,8 @@ namespace rgbd
 					frameData[0].vertexMap->getWidth() >> lvl, frameData[0].vertexMap->getHeight() >> lvl, 1);
 
 			}
-			
-
-
 			firstFrame = false;
 		}
-
-
 		update();
 	}
 
@@ -304,21 +299,21 @@ namespace rgbd
 		//color = this->colorMat.clone();
 	}
 
-	void Frame::update(
-		const void *colorData,
-		const void *depthData,
-		float bfSigma,
-		float bfDSigma
-	) const
-	{
-		frameData[0].colorMap->update(colorData);
-		rawDepthMap->update(depthData);
-		std::dynamic_pointer_cast<rgbd::BilateralFilter>(bilateralFilter)->execute(shortDepthMap, rawDepthMap, frameData[0].depthMap, 1.0f, bfSigma, bfDSigma);
-		std::dynamic_pointer_cast<rgbd::CalcVertexMap>(vertexMapProc)->execute(frameData[0].depthMap, frameData[0].vertexMap);
-		std::dynamic_pointer_cast<rgbd::CalcNormalMap>(normalMapProc)->execute(frameData[0].vertexMap, frameData[0].normalMap);
+	//void Frame::update(
+	//	const void *colorData,
+	//	const void *depthData,
+	//	float bfSigma,
+	//	float bfDSigma
+	//) const
+	//{
+	//	frameData[0].colorMap->update(colorData);
+	//	rawDepthMap->update(depthData);
+	//	std::dynamic_pointer_cast<rgbd::BilateralFilter>(bilateralFilter)->execute(shortDepthMap, rawDepthMap, frameData[0].depthMap, 1.0f, bfSigma, bfDSigma);
+	//	std::dynamic_pointer_cast<rgbd::CalcVertexMap>(vertexMapProc)->execute(frameData[0].depthMap, frameData[0].vertexMap, depthMin, depthMax, bottomLeft, topRight);
+	//	std::dynamic_pointer_cast<rgbd::CalcNormalMap>(normalMapProc)->execute(frameData[0].vertexMap, frameData[0].normalMap);
 
-		update();
-	}
+	//	update();
+	//}
 
 
 	void Frame::alignDepthTocolor(glm::mat4 extrins, glm::vec4 depthIntrins, glm::vec4 colorIntrins, std::vector<unsigned char> &colorVec)
@@ -330,8 +325,8 @@ namespace rgbd
 		std::dynamic_pointer_cast<rgbd::AlignDepthColor>(alignDC)->execute(frameData[0].vertexMap, frameData[0].colorFilteredMap, frameData[0].colorAlignedToDepthMap, this->mappingC2DMap, this->mappingD2CMap, extrins, colorIntrins);
 
 
-		colorVec.resize(width * height * 4);
-		frameData[0].colorAlignedToDepthMap->read(colorVec.data());
+		//colorVec.resize(width * height * 4);
+		//frameData[0].colorAlignedToDepthMap->read(colorVec.data());
 
 
 		

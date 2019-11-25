@@ -7,6 +7,9 @@ uniform mat4 invK;		// Inverse of the intrinsic matrix
 uniform float minDepth;
 uniform float maxDepth;
 
+uniform vec2 bottomLeft;
+uniform vec2 topRight;
+
 layout (local_size_x = 32, local_size_y = 32) in;
 
 void main(void)
@@ -14,7 +17,9 @@ void main(void)
 	ivec2 u = ivec2(gl_GlobalInvocationID.xy);
 	float z = imageLoad(dataIn, u).r;
 
-	if (z >= minDepth && z <= maxDepth)
+	if (z >= minDepth && z <= maxDepth 
+		&& u.x > bottomLeft.x && u.y > bottomLeft.y
+		&& u.x < topRight.x && u.y < topRight.y)
 	{
 		vec3 v = z * mat3(invK) * vec3(u, 1.0);
 		imageStore(dataOut, u, vec4(v, 1.0));

@@ -13,15 +13,17 @@ namespace rgbd
 
 	public:
 		CalcVertexMap(
-			float minDepth,
-			float maxDepth,
 			const glm::mat4 &K,
 			const gl::Shader::Ptr prog
 		);
 
 		void execute(
 			gl::Texture::Ptr srcDepthMap,
-			gl::Texture::Ptr dstVertexMap
+			gl::Texture::Ptr dstVertexMap,
+			float minDepth,
+			float maxDepth,
+			glm::vec2(bottomLeft),
+			glm::vec2(topRight)
 		);
 	};
 }

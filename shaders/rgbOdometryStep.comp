@@ -82,7 +82,7 @@ void main()
 
 	bool found_corresp = corresp.valid;
 
-	imageStore(outputTestImage, pix, vec4(0)); 
+	//imageStore(outputTestImage, pix, vec4(0)); 
 
 	vec4 outData = vec4(0);
 
@@ -100,11 +100,11 @@ void main()
 
 		//imageStore(outputTestImage, pix, vec4(1.0, 0.9, 0, 1)); 
 
-		w = 1.0f;
+		//w = 1.0f;
 
 		row.data[6] = -w * corresp.diff;
 
-		ivec2 lastDepthLoc = ivec2(imageLoad(mappingC2DMap, corresp.zero << level).xy >> level);
+		ivec2 lastDepthLoc = ivec2(imageLoad(mappingC2DMap, corresp.zero).xy);
 
 		vec3 cloudPoint = imageLoad(lastVertexMap, lastDepthLoc).xyz;
 		float invZ = 1.0f / cloudPoint.z;
@@ -117,16 +117,16 @@ void main()
 		{
 			//w = 1; // FOR TESTING
 
-			vec2 dI_dxdy_val = w * 0.03125f * imageLoad(gradientMap, corresp.one).xy; // 0.03125 is 1 / 32 (the normalizer for 3 10 scharr filter)
+			vec2 dI_dxdy_val = w * sobelScale * imageLoad(gradientMap, corresp.one).xy; // 0.03125 is 1 / 32 (the normalizer for 3 10 scharr filter)
 
 			//imageStore(outputTestImage, pix, vec4(abs(corresp.diff).xxx, 1)); 
 			//imageStore(outputTestImage, pix, vec4(abs(dI_dxdy_val).xy, 0, 1)); 
 
-			float v1 = dI_dxdy_val.x * cam.z * invZ;
+			float v1 = dI_dxdy_val.x * cam.z * invZ; // should this be color or depth params?
 			float v0 = dI_dxdy_val.y * cam.w * invZ;
 			float v2 = -(v0 * cloudPoint.x + v1 * cloudPoint.y) * invZ;
 
-			outData = vec4(dI_dxdy_val, 0, 1.0f);
+			outData = vec4(abs(corresp.diff).xxx, 1.0f);
 
 
 			row.data[0] = v0;
@@ -144,7 +144,7 @@ void main()
 	    row.data[0] = row.data[1] = row.data[2] = row.data[3] = row.data[4] = row.data[5] = row.data[6] = row.inliers = 0.f;
 	}
 
-	imageStore(outputTestImage, pix, outData); 
+	//imageStore(outputTestImage, pix, outData); 
 
 	outputBuffer[pix.y * imSize.x + pix.x] = row;
 

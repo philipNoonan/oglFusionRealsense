@@ -46,5 +46,8 @@ namespace rgbd
 
 		int getWidth();
 		int getHeight();
+
+		typedef std::shared_ptr<rgbd::ProjectiveDataAssoc> Ptr;
+
 	};
 }

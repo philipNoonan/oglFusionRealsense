@@ -3,24 +3,28 @@
 namespace rgbd
 {
 	CalcVertexMap::CalcVertexMap(
-		float minDepth,
-		float maxDepth,
 		const glm::mat4 &K,
 		const gl::Shader::Ptr prog
 	) : prog(prog), invK(glm::inverse(K))
 	{
 		invK = glm::inverse(K);
 		prog->setUniform("invK", invK);
-		prog->setUniform("minDepth", minDepth);
-		prog->setUniform("maxDepth", maxDepth);
+
 	}
 
 	void CalcVertexMap::execute(
 		gl::Texture::Ptr srcDepthMap,
-		gl::Texture::Ptr dstVertexMap
+		gl::Texture::Ptr dstVertexMap,
+		float minDepth,
+		float maxDepth,
+		glm::vec2(bottomLeft),
+		glm::vec2(topRight)
 	)
 	{
-		prog->setUniform("invK", invK);
+		prog->setUniform("minDepth", minDepth);
+		prog->setUniform("maxDepth", maxDepth);
+		prog->setUniform("bottomLeft", bottomLeft);
+		prog->setUniform("topRight", topRight);
 
 		prog->use();
 		srcDepthMap->bindImage(0, 0, GL_READ_ONLY);

@@ -153,7 +153,7 @@ namespace rgbd
 		progs["rgbOdometry"]->use();
 
 		progs["rgbOdometry"]->setUniform("minScale", 0.005f); // THINK ON THIS ONE!!!!
-		progs["rgbOdometry"]->setUniform("maxDepthDelta", 0.005f);
+		progs["rgbOdometry"]->setUniform("maxDepthDelta", 0.05f);
 		progs["rgbOdometry"]->setUniform("kt", kT);
 		progs["rgbOdometry"]->setUniform("krkinv", krkinv);
 		progs["rgbOdometry"]->setUniform("level", level);
@@ -162,8 +162,8 @@ namespace rgbd
 		currentFrame.getColorFilteredMap()->bindImage(1, level, GL_READ_ONLY);
 
 		gradientMap->bindImage(2, level, GL_READ_ONLY);
-		currentFrame.getMappingC2DMap()->bindImage(3, 0, GL_READ_ONLY);
-		currentFrame.getMappingD2CMap()->bindImage(4, 0, GL_READ_ONLY);
+		currentFrame.getMappingC2DMap()->bindImage(3, level, GL_READ_ONLY);
+		currentFrame.getMappingD2CMap()->bindImage(4, level, GL_READ_ONLY);
 
 		currentFrame.getDepthPreviousMap()->bindImage(5, level, GL_READ_ONLY);
 		currentFrame.getDepthMap()->bindImage(6, level, GL_READ_ONLY);
@@ -219,7 +219,7 @@ namespace rgbd
 	{
 
 		progs["rgbOdometryStep"]->setUniform("sigma", sigmaVal);
-		progs["rgbOdometryStep"]->setUniform("sobelScale", 1.0f);
+		progs["rgbOdometryStep"]->setUniform("sobelScale", 0.03125f);// *std::pow(2.0f, float(level)));
 		progs["rgbOdometryStep"]->setUniform("cam", cam);
 		progs["rgbOdometryStep"]->setUniform("level", level);
 
@@ -228,8 +228,8 @@ namespace rgbd
 
 		gradientMap->bindImage(1, level, GL_READ_ONLY);
 
-		currentFrame.getMappingC2DMap()->bindImage(2, 0, GL_READ_ONLY);
-		currentFrame.getMappingD2CMap()->bindImage(3, 0, GL_READ_ONLY);
+		currentFrame.getMappingC2DMap()->bindImage(2, level, GL_READ_ONLY);
+		currentFrame.getMappingD2CMap()->bindImage(3, level, GL_READ_ONLY);
 
 		currentFrame.getTestMap()->bindImage(4, level, GL_WRITE_ONLY);
 
@@ -373,7 +373,7 @@ namespace rgbd
 	{
 
 		progs["rgbOdometryStep"]->setUniform("sigma", sigmaVal);
-		progs["rgbOdometryStep"]->setUniform("sobelScale", 0.125f);
+		progs["rgbOdometryStep"]->setUniform("sobelScale", 0.03125f);
 		progs["rgbOdometryStep"]->setUniform("cam", cam);
 		progs["rgbOdometryStep"]->setUniform("level", level);
 
@@ -382,8 +382,8 @@ namespace rgbd
 
 		gradientMap->bindImage(1, level, GL_READ_ONLY);
 
-		currentFrame.getMappingC2DMap()->bindImage(2, 0, GL_READ_ONLY);
-		currentFrame.getMappingD2CMap()->bindImage(3, 0, GL_READ_ONLY);
+		currentFrame.getMappingC2DMap()->bindImage(2, level, GL_READ_ONLY);
+		currentFrame.getMappingD2CMap()->bindImage(3, level, GL_READ_ONLY);
 
 		currentFrame.getTestMap()->bindImage(4, level, GL_WRITE_ONLY);
 
@@ -472,6 +472,7 @@ namespace rgbd
 	{
 
 
+		float lastRGBError = std::numeric_limits<float>::max();
 
 
 		Eigen::Matrix<float, 3, 3, Eigen::RowMajor> Rprev;
@@ -488,11 +489,15 @@ namespace rgbd
 		tprev(1) = pose[3][1];
 		tprev(2) = pose[3][2];
 
+		Eigen::Isometry3f currentT;
+
+
 		Eigen::Matrix<float, 3, 3, Eigen::RowMajor> Rcurr = Rprev;
 		Eigen::Vector3f tcurr = tprev;
 
+		Eigen::Matrix<double, 4, 4, Eigen::RowMajor> resultRt_eig = Eigen::Matrix<double, 4, 4, Eigen::RowMajor>::Identity();
 
-		for (int lvl = 0; lvl >= 0; lvl--) 
+		for (int lvl = rgbd::ICPConstParam::MAX_LEVEL - 1; lvl >= 0; lvl--)
 		{
 
 			glm::vec4 levelCam = glm::vec4(
@@ -510,15 +515,22 @@ namespace rgbd
 			K_eig(1, 2) = levelCam.y;
 			K_eig(2, 2) = 1;
 
-			glm::mat4 resultRt = glm::mat4(1.0f);
-			Eigen::Matrix<double, 4, 4, Eigen::RowMajor> resultRt_eig = Eigen::Matrix<double, 4, 4, Eigen::RowMajor>::Identity();
+			glm::mat4 resultRt;
+			
 
+			
 
-
-
-
-			for (int iter = 0; iter < 3; iter++)
+			for (int iter = 0; iter < rgbd::ICPConstParam::MAX_ITR_NUM[lvl]; iter++)
 			{
+
+				for (int i = 0; i < 4; i++)
+				{
+					for (int j = 0; j < 4; j++)
+					{
+						resultRt[i][j] = resultRt_eig(j, i);
+					}
+				}
+
 				Eigen::Matrix<double, 4, 4, Eigen::RowMajor> Rt_eig = resultRt_eig.inverse();
 
 				Eigen::Matrix<double, 3, 3, Eigen::RowMajor> R_eig = Rt_eig.topLeftCorner(3, 3);
@@ -566,6 +578,13 @@ namespace rgbd
 					rgbError
 				);
 
+				if (rgbError > lastRGBError)
+				{
+				//	break;
+				}
+
+				lastRGBError = rgbError;
+
 				//std::cout << "sigma " << sigma << " error " << rgbError << std::endl;
 
 				computeStep(
@@ -579,12 +598,12 @@ namespace rgbd
 					rgbodomiso3f
 				);
 
-				Eigen::Isometry3f currentT;
 				currentT.setIdentity();
 				currentT.rotate(Rprev);
 				currentT.translation() = tprev;
 
 				currentT = currentT * rgbodomiso3f.inverse();
+
 
 				tcurr = currentT.translation();
 				Rcurr = currentT.rotation();

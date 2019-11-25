@@ -31,7 +31,7 @@ namespace rgbd
 		ssboReductionOutput.bindBase(1);
 		ssboReductionOutput.unbind();
 
-		icp.resize(ICPConstParam::MAX_LEVEL);
+		//icp.resize(ICPConstParam::MAX_LEVEL);
 		//p2picp.resize(ICPConstParam::MAX_LEVEL);
 		p2vicp.resize(ICPConstParam::MAX_LEVEL);
 
@@ -52,7 +52,7 @@ namespace rgbd
 				p2vicp[lv] = std::make_shared<rgbd::p2vICP>(width / bias, height / bias, distThresh, normThresh, _K, progs);
 				break;
 			case FUSIONTYPE::SPLATTER:
-				icp[lv] = std::make_shared<rgbd::PointToPlaneICP>(width / bias, height / bias, _K, progs);
+				//icp[lv] = std::make_shared<rgbd::splatterICP>(width / bias, height / bias, _K, progs);
 				break;
 			}
 		}

@@ -79,7 +79,7 @@ namespace rgbd
 
 	void GlobalVolume::raycast(
 		const rgbd::Frame & dstFrame,
-		const glm::mat4 &T
+		const glm::mat4 T
 	)
 	{
 		glm::mat4 view = T * glm::inverse(K);

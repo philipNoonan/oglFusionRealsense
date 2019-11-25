@@ -54,7 +54,7 @@ namespace rgbd
 
 		void raycast(
 			const rgbd::Frame & dstFrame,
-			const glm::mat4 &T
+			const glm::mat4 T
 		);
 
 		GLuint getID();

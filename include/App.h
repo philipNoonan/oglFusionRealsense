@@ -77,6 +77,8 @@ private:
 	Camera* camera;
 
 	rgbd::GlobalVolume::Ptr volume;
+	rgbd::GlobalMap::Ptr gMap;
+
 	glm::mat4 initPose;
 	glm::mat4 currPose = glm::mat4(1.0f);
 	glm::mat4 se3Pose = glm::mat4(1.0f); 
@@ -85,8 +87,9 @@ private:
 	rgbd::RGBOdometry rgbodo;
 	rgbd::RGBDtam dtam;
 	rgbd::p2pICP p2picp;
+	rgbd::splatterICP splaticp;
 
-	rgbd::splatterFusion slam;
+	//rgbd::splatterFusion slam;
 	rgbd::GradientFilter gradFilter;
 	rgbd::p2pFusion p2pFusion;
 	rgbd::p2vFusion p2vFusion;
@@ -99,11 +102,14 @@ private:
 	std::vector<unsigned char> colorVec;
 
 	bool poseFound = false;
+	bool lost = false;
+	int trackingCount = 0;
 
 	void updateFrames();
 	void getIncrementalTransform();
 	bool runDTAM(glm::mat4 &prePose);
 	bool runRGBOdo(glm::mat4 &prePose);
+	bool runOdoP2P(glm::mat4 &prePose);
 	bool runSLAM(glm::mat4 &prePose);
 	bool runP2P(glm::mat4 &prePose);
 	bool runP2V(glm::mat4 &prePose);
@@ -232,8 +238,11 @@ private:
 	//INTERFACE REALSENSE STUFF
 	int dispShift = 0;
 
-	float depthMin = 0.0f;
-	float depthMax = 1.5f;
+	float depthMin = 0.1f;
+	float depthMax = 1.0f;
+
+	glm::vec2 bottomLeft = glm::vec2(0, 0);
+	glm::vec2 topRight = glm::vec2(848, 480);
 
 	//static int eRate = 90;
 	//static int eRes = 0;
@@ -327,6 +336,7 @@ private:
 	bool useSO3 = false;
 	bool useSE3 = false;
 	bool useODOP2P = false;
+	bool useODOSplat = false;
 	bool useMultipleFusion = false;
 	bool performFlood = false;
 	bool performFlow = false;

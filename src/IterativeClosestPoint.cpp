@@ -2,16 +2,55 @@
 
 namespace rgbd
 {
-	PointToPlaneICP::PointToPlaneICP(
+	splatterICP::splatterICP() {};
+	splatterICP::~splatterICP() {};
+
+	void splatterICP::loadShaders(std::map<std::string, const gl::Shader::Ptr> &progs,
+		const std::string &folderPath
+	)
+	{
+		progs.insert(std::make_pair("BilateralFilter", std::make_shared<gl::Shader>(folderPath + "BilateralFilter.comp")));
+		progs.insert(std::make_pair("CASFilter", std::make_shared<gl::Shader>(folderPath + "contrastAdaptiveSharpening.comp")));
+		progs.insert(std::make_pair("alignDepthColor", std::make_shared<gl::Shader>(folderPath + "alignDepthColor.comp")));
+		progs.insert(std::make_pair("CalcVertexMap", std::make_shared<gl::Shader>(folderPath + "CalcVertexMap.comp")));
+		progs.insert(std::make_pair("CalcNormalMap", std::make_shared<gl::Shader>(folderPath + "CalcNormalMap.comp")));
+		progs.insert(std::make_pair("VirtualMapGeneration", std::make_shared<gl::Shader>(folderPath + "VirtualMapGeneration.vert", folderPath + "VirtualMapGeneration.frag")));
+		progs.insert(std::make_pair("ProjectiveDataAssoc", std::make_shared<gl::Shader>(folderPath + "ProjectiveDataAssoc.comp")));
+		progs.insert(std::make_pair("MultiplyMatrices", std::make_shared<gl::Shader>(folderPath + "MultiplyMatrices.comp")));
+		progs.insert(std::make_pair("DownSamplingC", std::make_shared<gl::Shader>(folderPath + "DownSamplingC.comp")));
+		progs.insert(std::make_pair("DownSamplingD", std::make_shared<gl::Shader>(folderPath + "DownSamplingD.comp")));
+		progs.insert(std::make_pair("DownSamplingV", std::make_shared<gl::Shader>(folderPath + "DownSamplingV.comp")));
+		progs.insert(std::make_pair("DownSamplingN", std::make_shared<gl::Shader>(folderPath + "DownSamplingN.comp")));
+		progs.insert(std::make_pair("IndexMapGeneration", std::make_shared<gl::Shader>(folderPath + "IndexMapGeneration.vert", folderPath + "IndexMapGeneration.frag")));
+
+		//progs.insert(std::make_pair("IndexMapGeneration", std::make_shared<gl::Shader>(folderPath + "IndexMapGeneration.comp")));
+		progs.insert(std::make_pair("GlobalMapUpdate", std::make_shared<gl::Shader>(folderPath + "GlobalMapUpdate.comp")));
+		progs.insert(std::make_pair("SurfaceSplatting", std::make_shared<gl::Shader>(folderPath + "SurfaceSplatting.vert", folderPath + "SurfaceSplatting.frag")));
+		progs.insert(std::make_pair("UnnecessaryPointRemoval", std::make_shared<gl::Shader>(folderPath + "UnnecessaryPointRemoval.comp")));
+		progs.insert(std::make_pair("p2pTrack", std::make_shared<gl::Shader>(folderPath + "p2pTrack.comp")));
+		progs.insert(std::make_pair("p2pReduce", std::make_shared<gl::Shader>(folderPath + "p2pReduce.comp")));
+		progs.insert(std::make_pair("rgbOdometry", std::make_shared<gl::Shader>(folderPath + "rgbOdometry.comp")));
+		progs.insert(std::make_pair("rgbOdometryReduce", std::make_shared<gl::Shader>(folderPath + "rgbOdometryReduce.comp")));
+		progs.insert(std::make_pair("rgbOdometryStep", std::make_shared<gl::Shader>(folderPath + "rgbOdometryStep.comp")));
+		progs.insert(std::make_pair("rgbOdometryStepReduce", std::make_shared<gl::Shader>(folderPath + "rgbOdometryStepReduce.comp")));
+	}
+
+	void splatterICP::init(
 		int width,
 		int height,
 		const glm::mat4 &K,
-		const std::map<std::string, const gl::Shader::Ptr> &progs
-	) : virtualFrameRenderer(width, height, K, progs.at("VirtualMapGeneration")),
-		dataAssoc(width, height, progs),
-		progs{ { "p2pTrack", progs.at("p2pTrack") },
-			   { "p2pReduce", progs.at("p2pReduce") } }
+		const std::map<std::string, const gl::Shader::Ptr> &programs
+	)
 	{
+
+		progs = programs;
+		//: virtualFrameRenderer(width, height, K, progs.at("VirtualMapGeneration")),
+		//	dataAssoc(width, height, progs),
+		//	progs{ { "p2pTrack", progs.at("p2pTrack") },
+		//		   { "p2pReduce", progs.at("p2pReduce") } }
+
+
+
 		glm::mat4 invK = glm::inverse(K);
 		this->progs["p2pTrack"]->setUniform("K", K);
 		this->progs["p2pTrack"]->setUniform("invK", invK);
@@ -34,11 +73,11 @@ namespace rgbd
 
 	}
 
-	PointToPlaneICP::~PointToPlaneICP()
-	{
-	}
 
-	void PointToPlaneICP::track(
+
+
+
+	void splatterICP::track(
 		const rgbd::Frame &currentFrame,
 		const rgbd::Frame &virtualFrame,
 		glm::mat4 &T,
@@ -68,7 +107,7 @@ namespace rgbd
 		progs["p2pTrack"]->disuse();
 	}
 
-	void PointToPlaneICP::reduce(
+	void splatterICP::reduce(
 		const glm::ivec2 &imSize
 	)
 	{
@@ -85,7 +124,7 @@ namespace rgbd
 
 	}
 
-	std::vector<float> PointToPlaneICP::makeJTJ(
+	std::vector<float> splatterICP::makeJTJ(
 		std::vector<float> v
 	)
 	{
@@ -104,7 +143,7 @@ namespace rgbd
 		return C;
 	}
 
-	void PointToPlaneICP::getReduction(
+	void splatterICP::getReduction(
 		std::vector<float> &b,
 		std::vector<float> &C,
 		float &AE,
@@ -146,13 +185,73 @@ namespace rgbd
 
 
 
+	void splatterICP::getReduction(
+		float *matrixA_host,
+		float *vectorB_host,
+		float &AE,
+		uint32_t &icpCount
+	)
+	{
+		outputReductionData.resize(32 * 8);
+		ssboReductionOutput.read(outputReductionData.data(), 0, 32 * 8);
+
+		for (int row = 1; row < 8; row++)
+		{
+			for (int col = 0; col < 32; col++)
+			{
+				outputReductionData[col + 0 * 32] += outputReductionData[col + row * 32];
+			}
+		}
+
+		/*
+		vector b
+		| 1 |
+		| 2 |
+		| 3 |
+		| 4 |
+		| 5 |
+		| 6 |
+
+		and
+		matrix a
+		| 7  | 8  | 9  | 10 | 11 | 12 |
+		| 8  | 13 | 14 | 15 | 16 | 17 |
+		| 9  | 14 | 18 | 19 | 20 | 21 |
+		| 10 | 15 | 19 | 22 | 23 | 24 |
+		| 11 | 16 | 20 | 23 | 25 | 26 |
+		| 12 | 17 | 21 | 24 | 26 | 27 |
+
+		AE = sqrt( [0] / [28] )
+		count = [28]
+
+		*/
+
+		for (int i = 1; i <= 6; i++)
+		{
+			vectorB_host[i - 1] = outputReductionData[i];
+		}
+
+		int shift = 7;
+		for (int i = 0; i < 6; ++i)
+		{
+			for (int j = i; j < 6; ++j)
+			{
+				float value = outputReductionData[shift++];
+
+				matrixA_host[j * 6 + i] = matrixA_host[i * 6 + j] = value;
+			}
+		}
+
+		AE = sqrt(outputReductionData[0] / outputReductionData[28]);
+		icpCount = outputReductionData[28];
+
+	}
 
 
 
 
 
-
-	void PointToPlaneICP::paramToMat(
+	void splatterICP::paramToMat(
 		const cv::Mat &params,
 		glm::mat4 &T
 	)
@@ -194,7 +293,7 @@ namespace rgbd
 		//T[3][2] = params.ptr<float>(5)[0];
 	}
 
-	void PointToPlaneICP::calc(
+	void splatterICP::calc(
 		const int level,
 		const rgbd::Frame &currentFrame,
 		const rgbd::Frame &virtualFrame,

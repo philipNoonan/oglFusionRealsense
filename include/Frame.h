@@ -50,6 +50,7 @@ namespace rgbd
 		int height;
 
 		bool firstFrame = true;
+		bool colorFrameArrived = false;
 
 		uint64_t colorTime;
 		uint64_t depthTime;
@@ -84,8 +85,6 @@ namespace rgbd
 			int width,
 			int height,
 			int maxLevel,
-			float minDepth,
-			float maxDepth,
 			const glm::mat4 K,
 			float depthScale,
 			std::map<std::string, const gl::Shader::Ptr> &progs
@@ -98,6 +97,10 @@ namespace rgbd
 			std::vector<rs2::frame_queue> infraQ,
 			int numberOfCameras,
 			float depthScale,
+			float depthMin,
+			float depthMax,
+			glm::vec2 bottomLeft,
+			glm::vec2 topRight,
 			const glm::ivec2 pixel,
 			glm::vec3 &vertex,
 			cv::Mat &depthM,
@@ -109,12 +112,12 @@ namespace rgbd
 
 
 
-		void update(
-			const void *colorData,
-			const void *depthData,
-			float bfSigma = 10.0f,
-			float bfDSigma = 0.05f
-		) const;
+		//void update(
+		//	const void *colorData,
+		//	const void *depthData,
+		//	float bfSigma = 10.0f,
+		//	float bfDSigma = 0.05f
+		//) const;
 		// for the synthetic frame
 		void update() const;
 

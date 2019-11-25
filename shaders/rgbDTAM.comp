@@ -75,6 +75,9 @@ void main()
 
 	vec4 row = vec4(0.0f);
 
+		//imageStore(outputTestImage, ivec2(pix), vec4(unwarpedReferencePoint.xy - warpedReferencePoint.xy, 0, 1.0));
+
+
 	if (found_coresp)
 	{
 		vec2 gradNext = getGradient(nextColorMap, wrPixel);
@@ -110,7 +113,6 @@ void main()
 
 	}
 
-	//imageStore(outputTestImage, ivec2(pix), vec4(row.www, 1.0));
 
 	rowSO3[pix.y * imSize.x + pix.x] = row;
 

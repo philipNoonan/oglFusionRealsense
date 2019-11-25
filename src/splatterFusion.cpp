@@ -67,7 +67,7 @@ namespace rgbd
 			gMap->genVirtualFrame(virtualFrame, glm::mat4(1.0f));
 			virtualFrame.update();
 
-			gMap->updateGlobalMap(currentFrame, glm::mat4(1.0f));
+			gMap->updateGlobalMap(currentFrame, true, glm::mat4(1.0f));
 			gMap->removeUnnecessaryPoints(0);
 			gMap->genIndexMap(glm::mat4(1.0f));
 		}
@@ -184,7 +184,7 @@ namespace rgbd
 
 
 			//clock_t start_update_map = clock();
-			gMap->updateGlobalMap(currentFrame, vT); // 2 ms
+			gMap->updateGlobalMap(currentFrame, false, vT); // 2 ms
 			//gMap->updateGlobalMap(currentFrame, vT, static_cast<int>(vT.size())); // 2 ms
 			//std::cout << "  Update map: " << (clock() - start_update_map) / (double)CLOCKS_PER_SEC << " sec" << std::endl;
 			//std::cout << "  --> Map size: " << gMap->getMapSize() << std::endl;
