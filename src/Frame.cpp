@@ -31,41 +31,51 @@ namespace rgbd
 		frameData[0].colorMap = std::make_shared<gl::Texture>();
 		frameData[0].colorMap->createStorage(numberOfLevels, width, height, 4, GL_RGBA8, gl::TextureType::COLOR, 1);
 		//frameData[0].colorMap->create(0, width, height, 4, gl::TextureType::COLOR);
-		frameData[0].colorMap->setFiltering(gl::TextureFilter::NEAREST);
+		frameData[0].colorMap->setFiltering(GL_NEAREST, GL_NEAREST_MIPMAP_NEAREST);
 		frameData[0].colorMap->setWarp(gl::TextureWarp::CLAMP_TO_EDGE);
 
 		frameData[0].colorPreviousMap = std::make_shared<gl::Texture>();
 		frameData[0].colorPreviousMap->createStorage(numberOfLevels, width, height, 4, GL_RGBA8, gl::TextureType::COLOR, 1);
 		//frameData[0].colorPreviousMap->create(0, width, height, 4, gl::TextureType::COLOR);
-		frameData[0].colorPreviousMap->setFiltering(gl::TextureFilter::NEAREST);
+		frameData[0].colorPreviousMap->setFiltering(GL_NEAREST, GL_NEAREST_MIPMAP_NEAREST);
 		frameData[0].colorPreviousMap->setWarp(gl::TextureWarp::CLAMP_TO_EDGE);
 
 		frameData[0].colorFilteredMap = std::make_shared<gl::Texture>();
 		frameData[0].colorFilteredMap->createStorage(numberOfLevels, width, height, 4, GL_RGBA8, gl::TextureType::COLOR, 1);
 		//frameData[0].colorFilteredMap->create(0, width, height, 4, gl::TextureType::COLOR);
-		frameData[0].colorFilteredMap->setFiltering(gl::TextureFilter::NEAREST);
+		frameData[0].colorFilteredMap->setFiltering(GL_NEAREST, GL_NEAREST_MIPMAP_NEAREST);
 		frameData[0].colorFilteredMap->setWarp(gl::TextureWarp::CLAMP_TO_EDGE);
 
 		frameData[0].colorAlignedToDepthMap = std::make_shared<gl::Texture>();
 		frameData[0].colorAlignedToDepthMap->createStorage(numberOfLevels, width, height, 4, GL_RGBA8, gl::TextureType::COLOR, 1);
 		//frameData[0].colorAlignedToDepthMap->create(0, width, height, 4, gl::TextureType::COLOR);
-		frameData[0].colorAlignedToDepthMap->setFiltering(gl::TextureFilter::NEAREST);
+		frameData[0].colorAlignedToDepthMap->setFiltering(GL_NEAREST, GL_NEAREST_MIPMAP_NEAREST);
 		frameData[0].colorAlignedToDepthMap->setWarp(gl::TextureWarp::CLAMP_TO_EDGE);
 
 		frameData[0].depthMap = std::make_shared<gl::Texture>();
-		frameData[0].vertexMap = std::make_shared<gl::Texture>();
-		frameData[0].normalMap = std::make_shared<gl::Texture>();
-
 		frameData[0].depthMap->createStorage(maxLevel, width, height, 1, GL_R32F, gl::TextureType::FLOAT32, 0);
+		frameData[0].depthMap->setFiltering(GL_NEAREST, GL_NEAREST);
+		frameData[0].depthMap->setWarp(gl::TextureWarp::CLAMP_TO_EDGE);
+
+		frameData[0].vertexMap = std::make_shared<gl::Texture>();
 		frameData[0].vertexMap->createStorage(maxLevel, width, height, 4, GL_RGBA32F, gl::TextureType::FLOAT32, 0);
+		frameData[0].vertexMap->setFiltering(GL_LINEAR, GL_LINEAR);
+		frameData[0].vertexMap->setWarp(gl::TextureWarp::CLAMP_TO_EDGE);
+
+		frameData[0].normalMap = std::make_shared<gl::Texture>();
 		frameData[0].normalMap->createStorage(maxLevel, width, height, 4, GL_RGBA32F, gl::TextureType::FLOAT32, 0);
+		frameData[0].normalMap->setFiltering(GL_LINEAR, GL_LINEAR_MIPMAP_NEAREST);
+		frameData[0].normalMap->setWarp(gl::TextureWarp::CLAMP_TO_EDGE);
 
 		frameData[0].depthPreviousMap = std::make_shared<gl::Texture>();
 		frameData[0].depthPreviousMap->createStorage(maxLevel, width, height, 1, GL_R32F, gl::TextureType::FLOAT32, 0);
+		frameData[0].depthPreviousMap->setFiltering(GL_NEAREST, GL_NEAREST);
+		frameData[0].depthPreviousMap->setWarp(gl::TextureWarp::CLAMP_TO_EDGE);
 
 		frameData[0].vertexPreviousMap = std::make_shared<gl::Texture>();
 		frameData[0].vertexPreviousMap->createStorage(maxLevel, width, height, 4, GL_RGBA32F, gl::TextureType::FLOAT32, 0);
-
+		frameData[0].vertexPreviousMap->setFiltering(GL_NEAREST, GL_NEAREST);
+		frameData[0].vertexPreviousMap->setWarp(gl::TextureWarp::CLAMP_TO_EDGE);
 
 		/*for (int lv = 0; lv < frameData.size(); ++lv)
 		{
@@ -89,40 +99,38 @@ namespace rgbd
 
 		shortDepthMap = std::make_shared<gl::Texture>();
 		shortDepthMap->create(0, width, height, 1, gl::TextureType::UINT16);
-		shortDepthMap->setFiltering(gl::TextureFilter::NEAREST);
+		shortDepthMap->setFiltering(GL_NEAREST, GL_NEAREST);
 		shortDepthMap->setWarp(gl::TextureWarp::CLAMP_TO_EDGE);
 
 		rawDepthMap = std::make_shared<gl::Texture>();
 		rawDepthMap->create(0, width, height, 1, gl::TextureType::FLOAT32);
-		rawDepthMap->setFiltering(gl::TextureFilter::NEAREST);
+		rawDepthMap->setFiltering(GL_NEAREST, GL_NEAREST);
 		rawDepthMap->setWarp(gl::TextureWarp::CLAMP_TO_EDGE);
 
 		
 		trackMap = std::make_shared<gl::Texture>();
 		trackMap->createStorage(maxLevel, width, height, 4, GL_RGBA8, gl::TextureType::COLOR, 1);
-		//trackMap->create(0, width, height, 4, gl::TextureType::COLOR);
-		//trackMap->setFiltering(gl::TextureFilter::NEAREST);
-		//trackMap->setWarp(gl::TextureWarp::CLAMP_TO_EDGE);
+		trackMap->setFiltering(GL_NEAREST, GL_NEAREST_MIPMAP_NEAREST);
+		trackMap->setWarp(gl::TextureWarp::CLAMP_TO_EDGE);
 
 		infraMap = std::make_shared<gl::Texture>();
 		infraMap->create(0, width, height, 1, gl::TextureType::COLOR);
-		infraMap->setFiltering(gl::TextureFilter::NEAREST);
+		infraMap->setFiltering(GL_NEAREST, GL_NEAREST_MIPMAP_NEAREST);
 		infraMap->setWarp(gl::TextureWarp::CLAMP_TO_EDGE);
 
 		testMap = std::make_shared<gl::Texture>();
 		testMap->createStorage(maxLevel, width, height, 4, GL_RGBA32F, gl::TextureType::FLOAT32, 0);
-		//testMap->create(0, width, height, 4, gl::TextureType::FLOAT32);
-		testMap->setFiltering(gl::TextureFilter::NEAREST);
+		testMap->setFiltering(GL_NEAREST, GL_NEAREST_MIPMAP_NEAREST);
 		testMap->setWarp(gl::TextureWarp::CLAMP_TO_EDGE);
 
 		mappingD2CMap = std::make_shared<gl::Texture>();
 		mappingD2CMap->createStorage(maxLevel, width, height, 2, GL_RG16UI, gl::TextureType::UINT16, 0);
-		mappingD2CMap->setFiltering(gl::TextureFilter::NEAREST);
+		mappingD2CMap->setFiltering(GL_NEAREST, GL_NEAREST_MIPMAP_NEAREST);
 		mappingD2CMap->setWarp(gl::TextureWarp::CLAMP_TO_EDGE);
 
 		mappingC2DMap = std::make_shared<gl::Texture>();
 		mappingC2DMap->createStorage(maxLevel, width, height, 2, GL_RG16UI, gl::TextureType::UINT16, 0);
-		mappingC2DMap->setFiltering(gl::TextureFilter::NEAREST);
+		mappingC2DMap->setFiltering(GL_NEAREST, GL_NEAREST_MIPMAP_NEAREST);
 		mappingC2DMap->setWarp(gl::TextureWarp::CLAMP_TO_EDGE);
 
 		bilateralFilter = std::make_shared<rgbd::BilateralFilter>(progs["BilateralFilter"]);

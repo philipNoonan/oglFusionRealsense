@@ -19,7 +19,7 @@ namespace gl
 
 		zbuffer = std::make_shared<gl::Texture>();
 		zbuffer->create(0, width, height, 1, gl::TextureType::DEPTH);
-		zbuffer->setFiltering(gl::TextureFilter::NEAREST);
+		zbuffer->setFiltering(GL_NEAREST, GL_NEAREST_MIPMAP_NEAREST);
 		zbuffer->setWarp(gl::TextureWarp::CLAMP_TO_EDGE);
 
 		bind();
@@ -27,12 +27,12 @@ namespace gl
 		unbind();
 	}
 
-	void Framebuffer::attach(gl::Texture::Ptr texture, int idx)
+	void Framebuffer::attach(gl::Texture::Ptr texture, int idx, int level)
 	{
 		attachments[idx] = texture;
 
 		bind();
-		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + idx, GL_TEXTURE_2D, texture->getID(), 0);
+		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + idx, GL_TEXTURE_2D, texture->getID(), level);
 		unbind();
 	}
 

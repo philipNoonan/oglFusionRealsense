@@ -32,7 +32,7 @@ namespace rgbd
 
 		gradientMap = std::make_shared<gl::Texture>();
 		gradientMap->createStorage(numberOfLevels, width, height, 2, GL_RG32F, gl::TextureType::FLOAT32, 0);
-		gradientMap->setFiltering(gl::TextureFilter::NEAREST);
+		gradientMap->setFiltering(GL_NEAREST, GL_NEAREST_MIPMAP_NEAREST);
 		gradientMap->setWarp(gl::TextureWarp::CLAMP_TO_EDGE);
 
 

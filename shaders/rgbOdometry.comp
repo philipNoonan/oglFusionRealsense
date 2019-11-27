@@ -131,6 +131,8 @@ void computeResiduals()
 							//if (level == 0)
 							//{
 								imageStore(outputTestImage, ivec2(nextColorLoc),  vec4(1.0f * (vec2(lastDepthLoc) - vec2(nextDepthLoc)), 0, 1)); 
+								//imageStore(outputTestImage, ivec2(nextColorLoc),  vec4(100.0 * abs(d0 - transformed_d1).xxx, 1)); 
+
 							//}
 
 								corres.zero.x = int(lastColorLoc.x);

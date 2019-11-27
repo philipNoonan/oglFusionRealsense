@@ -23,7 +23,7 @@ namespace gl
 		~Framebuffer();
 
 		void create(int width, int height);
-		void attach(gl::Texture::Ptr texture, int idx);
+		void attach(gl::Texture::Ptr texture, int idx, int level = 0);
 
 		void bind();
 		void unbind();

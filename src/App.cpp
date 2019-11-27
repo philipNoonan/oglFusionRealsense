@@ -1101,23 +1101,33 @@ void App::kRenderInit()
 
 void App::gDisOptFlowInit()
 {
-	int devNumber = 0;
-	gflow.compileAndLinkShader();
-	gflow.setLocations();
-#ifdef USEINFRARED
-	gdisoptflow.setNumLevels(depthWidth);
-	gdisoptflow.setTextureParameters(depthWidth, depthHeight);
-	gdisoptflow.allocateTextures(true);
-#else
-	gflow.setNumLevels(colorFrameSize[devNumber].x);
-	gflow.setTextureParameters(colorFrameSize[devNumber].x, colorFrameSize[devNumber].y);
-	gflow.allocateTextures(4);
+	std::map<std::string, const gl::Shader::Ptr> progsForDisFlow;
+	std::string pathToShaders("./shaders/");
+	disflow.loadShaders(progsForDisFlow, pathToShaders);
 
-	krender.setFlowTexture(gflow.getFlowTexture());
+	disflow.init(3,
+		colorFrameSize[0].x,
+		colorFrameSize[0].y,
+		progsForDisFlow
+	);
 
-#endif
-
-	gflow.allocateBuffers();
+//	int devNumber = 0;
+//	gflow.compileAndLinkShader();
+//	gflow.setLocations();
+//#ifdef USEINFRARED
+//	gdisoptflow.setNumLevels(depthWidth);
+//	gdisoptflow.setTextureParameters(depthWidth, depthHeight);
+//	gdisoptflow.allocateTextures(true);
+//#else
+//	gflow.setNumLevels(colorFrameSize[devNumber].x);
+//	gflow.setTextureParameters(colorFrameSize[devNumber].x, colorFrameSize[devNumber].y);
+//	gflow.allocateTextures(4);
+//
+//	krender.setFlowTexture(gflow.getFlowTexture());
+//
+//#endif
+//
+//	gflow.allocateBuffers();
 
 }
 
@@ -2578,18 +2588,27 @@ void App::mainLoop()
 
 					if (useSharp)
 					{
-						gflow.setFrameTexture(frame[rgbd::FRAME::CURRENT].getColorFilteredMap());
+						//gflow.setFrameTexture(frame[rgbd::FRAME::CURRENT].getColorFilteredMap());
 					}
 					else
 					{
-						gflow.setFrameTexture(frame[rgbd::FRAME::CURRENT].getColorMap());
+						//gflow.setFrameTexture(frame[rgbd::FRAME::CURRENT].getColorMap());
 					}
+
+					gradFilter.execute(frame[rgbd::FRAME::CURRENT].getColorFilteredMap(), 0, 3.0f, 10.0f, false);
+
+					disflow.execute(frame[rgbd::FRAME::CURRENT].getColorPreviousMap(),
+						frame[rgbd::FRAME::CURRENT].getColorFilteredMap(),
+						gradFilter.getGradientMap()
+					);
 				}
 
 
 
 				//gflow.setFrameTexture(frame[rgbd::FRAME::CURRENT].getColorAlignedToDepthMap());
-				gflow.calc(false);
+				//gflow.calc(false);
+
+
 			}
 
 
@@ -2939,8 +2958,9 @@ void App::mainLoop()
 				progs["ScreenQuad"]->setUniform("depthRange", glm::vec2(depthMin, depthMax));
 				progs["ScreenQuad"]->setUniform("renderType", 0);
 				progs["ScreenQuad"]->setUniform("flowType", 0);
+				quad.renderMulti(frame[rgbd::FRAME::CURRENT].getDepthMap(), frame[rgbd::FRAME::VIRTUAL].getNormalMap(), frame[rgbd::FRAME::CURRENT].getColorAlignedToDepthMap(), frame[rgbd::FRAME::CURRENT].getInfraMap(), frame[rgbd::FRAME::CURRENT].getMappingC2DMap(), disflow.getFlowMap());
 
-				quad.renderMulti(frame[rgbd::FRAME::CURRENT].getDepthMap(), frame[rgbd::FRAME::VIRTUAL].getNormalMap(), frame[rgbd::FRAME::CURRENT].getColorAlignedToDepthMap(), frame[rgbd::FRAME::CURRENT].getInfraMap(), frame[rgbd::FRAME::CURRENT].getMappingC2DMap(), gflow.getFlowTextureFrame());
+				//quad.renderMulti(frame[rgbd::FRAME::CURRENT].getDepthMap(), frame[rgbd::FRAME::VIRTUAL].getNormalMap(), frame[rgbd::FRAME::CURRENT].getColorAlignedToDepthMap(), frame[rgbd::FRAME::CURRENT].getInfraMap(), frame[rgbd::FRAME::CURRENT].getMappingC2DMap(), gflow.getFlowTextureFrame());
 				progs["ScreenQuad"]->disuse();
 
 				glEnable(GL_DEPTH_TEST);

@@ -206,26 +206,13 @@ namespace gl
 		glBindTexture(GL_TEXTURE_2D, 0);
 	}
 
-	void Texture::setFiltering(TextureFilter filter)
+	void Texture::setFiltering(GLenum maxFilter, GLenum minFilter)
 	{
-		GLint minFilter = GL_NEAREST;
-		GLint maxFilter = GL_NEAREST;
 
-		switch (filter)
-		{
-		case TextureFilter::NEAREST:
-			minFilter = GL_NEAREST;
-			maxFilter = GL_NEAREST;
-			break;
-		case TextureFilter::LINEAR:
-			minFilter = GL_LINEAR;
-			maxFilter = GL_LINEAR;
-			break;
-		}
 
 		bind();
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, minFilter);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, maxFilter);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, minFilter);
 		unbind();
 	}
 

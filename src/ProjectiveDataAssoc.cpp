@@ -18,7 +18,7 @@ namespace rgbd
 		this->progs["ProjectiveDataAssoc"]->disuse();
 
 		assocDataTex.create(0, 6, 7, 1, gl::TextureType::FLOAT32);
-		assocDataTex.setFiltering(gl::TextureFilter::NEAREST);
+		assocDataTex.setFiltering(GL_NEAREST, GL_NEAREST_MIPMAP_NEAREST);
 
 		GLuint valueZero(0);
 		atomic.bind();

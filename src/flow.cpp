@@ -691,8 +691,8 @@ void gFlow::allocateTextures(int nChn)
 	// the incoming texture should have been pre-mipmaped, but all other textures need to be allocated and wiped each frame
 	if (nChn == 1)
 	{
-		m_textureI0 = GLHelper::createTexture(m_textureI0, GL_TEXTURE_2D, m_numLevels, m_texture_width, m_texture_height, 0, GL_R8, GL_LINEAR, GL_LINEAR_MIPMAP_NEAREST);
-		m_textureI1 = GLHelper::createTexture(m_textureI1, GL_TEXTURE_2D, m_numLevels, m_texture_width, m_texture_height, 0, GL_R8, GL_LINEAR, GL_LINEAR_MIPMAP_NEAREST);
+		m_textureI0 = GLHelper::createTexture(m_textureI0, GL_TEXTURE_2D, m_numLevels, m_texture_width, m_texture_height, 0, GL_R8, GL_NEAREST, GL_NEAREST_MIPMAP_NEAREST);
+		m_textureI1 = GLHelper::createTexture(m_textureI1, GL_TEXTURE_2D, m_numLevels, m_texture_width, m_texture_height, 0, GL_R8, GL_NEAREST, GL_NEAREST_MIPMAP_NEAREST);
 	}
 	else
 	{
@@ -702,59 +702,63 @@ void gFlow::allocateTextures(int nChn)
 
 	m_textureDepth = GLHelper::createTexture(m_textureDepth, GL_TEXTURE_2D, m_numLevels, m_texture_width, m_texture_height, 0, GL_R16, GL_NEAREST, GL_NEAREST_MIPMAP_NEAREST);
 
-	m_textureI0_prod_xx_yy_xy_aux = GLHelper::createTexture(m_textureI0_prod_xx_yy_xy_aux, GL_TEXTURE_2D, m_numLevels, m_texture_width / m_patch_stride, m_texture_height, 0, GL_RGBA32F, GL_LINEAR, GL_LINEAR_MIPMAP_NEAREST);
-	m_textureI0_sum_x_y_aux = GLHelper::createTexture(m_textureI0_sum_x_y_aux, GL_TEXTURE_2D, m_numLevels, m_texture_width / m_patch_stride, m_texture_height, 0, GL_RG32F, GL_LINEAR, GL_LINEAR_MIPMAP_NEAREST);
+	m_textureI0_prod_xx_yy_xy_aux = GLHelper::createTexture(m_textureI0_prod_xx_yy_xy_aux, GL_TEXTURE_2D, m_numLevels, m_texture_width / m_patch_stride, m_texture_height, 0, GL_RGBA32F, GL_LINEAR, GL_NEAREST_MIPMAP_NEAREST);
+	m_textureI0_sum_x_y_aux = GLHelper::createTexture(m_textureI0_sum_x_y_aux, GL_TEXTURE_2D, m_numLevels, m_texture_width / m_patch_stride, m_texture_height, 0, GL_RG32F, GL_LINEAR, GL_NEAREST_MIPMAP_NEAREST);
 
-	m_textureI0_prod_xx_yy_xy = GLHelper::createTexture(m_textureI0_prod_xx_yy_xy, GL_TEXTURE_2D, m_numLevels, m_texture_width / m_patch_stride, m_texture_height / m_patch_stride, 0, GL_RGBA32F, GL_LINEAR, GL_LINEAR_MIPMAP_NEAREST);
-	m_textureI0_sum_x_y = GLHelper::createTexture(m_textureI0_sum_x_y, GL_TEXTURE_2D, m_numLevels, m_texture_width / m_patch_stride, m_texture_height / m_patch_stride, 0, GL_RG32F, GL_LINEAR, GL_LINEAR_MIPMAP_NEAREST);
+	m_textureI0_prod_xx_yy_xy = GLHelper::createTexture(m_textureI0_prod_xx_yy_xy, GL_TEXTURE_2D, m_numLevels, m_texture_width / m_patch_stride, m_texture_height / m_patch_stride, 0, GL_RGBA32F, GL_LINEAR, GL_NEAREST_MIPMAP_NEAREST);
+	m_textureI0_sum_x_y = GLHelper::createTexture(m_textureI0_sum_x_y, GL_TEXTURE_2D, m_numLevels, m_texture_width / m_patch_stride, m_texture_height / m_patch_stride, 0, GL_RG32F, GL_LINEAR, GL_NEAREST_MIPMAP_NEAREST);
 
 	// all mip maps   
 
-	m_textureI0_grad_x_y = GLHelper::createTexture(m_textureI0_grad_x_y, GL_TEXTURE_2D, m_numLevels, m_texture_width, m_texture_height, 0, GL_RG32F, GL_LINEAR, GL_LINEAR_MIPMAP_NEAREST);
+	m_textureI0_grad_x_y = GLHelper::createTexture(m_textureI0_grad_x_y, GL_TEXTURE_2D, m_numLevels, m_texture_width, m_texture_height, 0, GL_RG32F, GL_NEAREST, GL_NEAREST_MIPMAP_NEAREST);
 
-	m_textureS_x_y = GLHelper::createTexture(m_textureS_x_y, GL_TEXTURE_2D, m_numLevels, m_texture_width / m_patch_stride, m_texture_height / m_patch_stride, 0, GL_RG32F, GL_LINEAR, GL_LINEAR_MIPMAP_NEAREST);
+	m_textureS_x_y = GLHelper::createTexture(m_textureS_x_y, GL_TEXTURE_2D, m_numLevels, m_texture_width / m_patch_stride, m_texture_height / m_patch_stride, 0, GL_RG32F, GL_NEAREST, GL_NEAREST_MIPMAP_NEAREST);
 	glBindTexture(GL_TEXTURE_2D, m_textureS_x_y);
 	glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, m_texture_width / m_patch_stride, m_texture_height / m_patch_stride, GL_RG, GL_FLOAT, zeroValues.data());
 	glGenerateMipmap(GL_TEXTURE_2D);
 
 	mTextureFlowXY = std::make_shared<gl::Texture>();
 	mTextureFlowXY->createStorage(m_numLevels, m_texture_width, m_texture_height, 2, GL_RG32F, gl::TextureType::FLOAT32, 0);
+	mTextureFlowXY->setFiltering(GL_NEAREST, GL_NEAREST_MIPMAP_NEAREST);
+	mTextureFlowXY->setWarp(gl::TextureWarp::CLAMP_TO_EDGE);
 
-	m_textureU_x_y = GLHelper::createTexture(m_textureU_x_y, GL_TEXTURE_2D, m_numLevels, m_texture_width, m_texture_height, 0, GL_RG32F, GL_LINEAR, GL_LINEAR_MIPMAP_NEAREST);
+
+
+	m_textureU_x_y = GLHelper::createTexture(m_textureU_x_y, GL_TEXTURE_2D, m_numLevels, m_texture_width, m_texture_height, 0, GL_RG32F, GL_NEAREST, GL_NEAREST_MIPMAP_NEAREST);
 	glBindTexture(GL_TEXTURE_2D, m_textureU_x_y);
 	glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, m_texture_width, m_texture_height, GL_RG, GL_FLOAT, zeroValues.data());
 	glGenerateMipmap(GL_TEXTURE_2D);
 
-	m_texture_init_U_x_y = GLHelper::createTexture(m_texture_init_U_x_y, GL_TEXTURE_2D, m_numLevels, m_texture_width, m_texture_height, 0, GL_RG32F, GL_LINEAR, GL_LINEAR_MIPMAP_NEAREST);
+	m_texture_init_U_x_y = GLHelper::createTexture(m_texture_init_U_x_y, GL_TEXTURE_2D, m_numLevels, m_texture_width, m_texture_height, 0, GL_RG32F, GL_NEAREST, GL_NEAREST_MIPMAP_NEAREST);
 	glBindTexture(GL_TEXTURE_2D, m_texture_init_U_x_y);
 	glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, m_texture_width, m_texture_height, GL_RG, GL_FLOAT, zeroValues.data());
 	glGenerateMipmap(GL_TEXTURE_2D);
 
-	m_texture_prefixSumTemp = GLHelper::createTexture(m_texture_prefixSumTemp, GL_TEXTURE_2D, m_numLevels, m_texture_width, m_texture_width, 0, GL_RG32F, GL_LINEAR, GL_LINEAR_MIPMAP_NEAREST);
+	m_texture_prefixSumTemp = GLHelper::createTexture(m_texture_prefixSumTemp, GL_TEXTURE_2D, m_numLevels, m_texture_width, m_texture_width, 0, GL_RG32F, GL_NEAREST, GL_NEAREST_MIPMAP_NEAREST);
 	glBindTexture(GL_TEXTURE_2D, m_texture_prefixSumTemp);
 	glGenerateMipmap(GL_TEXTURE_2D);
 
-	m_texture_prefixSum = GLHelper::createTexture(m_texture_prefixSum, GL_TEXTURE_2D, m_numLevels, m_texture_width, m_texture_height, 0, GL_RG32F, GL_LINEAR, GL_LINEAR_MIPMAP_NEAREST);
+	m_texture_prefixSum = GLHelper::createTexture(m_texture_prefixSum, GL_TEXTURE_2D, m_numLevels, m_texture_width, m_texture_height, 0, GL_RG32F, GL_NEAREST, GL_NEAREST_MIPMAP_NEAREST);
 	glBindTexture(GL_TEXTURE_2D, m_texture_prefixSum);
 	glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, m_texture_width, m_texture_height, GL_RG, GL_FLOAT, zeroValues.data());
 	glGenerateMipmap(GL_TEXTURE_2D);
 
-	m_texture_prefixSumTempSecondPass = GLHelper::createTexture(m_texture_prefixSumTempSecondPass, GL_TEXTURE_2D, m_numLevels, m_texture_width, m_texture_width, 0, GL_RG32F, GL_LINEAR, GL_LINEAR_MIPMAP_NEAREST);
+	m_texture_prefixSumTempSecondPass = GLHelper::createTexture(m_texture_prefixSumTempSecondPass, GL_TEXTURE_2D, m_numLevels, m_texture_width, m_texture_width, 0, GL_RG32F, GL_NEAREST, GL_NEAREST_MIPMAP_NEAREST);
 	glBindTexture(GL_TEXTURE_2D, m_texture_prefixSumTempSecondPass);
 	glGenerateMipmap(GL_TEXTURE_2D);
 
-	m_texture_prefixSumSecondPass = GLHelper::createTexture(m_texture_prefixSumSecondPass, GL_TEXTURE_2D, m_numLevels, m_texture_width, m_texture_height, 0, GL_RG32F, GL_LINEAR, GL_LINEAR_MIPMAP_NEAREST);
+	m_texture_prefixSumSecondPass = GLHelper::createTexture(m_texture_prefixSumSecondPass, GL_TEXTURE_2D, m_numLevels, m_texture_width, m_texture_height, 0, GL_RG32F, GL_NEAREST, GL_NEAREST_MIPMAP_NEAREST);
 	glBindTexture(GL_TEXTURE_2D, m_texture_prefixSumSecondPass);
 	glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, m_texture_width, m_texture_height, GL_RG, GL_FLOAT, zeroValues.data());
 	glGenerateMipmap(GL_TEXTURE_2D);
 
 
-	m_texture_previous_U_x_y = GLHelper::createTexture(m_texture_previous_U_x_y, GL_TEXTURE_2D, m_numLevels, m_texture_width, m_texture_height, 0, GL_RG32F, GL_LINEAR, GL_LINEAR_MIPMAP_NEAREST);
+	m_texture_previous_U_x_y = GLHelper::createTexture(m_texture_previous_U_x_y, GL_TEXTURE_2D, m_numLevels, m_texture_width, m_texture_height, 0, GL_RG32F, GL_NEAREST, GL_NEAREST_MIPMAP_NEAREST);
 
 
-	m_textureWarp_I1 = GLHelper::createTexture(m_textureWarp_I1, GL_TEXTURE_2D, m_numLevels, m_texture_width, m_texture_height, 0, GL_RGBA8, GL_LINEAR, GL_LINEAR_MIPMAP_NEAREST);
+	m_textureWarp_I1 = GLHelper::createTexture(m_textureWarp_I1, GL_TEXTURE_2D, m_numLevels, m_texture_width, m_texture_height, 0, GL_RGBA8, GL_NEAREST, GL_NEAREST_MIPMAP_NEAREST);
 
-	m_textureFlowArray = GLHelper::createTexture(m_textureFlowArray, GL_TEXTURE_2D_ARRAY, 1, m_texture_width, m_texture_height, m_flowHistoryLevels, GL_RG16F, GL_LINEAR, GL_LINEAR_MIPMAP_NEAREST);
+	m_textureFlowArray = GLHelper::createTexture(m_textureFlowArray, GL_TEXTURE_2D_ARRAY, 1, m_texture_width, m_texture_height, m_flowHistoryLevels, GL_RG16F, GL_NEAREST, GL_NEAREST_MIPMAP_NEAREST);
 
 
 

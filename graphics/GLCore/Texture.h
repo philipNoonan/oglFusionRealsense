@@ -21,7 +21,11 @@ namespace gl
 	enum class TextureFilter
 	{
 		NEAREST,
-		LINEAR
+		LINEAR,
+		NEAREST_LINEAR,
+		NEAREST_NEAREST,
+		LINEAR_NEAREST,
+		LINEAR_LINEAR
 	};
 
 	enum class TextureWarp
@@ -56,7 +60,7 @@ namespace gl
 
 		void update(const void* data);
 		void mipmap();
-		void setFiltering(TextureFilter filter);
+		void setFiltering(GLenum maxfilter, GLenum minfilter);
 		void setWarp(TextureWarp warp);
 
 		void read(const void* data);

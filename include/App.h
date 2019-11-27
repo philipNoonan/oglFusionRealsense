@@ -32,6 +32,8 @@
 #include "flood.h"
 #include "flow.h"
 
+#include "disFlow2.h"
+
 #include "opencv2/core/utility.hpp"
 #include "opencv2/highgui.hpp"
 #include "opencv2/imgproc.hpp"
@@ -88,6 +90,8 @@ private:
 	rgbd::RGBDtam dtam;
 	rgbd::p2pICP p2picp;
 	rgbd::splatterICP splaticp;
+
+	rgbd::DisFlow disflow;
 
 	//rgbd::splatterFusion slam;
 	rgbd::GradientFilter gradFilter;

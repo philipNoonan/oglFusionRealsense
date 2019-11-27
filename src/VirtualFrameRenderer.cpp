@@ -11,12 +11,12 @@ namespace rgbd
 	{
 		vertexMap = std::make_shared<gl::Texture>();
 		vertexMap->create(0, width, height, 4, gl::TextureType::FLOAT32);
-		vertexMap->setFiltering(gl::TextureFilter::NEAREST);
+		vertexMap->setFiltering(GL_NEAREST, GL_NEAREST_MIPMAP_NEAREST);
 		vertexMap->setWarp(gl::TextureWarp::CLAMP_TO_EDGE);
 
 		normalMap = std::make_shared<gl::Texture>();
 		normalMap->create(0, width, height, 4, gl::TextureType::FLOAT32);
-		normalMap->setFiltering(gl::TextureFilter::NEAREST);
+		normalMap->setFiltering(GL_NEAREST, GL_NEAREST_MIPMAP_NEAREST);
 		normalMap->setWarp(gl::TextureWarp::CLAMP_TO_EDGE);
 
 		virtualFrameFBO.create(width, height);

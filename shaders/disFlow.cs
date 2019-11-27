@@ -241,8 +241,8 @@ void patchInverseSearch()
         {
             for (int j = 0; j< 5; j++)
             {
-                float xCoord_I0 = ( (float(gl_GlobalInvocationID.x) * 4.0f + float(pos.x) + float(i))) / ( float(imSize.x));
-                float yCoord_I0 = ( (float(gl_GlobalInvocationID.y) * 4.0f + float(pos.y) + float(j))) / ( float(imSize.y));
+                float xCoord_I0 = ( (float(gl_GlobalInvocationID.x) * 4.0f + 0.5f + float(pos.x) + float(i))) / ( float(imSize.x));
+                float yCoord_I0 = ( (float(gl_GlobalInvocationID.y) * 4.0f + 0.5f + float(pos.y) + float(j))) / ( float(imSize.y));
                 if (imageType == 0)
                 {
                       x_data[pos.x * 5 + i][pos.y * 5 + j] = textureLod(tex_I0, vec2(xCoord_I0, yCoord_I0), level).x;
@@ -255,8 +255,8 @@ void patchInverseSearch()
             }
         }
       
-    float xCoord_sparse = ( float(pix_sparse.x)) / ( float(imSize.x / 4));
-    float yCoord_sparse = ( float(pix_sparse.y)) / ( float(imSize.y / 4));
+    float xCoord_sparse = ( float(pix_sparse.x) + 0.5f) / ( float(imSize.x / 4));
+    float yCoord_sparse = ( float(pix_sparse.y) + 0.5f) / ( float(imSize.y / 4));
 
     //vec4 inputProd = texelFetch(tex_prod_I0_xx_yy_xy, pix_sparse, level);
     //vec4 inputSum = texelFetch(tex_sum_I0_x_y, pix_sparse, level);
@@ -279,8 +279,8 @@ void patchInverseSearch()
 
     vec2 initFlowXY = vec2(0);
 
-float xCoord = (( (float(gl_GlobalInvocationID.x) * 4.0 + float(psz2))) / ( float(imSize.x))) ;
-float yCoord = (( (float(gl_GlobalInvocationID.y) * 4.0 + float(psz2))) / ( float(imSize.y))) ;
+float xCoord = (( (float(gl_GlobalInvocationID.x) * 4.0 + 0.5f + float(psz2))) / ( float(imSize.x))) ;
+float yCoord = (( (float(gl_GlobalInvocationID.y) * 4.0 + 0.5f + float(psz2))) / ( float(imSize.y))) ;
 
 //if (level == 5) // should this have a dependency on iter number or not
 // {
@@ -296,8 +296,8 @@ float yCoord = (( (float(gl_GlobalInvocationID.y) * 4.0 + float(psz2))) / ( floa
 
   // initFlowXY =  textureLod(tex_flow_initial, vec2(xCoord, yCoord), level).xy;
 
-    initFlowXY.x = initFlowXY.x< 8 ? initFlowXY.x : 0;
-    initFlowXY.y = initFlowXY.y< 8 ? initFlowXY.y : 0;
+    initFlowXY.x = initFlowXY.x < 8 ? initFlowXY.x : 0;
+    initFlowXY.y = initFlowXY.y < 8 ? initFlowXY.y : 0;
 
     initFlowXY.x /= float(pow(2, level+1)); // dont need this if we are directly copying each mip map level rather than only top then mipmapping from top
     initFlowXY.y /= float(pow(2, level+1)); 
@@ -313,8 +313,8 @@ float yCoord = (( (float(gl_GlobalInvocationID.y) * 4.0 + float(psz2))) / ( floa
     {
         for (int j = 0; j < patch_size; j++)
         {
-            xCoord_init = (( (float(gl_GlobalInvocationID.x) * 4.0 + initFlowXY.x + float(i))) / (float(imSize.x)));
-            yCoord_init = (( (float(gl_GlobalInvocationID.y) * 4.0 + initFlowXY.y + float(j))) / (float(imSize.y)));
+            xCoord_init = (( (float(gl_GlobalInvocationID.x) * 4.0 + 0.5f + initFlowXY.x + float(i))) / (float(imSize.x)));
+            yCoord_init = (( (float(gl_GlobalInvocationID.y) * 4.0 + 0.5f + initFlowXY.y + float(j))) / (float(imSize.y)));
         //    y_data_init[i][j] = luminance(textureLod(tex_I1, vec2((float(gl_GlobalInvocationID.x) * 4.0f + initFlowXY.x + float(i)) / float(imSize.x), (float(gl_GlobalInvocationID.y) * 4.0f + initFlowXY.y + float(j)) / float(imSize.y)), level).xyz);
                 if (imageType == 0)
                 {
@@ -361,8 +361,8 @@ float yCoord = (( (float(gl_GlobalInvocationID.y) * 4.0 + float(psz2))) / ( floa
         {
             for (int j = 0; j < patch_size; j++)
             {
-                float xCoord_prev = (( (float(gl_GlobalInvocationID.x) * 4.0 + prevFlowXY.x + float(i))) / ( float(imSize.x)));
-                float yCoord_prev = (( (float(gl_GlobalInvocationID.y) * 4.0 + prevFlowXY.y + float(j))) / ( float(imSize.y)));
+                float xCoord_prev = (( (float(gl_GlobalInvocationID.x) * 4.0 + 0.5f + prevFlowXY.x + float(i))) / ( float(imSize.x)));
+                float yCoord_prev = (( (float(gl_GlobalInvocationID.y) * 4.0 + 0.5f + prevFlowXY.y + float(j))) / ( float(imSize.y)));
                 if (imageType == 0)
                 {
                     y_data[i][j] = textureLod(tex_I1, vec2(xCoord_prev, yCoord_prev), level).x;
@@ -505,17 +505,17 @@ float detH = inputProd.x * inputProd.y - inputProd.z * inputProd.z;
             {
                 for (int j = 0; j < patch_size; j++)
                 {
-                    float xCoord_inner = ( (float(gl_GlobalInvocationID.x) * 4.0 + cur_Ux + float(i))) / ( float(imSize.x));
-                    float yCoord_inner = ( (float(gl_GlobalInvocationID.y) * 4.0 + cur_Uy + float(j))) / ( float(imSize.y));
+                    float xCoord_inner = ( (float(gl_GlobalInvocationID.x) * 4.0 + 0.5f + cur_Ux + float(i))) / ( float(imSize.x));
+                    float yCoord_inner = ( (float(gl_GlobalInvocationID.y) * 4.0 + 0.5f + cur_Uy + float(j))) / ( float(imSize.y));
 
-                if (imageType == 0)
-                {
-                    y_data[i][j] = textureLod(tex_I1, vec2(xCoord_inner, yCoord_inner), level).x;
-                }
-                else if (imageType == 1)
-                {
-                    y_data[i][j] = luminance(textureLod(tex_I1, vec2(xCoord_inner, yCoord_inner), level).xyz);
-                }
+                    if (imageType == 0)
+                    {
+                        y_data[i][j] = textureLod(tex_I1, vec2(xCoord_inner, yCoord_inner), level).x;
+                    }
+                    else if (imageType == 1)
+                    {
+                        y_data[i][j] = luminance(textureLod(tex_I1, vec2(xCoord_inner, yCoord_inner), level).xyz);
+                    }
 
 //y_data[i][j] = luminance(textureLod(tex_I1, vec2((float(pix_sparse.x) * 4.0f + cur_Ux + float(i)) / float(imSize.x), (float(pix_sparse.y) * 4.0f + float(cur_Uy) + float(j)) / float(imSize.y)), level).xyz);
 
@@ -628,8 +628,8 @@ void densification()
                 float i1_val;
                 float i0_val;
 
-                i1_val = textureLod(tex_I1, vec2(j_m / float(imSize.x), i_m / float(imSize.y)), level).x;
-                i0_val = textureLod(tex_I0, vec2(j / float(imSize.x), i / float(imSize.y)), level).x;
+                i1_val = textureLod(tex_I1, vec2((j_m + 0.5f) / float(imSize.x), (i_m + 0.5f) / float(imSize.y)), level).x;
+                i0_val = textureLod(tex_I0, vec2((j + 0.5f) / float(imSize.x), (i + 0.5f) / float(imSize.y)), level).x;
                 diff = i1_val - i0_val;
                 warpedPixel = i1_val;
             }
@@ -638,8 +638,8 @@ void densification()
                 vec3 i1_val;
                 vec3 i0_val;
 
-                i1_val = (textureLod(tex_I1, vec2(j_m / float(imSize.x), i_m / float(imSize.y)), level).xyz);
-                i0_val = (textureLod(tex_I0, vec2(j / float(imSize.x), i / float(imSize.y)), level).xyz);
+                i1_val = (textureLod(tex_I1, vec2((j_m + 0.5f) / float(imSize.x), (i_m + 0.5f) / float(imSize.y)), level).xyz);
+                i0_val = (textureLod(tex_I0, vec2((j + 0.5f) / float(imSize.x), (i + 0.5f) / float(imSize.y)), level).xyz);
 
                 diff = luminance(i1_val - i0_val);
                 warpedPixel = luminance(i1_val);

@@ -18,7 +18,7 @@ namespace rgbd
 	{
 		indexMap = std::make_shared<gl::Texture>();
 		indexMap->create(0, width * 4, height * 4, 1, gl::TextureType::FLOAT32);
-		indexMap->setFiltering(gl::TextureFilter::NEAREST);
+		indexMap->setFiltering(GL_NEAREST, GL_NEAREST_MIPMAP_NEAREST);
 		indexMap->setWarp(gl::TextureWarp::CLAMP_TO_EDGE);
 
 		virtualFrameFBO.create(width, height);
