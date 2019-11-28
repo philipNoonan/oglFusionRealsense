@@ -219,7 +219,7 @@ namespace rgbd
 	{
 
 		progs["rgbOdometryStep"]->setUniform("sigma", sigmaVal);
-		progs["rgbOdometryStep"]->setUniform("sobelScale", 0.03125f);// *std::pow(2.0f, float(level)));
+		progs["rgbOdometryStep"]->setUniform("sobelScale", 1.0f);// *std::pow(2.0f, float(level)));
 		progs["rgbOdometryStep"]->setUniform("cam", cam);
 		progs["rgbOdometryStep"]->setUniform("level", level);
 
@@ -373,7 +373,7 @@ namespace rgbd
 	{
 
 		progs["rgbOdometryStep"]->setUniform("sigma", sigmaVal);
-		progs["rgbOdometryStep"]->setUniform("sobelScale", 0.03125f);
+		progs["rgbOdometryStep"]->setUniform("sobelScale", 1.0f);
 		progs["rgbOdometryStep"]->setUniform("cam", cam);
 		progs["rgbOdometryStep"]->setUniform("level", level);
 

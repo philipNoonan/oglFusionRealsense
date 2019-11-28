@@ -3,6 +3,7 @@
 #include "ComputeShader.h"
 #include "glhelper.h"
 #include "GLCore/Framebuffer.h"
+#include "Frame.h"
 
 namespace rgbd
 {
@@ -17,9 +18,8 @@ namespace rgbd
 		gl::Texture::Ptr lastFlowMap;
 		gl::Texture::Ptr nextFlowMap;
 
-		GLuint vertexVBO;
-		GLuint VAO;
 
+		int maxLevels;
 
 		std::vector<gl::Texture::Ptr> densificationFlowMap;
 
@@ -44,8 +44,7 @@ namespace rgbd
 		);
 
 		void execute(
-			gl::Texture::Ptr lastColorMap,
-			gl::Texture::Ptr nextColorMap,
+			const rgbd::Frame &currentFrame,
 			gl::Texture::Ptr nextGradientMap
 		);
 

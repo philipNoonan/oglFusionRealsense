@@ -122,8 +122,8 @@ void main()
 			//imageStore(outputTestImage, pix, vec4(abs(corresp.diff).xxx, 1)); 
 			//imageStore(outputTestImage, pix, vec4(abs(dI_dxdy_val).xy, 0, 1)); 
 
-			float v1 = dI_dxdy_val.x * cam.z * invZ; // should this be color or depth params?
-			float v0 = dI_dxdy_val.y * cam.w * invZ;
+			float v0 = -dI_dxdy_val.x * cam.z * invZ; // should this be color or depth params?
+			float v1 = -dI_dxdy_val.y * cam.w * invZ;
 			float v2 = -(v0 * cloudPoint.x + v1 * cloudPoint.y) * invZ;
 
 			outData = vec4(abs(corresp.diff).xxx, 1.0f);

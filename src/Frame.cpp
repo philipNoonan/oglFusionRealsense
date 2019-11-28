@@ -31,19 +31,19 @@ namespace rgbd
 		frameData[0].colorMap = std::make_shared<gl::Texture>();
 		frameData[0].colorMap->createStorage(numberOfLevels, width, height, 4, GL_RGBA8, gl::TextureType::COLOR, 1);
 		//frameData[0].colorMap->create(0, width, height, 4, gl::TextureType::COLOR);
-		frameData[0].colorMap->setFiltering(GL_NEAREST, GL_NEAREST_MIPMAP_NEAREST);
+		frameData[0].colorMap->setFiltering(GL_LINEAR, GL_LINEAR_MIPMAP_NEAREST);
 		frameData[0].colorMap->setWarp(gl::TextureWarp::CLAMP_TO_EDGE);
 
 		frameData[0].colorPreviousMap = std::make_shared<gl::Texture>();
 		frameData[0].colorPreviousMap->createStorage(numberOfLevels, width, height, 4, GL_RGBA8, gl::TextureType::COLOR, 1);
 		//frameData[0].colorPreviousMap->create(0, width, height, 4, gl::TextureType::COLOR);
-		frameData[0].colorPreviousMap->setFiltering(GL_NEAREST, GL_NEAREST_MIPMAP_NEAREST);
+		frameData[0].colorPreviousMap->setFiltering(GL_LINEAR, GL_LINEAR_MIPMAP_NEAREST);
 		frameData[0].colorPreviousMap->setWarp(gl::TextureWarp::CLAMP_TO_EDGE);
 
 		frameData[0].colorFilteredMap = std::make_shared<gl::Texture>();
 		frameData[0].colorFilteredMap->createStorage(numberOfLevels, width, height, 4, GL_RGBA8, gl::TextureType::COLOR, 1);
 		//frameData[0].colorFilteredMap->create(0, width, height, 4, gl::TextureType::COLOR);
-		frameData[0].colorFilteredMap->setFiltering(GL_NEAREST, GL_NEAREST_MIPMAP_NEAREST);
+		frameData[0].colorFilteredMap->setFiltering(GL_LINEAR, GL_LINEAR_MIPMAP_NEAREST);
 		frameData[0].colorFilteredMap->setWarp(gl::TextureWarp::CLAMP_TO_EDGE);
 
 		frameData[0].colorAlignedToDepthMap = std::make_shared<gl::Texture>();

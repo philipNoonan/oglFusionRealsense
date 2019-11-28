@@ -15,7 +15,7 @@ namespace rgbd
 		std::map<std::string, const gl::Shader::Ptr> progs;
 
 		gl::Texture::Ptr gradientMap;
-
+		int numberOfLevels;
 
 	public:
 		GradientFilter(

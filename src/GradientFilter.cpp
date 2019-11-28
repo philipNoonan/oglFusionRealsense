@@ -27,7 +27,7 @@ namespace rgbd
 	{
 		progs = programs;
 
-		int numberOfLevels = GLHelper::numberOfLevels(glm::ivec3(width, height, 1));
+		numberOfLevels = GLHelper::numberOfLevels(glm::ivec3(width, height, 1));
 
 
 		gradientMap = std::make_shared<gl::Texture>();
@@ -49,13 +49,14 @@ namespace rgbd
 	{
 		progs["GradientFilter"]->setUniform("lesser", lesser);
 		progs["GradientFilter"]->setUniform("upper", upper);
+		progs["GradientFilter"]->setUniform("normVal", 1.0f / (2.0f * upper + 4.0f * lesser));
 		progs["GradientFilter"]->setUniform("useGaussian", useGaussian);
 
 		progs["GradientFilter"]->use();
 
 		imageMap->use(0);
 
-		for (int lvl = 0; lvl < 3; lvl++)
+		for (int lvl = 0; lvl < numberOfLevels; lvl++)
 		{
 			gradientMap->bindImage(0, lvl, GL_WRITE_ONLY);
 			progs["GradientFilter"]->setUniform("level", lvl);

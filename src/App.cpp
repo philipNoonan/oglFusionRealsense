@@ -46,8 +46,13 @@ void App::initSplatter()
 
 	for (auto &f : frame)
 	{
-		f.create(gconfig.depthFrameSize.x, gconfig.depthFrameSize.y, rgbd::ICPConstParam::MAX_LEVEL,
-			K, cameraInterface.getDepthUnit(0) / 1000000.0f, progsForSlam);
+		f.create(gconfig.depthFrameSize.x, 
+			gconfig.depthFrameSize.y,
+			GLHelper::numberOfLevels(glm::ivec3(gconfig.depthFrameSize.x, gconfig.depthFrameSize.y, 1)),
+			K, 
+			cameraInterface.getDepthUnit(0) / 1000000.0f,
+			progsForSlam);
+
 		f.update(cameraInterface.getColorQueues(), 
 			cameraInterface.getDepthQueues(), 
 			cameraInterface.getInfraQueues(), 
@@ -142,8 +147,12 @@ void App::initP2PFusion()
 
 	for (auto &f : frame)
 	{
-		f.create(gconfig.depthFrameSize.x, gconfig.depthFrameSize.y, rgbd::ICPConstParam::MAX_LEVEL,
-			K, cameraInterface.getDepthUnit(0) / 1000000.0f, progsForP2P);
+		f.create(gconfig.depthFrameSize.x, 
+			gconfig.depthFrameSize.y, 
+			GLHelper::numberOfLevels(glm::ivec3(gconfig.depthFrameSize.x, gconfig.depthFrameSize.y, 1)),
+			K,
+			cameraInterface.getDepthUnit(0) / 1000000.0f, 
+			progsForP2P);
 		f.update(cameraInterface.getColorQueues(), 
 			cameraInterface.getDepthQueues(), 
 			cameraInterface.getInfraQueues(), 
@@ -208,8 +217,13 @@ void App::initP2VFusion()
 
 	for (auto &f : frame)
 	{
-		f.create(gconfig.depthFrameSize.x, gconfig.depthFrameSize.y, rgbd::ICPConstParam::MAX_LEVEL,
-			K, cameraInterface.getDepthUnit(0) / 1000000.0f, progsForP2V);
+		f.create(gconfig.depthFrameSize.x, 
+			gconfig.depthFrameSize.y, 
+			GLHelper::numberOfLevels(glm::ivec3(gconfig.depthFrameSize.x, gconfig.depthFrameSize.y, 1)),
+			K, 
+			cameraInterface.getDepthUnit(0) / 1000000.0f, 
+			progsForP2V);
+
 		f.update(cameraInterface.getColorQueues(), 
 			cameraInterface.getDepthQueues(), 
 			cameraInterface.getInfraQueues(), 
@@ -1105,7 +1119,9 @@ void App::gDisOptFlowInit()
 	std::string pathToShaders("./shaders/");
 	disflow.loadShaders(progsForDisFlow, pathToShaders);
 
-	disflow.init(3,
+	int numLevel = GLHelper::numberOfLevels(glm::ivec3(colorFrameSize[0].x, colorFrameSize[0].x, 1));
+
+	disflow.init(numLevel,
 		colorFrameSize[0].x,
 		colorFrameSize[0].y,
 		progsForDisFlow
@@ -2597,8 +2613,7 @@ void App::mainLoop()
 
 					gradFilter.execute(frame[rgbd::FRAME::CURRENT].getColorFilteredMap(), 0, 3.0f, 10.0f, false);
 
-					disflow.execute(frame[rgbd::FRAME::CURRENT].getColorPreviousMap(),
-						frame[rgbd::FRAME::CURRENT].getColorFilteredMap(),
+					disflow.execute(frame[rgbd::FRAME::CURRENT],
 						gradFilter.getGradientMap()
 					);
 				}

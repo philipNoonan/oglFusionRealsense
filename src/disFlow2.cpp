@@ -23,9 +23,10 @@ namespace rgbd
 	)
 	{
 		progs = programs;
+		maxLevels = numLevels;
 
 		sparseFlowMap = std::make_shared<gl::Texture>();
-		sparseFlowMap->createStorage(numLevels, width / 4, height / 4, 4, GL_RGBA32F, gl::TextureType::FLOAT32, 0);
+		sparseFlowMap->createStorage(numLevels, width, height, 4, GL_RGBA32F, gl::TextureType::FLOAT32, 0);
 		sparseFlowMap->setFiltering(GL_LINEAR, GL_LINEAR);
 		sparseFlowMap->setWarp(gl::TextureWarp::CLAMP_TO_EDGE);
 
@@ -55,42 +56,21 @@ namespace rgbd
 		{
 			densificationFBO[i].create(densificationFlowMap[0]->getWidth() >> i, densificationFlowMap[0]->getHeight() >> i);
 			densificationFBO[i].attach(densificationFlowMap[0], 0, i);
-			densificationFBO[i].attach(densificationFlowMap[1], 1, i);
+			//densificationFBO[i].attach(densificationFlowMap[1], 1, i);
 			densificationFBO[i].unbind();
 
 		}
 
 
-		float vertices[] = {
-						0.0f, 1.0f,
-						0.0f, 0.0f,
-						1.0f, 1.0f,
-						1.0f, 0.0f,
-		};
-		glCreateBuffers(1, &vertexVBO);
-		glNamedBufferData(vertexVBO, sizeof(vertices), vertices, GL_STATIC_DRAW);
-		
-		glCreateVertexArrays(1, &VAO);
-		glBindVertexArray(VAO);
-		glBindBuffer(GL_ARRAY_BUFFER, vertexVBO);
-		
-		GLint position_attrib = 0;  
-		glEnableVertexArrayAttrib(VAO, position_attrib);
-		glVertexAttribPointer(position_attrib, 2, GL_FLOAT, GL_FALSE, 0, (GLvoid*)0);
-
-		glBindVertexArray(0);
-
-
 	}
 
 	void DisFlow::execute(
-		gl::Texture::Ptr lastColorMap,
-		gl::Texture::Ptr nextColorMap,
+		const rgbd::Frame &currentFrame,
 		gl::Texture::Ptr nextGradientMap
 	)
 	{
 
-		for (int level = 2; level >= 0; level--)
+		for (int level = maxLevels - 1; level >= 0; level--)
 		{
 			// make patches
 			// input gradient map
@@ -114,21 +94,35 @@ namespace rgbd
 			// input last flow map
 			// input output sparse flow map
 
+			glm::vec2 invDenseSize = glm::vec2(1.0f / (nextFlowMap->getWidth() >> level), 1.0f / (nextFlowMap->getHeight() >> level));
+
+
 			this->progs["inverseSearch"]->use();
 
 			this->progs["inverseSearch"]->setUniform("level", level);
+			this->progs["inverseSearch"]->setUniform("invImageSize", invDenseSize);
 
-			lastColorMap->use(0);
-			nextColorMap->use(1);
-
-			lastFlowMap->use(2);
+			currentFrame.getColorPreviousMap()->use(0);
+			currentFrame.getColorFilteredMap()->use(1);
+			densificationFlowMap[0]->use(2);
 
 			nextGradientMap->bindImage(0, level, GL_READ_ONLY);
 
-			nextFlowMap->bindImage(1, level + 1, GL_READ_ONLY);
+			densificationFlowMap[0]->bindImage(1, level == (maxLevels - 1) ? level : level + 1, GL_READ_ONLY);
 			sparseFlowMap->bindImage(2, level, GL_READ_WRITE);
 
-			glDispatchCompute((lastColorMap->getWidth() >> level) / 32, (lastColorMap->getHeight() >> level) / 32, 1);
+			currentFrame.getTestMap()->bindImage(3, level, GL_READ_WRITE);
+			densificationFlowMap[0]->bindImage(5, level, GL_WRITE_ONLY);// for wiping
+
+			int sparseWidth = (currentFrame.getWidth() >> level) / 4;
+			int sparseHeight = (currentFrame.getHeight() >> level) / 4;
+
+			int compWidth = GLHelper::divup(sparseWidth, 32);
+			int compHeight = GLHelper::divup(sparseHeight, 32);
+
+
+			glDispatchCompute(compWidth, compHeight, 1);
+
 			this->progs["inverseSearch"]->disuse();
 
 
@@ -139,7 +133,6 @@ namespace rgbd
 			// input next color map
 			// output dense flow map
 
-			glBindVertexArray(VAO);
 
 
 
@@ -148,45 +141,50 @@ namespace rgbd
 
 
 			std::vector<GLenum> drawBuffs = densificationFBO[level].getDrawBuffers();
-
-			glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
-			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-			glViewport(0, 0, densificationFBO[level].getWidth(), densificationFBO[level].getHeight());
-
-			this->progs["densification"]->use();
-			this->progs["densification"]->setUniform("level", level);
-			this->progs["densification"]->setUniform("patch_size", 
-				glm::vec2(
-					8.0f / float(densificationFBO[level].getWidth()), 
-					8.0f / float(densificationFBO[level].getHeight())
-				)
-			);
-
-			lastColorMap->use(0);
-			nextColorMap->use(1);
-
-			sparseFlowMap->bindImage(0, level, GL_READ_ONLY);
-			nextFlowMap->bindImage(1, level, GL_WRITE_ONLY);
-
-			glDrawBuffers((GLsizei)drawBuffs.size(), drawBuffs.data());
+			glDisable(GL_DEPTH_TEST);
 
 			glEnable(GL_BLEND);
 			glBlendFunc(GL_ONE, GL_ONE);
 
-
-			int num_layers = 2;
-			int width_patches = (densificationFBO[level].getWidth()) / 8.0f;
-			int height_patches = (densificationFBO[level].getHeight()) / 8.0f;
+			glEnable(GL_VERTEX_PROGRAM_POINT_SIZE);
 
 
+			glViewport(0, 0, (nextFlowMap->getWidth() >> level), (nextFlowMap->getHeight() >> level));
+			//glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
+			//glClear(GL_COLOR_BUFFER_BIT);
 
-			glDrawArraysInstanced(GL_TRIANGLE_STRIP, 0, 4, width_patches * height_patches * num_layers);
+			glm::ivec2 sparseSize = glm::ivec2(sparseWidth, sparseHeight);
+			glm::vec2 levelUpSize = glm::vec2(1.0f / (nextFlowMap->getWidth() >> level), 1.0f / (nextFlowMap->getHeight() >> level));
+
+			this->progs["densification"]->use();
+			this->progs["densification"]->setUniform("level", level);
+			this->progs["densification"]->setUniform("invDenseTexSize", levelUpSize);
+			this->progs["densification"]->setUniform("sparseTexSize", sparseSize);
+
+			currentFrame.getColorPreviousMap()->use(0);
+			currentFrame.getColorFilteredMap()->use(1);
+
+			sparseFlowMap->bindImage(0, level, GL_READ_ONLY);
+			currentFrame.getTestMap()->bindImage(1, level, GL_READ_WRITE);
+
+			glDrawBuffers((GLsizei)drawBuffs.size(), drawBuffs.data());
+
+
+
+
+
+			int numberOfPatches = sparseSize.x * sparseSize.y;
+
+			glDrawArrays(GL_POINTS, 0, numberOfPatches);
 
 			densificationFBO[level].unbind();
 
 			this->progs["densification"]->disuse();
 
-			glBindVertexArray(0);
+			glEnable(GL_DEPTH_TEST);
+
+			glDisable(GL_BLEND);
+			glDisable(GL_VERTEX_PROGRAM_POINT_SIZE);
 
 
 		}
@@ -199,6 +197,6 @@ namespace rgbd
 	
 	gl::Texture::Ptr DisFlow::getFlowMap() const
 	{
-		return nextFlowMap;
+		return densificationFlowMap[0];
 	}
 }
