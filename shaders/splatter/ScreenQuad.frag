@@ -21,6 +21,7 @@ uniform vec2 depthRange;
 uniform int flowType;
 uniform int renderType;
 
+uniform int level;
 
 void main()
 {
@@ -38,7 +39,7 @@ void main()
 
 		if (renderDepth == 1)
 		{
-			vec4 tColor = vec4(texture(depthTex, vsTexCoord));
+			vec4 tColor = vec4(textureLod(depthTex, vsTexCoord, level));
 			float depthVal = smoothstep(depthRange.x, depthRange.y, tColor.x);
 
 			outColor = vec4(depthVal.xxx, 1.0f);
@@ -51,7 +52,7 @@ void main()
 
 		if (renderNormals == 1)
 		{
-			vec4 tCol = texture(normalTex, vsTexCoord);
+			vec4 tCol = textureLod(normalTex, vsTexCoord, level);
 			if (abs(tCol.x) > 0)
 			{
 				outColor = mix(outColor, abs(tCol), 1.0f);
@@ -60,15 +61,17 @@ void main()
 
 		if (renderColor == 1)
 		{
-			outColor = texture(colorTex, vsTexCoord);
+			outColor = textureLod(colorTex, vsTexCoord, level);
 		}
 
 		if (renderFlow == 1)
 		{
 			int length = 50;
-			ivec2 texSize = textureSize(flowTex, 0);
+			ivec2 texSize = textureSize(flowTex, level);
 
 			uvec2 mapLoc = uvec2(texelFetch(mappingTex, ivec2(vsTexCoord.x * texSize.x, vsTexCoord.y * texSize.y), 0).xy);
+
+			vec2 mLoc = vec2(mapLoc) / vec2(texSize);
 
 			if (mapLoc.x != 10000 || flowType == 0)
 			{
@@ -77,11 +80,11 @@ void main()
 
 				if (flowType == 1)
 				{
-					tFlow = texelFetch(flowTex, ivec2(mapLoc), 0);
+					tFlow = textureLod(flowTex, mLoc, level);
 				}
 				else if (flowType == 0)
 				{
-					tFlow = texture(flowTex, vsTexCoord);
+					tFlow = textureLod(flowTex, vsTexCoord, level);
 				}
 
 
@@ -106,11 +109,11 @@ void main()
 				vec4 K = vec4(1.0, 2.0 / 3.0, 1.0 / 3.0, 3.0);
 				vec3 p = abs(fract(ang + K.xyz) * 6.0 - K.www);
 
-				vec3 rgb = mix(K.xxx, clamp(p - K.xxx, 0.0, 1.0), mag * 1.0);
+				vec3 rgb = mix(K.xxx, clamp(p - K.xxx, 0.0, 1.0), mag * 10.0);
 
 				if (mag > 0.005)
 				{
-					outColor = vec4((1.0 - rgb), mag);// > 0.5 ? 1.0 : mag / 0.050);
+					outColor = vec4((1.0 - rgb), mag > 0.5 ? 1.0 : mag / 0.050);
 				}
 			
 			}

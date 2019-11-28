@@ -4,18 +4,18 @@ layout(local_size_x = 32, local_size_y = 32) in;
 
 layout(binding = 0) uniform sampler2D lastColorMap;
 layout(binding = 1) uniform sampler2D nextColorMap;
-layout(binding = 2) uniform sampler2D lastFlowMap;
 
-layout(binding = 0, rg32f) uniform image2D nextGradientMap;
-layout(binding = 1, rg32f) uniform image2D flowMap;
+layout(binding = 0, rg32f) uniform image2D lastGradientMap;
+layout(binding = 1, rgba32f) uniform image2D flowMap;
 layout(binding = 2, rgba32f) uniform image2D sparseFlowMap;
 
 layout(binding = 3, rgba32f) uniform image2D testMap;
 
-layout(binding = 5, rg32f) uniform image2D flowToWipe;
+layout(binding = 5, rgba32f) uniform image2D flowToWipe;
 
 uniform int level;
 uniform vec2 invImageSize;
+uniform vec2 invPreviousImageSize;
 
 float INF = 1e10f;
 float EPS = 0.001f;
@@ -26,79 +26,30 @@ float luminance(vec3 rgb)
 }
 
 
-// if there SSD > thresh && block contains boundary then we need to redo this for each region
-float processPatchMeanNorm(inout float dst_dUx,
-	inout float dst_dUy, 
-	float x_grad_sum, 
-	float y_grad_sum, 
-	float[8][8] lastImage, 
-	float[8][8] nextImage,
-	vec2[8][8] gradXY
-	)
-{
-    float n = 64.0f;//float(8 * 8);
-    float sum_square_diff = 0.0f;
-    float sum_diff = 0.0f;
-    float diff;
-
-    float sum_I0x_mul = 0.0f;
-    float sum_I0y_mul = 0.0f;
-
-
-    for (int i = 0; i < 8; i++)
-    {
-        for (int j = 0; j < 8; j++)
-        {
-            diff = nextImage[i][j] - lastImage[i][j];
-            sum_diff += diff;
-            sum_square_diff += diff * diff;
-
-            sum_I0x_mul += diff * gradXY[i][j].x;
-            sum_I0y_mul += diff * gradXY[i][j].y;
-
-        }
-    }
-
-    dst_dUx = sum_I0x_mul - sum_diff * x_grad_sum / n;
-    dst_dUy = sum_I0y_mul - sum_diff * y_grad_sum / n;
-    return sum_square_diff - sum_diff * sum_diff / n;
-}
-
 void main()
 {
     ivec2 pixSparse = ivec2(gl_GlobalInvocationID.xy);
 	vec2 denseTexSize = vec2(textureSize(lastColorMap, level).xy);
-	vec2 invDenseTexSize = 1.0f / denseTexSize;
 
-	vec2 sparseTexSize = vec2(imageSize(sparseFlowMap).xy);
-	vec2 invSparseTexSize = 1.0f / sparseTexSize;
 
 	ivec2 pix = (pixSparse * ivec2(4, 4));
 	vec2 pixCenter = vec2(pix) + 0.5f;
 
-	vec2 cornerPoints = vec2(pix / denseTexSize);
 
-	vec2 previousDenseTexSize = denseTexSize / 2.0f;
 
-	float min_SSD;
-    float cur_SSD;
+
 
 	float lastImageData[8][8];
 	float nextImageData[8][8];
 
 	vec2 gradData[8][8];
 
-	float sum_xx_data = 0.0f;
-	float sum_yy_data = 0.0f;
-	float sum_xy_data = 0.0f;
-
-	float sum_x_data = 0.0f;
-	float sum_y_data = 0.0f;
 
 	float templateSum = 0.0f;
 	vec2 gradSum = vec2(0.0f);
 
 	float patchSize = 8;
+
 	mat2 H = mat2(0.0f);
 
 	
@@ -108,13 +59,13 @@ void main()
 		{
 		
 			imageStore(flowToWipe, ivec2(pix) + ivec2(i, j), vec4(0));
-			gradData[i][j] = imageLoad(nextGradientMap, ivec2(pix) + ivec2(i, j)).xy;
+			gradData[i][j] = -imageLoad(lastGradientMap, ivec2(pix) + ivec2(i, j)).xy;
 		
 			H[0][0] += gradData[i][j].x * gradData[i][j].x;
 			H[1][1] += gradData[i][j].y * gradData[i][j].y;
 			H[0][1] += gradData[i][j].x * gradData[i][j].y;
 
-			lastImageData[i][j] = luminance(textureLod(lastColorMap, (vec2(pixCenter + vec2(i, j))) * invDenseTexSize, level).xyz);
+			lastImageData[i][j] = luminance(textureLod(lastColorMap, (vec2(pixCenter + vec2(i, j))) * invImageSize, level).xyz);
 			// lastImageData[i][j] = luminance(texelFetch(lastColorMap, pix + ivec2(i, j), level).xyz);
 			// float testImread = luminance(imageLoad(testCol, pix + ivec2(i, j)).xyz);
 
@@ -138,31 +89,46 @@ void main()
 	
 	mat2 H_inv = inverse(H);
 
-	vec2 initialFlow = imageLoad(flowMap, pix / 2).xy / float(pow(2, level+1));
+	vec4 initialFlow = imageLoad(flowMap, pix / 2);
 	
-	//imageStore(testMap, pixSparse, vec4(initialFlow, 0, 1));
+	if (!isnan(initialFlow.z) || initialFlow.z != 0 || isinf(initialFlow.z))
+	{
+		initialFlow.xy /= initialFlow.z;
+	}
+
+					imageStore(testMap, pixSparse, vec4(0));
 
 
-	vec2 flow = initialFlow;
+	initialFlow.xy *= (denseTexSize * invPreviousImageSize);
+
+	if (any(isnan(initialFlow.xy)))
+	{
+		initialFlow.xy = vec2(0);
+				imageStore(testMap, pixSparse, vec4(1));
+
+	}
+
+
+
+	vec2 flow = initialFlow.xy;
+
 
 	float meanDiff, firstMeanDiff;
 
-	for (int iter = 0; iter < 5; iter++)
+	for (int iter = 0; iter < 10; iter++)
 	{
 		vec2 du = vec2(0.0f);
 		float warpedSum = 0.0f;
-		vec2 uNorm = flow * invDenseTexSize;
+		vec2 flowNorm = flow * invImageSize;
 
 		for (int i = 0; i < patchSize; i++)
 		{
 			for (int j = 0; j < patchSize; j++)
 			{
 				vec2 tc = pixCenter + vec2(i, j); 
-				float warped = luminance(textureLod(nextColorMap, vec2(tc + flow) * invDenseTexSize, level).xyz);
+				float warped = luminance(textureLod(nextColorMap, vec2(tc  * invImageSize) + flowNorm, level).xyz);
 				du += gradData[i][j] * (warped - lastImageData[i][j]);
 				warpedSum += warped;
-
-				imageStore(testMap, ivec2(pix) + ivec2(i, j), vec4(warped.xxx, 1));
 
 			}
 		}
@@ -180,21 +146,22 @@ void main()
 
 	} // loop
 
+	
+	vec2 newPatchCenter = (pix + 0.5f) + patchSize * 0.5f + flow;
 
-	vec2 newPatchCenter = (cornerPoints * denseTexSize - 0.5f) + patchSize * 0.5f + flow;
-
-    if (length(flow - initialFlow) > (patchSize * 0.5f) ||
+    if (length(flow - initialFlow.xy) > (patchSize * 0.5f) ||
         newPatchCenter.x < -(patchSize * 0.5f) ||
         denseTexSize.x - newPatchCenter.x < -(patchSize * 0.5f) ||
         newPatchCenter.y < -(patchSize * 0.5f) ||
         denseTexSize.y - newPatchCenter.y < -(patchSize * 0.5f)) {
-            flow = initialFlow;
+            flow = initialFlow.xy;
             meanDiff = firstMeanDiff;
     }
+	
 
     // NOTE: The mean patch diff will be for the second-to-last patch,
     // not the true position of du. But hopefully, it will be very close.
-    // flow *= invImageSize;
+    flow *= invImageSize;
 
 	imageStore(sparseFlowMap, pixSparse, vec4(flow, meanDiff, 1));
     //out_flow = vec3(u.x, u.y, mean_diff);

@@ -156,6 +156,7 @@ private:
 
 	glm::mat4 globalRenderPose = glm::mat4(1.0f);
 
+	int texLevel = 0;
 
 	std::string return_current_time_and_date()
 	{

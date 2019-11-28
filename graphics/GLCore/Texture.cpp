@@ -116,7 +116,27 @@ namespace gl
 				case 4:	format = GL_RGBA; break;
 				}
 			}
-			break;
+			//if (normalized)
+			//{
+			//	switch (channels)
+			//	{
+			//	case 1:	format = GL_RED; break;
+			//	case 2:	format = GL_RG; break;
+			//	case 3:	format = GL_BGR; break;
+			//	case 4:	format = GL_BGRA; break;
+			//	}
+			//}
+			//else
+			//{
+			//	switch (channels)
+			//	{
+			//	case 1:	format = GL_R32F; break;
+			//	case 2:	format = GL_RG32F; break;
+			//	case 3:	format = GL_RGB32F; break;
+			//	case 4:	format = GL_RGBA32F; break;
+			//	}
+			//}
+			//break;
 		}
 
 		return format;

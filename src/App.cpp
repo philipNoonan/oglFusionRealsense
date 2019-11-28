@@ -2141,6 +2141,11 @@ void App::setUI()
 		{
 			ImGui::Text("View Options");
 
+			ImGui::Text("texLevel");
+			ImGui::PushItemWidth(-1);
+			ImGui::SliderInt("texLevel", &texLevel, 0, 10);
+			ImGui::PopItemWidth();
+
 			if (ImGui::Button("Depth")) showDepthFlag ^= 1; ImGui::SameLine();	ImGui::Checkbox("", &showDepthFlag);
 			ImGui::SameLine();
 			if (ImGui::Button("Filter")) showDepthFilteredFlag ^= 1; ImGui::SameLine();	ImGui::Checkbox("", &showDepthFilteredFlag);
@@ -2611,7 +2616,8 @@ void App::mainLoop()
 						//gflow.setFrameTexture(frame[rgbd::FRAME::CURRENT].getColorMap());
 					}
 
-					gradFilter.execute(frame[rgbd::FRAME::CURRENT].getColorFilteredMap(), 0, 3.0f, 10.0f, false);
+					// gradient is from old image
+					gradFilter.execute(frame[rgbd::FRAME::CURRENT].getColorPreviousMap(), 0, 3.0f, 10.0f, false);
 
 					disflow.execute(frame[rgbd::FRAME::CURRENT],
 						gradFilter.getGradientMap()
@@ -2995,6 +3001,7 @@ void App::mainLoop()
 			progs["ScreenQuad"]->setUniform("depthRange", glm::vec2(depthMin, depthMax));
 			progs["ScreenQuad"]->setUniform("renderType", 0);
 			progs["ScreenQuad"]->setUniform("flowType", 0);
+			progs["ScreenQuad"]->setUniform("level", texLevel);
 
 			//quad.renderMulti(frame[rgbd::FRAME::GLOBAL].getDepthMap(), frame[rgbd::FRAME::GLOBAL].getNormalMap(), useSharp == 1 ? frame[rgbd::FRAME::CURRENT].getColorFilteredMap() : frame[rgbd::FRAME::CURRENT].getColorMap(), frame[rgbd::FRAME::CURRENT].getInfraMap(), frame[rgbd::FRAME::CURRENT].getMappingMap(), gflow.getFlowTextureFrame());
 
