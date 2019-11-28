@@ -21,7 +21,9 @@ void main()
 {         
 	float diff = luminance(textureLod(lastImage, vec2(gl_FragCoord.xy) * invDenseTexSize, level).xyz) - luminance(textureLod(nextImage, vec2(gl_FragCoord.xy * invDenseTexSize) + flow.xy, level).xyz);
 	
-	//imageStore(testMap, ivec2(gl_FragCoord.xy), vec4(diff.xxx, 1));
+
+	imageStore(testMap, ivec2(gl_FragCoord.xy), vec4(flow.xy,0, 1));
+	
 
 	diff -= flow.z;
 	float weight = 1.0f / max(abs(diff), 1.0);

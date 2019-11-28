@@ -96,19 +96,19 @@ void main()
 		initialFlow.xy /= initialFlow.z;
 	}
 
-					imageStore(testMap, pixSparse, vec4(0));
+		//			imageStore(testMap, pixSparse, vec4(0));
 
 
-	initialFlow.xy *= (denseTexSize * invPreviousImageSize);
+	//initialFlow.xy *= (denseTexSize * invPreviousImageSize);
 
 	if (any(isnan(initialFlow.xy)))
 	{
 		initialFlow.xy = vec2(0);
-				imageStore(testMap, pixSparse, vec4(1));
+			//	imageStore(testMap, pixSparse, vec4(1));
 
 	}
 
-
+	initialFlow.xy *= denseTexSize;
 
 	vec2 flow = initialFlow.xy;
 
@@ -166,7 +166,6 @@ void main()
 	imageStore(sparseFlowMap, pixSparse, vec4(flow, meanDiff, 1));
     //out_flow = vec3(u.x, u.y, mean_diff);
 	
-
 
 
 

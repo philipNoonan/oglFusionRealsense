@@ -23,10 +23,13 @@ namespace rgbd
 	)
 	{
 		progs = programs;
-		maxLevels = numLevels;
+
+		maxLevels = (int)(log((2 * width) / (4.0 * 8.0)) / log(2.0) + 0.5) - 1; // 8 is patch size
+		maxLevels = std::max(0, (int)std::floor(log2((2.0f*(float)width) / ((float)5 * (float)8)))) - 1;
+		maxLevels = 3;
 
 		sparseFlowMap = std::make_shared<gl::Texture>();
-		sparseFlowMap->createStorage(numLevels, width, height, 4, GL_RGBA32F, gl::TextureType::FLOAT32, 0);
+		sparseFlowMap->createStorage(maxLevels, width / 4, height / 4, 4, GL_RGBA32F, gl::TextureType::FLOAT32, 0);
 		sparseFlowMap->setFiltering(GL_LINEAR, GL_LINEAR);
 		sparseFlowMap->setWarp(gl::TextureWarp::CLAMP_TO_EDGE);
 
@@ -97,7 +100,7 @@ namespace rgbd
 
 			lastGradientMap->bindImage(0, level, GL_READ_ONLY);
 
-			densificationFlowMap[0]->bindImage(1, level == (maxLevels - 1) ? level : level + 1, GL_READ_ONLY);
+			densificationFlowMap[0]->bindImage(1, level + 1, GL_READ_ONLY);
 			sparseFlowMap->bindImage(2, level, GL_READ_WRITE);
 
 			currentFrame.getTestMap()->bindImage(3, level, GL_READ_WRITE);
@@ -121,7 +124,7 @@ namespace rgbd
 			// input last color map
 			// input next color map
 			// output dense flow map
-
+			// this is run at the output resolution of the full image at this level
 
 
 
@@ -138,7 +141,7 @@ namespace rgbd
 			glEnable(GL_VERTEX_PROGRAM_POINT_SIZE);
 
 
-			glViewport(0, 0, (nextFlowMap->getWidth() >> level), (nextFlowMap->getHeight() >> level));
+			glViewport(0, 0, (nextFlowMap->getWidth() >> (level)), (nextFlowMap->getHeight() >> (level)));
 			//glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
 			//glClear(GL_COLOR_BUFFER_BIT);
 

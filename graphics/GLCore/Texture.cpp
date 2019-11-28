@@ -182,9 +182,11 @@ namespace gl
 
 	void Texture::createStorage(int levels, int w, int h, int channels, GLuint intFormat, TextureType type, bool normalized)
 	{
+		//GLenum theError;
 
 		this->width = w;
 		this->height = h;
+		//theError = glGetError();
 
 		internalFormat = intFormat;// getInternalFormat(type, channels);
 		bool inverted = false;
@@ -205,10 +207,11 @@ namespace gl
 		{
 			dataType = GL_UNSIGNED_BYTE;
 		}
-
+		//theError = glGetError();
 		bind();
 		glTexStorage2D(GL_TEXTURE_2D, levels, internalFormat, w, h);
 		unbind();
+		//theError = glGetError();
 
 	}
 
