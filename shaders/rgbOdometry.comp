@@ -87,7 +87,7 @@ void computeResiduals()
 
 			float mTwo = (gradXY.x * gradXY.x) + (gradXY.y * gradXY.y);
 	
-			if (mTwo >= minScale)
+			if (mTwo >= 0.00025)
 			{
 				uvec2 depthLoc = uvec2(imageLoad(mappingC2DMap, nextColorLoc).xy); // since we are using the full reso mappingMap we need to make the coords work
 

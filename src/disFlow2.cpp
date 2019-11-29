@@ -13,6 +13,8 @@ namespace rgbd
 		//progs.insert(std::make_pair("makePatches", std::make_shared<gl::Shader>(folderPath + "disMakePatches.comp")));
 		progs.insert(std::make_pair("inverseSearch", std::make_shared<gl::Shader>(folderPath + "disSearch.comp")));
 		progs.insert(std::make_pair("densification", std::make_shared<gl::Shader>(folderPath + "disDensification.vert", folderPath + "disDensification.frag")));
+		progs.insert(std::make_pair("variationalRefine", std::make_shared<gl::Shader>(folderPath + "variationalRefine.comp")));
+
 		//progs.insert(std::make_pair("medianFilter", std::make_shared<gl::Shader>(folderPath + "medianFilter.comp")));
 	}
 	void DisFlow::init(

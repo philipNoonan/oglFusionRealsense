@@ -2979,6 +2979,8 @@ void App::mainLoop()
 				progs["ScreenQuad"]->setUniform("depthRange", glm::vec2(depthMin, depthMax));
 				progs["ScreenQuad"]->setUniform("renderType", 0);
 				progs["ScreenQuad"]->setUniform("flowType", 0);
+				progs["ScreenQuad"]->setUniform("magMulti", 10.0f);
+
 				quad.renderMulti(frame[rgbd::FRAME::CURRENT].getDepthMap(), frame[rgbd::FRAME::VIRTUAL].getNormalMap(), frame[rgbd::FRAME::CURRENT].getColorAlignedToDepthMap(), frame[rgbd::FRAME::CURRENT].getInfraMap(), frame[rgbd::FRAME::CURRENT].getMappingC2DMap(), disflow.getFlowMap());
 
 				//quad.renderMulti(frame[rgbd::FRAME::CURRENT].getDepthMap(), frame[rgbd::FRAME::VIRTUAL].getNormalMap(), frame[rgbd::FRAME::CURRENT].getColorAlignedToDepthMap(), frame[rgbd::FRAME::CURRENT].getInfraMap(), frame[rgbd::FRAME::CURRENT].getMappingC2DMap(), gflow.getFlowTextureFrame());
@@ -3002,6 +3004,7 @@ void App::mainLoop()
 			progs["ScreenQuad"]->setUniform("renderType", 0);
 			progs["ScreenQuad"]->setUniform("flowType", 0);
 			progs["ScreenQuad"]->setUniform("level", texLevel);
+			progs["ScreenQuad"]->setUniform("magMulti", 1.0f);
 
 			//quad.renderMulti(frame[rgbd::FRAME::GLOBAL].getDepthMap(), frame[rgbd::FRAME::GLOBAL].getNormalMap(), useSharp == 1 ? frame[rgbd::FRAME::CURRENT].getColorFilteredMap() : frame[rgbd::FRAME::CURRENT].getColorMap(), frame[rgbd::FRAME::CURRENT].getInfraMap(), frame[rgbd::FRAME::CURRENT].getMappingMap(), gflow.getFlowTextureFrame());
 

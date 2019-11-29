@@ -1,0 +1,374 @@
+﻿#version 430
+
+layout(local_size_x = 32, local_size_y = 32) in;
+
+float luminance(vec3 color)
+{
+    //return 0.2126 * float(color.x) / 255.0f + 0.7152 * float(color.y) / 255.0f + 0.0722 * float(color.z) / 255.0f;
+    return 0.299 * float(color.x) + 0.587 * float(color.y) + 0.114 * float(color.z);
+
+}
+
+
+layout(binding = 0) uniform sampler2D flowTex;
+layout(binding = 1) uniform sampler2D lastImageTex;
+layout(binding = 2) uniform sampler2D nextImageTex;
+
+layout(binding = 0, rg32f) uniform image2D meanI_map;
+layout(binding = 1, rg32f) uniform image2D I_t_map;
+
+layout(binding = 2, rgba32f) uniform image2D pixelFlowMap; // xy is the updated flow, zw is the base flow?
+layout(binding = 3, rg32f) uniform image2D pixelDiffFlowMap;
+
+layout(binding = 4, rg32f) uniform image2D I_x_y_map;
+
+layout(binding = 5, r32f) uniform image2D diffusivityMap;
+
+
+struct dataTerms
+{
+    float A11;
+    float A12;
+    float A22;
+    float b1;
+    float b2;
+};
+
+layout(std430, binding = 0) buffer dataTermBuf
+{
+    DataTerm dataTermBuffer[];
+};
+
+uniform functionID;
+
+uniform int level;
+uniform vec2 invTexSize;
+
+uniform bool zeroDiffFlow;
+uniform float alpha;
+
+const float eps_sq = 0.001 * 0.001;
+
+uniform int numNonZeroPhases;
+
+const float omega = 1.8f;
+
+void warpFlow()
+{
+	ivec2 pix = ivec2(gl_GetGlobalInvocationID.xy);
+	vec2 texSize = vec2(textureSize(flowTex, level).xy);
+	vec2 pixCenter = vec2(pix + 0.5f) * invTexSize;
+
+	// flow is in 0 - 1 range for whole image
+	vec4 flow = textureLod(flowTex, pixCenter, level);
+
+	flow.xy /= flow.z;
+
+	if (any(isnan(flow.xyz)))
+	{
+		flow.xy == vec2(0.0f);
+	}
+
+	float I_0 = luminance(textureLod(lastImageTex, pixCenter, level).xyz);
+	float I_w = luminance(textureLod(nextImageTex, ((vec2(pix) + 0.5f) * invTexSize) + flow.xy, level).xyz);
+
+	float I = 0.5f * (I_0 + I_w);
+	float I_t = I_w - I_0;
+
+	float normFlow = flow.xy * texSize;
+
+	imageStore(meanI_map, pix, vec4(I));
+	imageStore(I_t_map, pix, vec4(I_t));
+
+	
+	imageStore(pixelFlowMap, pix, vec4(normFlow, 0, 0));
+
+}
+
+void calcDerivitives()
+{
+	ivec2 pix = ivec2(gl_GlobalInvocationID.xy);
+
+	float x_m2 = imageLoad(meanDiffI, pix, ivec2(-2,  0)).x;
+	float x_m1 = imageLoad(meanDiffI, pix, ivec2(-1,  0)).x;
+	float x_p1 = imageLoad(meanDiffI, pix, ivec2( 1,  0)).x;
+	float x_p2 = imageLoad(meanDiffI, pix, ivec2( 2,  0)).x;
+									  
+	float y_m2 = imageLoad(meanDiffI, pix, ivec2( 0, -2)).x;
+	float y_m1 = imageLoad(meanDiffI, pix, ivec2( 0, -1)).x;
+	float y_p1 = imageLoad(meanDiffI, pix, ivec2( 0,  1)).x;
+	float y_p2 = imageLoad(meanDiffI, pix, ivec2( 0,  2)).x;
+
+	float Ix = (x_p1 - x_m1) * (2.0/3.0) + (x_m2 - x_p2) * (1.0/12.0);
+	float Iy = (y_p1 - y_m1) * (2.0/3.0) + (y_m2 - y_p2) * (1.0/12.0);
+
+	imageStore(I_x_y_map, pix, vec4(Ix, Iy, 0, 0));
+
+}
+
+void calcDiffusivity()
+{
+	ivec2 pix = ivec2(gl_GlobalInvocationID.xy);
+	
+	float g;
+
+	if (zeroDiffFlow)
+	{
+	// BASE FLOW OR CURRENT FLOW?
+		vec2 uv_x = imageload(pixelFlowMap, ivec2(pix.x + 1, pix.y)) - imageLoad(pixelFlowMap, ivec2(pix.x - 1, pix.y));
+		vec2 uv_y = imageload(pixelFlowMap, ivec2(pix.x, pix.y + 1)) - imageLoad(pixelFlowMap, ivec2(pix.x, pix.y - 1));
+
+		g = alpha * inversesqrt(uv_x.x * uv_x.x + uv_y.x * uv_y.x + uv_x.y * uv_x.y + uv_y.y * uv_y.y + eps_sq);
+	}
+	else
+	{
+		vec2 uv_x = (imageload(pixelFlowMap, ivec2(pix.x + 1, pix.y)) + 
+					 imageload(pixelDiffFlowMap, ivec2(pix.x + 1, pix.y))) -
+					 (imageLoad(pixelFlowMap, ivec2(pix.x - 1, pix.y)) +
+					 imageLoad(pixelDiffFlowMap, ivec2(pix.x - 1, pix.y)));
+
+		vec2 uv_y = (imageload(pixelFlowMap, ivec2(pix.x, pix.y + 1)) + 
+					 imageload(pixelDiffFlowMap, ivec2(pix.x, pix.y + 1))) -
+					 (imageLoad(pixelFlowMap, ivec2(pix.x, pix.y - 1)) +
+					 imageLoad(pixelDiffFlowMap, ivec2(pix.x, pix.y - 1)));
+
+		g = alpha * inversesqrt(uv_x.x * uv_x.x + uv_y.x * uv_y.x + uv_x.y * uv_x.y + uv_y.y * uv_y.y + eps_sq);
+
+	}
+
+	imageStore(diffusivityMap, pix, vec4(g));
+
+}
+
+void compEq(ivec2 tc, ivec2 tcLeft, ivec2 tcDown, out vec3 Avec, out vec2 bvec)
+{
+	float du, dv;
+
+	if (zerDiffFlow)
+	{
+		du = dv = 0.0f;
+	}
+	else
+	{
+		vec2 diffFlow = imageLoad(pixelDiffFlowMap, tc).xy;
+		du = diffFlow.x;
+		dv = diffFlow.y;
+	}
+
+	// Read 1st derivs
+
+	vec2 I_x_y = imageLoad(I_x_y_map, tc).xy;
+
+	float I_x = I_x_y.x;
+	float I_y = I_x_y.y;
+
+	float beta_0 = 1.0 / (I_x * I_x + I_y * I_y + 1e-7);
+
+	float I_t = imageLoad(I_t_map, tc).x;
+
+	// E_I term. Note that we don't square β_0, in line with DeepFlow;
+    // it's probably an error (see variational_refinement.txt),
+    // but squaring it seems to give worse results.
+
+	float k1 = delta * beta_0 * inversesqrt(beta_0 * (I_x * du + I_y * dv + I_t) * (I_x * du + I_y * dv + I_t) + 1e-6);
+	float A11 = k1 * I_x * I_x;
+	float A12 = k1 * I_x * I_y;
+	float A22 = k1 * I_y * I_y;
+	float b1 = -k1 * I_t * I_x;
+	float b2 = -k1 * I_t * I_y;
+
+	// Compute the second derivatives. First I_xx and I_xy.
+	vec2 I_x_y_m2 = imageLoad(I_x_y_map, tc + ivec2(-2,  0)).xy;
+	vec2 I_x_y_m1 = imageLoad(I_x_y_map, tc + ivec2(-1,  0)).xy;
+	vec2 I_x_y_p1 = imageLoad(I_x_y_map, tc + ivec2( 1,  0)).xy;
+	vec2 I_x_y_p2 = imageLoad(I_x_y_map, tc + ivec2( 2,  0)).xy;
+	vec2 I_xx_yx = (I_x_y_p1 - I_x_y_m1) * (2.0/3.0) + (I_x_y_m2 - I_x_y_p2) * (1.0/12.0);
+	float I_xx = I_xx_yx.x;
+	float I_xy = I_xx_yx.y;
+
+	// And now I_yy; I_yx = I_xy, bar rounding differences, so we don't
+	// bother computing it. We still have to sample the x component,
+	// though, but we can throw it away immediately.
+	float I_y_m2 = imageLoad(I_x_y_map, tc + ivec2(0, -2)).y;
+	float I_y_m1 = imageLoad(I_x_y_map, tc + ivec2(0, -1)).y;
+	float I_y_p1 = imageLoad(I_x_y_map, tc + ivec2(0,  1)).y;
+	float I_y_p2 = imageLoad(I_x_y_map, tc + ivec2(0,  2)).y;
+	float I_yy = (I_y_p1 - I_y_m1) * (2.0/3.0) + (I_y_m2 - I_y_p2) * (1.0/12.0);
+
+	// Finally I_xt and I_yt. (We compute these as I_tx and I_yt.)
+	vec2 I_t_m2 = imageLoad(I_t_map, tc + ivec2(-2,  0)).xy;
+	vec2 I_t_m1 = imageLoad(I_t_map, tc + ivec2(-1,  0)).xy;
+	vec2 I_t_p1 = imageLoad(I_t_map, tc + ivec2( 1,  0)).xy;
+	vec2 I_t_p2 = imageLoad(I_t_map, tc + ivec2( 2,  0)).xy;
+	vec2 I_tx_ty = (I_t_p1 - I_t_m1) * (2.0/3.0) + (I_t_m2 - I_t_p2) * (1.0/12.0);
+	float I_xt = I_tx_ty.x;
+	float I_yt = I_tx_ty.y;
+
+	// E_G term. Same normalization as beta_0
+	float beta_x = 1.0 / (I_xx * I_xx + I_xy * I_xy + 1e-7);
+	float beta_y = 1.0 / (I_xy * I_xy + I_yy * I_yy + 1e-7);
+	float k2 = gamma * inversesqrt(
+	        beta_x * (I_xx * du + I_xy * dv + I_xt) * (I_xx * du + I_xy * dv + I_xt) +
+	        beta_y * (I_xy * du + I_yy * dv + I_yt) * (I_xy * du + I_yy * dv + I_yt) +
+	        1e-6);
+	float k_x = k2 * beta_x;
+	float k_y = k2 * beta_y;
+	A11 += k_x * I_xx * I_xx + k_y * I_xy * I_xy;
+	A12 += k_x * I_xx * I_xy + k_y * I_xy * I_yy;
+	A22 += k_x * I_xy * I_xy + k_y * I_yy * I_yy;
+	b1 -= k_x * I_xx * I_xt + k_y * I_xy * I_yt;
+	b2 -= k_x * I_xy * I_xt + k_y * I_yy * I_yt;
+
+	// E_S term, sans the part on the right-hand side that deals with
+	// the neighboring pixels. The gamma is multiplied in in smoothness.frag.
+	//
+	// Note that we sample in-between two texels, which gives us the 0.5 *
+	// (x[-1] + x[0]) part for free. If one of the texels is a border
+	// texel, it will have zero alpha, and zero_if_outside_border() will
+	// set smoothness to zero.
+	float smooth_l = imageLoad(diffusivity_tex, tc_left);
+	float smooth_r = imageLoad(diffusivity_tex, tc_left + ivec2(1, 0));
+	float smooth_d = imageLoad(diffusivity_tex, tc_down);
+	float smooth_u = imageLoad(diffusivity_tex, tc_down + ivec2(0, 1));
+	A11 += smooth_l + smooth_r + smooth_d + smooth_u;
+	A22 += smooth_l + smooth_r + smooth_d + smooth_u;
+
+	// Laplacian of (u0, v0).
+	vec2 laplacian =
+	        smooth_l * imageLoad(pixelFlowMap, tc + ivec2(-1,  0)).zw +
+	        smooth_r * imageLoad(pixelFlowMap, tc + ivec2( 1,  0)).zw +
+	        smooth_d * imageLoad(pixelFlowMap, tc + ivec2( 0, -1)).zw +
+	        smooth_u * imageLoad(pixelFlowMap, tc + ivec2( 0,  1)).zw -
+	        (smooth_l + smooth_r + smooth_d + smooth_u) * imageLoad(pixelFlowMap, tc).xy;
+	b1 += laplacian.x;
+	b2 += laplacian.y;
+
+	Avec = vec3(A11, A12, A22);
+	//Avec = vec3(1.0f / A11, A12, 1.0f / A22);
+
+	bvec = vec2(b1, b2);
+}
+
+
+void computeEquation()
+{
+	ivec2 pix = ivec2(gl_GlobalInvocationID.xy);
+
+	ivec2 imSize = ivec2(imageSize(I_x_y_map).xy);
+
+	ivec2 pixLeft = pix - ivec2(1, 0); // IS THIS CORRECT OFFSET?
+	ivec2 pixDown = pix - ivec2(0, 1);
+
+	vec3 A;
+	vec2 b;
+
+	compEq(pix, pixLeft, pixDown, A, b);
+
+	dataTermBuffer[pix.y * imSize.x + pix.x].A11 = A.x; // A11
+    dataTermBuffer[pix.y * imSize.x + pix.x].A12 = A.y; // A12
+    dataTermBuffer[pix.y * imSize.x + pix.x].A22 = A.z; // A22
+    dataTermBuffer[pix.y * imSize.x + pix.x].b1 = b.x; // b1
+    dataTermBuffer[pix.y * imSize.x + pix.x].b2 = b.y; // b2
+
+
+}
+
+
+void performSOR()
+{
+	ivec2 pix = ivec2(gl_GlobalInvocationID.xy);
+
+	ivec2 imSize = ivec2(imageSize(I_x_y_map).xy);
+
+	ivec2 pixLeft = pix - ivec2(1, 0); // IS THIS CORRECT OFFSET?
+	ivec2 pixDown = pix - ivec2(0, 1);
+
+
+	dataTerms dtb = dataTermBuffer[pix.y * imSize.x + pix.x];
+
+	float A11 = dtb.A11;
+    float A12 = dtb.A12;
+    float A22 = dtb.A22;
+    float b1 = dtb.b1;
+    float b2 = dtb.b2;
+
+	vec2 diffFlow;
+
+	if (numNonZeroPhases == 0)
+	{
+		diffFlow.x = omega * b1 / A11;
+		diffFlow.y = omega * b2 / A22;
+	}
+	else
+	{
+		// Subtract the missing terms from the right-hand side
+		// (it couldn't be done earlier, because we didn't know
+		// the values of the neighboring pixels; they change for
+		// each SOR iteration).
+		float smooth_l = imageLoad(diffusivityMap, pixLeft));
+		float smooth_r = imageLoad(diffusivityMap, pixLeft + ivec2(1, 0)));
+		float smooth_d = imageLoad(diffusivityMap, pixDown));
+		float smooth_u = imageLoad(diffusivityMap, pixDown + ivec2(0, 1)));
+		b += smooth_l * imageLoad(pixelDiffFlowMap, pix + ivec2(-1,  0)).xy;
+		b += smooth_r * imageLoad(pixelDiffFlowMap, pix + ivec2( 1,  0)).xy;
+		b += smooth_d * imageLoad(pixelDiffFlowMap, pix + ivec2( 0, -1)).xy;
+		b += smooth_u * imageLoad(pixelDiffFlowMap, pix + ivec2( 0,  1)).xy;
+		
+		if (numNonZeroPhases == 1) {
+		        diffFlow = vec2(0.0f);
+		} else {
+		        diffFlow = imageLoad(pixelDiffFlowMap, pix).xy;
+		}
+		
+		// From https://en.wikipedia.org/wiki/Successive_over-relaxation.
+		float sigma_u = A12 * diffFlow.y;
+		diffFlow.x += omega * ((b1 - sigma_u) / A11 - diffFlow.x);
+		float sigma_v = A12 * diffFlow.x;
+		diffFlow.y += omega * ((b2 - sigma_v) / A22 - diffFlow.y);
+	}
+
+
+
+}
+
+void addBaseFlow()
+{
+	ivec2 pix = ivec2(gl_GlobalInvocationID.xy);
+
+	vec4 baseFlow = imageLoad(pixelFlowMap, pix);
+
+	vec2 diffFlow = imageLoad(pixelDiffFlowMap, pix).xy;
+
+	imageStore(pixelFlowMap, pix, vec4(baseFlow.xy + diffFlow, baseFlow.zw));
+
+}
+
+
+void main()
+{
+	if (functionID == 0)
+	{
+		warpFlow();
+	}
+	else if (functionID == 1)
+	{
+		calcDerivitives();
+	}
+	else if (functionID == 2)
+	{
+		calcDiffusivity();
+	}
+	else if (functionID == 3)
+	{
+		computeEquation();
+	}
+	else if (functionID == 4)
+	{
+		performSOR();
+	}
+	else if (functionID == 5)
+	{
+		addBaseFlow();
+	}
+
+}
