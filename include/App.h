@@ -19,7 +19,7 @@
 #include "kRender.h"
 #include "renderHelpers.h"
 
-#include "openPoseWrapper.h"
+//#include "openPoseWrapper.h"
 
 #include "interface.h"
 //#include "openCVStuff.h"
@@ -27,7 +27,7 @@
 //#include "gDisOptFlow.h"
 #include "mcubes.h"
 
-#include "ImGuiFileDialog.h"
+//#include "ImGuiFileDialog.h"
 
 #include "flood.h"
 #include "flow.h"
@@ -37,7 +37,7 @@
 #include "opencv2/core/utility.hpp"
 #include "opencv2/highgui.hpp"
 #include "opencv2/imgproc.hpp"
-#include "opencv2/optflow.hpp"
+//#include "opencv2/optflow.hpp"
 
 
 #include <Eigen/Core>
@@ -46,7 +46,7 @@
 #include <unsupported/Eigen/MatrixFunctions>
 #include "eigen_utils.h"
 
-#include "markerTracking.h"
+//#include "markerTracking.h"
 
 
 #include <chrono>
@@ -200,7 +200,7 @@ private:
 	kRender krender;
 
 	//OPENPOSE WRAPPER
-	OPWrapper opwrapper;
+	//OPWrapper opwrapper;
 
 
 	//Realsense2Camera kcamera;
@@ -431,7 +431,7 @@ private:
 	int numberOfCameras;
 
 	/// MARKER TRACKING
-	MarkerTracker mTracker;
+	//MarkerTracker mTracker;
 	std::vector<glm::mat4> markerMats;
 
 	//glm::mat4 cam2camTrans(1.0f);

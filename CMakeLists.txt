@@ -43,7 +43,7 @@ include(BasicConfig)
 
 
 find_package(OpenCV REQUIRED)
-find_package(aruco REQUIRED)
+#find_package(aruco REQUIRED)
 #find_package(gem2 REQUIRED)
 find_package(OpenGL REQUIRED)
 find_package(GLEW REQUIRED)
@@ -53,12 +53,12 @@ find_package(imgui REQUIRED)
 find_package(eigen3 REQUIRED)
 find_package(realsense2 REQUIRED)
 
-find_package(openpose REQUIRED)
-find_package(Caffe REQUIRED)
-find_package(glog REQUIRED)
-find_package(protobuf REQUIRED)
-find_package(hdf5 REQUIRED)
-find_package(gflags REQUIRED)
+#find_package(openpose REQUIRED)
+#find_package(Caffe REQUIRED)
+#find_package(glog REQUIRED)
+#find_package(protobuf REQUIRED)
+#find_package(hdf5 REQUIRED)
+#find_package(gflags REQUIRED)
 
 #find_package(Torch REQUIRED)
 #find_package(torchvision REQUIRED)
@@ -149,7 +149,7 @@ set_target_properties(${PROJECT_NAME} PROPERTIES COMPILE_PDB_NAME_DEBUG "${PROJE
 target_include_directories(${PROJECT_NAME} PUBLIC "include")
 target_include_directories(${PROJECT_NAME} PUBLIC "graphics")
 target_include_directories(${PROJECT_NAME} PUBLIC ${OpenCV_INCLUDE_DIRS})
-target_include_directories(${PROJECT_NAME} PUBLIC ${torchvision_INCLUDE_DIRS})
+#target_include_directories(${PROJECT_NAME} PUBLIC ${torchvision_INCLUDE_DIRS})
 # header only
 include_directories(${DIRENT_INCLUDE_DIR})
 
@@ -164,13 +164,13 @@ target_link_libraries(${PROJECT_NAME} imgui::imgui)
 target_link_libraries(${PROJECT_NAME} Eigen3::Eigen)
 target_link_libraries(${PROJECT_NAME} realsense2::realsense-file realsense2::realsense2)
 target_link_libraries(${PROJECT_NAME} ${OpenCV_LIBS})
-target_link_libraries(${PROJECT_NAME} ${aruco_LIBS})
+#target_link_libraries(${PROJECT_NAME} ${aruco_LIBS})
 #target_link_libraries(${PROJECT_NAME} gem2::gem2)
 
-target_link_libraries(${PROJECT_NAME} OpenPose::openpose
-	  protobuf::libprotobuf
-	  hdf5::hdf5-shared
-	  gflags
-	  glog::glog
-	  caffe)
+#target_link_libraries(${PROJECT_NAME} OpenPose::openpose
+#	  protobuf::libprotobuf
+#	  hdf5::hdf5-shared
+#	  gflags
+#	  glog::glog
+#	  caffe)
 	  

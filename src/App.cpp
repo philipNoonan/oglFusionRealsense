@@ -1562,7 +1562,7 @@ void App::setUI()
 		ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(0, 0));
 		ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
 
-		ImGui::SetNextWindowSize(ImVec2(graphWindow.w, graphWindow.h), ImGuiSetCond_Always);
+		//ImGui::SetNextWindowSize(ImVec2(graphWindow.w, graphWindow.h), ImGuiSetCond_Always);
 		ImGuiWindowFlags window_flags = 0;
 		window_flags |= ImGuiWindowFlags_NoTitleBar;
 		//window_flags |= ImGuiWindowFlags_ShowBorders;
@@ -1595,7 +1595,7 @@ void App::setUI()
 	// 2d data
 	{
 		ImGui::SetNextWindowPos(ImVec2(display2DWindow.x, display2DWindow.y));
-		ImGui::SetNextWindowSize(ImVec2(display2DWindow.w, display2DWindow.h), ImGuiSetCond_Always);
+		//ImGui::SetNextWindowSize(ImVec2(display2DWindow.w, display2DWindow.h), ImGuiSetCond_Always);
 
 		ImGuiWindowFlags window_flags = 0;
 		window_flags |= ImGuiWindowFlags_NoTitleBar;
@@ -1612,7 +1612,7 @@ void App::setUI()
 	//3d data
 	{
 		ImGui::SetNextWindowPos(ImVec2(display3DWindow.x, display3DWindow.y));
-		ImGui::SetNextWindowSize(ImVec2(display3DWindow.w, display3DWindow.h), ImGuiSetCond_Always);
+		//ImGui::SetNextWindowSize(ImVec2(display3DWindow.w, display3DWindow.h), ImGuiSetCond_Always);
 
 		ImGuiWindowFlags window_flags = 0;
 		window_flags |= ImGuiWindowFlags_NoTitleBar;
@@ -1631,7 +1631,7 @@ void App::setUI()
 	// navigation
 	{
 		ImGui::SetNextWindowPos(ImVec2(navigationWindow.x, navigationWindow.y));
-		ImGui::SetNextWindowSize(ImVec2(navigationWindow.w, navigationWindow.h), ImGuiSetCond_Always);
+		//ImGui::SetNextWindowSize(ImVec2(navigationWindow.w, navigationWindow.h), ImGuiSetCond_Always);
 		ImGuiWindowFlags window_flags = 0;
 		window_flags |= ImGuiWindowFlags_NoTitleBar;
 		//window_flags |= ImGuiWindowFlags_ShowBorders;
@@ -1949,7 +1949,7 @@ void App::setUI()
 			{
 				if (cameraRunning)
 				{
-					opwrapper.start();
+					//opwrapper.start();
 				}
 				else
 				{
@@ -1987,143 +1987,143 @@ void App::setUI()
 
 			}ImGui::SameLine(); ImGui::Checkbox("", &performFlow);
 
-			if (ImGui::Button("Stereo"))
-			{
-				mTracker.setNumberOfCameras(numberOfCameras);
-				mTracker.setCameraDevice(cameraDevice);
-				mTracker.setupAruco();
+			//if (ImGui::Button("Stereo"))
+			//{
+			//	mTracker.setNumberOfCameras(numberOfCameras);
+			//	mTracker.setCameraDevice(cameraDevice);
+			//	mTracker.setupAruco();
 
-				for (int i = 0; i < numberOfCameras; i++)
-				{
-					//mTracker.setCamPams(i, cameraInterface.getDepthIntrinsics(i).fx,
-					//	cameraInterface.getDepthIntrinsics(i).fy,
-					//	cameraInterface.getDepthIntrinsics(i).cx,
-					//	cameraInterface.getDepthIntrinsics(i).cy,
-					//	depthFrameSize[i].x,
-					//	depthFrameSize[i].y);
+			//	for (int i = 0; i < numberOfCameras; i++)
+			//	{
+			//		//mTracker.setCamPams(i, cameraInterface.getDepthIntrinsics(i).fx,
+			//		//	cameraInterface.getDepthIntrinsics(i).fy,
+			//		//	cameraInterface.getDepthIntrinsics(i).cx,
+			//		//	cameraInterface.getDepthIntrinsics(i).cy,
+			//		//	depthFrameSize[i].x,
+			//		//	depthFrameSize[i].y);
 
-					mTracker.setCamPams(i, cameraInterface.getColorIntrinsics(i).fx,
-						cameraInterface.getColorIntrinsics(i).fy,
-						cameraInterface.getColorIntrinsics(i).cx,
-						cameraInterface.getColorIntrinsics(i).cy,
-						colorFrameSize[i].x,
-						colorFrameSize[i].y);
-				}
-				performStereo ^= 1;
+			//		mTracker.setCamPams(i, cameraInterface.getColorIntrinsics(i).fx,
+			//			cameraInterface.getColorIntrinsics(i).fy,
+			//			cameraInterface.getColorIntrinsics(i).cx,
+			//			cameraInterface.getColorIntrinsics(i).cy,
+			//			colorFrameSize[i].x,
+			//			colorFrameSize[i].y);
+			//	}
+			//	performStereo ^= 1;
 
-			}ImGui::SameLine(); ImGui::Checkbox("", &performStereo);
+			//}ImGui::SameLine(); ImGui::Checkbox("", &performStereo);
 
-			if (performStereo)
-			{
-				if (ImGui::Button("Capture"))
-				{
-					rs2::frame infraFrame0, infraFrame1;
-					cv::Mat irMat0, irMat1;
-					if (cameraInterface.getInfraQueues()[0].poll_for_frame(&infraFrame0))
-					{
-						irMat0 = cv::Mat(infraFrameSize[0].y, infraFrameSize[0].x, CV_8UC1, (void*)infraFrame0.get_data());
-					}
-					if (cameraInterface.getInfraQueues()[1].poll_for_frame(&infraFrame1))
-					{
-						irMat1 = cv::Mat(infraFrameSize[1].y, infraFrameSize[1].x, CV_8UC1, (void*)infraFrame1.get_data());
-					}
-					mTracker.setStereoPair(irMat0, irMat1);
-				}
+			//if (performStereo)
+			//{
+			//	if (ImGui::Button("Capture"))
+			//	{
+			//		rs2::frame infraFrame0, infraFrame1;
+			//		cv::Mat irMat0, irMat1;
+			//		if (cameraInterface.getInfraQueues()[0].poll_for_frame(&infraFrame0))
+			//		{
+			//			irMat0 = cv::Mat(infraFrameSize[0].y, infraFrameSize[0].x, CV_8UC1, (void*)infraFrame0.get_data());
+			//		}
+			//		if (cameraInterface.getInfraQueues()[1].poll_for_frame(&infraFrame1))
+			//		{
+			//			irMat1 = cv::Mat(infraFrameSize[1].y, infraFrameSize[1].x, CV_8UC1, (void*)infraFrame1.get_data());
+			//		}
+			//		mTracker.setStereoPair(irMat0, irMat1);
+			//	}
 
-				if (ImGui::Button("StereoCalibrate"))
-				{
-					mTracker.stereoCalibrate(depthToDepth);
+			//	if (ImGui::Button("StereoCalibrate"))
+			//	{
+			//		mTracker.stereoCalibrate(depthToDepth);
 
-					std::cout << glm::to_string(depthToDepth) << std::endl;
-				}
-			}
-
-
-
-			if (ImGui::Button("Aruco"))
-			{
-				performAruco ^= 1;
-				if (performAruco)
-				{
-					mTracker.setNumberOfCameras(numberOfCameras);
-					mTracker.setCameraDevice(cameraDevice);
-					mTracker.setupAruco();
-
-					for (int i = 0; i < numberOfCameras; i++)
-					{
-						//mTracker.setCamPams(i, cameraInterface.getDepthIntrinsics(i).fx,
-						//	cameraInterface.getDepthIntrinsics(i).fy,
-						//	cameraInterface.getDepthIntrinsics(i).cx,
-						//	cameraInterface.getDepthIntrinsics(i).cy,
-						//	depthFrameSize[i].x,
-						//	depthFrameSize[i].y);
-
-						mTracker.setCamPams(i, cameraInterface.getColorIntrinsics(i).fx,
-							cameraInterface.getColorIntrinsics(i).fy,
-							cameraInterface.getColorIntrinsics(i).cx,
-							cameraInterface.getColorIntrinsics(i).cy,
-							colorFrameSize[i].x,
-							colorFrameSize[i].y);
-					}
-
-					mTracker.configGEM();
-					mTracker.startTracking();
-				}
-				else
-				{
-					mTracker.stopTracking();
-				}
-
-			}
-			ImGui::SameLine(); ImGui::Checkbox("", &performAruco);
-			static int gemOption = gemStatus::STOPPED;
-
-			if (ImGui::Button("Load Previous"))
-			{
-				loadPreviousExtrinsicCalibrationFromFile();
-			}
-			if (ImGui::Button("Save Current"))
-			{
-				saveExtrinsicCalibrationToFile();
-			}
-			//static int gemOpt = 0;
-			if (performAruco)
-			{
+			//		std::cout << glm::to_string(depthToDepth) << std::endl;
+			//	}
+			//}
 
 
 
-				ImGui::RadioButton("Stopped", &gemOption, 0); ImGui::SameLine();
-				ImGui::RadioButton("Collect", &gemOption, 1); ImGui::SameLine();
-				ImGui::RadioButton("AutoCalibrate", &gemOption, 2); ImGui::SameLine();
-				ImGui::RadioButton("Track", &gemOption, 3);
+			//if (ImGui::Button("Aruco"))
+			//{
+			//	performAruco ^= 1;
+			//	if (performAruco)
+			//	{
+			//		mTracker.setNumberOfCameras(numberOfCameras);
+			//		mTracker.setCameraDevice(cameraDevice);
+			//		mTracker.setupAruco();
 
-				mTracker.setGemOption(gemOption);
+			//		for (int i = 0; i < numberOfCameras; i++)
+			//		{
+			//			//mTracker.setCamPams(i, cameraInterface.getDepthIntrinsics(i).fx,
+			//			//	cameraInterface.getDepthIntrinsics(i).fy,
+			//			//	cameraInterface.getDepthIntrinsics(i).cx,
+			//			//	cameraInterface.getDepthIntrinsics(i).cy,
+			//			//	depthFrameSize[i].x,
+			//			//	depthFrameSize[i].y);
 
-				if (ImGui::Button("Calibrate"))
-				{
-					mTracker.calibrate();
-					gemOption = gemStatus::TRACKING;
-				}
-				ImGui::SameLine();
-				if (ImGui::Button("Clear Calibration"))
-				{
-					mTracker.clearCalibration();
-					gemOption = gemStatus::STOPPED;
-				}
-				ImGui::SameLine();
+			//			mTracker.setCamPams(i, cameraInterface.getColorIntrinsics(i).fx,
+			//				cameraInterface.getColorIntrinsics(i).fy,
+			//				cameraInterface.getColorIntrinsics(i).cx,
+			//				cameraInterface.getColorIntrinsics(i).cy,
+			//				colorFrameSize[i].x,
+			//				colorFrameSize[i].y);
+			//		}
 
-				if (ImGui::Button("Export Calibration")) mTracker.exportCalibration();
+			//		mTracker.configGEM();
+			//		mTracker.startTracking();
+			//	}
+			//	else
+			//	{
+			//		mTracker.stopTracking();
+			//	}
+
+			//}
+			//ImGui::SameLine(); ImGui::Checkbox("", &performAruco);
+			//static int gemOption = gemStatus::STOPPED;
+
+			//if (ImGui::Button("Load Previous"))
+			//{
+			//	loadPreviousExtrinsicCalibrationFromFile();
+			//}
+			//if (ImGui::Button("Save Current"))
+			//{
+			//	saveExtrinsicCalibrationToFile();
+			//}
+			////static int gemOpt = 0;
+			//if (performAruco)
+			//{
 
 
-				if (ImGui::Button("Detect Marker Pairs"))
-				{
-					//mTracker.detectPairs();
-					gemOption = gemStatus::PAIRING;
-				}
+
+			//	ImGui::RadioButton("Stopped", &gemOption, 0); ImGui::SameLine();
+			//	ImGui::RadioButton("Collect", &gemOption, 1); ImGui::SameLine();
+			//	ImGui::RadioButton("AutoCalibrate", &gemOption, 2); ImGui::SameLine();
+			//	ImGui::RadioButton("Track", &gemOption, 3);
+
+			//	mTracker.setGemOption(gemOption);
+
+			//	if (ImGui::Button("Calibrate"))
+			//	{
+			//		mTracker.calibrate();
+			//		gemOption = gemStatus::TRACKING;
+			//	}
+			//	ImGui::SameLine();
+			//	if (ImGui::Button("Clear Calibration"))
+			//	{
+			//		mTracker.clearCalibration();
+			//		gemOption = gemStatus::STOPPED;
+			//	}
+			//	ImGui::SameLine();
+
+			//	if (ImGui::Button("Export Calibration")) mTracker.exportCalibration();
+
+
+			//	if (ImGui::Button("Detect Marker Pairs"))
+			//	{
+			//		//mTracker.detectPairs();
+			//		gemOption = gemStatus::PAIRING;
+			//	}
 
 
 
-			}
+			//}
 
 
 
@@ -2544,54 +2544,54 @@ void App::mainLoop()
 				cv::Mat cMat = cv::Mat(480, 848, CV_8UC4, colorVec.data());
 				//cv::imshow("col", cMat);
 				//cv::waitKey(1);
-				opwrapper.setImage(cMat, 0);
+				//opwrapper.setImage(cMat, 0);
 			}
 
-			if (performAruco)
-			{
-				mTracker.useGEM();
+			//if (performAruco)
+			//{
+			//	mTracker.useGEM();
 
-				mTracker.getMarkerData(markerMats);
+			//	mTracker.getMarkerData(markerMats);
 
-				krender.setColorToDepth(colorToDepth[cameraDevice]);
-				krender.setDepthToColor(depthToColor[cameraDevice]);
+			//	krender.setColorToDepth(colorToDepth[cameraDevice]);
+			//	krender.setDepthToColor(depthToColor[cameraDevice]);
 
-				if (markerMats.size() > 0)
-				{
-					//if (mTracker.gemStatus == gemStatus::TRACKING)
-					//{
-					//	krender.setMarkerData(tMat);
+			//	if (markerMats.size() > 0)
+			//	{
+			//		//if (mTracker.gemStatus == gemStatus::TRACKING)
+			//		//{
+			//		//	krender.setMarkerData(tMat);
 
-					//}
-					//else
-					//{
-					krender.setMarkerData(markerMats);
-					//}
-				}
-			}
+			//		//}
+			//		//else
+			//		//{
+			//		krender.setMarkerData(markerMats);
+			//		//}
+			//	}
+			//}
 
-			if (numberOfCameras > 1 && mTracker.getGemStatus() == 5)
-			{
-				//cam2camTrans = mTracker.getCam2CamTransform();
+			//if (numberOfCameras > 1 && mTracker.getGemStatus() == 5)
+			//{
+			//	//cam2camTrans = mTracker.getCam2CamTransform();
 
-				//glm::mat4 test0 = colorToDepth[0] * cam2camTrans * depthToColor[1];
-				//glm::mat4 test1 = colorToDepth[1] * cam2camTrans * depthToColor[0];
-				//glm::mat4 test01 = colorToDepth[0] * glm::inverse(cam2camTrans) * depthToColor[1];
-				//glm::mat4 test11 = colorToDepth[1] * glm::inverse(cam2camTrans) * depthToColor[0];
+			//	//glm::mat4 test0 = colorToDepth[0] * cam2camTrans * depthToColor[1];
+			//	//glm::mat4 test1 = colorToDepth[1] * cam2camTrans * depthToColor[0];
+			//	//glm::mat4 test01 = colorToDepth[0] * glm::inverse(cam2camTrans) * depthToColor[1];
+			//	//glm::mat4 test11 = colorToDepth[1] * glm::inverse(cam2camTrans) * depthToColor[0];
 
-				//std::cout << glm::to_string(test0) << std::endl;
-				//std::cout << glm::to_string(test1) << std::endl;
-				//std::cout << glm::to_string(test01) << std::endl;
-				//std::cout << glm::to_string(test11) << std::endl;
+			//	//std::cout << glm::to_string(test0) << std::endl;
+			//	//std::cout << glm::to_string(test1) << std::endl;
+			//	//std::cout << glm::to_string(test01) << std::endl;
+			//	//std::cout << glm::to_string(test11) << std::endl;
 
-				//gfusion.setColorToColor(cam2camTrans);
-				//gfusion.setDepthToDepth(test0);
-				//krender.setDepthToDepth(test0);
-				if (cameraDevice == 0)
-				{
-					krender.setOtherMarkerData(markerMats);
-				}
-			}
+			//	//gfusion.setColorToColor(cam2camTrans);
+			//	//gfusion.setDepthToDepth(test0);
+			//	//krender.setDepthToDepth(test0);
+			//	if (cameraDevice == 0)
+			//	{
+			//		krender.setOtherMarkerData(markerMats);
+			//	}
+			//}
 
 			double currentTime = epchTime();
 			double deltaTime = currentTime - previousTime;
@@ -2637,7 +2637,7 @@ void App::mainLoop()
 			cv::Mat poses;
 			cv::Mat faces;
 			std::vector<int> poseIds;
-			opwrapper.getPoses(poses, faces, poseIds);
+			//opwrapper.getPoses(poses, faces, poseIds);
 
 
 			if (!poses.empty())

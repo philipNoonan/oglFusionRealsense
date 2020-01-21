@@ -3,7 +3,13 @@
 #include "ComputeShader.h"
 #include "glhelper.h"
 #include "GLCore/Framebuffer.h"
+#include "GLCore/Buffer.h"
 #include "Frame.h"
+
+#include "opencv2/core/utility.hpp"
+#include "opencv2/opencv.hpp"
+#include "opencv2/imgproc/imgproc.hpp"
+#include "opencv2/highgui/highgui.hpp"
 
 namespace rgbd
 {
@@ -17,6 +23,17 @@ namespace rgbd
 
 		gl::Texture::Ptr lastFlowMap;
 		gl::Texture::Ptr nextFlowMap;
+
+		gl::Texture::Ptr meanI_Map;
+		gl::Texture::Ptr I_t_Map;
+		gl::Texture::Ptr pixelBaseFlow;
+		gl::Texture::Ptr I_x_y_Map;
+		gl::Texture::Ptr pixelFlowMap;
+		std::vector<gl::Texture::Ptr> pixelDiffFlowMap;
+		gl::Texture::Ptr diffusivityMap;
+
+		gl::ShaderStorageBuffer<float> ssboSOR;
+
 
 
 		int maxLevels;
