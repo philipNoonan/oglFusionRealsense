@@ -54,6 +54,9 @@ namespace rgbd
 			ICPConstParam::MIN_DEPTH, ICPConstParam::MAX_DEPTH,
 			width, height, K[2][0], K[2][1], K[0][0], K[1][1], 0.0f
 		);
+
+		//glm::vec4 testVec4 = glm::vec4(K[2][0] * 1.0, K[2][1] * 1.0, K[0][0] * 1.0, K[1][1] * 1.0);
+
 		this->progs["IndexMapGeneration"]->setUniform("P", P);
 		this->progs["IndexMapGeneration"]->setUniform("maxDepth", 10.0f);
 		this->progs["IndexMapGeneration"]->setUniform("imSize", glm::vec2(width, height));

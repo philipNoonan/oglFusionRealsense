@@ -21,9 +21,9 @@ void main()
 		);
 
 	// clip space
-	gl_Position = 2.0 * (vec4((sparseCoord.x * 4.0 + 4.0f) * invDenseTexSize.x,
-					   (sparseCoord.y * 4.0 + 4.0f) * invDenseTexSize.y,
-						0, 1)) - 1.0f;
+	gl_Position = 2.0 * (vec4((sparseCoord.x * 4) * invDenseTexSize.x,
+					          (sparseCoord.y * 4) * invDenseTexSize.y,
+						      0, 1)) - 1.0f;
 
 
 	gl_PointSize = 8;

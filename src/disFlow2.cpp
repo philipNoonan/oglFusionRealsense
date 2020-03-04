@@ -13,7 +13,7 @@ namespace rgbd
 		//progs.insert(std::make_pair("makePatches", std::make_shared<gl::Shader>(folderPath + "disMakePatches.comp")));
 		progs.insert(std::make_pair("inverseSearch", std::make_shared<gl::Shader>(folderPath + "disSearch.comp")));
 		progs.insert(std::make_pair("densification", std::make_shared<gl::Shader>(folderPath + "disDensification.vert", folderPath + "disDensification.frag")));
-		progs.insert(std::make_pair("variationalRefine", std::make_shared<gl::Shader>(folderPath + "variationalRefine.comp")));
+		//progs.insert(std::make_pair("variationalRefine", std::make_shared<gl::Shader>(folderPath + "variationalRefine.comp")));
 
 		//progs.insert(std::make_pair("medianFilter", std::make_shared<gl::Shader>(folderPath + "medianFilter.comp")));
 	}
@@ -28,10 +28,10 @@ namespace rgbd
 
 		maxLevels = (int)(log((2 * width) / (4.0 * 8.0)) / log(2.0) + 0.5) - 1; // 8 is patch size
 		maxLevels = std::max(0, (int)std::floor(log2((2.0f*(float)width) / ((float)5 * (float)8)))) - 1;
-		maxLevels = 3;
+		maxLevels = 5;
 
 		sparseFlowMap = std::make_shared<gl::Texture>();
-		sparseFlowMap->createStorage(maxLevels, width / 4, height / 4, 4, GL_RGBA32F, gl::TextureType::FLOAT32, 0);
+		sparseFlowMap->createStorage(maxLevels, width / 2, height / 2, 4, GL_RGBA32F, gl::TextureType::FLOAT32, 0);
 		sparseFlowMap->setFiltering(GL_LINEAR, GL_LINEAR);
 		sparseFlowMap->setWarp(gl::TextureWarp::CLAMP_TO_EDGE);
 
@@ -111,8 +111,98 @@ namespace rgbd
 
 		}
 
+		//variational_refinement_iter = 5;
+		//variational_refinement_alpha = 20.f;
+		//variational_refinement_gamma = 10.f;
+		//variational_refinement_delta = 5.f;
+
+		///* Use separate variational refinement instances for different scales to avoid repeated memory allocation: */
+		//int max_possible_scales = 10;
+		//for (int i = 0; i < max_possible_scales; i++)
+		//	variational_refinement_processors.push_back(cv::VariationalRefinement::create());
+
 
 	}
+
+	//void variRef()
+	//{
+	//	cv::Mat I0imq = cv::Mat(nextFlowMap->getHeight() >> level, nextFlowMap->getWidth() >> level, CV_8UC4);
+	//	cv::Mat I1imq = cv::Mat(nextFlowMap->getHeight() >> level, nextFlowMap->getWidth() >> level, CV_8UC4);
+
+
+
+	//	glActiveTexture(GL_TEXTURE0);
+	//	glBindTexture(GL_TEXTURE_2D, currentFrame.getColorPreviousMap()->getID());
+	//	glGetTexImage(GL_TEXTURE_2D, level, GL_RGBA, GL_UNSIGNED_BYTE, I0imq.data);
+	//	glBindTexture(GL_TEXTURE_2D, 0);
+	//	//glActiveTexture(0); 
+
+	//	glActiveTexture(GL_TEXTURE0);
+	//	glBindTexture(GL_TEXTURE_2D, currentFrame.getColorFilteredMap()->getID());
+	//	glGetTexImage(GL_TEXTURE_2D, level, GL_RGBA, GL_UNSIGNED_BYTE, I1imq.data);
+	//	glBindTexture(GL_TEXTURE_2D, 0);
+	//	//glActiveTexture(0);  
+
+	//	cv::Mat I0C1;
+	//	cv::cvtColor(I0imq, I0C1, cv::COLOR_BGRA2GRAY);
+
+	//	cv::Mat I1C1;
+	//	cv::cvtColor(I1imq, I1C1, cv::COLOR_BGRA2GRAY);
+
+	//	cv::Mat sxx3 = cv::Mat(nextFlowMap->getHeight() >> level, nextFlowMap->getWidth() >> level, CV_32FC2);
+	//	cv::Mat sxx4 = cv::Mat(nextFlowMap->getHeight() >> level, nextFlowMap->getWidth() >> level, CV_32FC2);
+
+	//	glActiveTexture(GL_TEXTURE0);
+	//	glBindTexture(GL_TEXTURE_2D, densificationFlowMap[0]->getID());
+	//	// 	glBindTexture(GL_TEXTURE_2D, m_textureU_x_y);
+
+	//	glGetTexImage(GL_TEXTURE_2D, level, GL_RG, GL_FLOAT, sxx3.data);
+	//	glBindTexture(GL_TEXTURE_2D, 0);
+	//	//glActiveTexture(0);  
+
+	//	//cv::imshow("dens1", sxx3);  
+
+	//	cv::Mat image2[2];
+	//	cv::split(sxx3, image2);
+
+
+	//	variational_refinement_processors[0]->calcUV(I0C1, I1C1,
+	//		image2[0], image2[1]);
+
+	//	cv::merge(image2, 2, sxx3);
+
+	//	////glBindTexture(GL_TEXTURE_2D, m_textureU_x_y);
+	//	////glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, m_texture_width >> level, m_texture_height >> level, GL_RG, GL_FLOAT, sxx3.ptr());
+	//	//  
+
+	//	glBindTexture(GL_TEXTURE_2D, densificationFlowMap[0]->getID());
+	//	// 	glBindTexture(GL_TEXTURE_2D, m_textureU_x_y);
+
+
+
+	//	//if (imageArray != NULL)
+	//	//{
+
+	//	cv::merge(image2, 2, sxx4);
+
+	//	glTexSubImage2D(GL_TEXTURE_2D, level, 0, 0, nextFlowMap->getWidth() >> level, nextFlowMap->getHeight() >> level, GL_RG, GL_FLOAT, sxx4.data);
+
+	//	if (level == 0)
+	//	{
+	//		cv::Mat mag, ang;
+	//		cv::Mat hsv_split[3], hsv;
+	//		cv::Mat rgb;
+	//		cv::cartToPolar(image2[0], image2[1], mag, ang, true);
+	//		cv::normalize(mag, mag, 0, 1, cv::NORM_MINMAX);
+	//		hsv_split[0] = ang;
+	//		hsv_split[1] = mag;
+	//		hsv_split[2] = cv::Mat::ones(ang.size(), ang.type());
+	//		cv::merge(hsv_split, 3, hsv);
+	//		cv::cvtColor(hsv, rgb, cv::COLOR_HSV2BGR);
+	//		cv::imshow("flowvar", rgb);
+	//	}
+
+	//}
 
 	void DisFlow::execute(
 		const rgbd::Frame &currentFrame,
@@ -149,9 +239,10 @@ namespace rgbd
 
 			currentFrame.getTestMap()->bindImage(3, level, GL_READ_WRITE);
 			densificationFlowMap[0]->bindImage(5, level, GL_WRITE_ONLY);// for wiping
+			densificationFlowMap[1]->bindImage(6, level, GL_READ_ONLY);
 
-			int sparseWidth = (currentFrame.getWidth() >> level) / 4;
-			int sparseHeight = (currentFrame.getHeight() >> level) / 4;
+			int sparseWidth = (currentFrame.getWidth() >> level) / 2;
+			int sparseHeight = (currentFrame.getHeight() >> level) / 2;
 
 			int compWidth = GLHelper::divup(sparseWidth, 32);
 			int compHeight = GLHelper::divup(sparseHeight, 32);
@@ -215,85 +306,98 @@ namespace rgbd
 			glDisable(GL_VERTEX_PROGRAM_POINT_SIZE);
 
 
+			glCopyImageSubData(densificationFlowMap[0]->getID(), GL_TEXTURE_2D, level, 0, 0, 0,
+				densificationFlowMap[1]->getID(), GL_TEXTURE_2D, level, 0, 0, 0,
+				nextFlowMap->getWidth() >> level, nextFlowMap->getHeight() >> level, 1);
+
+			glBindTexture(GL_TEXTURE_2D, densificationFlowMap[1]->getID());
+			glGenerateMipmap(GL_TEXTURE_2D);
 
 
 
-			this->progs["variationalRefine"]->use();
 
 
-			this->progs["variationalRefine"]->setUniform("level", level);
-			// warp flow images
-			this->progs["variationalRefine"]->setUniform("functionID", 0);
-			densificationFlowMap[0]->use(0);
-			currentFrame.getColorPreviousMap()->use(1);
-			currentFrame.getColorFilteredMap()->use(2);
-			meanI_Map->bindImage(0, level, GL_WRITE_ONLY);
-			I_t_Map->bindImage(1, level, GL_WRITE_ONLY);
-			pixelBaseFlow->bindImage(2, level, GL_WRITE_ONLY);
-			compWidth = GLHelper::divup(nextFlowMap->getWidth() >> (level), 32);
-			compHeight = GLHelper::divup(nextFlowMap->getHeight() >> (level), 32);
-			glDispatchCompute(compWidth, compHeight, 1);
-
-			// calc derivatives
-			this->progs["variationalRefine"]->setUniform("functionID", 1);
-			meanI_Map->bindImage(0, level, GL_READ_ONLY);
-			I_x_y_Map->bindImage(5, level, GL_WRITE_ONLY);
-			compWidth = GLHelper::divup(nextFlowMap->getWidth() >> (level), 32);
-			compHeight = GLHelper::divup(nextFlowMap->getHeight() >> (level), 32);
-			glDispatchCompute(compWidth, compHeight, 1);
+			//this->progs["variationalRefine"]->use();
 
 
-			for (int outer_idx = 0; outer_idx < level + 1; ++outer_idx)
-			{
-				int flipflop = 0;
+			//this->progs["variationalRefine"]->setUniform("level", level);
+			//// warp flow images
+			//this->progs["variationalRefine"]->setUniform("functionID", 0);
+			//densificationFlowMap[0]->use(0);
+			//currentFrame.getColorPreviousMap()->use(1);
+			//currentFrame.getColorFilteredMap()->use(2);
+			//meanI_Map->bindImage(0, level, GL_WRITE_ONLY);
+			//I_t_Map->bindImage(1, level, GL_WRITE_ONLY);
+			//pixelBaseFlow->bindImage(2, level, GL_WRITE_ONLY);
+			//compWidth = GLHelper::divup(nextFlowMap->getWidth() >> (level), 32);
+			//compHeight = GLHelper::divup(nextFlowMap->getHeight() >> (level), 32);
+			//glDispatchCompute(compWidth, compHeight, 1);
 
-				// calc diffusivity
-				this->progs["variationalRefine"]->setUniform("functionID", 2);
-				this->progs["variationalRefine"]->setUniform("zeroDiffFlow", outer_idx == 0 ? 1 : 0);
-				this->progs["variationalRefine"]->setUniform("alpha", 1.0f);
-				pixelBaseFlow->bindImage(2, level, GL_READ_ONLY);
-				pixelDiffFlowMap[flipflop]->bindImage(3, level, GL_READ_ONLY);
-				diffusivityMap->bindImage(6, level, GL_WRITE_ONLY);
-				compWidth = GLHelper::divup(nextFlowMap->getWidth() >> (level), 32);
-				compHeight = GLHelper::divup(nextFlowMap->getHeight() >> (level), 32);
-				glDispatchCompute(compWidth, compHeight, 1);
 
-				// comp equations
-				this->progs["variationalRefine"]->setUniform("functionID", 3);
-				this->progs["variationalRefine"]->setUniform("zeroDiffFlow", outer_idx == 0 ? 1 : 0);
-				this->progs["variationalRefine"]->setUniform("delta", 0.25f);
-				this->progs["variationalRefine"]->setUniform("gamma", 0.25f);
 
-				I_t_Map->bindImage(1, level, GL_READ_ONLY);
-				pixelDiffFlowMap[flipflop]->bindImage(3, level, GL_READ_ONLY);
-				I_x_y_Map->bindImage(5, level, GL_READ_ONLY);
-				pixelBaseFlow->bindImage(2, level, GL_READ_ONLY);
-				diffusivityMap->bindImage(6, level, GL_READ_ONLY);
-				ssboSOR.bindBase(0);
-				compWidth = GLHelper::divup(nextFlowMap->getWidth() >> (level), 32);
-				compHeight = GLHelper::divup(nextFlowMap->getHeight() >> (level), 32);
-				glDispatchCompute(compWidth, compHeight, 1);
 
-				//// perform SOR
-				//this->progs["variationalRefine"]->setUniform("functionID", 4);
-				//this->progs["variationalRefine"]->setUniform("numNonZeroPhases", outer_idx == 0 ? 1 : 0);
-				//
-				//for (int inner_idx = 0; inner_idx < 4; inner_idx++)
-				//{
-				//	this->progs["variationalRefine"]->setUniform("functionID", 4);
-				//	this->progs["variationalRefine"]->setUniform("numNonZeroPhases", outer_idx == 0 ? 1 : 0);
-				//	this->progs["variationalRefine"]->setUniform("level", level);
-				//	this->progs["variationalRefine"]->setUniform("iter", inner_idx);
-				//	diffusivityMap->bindImage(6, level, GL_READ_ONLY);
-				//	pixelDiffFlowMap[flipflop]->bindImage(3, level, GL_READ_ONLY);
-				//	pixelDiffFlowMap[1 - flipflop]->bindImage(4, level, GL_WRITE_ONLY);
-				//	ssboSOR.bindBase(0);
-				//	compWidth = GLHelper::divup(nextFlowMap->getWidth() >> (level), 32);
-				//	compHeight = GLHelper::divup(nextFlowMap->getHeight() >> (level), 32);
-				//	glDispatchCompute(compWidth, compHeight, 1);
-				//	flipflop = 1 - flipflop;
-				//}
-			}
+
+			//// calc derivatives
+			//this->progs["variationalRefine"]->setUniform("functionID", 1);
+			//meanI_Map->bindImage(0, level, GL_READ_ONLY);
+			//I_x_y_Map->bindImage(5, level, GL_WRITE_ONLY);
+			//compWidth = GLHelper::divup(nextFlowMap->getWidth() >> (level), 32);
+			//compHeight = GLHelper::divup(nextFlowMap->getHeight() >> (level), 32);
+			//glDispatchCompute(compWidth, compHeight, 1);
+
+
+			//for (int outer_idx = 0; outer_idx < level + 1; ++outer_idx)
+			//{
+			//	int flipflop = 0;
+
+			//	// calc diffusivity
+			//	this->progs["variationalRefine"]->setUniform("functionID", 2);
+			//	this->progs["variationalRefine"]->setUniform("zeroDiffFlow", outer_idx == 0 ? 1 : 0);
+			//	this->progs["variationalRefine"]->setUniform("alpha", 1.0f);
+			//	pixelBaseFlow->bindImage(2, level, GL_READ_ONLY);
+			//	pixelDiffFlowMap[flipflop]->bindImage(3, level, GL_READ_ONLY);
+			//	diffusivityMap->bindImage(6, level, GL_WRITE_ONLY);
+			//	compWidth = GLHelper::divup(nextFlowMap->getWidth() >> (level), 32);
+			//	compHeight = GLHelper::divup(nextFlowMap->getHeight() >> (level), 32);
+			//	glDispatchCompute(compWidth, compHeight, 1);
+
+			//	// comp equations
+			//	this->progs["variationalRefine"]->setUniform("functionID", 3);
+			//	this->progs["variationalRefine"]->setUniform("zeroDiffFlow", outer_idx == 0 ? 1 : 0);
+			//	this->progs["variationalRefine"]->setUniform("delta", 0.25f);
+			//	this->progs["variationalRefine"]->setUniform("gamma", 0.25f);
+
+			//	I_t_Map->bindImage(1, level, GL_READ_ONLY);
+			//	pixelDiffFlowMap[flipflop]->bindImage(3, level, GL_READ_ONLY);
+			//	I_x_y_Map->bindImage(5, level, GL_READ_ONLY);
+			//	pixelBaseFlow->bindImage(2, level, GL_READ_ONLY);
+			//	diffusivityMap->bindImage(6, level, GL_READ_ONLY);
+
+			//	ssboSOR.bindBase(0);
+			//	compWidth = GLHelper::divup(nextFlowMap->getWidth() >> (level), 32);
+			//	compHeight = GLHelper::divup(nextFlowMap->getHeight() >> (level), 32);
+			//	glDispatchCompute(compWidth, compHeight, 1);
+
+			//	// perform SOR
+			//	this->progs["variationalRefine"]->setUniform("functionID", 4);
+			//	this->progs["variationalRefine"]->setUniform("numNonZeroPhases", outer_idx == 0 ? 1 : 0);
+			//	
+			//	for (int inner_idx = 0; inner_idx < 4; inner_idx++)
+			//	{
+			//		this->progs["variationalRefine"]->setUniform("functionID", 4);
+			//		this->progs["variationalRefine"]->setUniform("numNonZeroPhases", outer_idx == 0 ? 1 : 0);
+			//		this->progs["variationalRefine"]->setUniform("level", level);
+			//		this->progs["variationalRefine"]->setUniform("iter", inner_idx);
+			//		diffusivityMap->bindImage(6, level, GL_READ_ONLY);
+			//		pixelDiffFlowMap[flipflop]->bindImage(3, level, GL_READ_ONLY);
+			//		pixelDiffFlowMap[1 - flipflop]->bindImage(4, level, GL_WRITE_ONLY);
+			//		ssboSOR.bindBase(0);
+			//		compWidth = GLHelper::divup(nextFlowMap->getWidth() >> (level), 32);
+			//		compHeight = GLHelper::divup(nextFlowMap->getHeight() >> (level), 32);
+			//		glDispatchCompute(compWidth, compHeight, 1);
+			//		flipflop = 1 - flipflop;
+			//	}
+			//}
 
 			//// add base flow
 			//this->progs["variationalRefine"]->setUniform("functionID", 5);
@@ -307,22 +411,26 @@ namespace rgbd
 
 			this->progs["variationalRefine"]->disuse();
 
+	
+
 
 		}
 
-		cv::Mat image00[2]; 
 
-		cv::Mat col = cv::Mat(nextFlowMap->getHeight(), nextFlowMap->getWidth(), CV_32FC2);
-		glActiveTexture(GL_TEXTURE0);
-		glBindTexture(GL_TEXTURE_2D, densificationFlowMap[0]->getID());
-		glGetTexImage(GL_TEXTURE_2D, 0, GL_RG, GL_FLOAT, col.data);
-		glBindTexture(GL_TEXTURE_2D, 0);
-		glActiveTexture(0);
 
-		cv::split(col, image00);
+		//cv::Mat image00[2]; 
 
-		cv::imshow("colo1", image00[0]);
-		cv::imshow("colo2", image00[1]);
+		//cv::Mat col = cv::Mat(nextFlowMap->getHeight(), nextFlowMap->getWidth(), CV_32FC2);
+		//glActiveTexture(GL_TEXTURE0);
+		//glBindTexture(GL_TEXTURE_2D, densificationFlowMap[0]->getID());
+		//glGetTexImage(GL_TEXTURE_2D, 0, GL_RG, GL_FLOAT, col.data);
+		//glBindTexture(GL_TEXTURE_2D, 0);
+		//glActiveTexture(0);
+
+		//cv::split(col, image00);
+
+		//cv::imshow("colo1", image00[0]);
+		//cv::imshow("colo2", image00[1]);
 
 
 		//cv::Mat col = cv::Mat(nextFlowMap->getHeight(), nextFlowMap->getWidth(), CV_32FC1);
@@ -335,7 +443,8 @@ namespace rgbd
 		//cv::imshow("colo", col);
 
 
-
+		//glBindTexture(GL_TEXTURE_2D, densificationFlowMap[0]->getID());
+		//glGenerateMipmap(GL_TEXTURE_2D);
 	
 	
 		

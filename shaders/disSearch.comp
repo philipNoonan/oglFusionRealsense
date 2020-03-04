@@ -12,6 +12,7 @@ layout(binding = 2, rgba32f) uniform image2D sparseFlowMap;
 layout(binding = 3, rgba32f) uniform image2D testMap;
 
 layout(binding = 5, rgba32f) uniform image2D flowToWipe;
+layout(binding = 6, rgba32f) uniform image2D lastFlowMap;
 
 uniform int level;
 uniform vec2 invImageSize;
@@ -31,19 +32,13 @@ void main()
     ivec2 pixSparse = ivec2(gl_GlobalInvocationID.xy);
 	vec2 denseTexSize = vec2(textureSize(lastColorMap, level).xy);
 
-
 	ivec2 pix = (pixSparse * ivec2(4, 4));
 	vec2 pixCenter = vec2(pix) + 0.5f;
-
-
-
-
 
 	float lastImageData[8][8];
 	float nextImageData[8][8];
 
 	vec2 gradData[8][8];
-
 
 	float templateSum = 0.0f;
 	vec2 gradSum = vec2(0.0f);
@@ -52,7 +47,6 @@ void main()
 
 	mat2 H = mat2(0.0f);
 
-	
 	for (int i = 0; i < patchSize; i++)
 	{
 		for (int j = 0; j < patchSize; j++)
@@ -66,56 +60,56 @@ void main()
 			H[0][1] += gradData[i][j].x * gradData[i][j].y;
 
 			lastImageData[i][j] = luminance(textureLod(lastColorMap, (vec2(pixCenter + vec2(i, j))) * invImageSize, level).xyz);
-			// lastImageData[i][j] = luminance(texelFetch(lastColorMap, pix + ivec2(i, j), level).xyz);
-			// float testImread = luminance(imageLoad(testCol, pix + ivec2(i, j)).xyz);
 
 			templateSum += lastImageData[i][j];
 			gradSum += gradData[i][j].xy;
-
-
 		}
 	}
-	
-
-
 
 	H[1][0] = H[0][1];
 
-	if (determinant(H) < 1e-6) 
+	if (determinant(H) < 1e-8) 
 	{
-		H[0][0] += 1e-6;
-		H[1][1] += 1e-6;
+		H[0][0] += 1e-8;
+		H[1][1] += 1e-8;
 	}
 	
 	mat2 H_inv = inverse(H);
+	vec4 initialFlow;
 
-	vec4 initialFlow = imageLoad(flowMap, pix / 2);
-	
+	if (level == 4)
+	{
+		initialFlow = imageLoad(lastFlowMap, pix);
+	}
+	else
+	{
+		initialFlow = imageLoad(flowMap, (pix / 2));
+	}
 	if (!isnan(initialFlow.z) || initialFlow.z != 0 || isinf(initialFlow.z))
 	{
-		initialFlow.xy /= initialFlow.z;
+		initialFlow.xy /= initialFlow.z; // weighted flow in range 0 - 1 for tex size
 	}
-
-		//			imageStore(testMap, pixSparse, vec4(0));
-
-
-	//initialFlow.xy *= (denseTexSize * invPreviousImageSize);
-
 	if (any(isnan(initialFlow.xy)))
 	{
 		initialFlow.xy = vec2(0);
-			//	imageStore(testMap, pixSparse, vec4(1));
-
 	}
-
-	initialFlow.xy *= denseTexSize;
+	//
+	initialFlow.xy *= (denseTexSize);// * invPreviousImageSize); // previously found flow scaled to this levels width/height
 
 	vec2 flow = initialFlow.xy;
+
+	//		imageStore(testMap, pixSparse, vec4(initialFlow.xyz, 1));
+
+
+	//if (flow.x > 1)
+	//{
+	//	flow = vec2(0.0f);
+	//}
 
 
 	float meanDiff, firstMeanDiff;
 
-	for (int iter = 0; iter < 8; iter++)
+	for (int iter = 0; iter < level + 4; iter++)
 	{
 		vec2 du = vec2(0.0f);
 		float warpedSum = 0.0f;
@@ -135,12 +129,18 @@ void main()
 
 
 		meanDiff = (warpedSum - templateSum) * (1.0f / float(patchSize * patchSize));
-		du -= gradSum * meanDiff;
 
 		if (iter == 0)
 		{
 			firstMeanDiff = meanDiff;
 		}
+
+		if (iter > 0 && (meanDiff > firstMeanDiff || meanDiff < 0.01f))
+		{
+			break;
+		}
+		
+		du -= gradSum * meanDiff;
 
 		flow -= H_inv * du;
 
@@ -154,8 +154,8 @@ void main()
         denseTexSize.x - newPatchCenter.x < -(patchSize * 0.5f) ||
         newPatchCenter.y < -(patchSize * 0.5f) ||
         denseTexSize.y - newPatchCenter.y < -(patchSize * 0.5f)) {
-            flow = initialFlow.xy;
-            meanDiff = firstMeanDiff;
+            flow = vec2(0);//initialFlow.xy;
+            meanDiff = 0;//firstMeanDiff;
     }
 	
 
@@ -164,6 +164,7 @@ void main()
     flow *= invImageSize;
 
 	imageStore(sparseFlowMap, pixSparse, vec4(flow, meanDiff, 1));
+
     //out_flow = vec3(u.x, u.y, mean_diff);
 	
 

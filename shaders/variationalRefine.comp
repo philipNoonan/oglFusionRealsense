@@ -2,11 +2,11 @@
 
 layout(local_size_x = 32, local_size_y = 32) in;
 
+
 float luminance(vec3 color)
 {
     //return 0.2126 * float(color.x) / 255.0f + 0.7152 * float(color.y) / 255.0f + 0.0722 * float(color.z) / 255.0f;
     return 0.299 * float(color.x) + 0.587 * float(color.y) + 0.114 * float(color.z);
-
 }
 
 
@@ -16,16 +16,11 @@ layout(binding = 2) uniform sampler2D nextImageTex;
 
 layout(binding = 0, r32f) uniform image2D meanI_map;
 layout(binding = 1, r32f) uniform image2D I_t_map;
-
 layout(binding = 2, rg32f) uniform image2D pixelBaseFlowMap; 
-
 layout(binding = 3, rg32f) uniform image2D pixelDiffFlowMap_0;
 layout(binding = 4, rg32f) uniform image2D pixelDiffFlowMap_1;
-
 layout(binding = 5, rg32f) uniform image2D I_x_y_map;
-
 layout(binding = 6, r32f) uniform image2D diffusivityMap;
-
 layout(binding = 7, rg32f) uniform image2D pixelFlowMap; 
 
 struct dataTerms
@@ -355,6 +350,7 @@ void addBaseFlow()
 
 void main()
 {
+
 	if (functionID == 0)
 	{
 		warpFlow();
@@ -379,5 +375,6 @@ void main()
 	{
 		addBaseFlow();
 	}
+	
 
 }

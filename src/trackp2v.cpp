@@ -173,6 +173,8 @@ namespace rgbd
 		{
 			std::vector<float> b, C;
 			Eigen::Matrix4f tempT = Twist(result).exp() * T_eigPrev;
+
+
 			glm::mat4 currT;
 			std::memcpy(glm::value_ptr(currT), tempT.data(), 16 * sizeof(float));
 

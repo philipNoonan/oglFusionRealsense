@@ -1597,7 +1597,7 @@ bool gFusion::TrackSplat()
 	//std::cout << " " << std::endl;
 
 
-	std::cout << "AE : " << alignmentEnergy << " " << lastICPCount << std::endl;
+	//std::cout << "AE : " << alignmentEnergy << " " << lastICPCount << std::endl;
 	if (alignmentEnergy > 2.0e-2f || alignmentEnergy == 0 || isnan(alignmentEnergy))
 	{
 		m_splatPose = oldPose;

@@ -26,7 +26,7 @@ void main()
 	
 
 	diff -= flow.z;
-	float weight = 1.0f / max(abs(diff), 1.0);
-	flow_contribution = vec4(flow.x * weight, flow.y * weight, weight, 1.0f);
-
+	float weight = 1.0 / max(abs(diff), 2.0f);
+	flow_contribution = vec4(flow.x * weight, flow.y * weight, weight, diff);
+	//flow_contribution = vec4(flow.xyz, 1);
 }

@@ -37,7 +37,7 @@
 #include "opencv2/core/utility.hpp"
 #include "opencv2/highgui.hpp"
 #include "opencv2/imgproc.hpp"
-//#include "opencv2/optflow.hpp"
+#include "opencv2/aruco.hpp"
 
 
 #include <Eigen/Core>
@@ -336,7 +336,7 @@ private:
 
 	// FUSION STUFF
 	bool trackDepthToPoint = false;
-	bool trackDepthToVolume = false;
+	bool trackDepthToVolume = true;
 	bool useSplatter = false;
 	bool useSO3 = false;
 	bool useSE3 = false;

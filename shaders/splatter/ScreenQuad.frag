@@ -110,11 +110,11 @@ void main()
 				vec4 K = vec4(1.0, 2.0 / 3.0, 1.0 / 3.0, 3.0);
 				vec3 p = abs(fract(ang + K.xyz) * 6.0 - K.www);
 
-				vec3 rgb = mix(K.xxx, clamp(p - K.xxx, 0.0, 1.0), mag * magMulti);
+				vec3 rgb = mix(K.xxx, clamp(p - K.xxx, 0.0, 1.0), mag * 20.0f);
 
-				if (mag > 0.01)
+				if (mag > 0.001)
 				{
-					outColor = vec4((1.0 - rgb), mag > 0.5 ? 1.0 : mag / 0.050);
+					outColor = vec4((1.0 - rgb), mag > 0.5 ? 1.0 : mag / 0.50);
 				}
 			
 			}

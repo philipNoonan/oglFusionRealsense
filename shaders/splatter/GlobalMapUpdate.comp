@@ -85,12 +85,12 @@ float calcTheta(vec2 uv, float f, vec2 optCenter)
 
 vec3 calcWeightedAvg(vec3 v_g, vec3 v_c, float conf, float alpha)
 {
-	if (v_g == vec3(0))
+	if (v_g == vec3(0.0f))
 	{
 		return v_c;
 	}
 	
-	if (v_c == vec3(0f))
+	if (v_c == vec3(0.0f))
 	{
 		return v_g;
 	}

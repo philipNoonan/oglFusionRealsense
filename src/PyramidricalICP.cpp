@@ -147,7 +147,7 @@ namespace rgbd
 			tracked = p2vicp[lv]->calc(lv, gVolID, currentFrame, virtualFrame, ssboReduction, ssboReductionOutput, T_eig, AE, icpCount, volDim, volSize, result, result_prev);
 		}
 
-		std::cout << " p2v AE: " << AE << std::endl;
+		//std::cout << " p2v AE: " << AE << std::endl;
 
 		if (std::isnan(result.sum())) result << 0.0, 0.0, 0.0, 0.0, 0.0, 0.0;
 

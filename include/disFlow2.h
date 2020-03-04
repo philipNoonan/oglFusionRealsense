@@ -10,6 +10,8 @@
 #include "opencv2/opencv.hpp"
 #include "opencv2/imgproc/imgproc.hpp"
 #include "opencv2/highgui/highgui.hpp"
+//#include "opencv2/optflow.hpp"
+//#include "opencv2/video/tracking.hpp"
 
 namespace rgbd
 {
@@ -41,6 +43,21 @@ namespace rgbd
 		std::vector<gl::Texture::Ptr> densificationFlowMap;
 
 		std::vector<gl::Framebuffer> densificationFBO;
+
+
+		//int variational_refinement_iter;
+		//float variational_refinement_alpha;
+		//float variational_refinement_gamma;
+		//float variational_refinement_delta;
+		//int getVariationalRefinementIterations() const { return variational_refinement_iter; }
+		//void setVariationalRefinementIterations(int val) { variational_refinement_iter = val; }
+		//float getVariationalRefinementAlpha() const { return variational_refinement_alpha; }
+		//void setVariationalRefinementAlpha(float val) { variational_refinement_alpha = val; }
+		//float getVariationalRefinementDelta() const { return variational_refinement_delta; }
+		//void setVariationalRefinementDelta(float val) { variational_refinement_delta = val; }
+		//float getVariationalRefinementGamma() const { return variational_refinement_gamma; }
+		//void setVariationalRefinementGamma(float val) { variational_refinement_gamma = val; }
+		//std::vector<cv::Ptr<cv::VariationalRefinement>> variational_refinement_processors;
 
 
 	public:

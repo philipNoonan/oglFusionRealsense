@@ -81,17 +81,17 @@ void App::initSplatter()
 												 progsForSlam);
 	}
 
-	glEnable(GL_DEPTH_TEST);
-	glEnable(GL_CULL_FACE);
+	//glEnable(GL_DEPTH_TEST);
+	//glEnable(GL_CULL_FACE);
 
-	gMap->genVirtualFrame(frame[rgbd::FRAME::VIRTUAL], glm::mat4(1.0f));
-	frame[rgbd::FRAME::VIRTUAL].update();
+	//gMap->genVirtualFrame(frame[rgbd::FRAME::VIRTUAL], glm::mat4(1.0f));
+	//frame[rgbd::FRAME::VIRTUAL].update();
 
-	gMap->updateGlobalMap(frame[rgbd::FRAME::CURRENT], true, glm::mat4(1.0f));
-	gMap->removeUnnecessaryPoints(0);
-	gMap->genIndexMap(glm::mat4(1.0f));
+	//gMap->updateGlobalMap(frame[rgbd::FRAME::CURRENT], true, glm::mat4(1.0f));
+	//gMap->removeUnnecessaryPoints(0);
+	//gMap->genIndexMap(glm::mat4(1.0f));
 
-	glDisable(GL_CULL_FACE);
+	//glDisable(GL_CULL_FACE);
 
 }
 
@@ -939,61 +939,61 @@ bool App::runP2P(
 	glGenQueries(1, &query);
 	glBeginQuery(GL_TIME_ELAPSED, query);
 
-	volume->raycast(frame[rgbd::FRAME::VIRTUAL], (colorToDepth[0] * se3Pose));
+	volume->raycast(frame[rgbd::FRAME::VIRTUAL], currPose);
 
 
-	//for (int lvl = rgbd::ICPConstParam::MAX_LEVEL - 1; lvl >= 0; lvl--)
-	//{
-	//	for (int iter = 0; iter < rgbd::ICPConstParam::MAX_ITR_NUM[lvl]; iter++)
-	//	{
+	for (int lvl = rgbd::ICPConstParam::MAX_LEVEL - 1; lvl >= 0; lvl--)
+	{
+		for (int iter = 0; iter < rgbd::ICPConstParam::MAX_ITR_NUM[lvl]; iter++)
+		{
 
-	//		Eigen::Matrix<float, 6, 6, Eigen::RowMajor> A_icp;
-	//		Eigen::Matrix<float, 6, 1> b_icp;
-	//		float AE;
-	//		uint32_t icpCount;
+			Eigen::Matrix<float, 6, 6, Eigen::RowMajor> A_icp;
+			Eigen::Matrix<float, 6, 1> b_icp;
+			float AE;
+			uint32_t icpCount;
 
-	//		p2picp.track(
-	//			frame[rgbd::FRAME::CURRENT],
-	//			frame[rgbd::FRAME::VIRTUAL],
-	//			currPose,
-	//			lvl
-	//		);
+			p2picp.track(
+				frame[rgbd::FRAME::CURRENT],
+				frame[rgbd::FRAME::VIRTUAL],
+				currPose,
+				lvl
+			);
 
-	//		p2picp.reduce(
-	//			glm::ivec2(frame[rgbd::FRAME::CURRENT].getWidth(lvl),
-	//				frame[rgbd::FRAME::CURRENT].getHeight(lvl))
-	//		);
+			p2picp.reduce(
+				glm::ivec2(frame[rgbd::FRAME::CURRENT].getWidth(lvl),
+					frame[rgbd::FRAME::CURRENT].getHeight(lvl))
+			);
 
-	//		p2picp.getReduction(
-	//			A_icp.data(),
-	//			b_icp.data(),
-	//			AE,
-	//			icpCount
-	//		);
+			p2picp.getReduction(
+				A_icp.data(),
+				b_icp.data(),
+				AE,
+				icpCount
+			);
 
-	//		Eigen::Matrix<double, 6, 1> result;
-	//		Eigen::Matrix<double, 6, 6, Eigen::RowMajor> dA_icp = A_icp.cast<double>();
-	//		Eigen::Matrix<double, 6, 1> db_icp = b_icp.cast<double>();
+			Eigen::Matrix<double, 6, 1> result;
+			Eigen::Matrix<double, 6, 6, Eigen::RowMajor> dA_icp = A_icp.cast<double>();
+			Eigen::Matrix<double, 6, 1> db_icp = b_icp.cast<double>();
 
-	//		result = dA_icp.ldlt().solve(db_icp);
+			result = dA_icp.ldlt().solve(db_icp);
 
-	//		glm::mat4 delta = glm::eulerAngleXYZ(result(3), result(4), result(5));
-	//		delta[3][0] = result(0);
-	//		delta[3][1] = result(1);
-	//		delta[3][2] = result(2);
+			glm::mat4 delta = glm::eulerAngleXYZ(result(3), result(4), result(5));
+			delta[3][0] = result(0);
+			delta[3][1] = result(1);
+			delta[3][2] = result(2);
 
-	//		currPose = delta * currPose;
+			currPose = delta * currPose;
 
-	//		if (result.norm() < 1e-5 && result.norm() != 0)
-	//			break;
+			if (result.norm() < 1e-5 && result.norm() != 0)
+				break;
 
-	//	}// iter
+		}// iter
 
-	//} // lvl
+	} // lvl
 
 	if (integratingFlag)
 	{
-		volume->integrate(0, frame[rgbd::FRAME::CURRENT], (colorToDepth[0] * se3Pose));
+		volume->integrate(0, frame[rgbd::FRAME::CURRENT], currPose);
 	}
 
 	//if (useSO3)
@@ -1007,14 +1007,14 @@ bool App::runP2P(
 	////	p2pFusion.setT( (colorToDepth[0] * se3Pose ));
 	//}
 
-	//p2pFusion.raycast(frame[rgbd::FRAME::VIRTUAL]);
-	//
-	//glm::mat4 T = p2pFusion.calcDevicePose(frame[rgbd::FRAME::CURRENT], frame[rgbd::FRAME::VIRTUAL]);
+	////p2pFusion.raycast(frame[rgbd::FRAME::VIRTUAL]);
+	////
+	////glm::mat4 T = p2pFusion.calcDevicePose(frame[rgbd::FRAME::CURRENT], frame[rgbd::FRAME::VIRTUAL]);
 
-	//if (integratingFlag)
-	//{
-	//	p2pFusion.integrate(frame[rgbd::FRAME::CURRENT]);
-	//}
+	////if (integratingFlag)
+	////{
+	////	p2pFusion.integrate(frame[rgbd::FRAME::CURRENT]);
+	////}
 
 
 	glEndQuery(GL_TIME_ELAPSED);
@@ -1189,6 +1189,8 @@ void App::resetVolume()
 	rotation = glm::vec3(0.0);
 	cameraPos = glm::vec3(0.0);
 
+
+
 	frame[rgbd::FRAME::CURRENT].reset();
 
 	lost = false;
@@ -1243,6 +1245,14 @@ void App::resetVolume()
 	volume->setVolDim(gconfig.volumeDimensions);
 	volume->reset();
 
+	for (int i = 0; i < graphPoints.size(); i++)
+	{
+		graphPoints[i] = glm::vec4(iOff.x, iOff.y, iOff.z, 1.0f);
+
+		arrayX[i] = iOff.x;
+		arrayY[i] = iOff.y;
+		arrayZ[i] = iOff.z;
+	}
 
 
 	if (useSplatter || useODOSplat)
@@ -2845,21 +2855,22 @@ void App::mainLoop()
 				currentPose = p2vFusion.getPose();
 			}
 			
+			//std::cout << cameraInterface.getTemperature()[0] << std::endl;
 
-			outputFile << " " << currentPose[0].x << " " << currentPose[0].y << " " << currentPose[0].z << " " << currentPose[0].w << \
+			outputFile << frame[rgbd::FRAME::CURRENT].getDepthTime() << " " << cameraInterface.getTemperature()[0] << " " << currentPose[0].x << " " << currentPose[0].y << " " << currentPose[0].z << " " << currentPose[0].w << \
 				" " << currentPose[1].x << " " << currentPose[1].y << " " << currentPose[1].z << " " << currentPose[1].w << \
 				" " << currentPose[2].x << " " << currentPose[2].y << " " << currentPose[2].z << " " << currentPose[2].w << \
 				" " << currentPose[3].x << " " << currentPose[3].y << " " << currentPose[3].z << " " << currentPose[3].w << std::endl;
 
 			//graphPoints.push_back(gfusion.getTransPose());
-			//glm::vec4 transformedInitOff = currentPose * glm::vec4(initOff, 1.0f);
+			glm::vec4 transformedInitOff = currentPose * glm::vec4(initOff, 1.0f);
 
 			//glm::vec4 transformedInitOff = colorPose * glm::vec4(0,0,0, 1.0f);
-			glm::vec4 transformedInitOff;
-			if (useSE3)
-			{
-				transformedInitOff = se3Pose * glm::vec4(initOff, 1.0f);
-			}
+			//glm::vec4 transformedInitOff;
+			//if (useSE3)
+			//{
+			//	transformedInitOff = se3Pose * glm::vec4(initOff, 1.0f);
+			//}
 			//else if (useSO3)
 			//{
 			//	transformedInitOff = so3Pose * glm::vec4(0, 0, 100, 1.0f);
