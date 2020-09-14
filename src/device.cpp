@@ -69,6 +69,8 @@ void Realsense2Camera::setDepthTable(STDepthTableControl dTable)
 	//depthTable.depthUnits = 100;
 	//depthTable.disparityMode = 0;
 	//depthTable.disparityShift = 0;
+	auto dteb = advanced.get_depth_table();
+
 	advanced.set_depth_table(dTable);
 }
 
@@ -214,6 +216,10 @@ void Realsense2Camera::setSensorOptions()
 	}
 	else if (tokens[2] == "L515") 
 	{
+		m_sensors[0].set_option(RS2_OPTION_LASER_POWER, 0);
+		m_sensors[0].set_option(RS2_OPTION_MIN_DISTANCE, 0);	
+		m_sensors[0].set_option(RS2_OPTION_CONFIDENCE_THRESHOLD, 3);
+
 
 	}
 	else
@@ -511,7 +517,7 @@ uint32_t Realsense2Camera::getDepthUnit()
 
 	float depthScale = m_sensors[0].as<rs2::depth_sensor>().get_depth_scale();
 
-	return 100;
+	//return 100;
 
 	//std::cout << "depth scale : " << depthScale * 1e6 << std::endl;
 	return (uint32_t)(depthScale * 1000000.0f);

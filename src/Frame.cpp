@@ -221,9 +221,9 @@ namespace rgbd
 			if (infraFrame[camNumber] != NULL)
 			{
 				infraMap->update(infraFrame[camNumber].get_data());
-				cv::Mat irMat = cv::Mat(768, 1024, CV_8UC1, (void*)infraFrame[camNumber].get_data());
-				cv::imshow("ir", irMat);
-				cv::waitKey(1);
+				//cv::Mat irMat = cv::Mat(768, 1024, CV_8UC1, (void*)infraFrame[camNumber].get_data());
+				//cv::imshow("ir", irMat);
+				//cv::waitKey(1);
 			}
 
 			depthQ[camNumber].poll_for_frame(&depthFrame[camNumber]);

@@ -942,6 +942,8 @@ bool App::runP2P(
 	glm::mat4 &prePose
 )
 {
+
+
 	bool tracked = true;
 	GLuint query;
 	glGenQueries(1, &query);
@@ -950,54 +952,54 @@ bool App::runP2P(
 	volume->raycast(frame[rgbd::FRAME::VIRTUAL], currPose);
 
 
-	//for (int lvl = rgbd::ICPConstParam::MAX_LEVEL - 1; lvl >= 0; lvl--)
-	//{
-	//	for (int iter = 0; iter < rgbd::ICPConstParam::MAX_ITR_NUM[lvl]; iter++)
-	//	{
+	for (int lvl = rgbd::ICPConstParam::MAX_LEVEL - 1; lvl >= 0; lvl--)
+	{
+		for (int iter = 0; iter < rgbd::ICPConstParam::MAX_ITR_NUM[lvl]; iter++)
+		{
 
-	//		Eigen::Matrix<float, 6, 6, Eigen::RowMajor> A_icp;
-	//		Eigen::Matrix<float, 6, 1> b_icp;
-	//		float AE;
-	//		uint32_t icpCount;
+			Eigen::Matrix<float, 6, 6, Eigen::RowMajor> A_icp;
+			Eigen::Matrix<float, 6, 1> b_icp;
+			float AE;
+			uint32_t icpCount;
 
-	//		p2picp.track(
-	//			frame[rgbd::FRAME::CURRENT],
-	//			frame[rgbd::FRAME::VIRTUAL],
-	//			currPose,
-	//			lvl
-	//		);
+			p2picp.track(
+				frame[rgbd::FRAME::CURRENT],
+				frame[rgbd::FRAME::VIRTUAL],
+				currPose,
+				lvl
+			);
 
-	//		p2picp.reduce(
-	//			glm::ivec2(frame[rgbd::FRAME::CURRENT].getWidth(lvl),
-	//				frame[rgbd::FRAME::CURRENT].getHeight(lvl))
-	//		);
+			p2picp.reduce(
+				glm::ivec2(frame[rgbd::FRAME::CURRENT].getWidth(lvl),
+					frame[rgbd::FRAME::CURRENT].getHeight(lvl))
+			);
 
-	//		p2picp.getReduction(
-	//			A_icp.data(),
-	//			b_icp.data(),
-	//			AE,
-	//			icpCount
-	//		);
+			p2picp.getReduction(
+				A_icp.data(),
+				b_icp.data(),
+				AE,
+				icpCount
+			);
 
-	//		Eigen::Matrix<double, 6, 1> result;
-	//		Eigen::Matrix<double, 6, 6, Eigen::RowMajor> dA_icp = A_icp.cast<double>();
-	//		Eigen::Matrix<double, 6, 1> db_icp = b_icp.cast<double>();
+			Eigen::Matrix<double, 6, 1> result;
+			Eigen::Matrix<double, 6, 6, Eigen::RowMajor> dA_icp = A_icp.cast<double>();
+			Eigen::Matrix<double, 6, 1> db_icp = b_icp.cast<double>();
 
-	//		result = dA_icp.ldlt().solve(db_icp);
+			result = dA_icp.ldlt().solve(db_icp);
 
-	//		glm::mat4 delta = glm::eulerAngleXYZ(result(3), result(4), result(5));
-	//		delta[3][0] = result(0);
-	//		delta[3][1] = result(1);
-	//		delta[3][2] = result(2);
+			glm::mat4 delta = glm::eulerAngleXYZ(result(3), result(4), result(5));
+			delta[3][0] = result(0);
+			delta[3][1] = result(1);
+			delta[3][2] = result(2);
 
-	//		currPose = delta * currPose;
+			currPose = delta * currPose;
 
-	//		if (result.norm() < 1e-5 && result.norm() != 0)
-	//			break;
+			if (result.norm() < 1e-5 && result.norm() != 0)
+				break;
 
-	//	}// iter
+		}// iter
 
-	//} // lvl
+	} // lvl
 
 	if (integratingFlag)
 	{
@@ -1445,7 +1447,7 @@ void App::startRealsense()
 				cameraInterface.startDevice(camera, depthProfiles[camera], infraProfiles[camera], colorProfiles[camera]);
 				
 				if (false) { // HACK FOR 515
-					cameraInterface.setDepthTable(camera, 50000, 0, 100, 0, 0);
+					cameraInterface.setDepthTable(camera, 500, 0, 100, 0, 0);
 				}
 
 				int wd, hd, rd;
@@ -2245,6 +2247,9 @@ void App::setUI()
 			//	irLow = irHigh - 255.0f;
 			//}
 			krender.setDepthMinMax(depthMin, depthMax);
+			int laserPower = 10;
+
+			
 
 		}
 
@@ -2275,7 +2280,7 @@ void App::setUI()
 void App::setUpGPU()
 {
 	//gFusionInit();
-	//mCubeInit();
+	mCubeInit();
 	
 	//krender.setBuffersFromMarchingCubes(gfusion.getVertsMC(), gfusion.getNormsMC(), gfusion.getNumVerts());
 
@@ -2288,11 +2293,11 @@ void App::setUpGPU()
 	
 	//initSplatter();
 	
-	//initP2PFusion();
+	initP2PFusion();
 
 	initP2VFusion();
 
-	//initGradient();
+	initGradient();
 
 	//initDTAM();
 
@@ -2570,7 +2575,7 @@ void App::mainLoop()
 			//if ()
 
 			//if (!emitterStatus) {
-				//getIncrementalTransform();
+				getIncrementalTransform();
 			//}
 			//else {
 

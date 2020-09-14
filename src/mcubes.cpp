@@ -400,7 +400,7 @@ void MCubes::exportMesh()
 
 	char hdr[80];
 
-	uint32_t NumTri = posData.size() / 3;
+	uint32_t NumTri = posData.size() / 12;
 	uint16_t attributeByteCount = 0;
 
 	outFile.write(hdr, 80);
