@@ -247,7 +247,7 @@ private:
 	float depthMax = 1.0f;
 
 	glm::vec2 bottomLeft = glm::vec2(0, 0);
-	glm::vec2 topRight = glm::vec2(848, 480);
+	glm::vec2 topRight = glm::vec2(1024, 768);
 
 	//static int eRate = 90;
 	//static int eRes = 0;

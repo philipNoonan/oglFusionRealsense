@@ -1,5 +1,5 @@
 #version 430 core
-
+// https://github.com/amdreallyfast/GpuRadixSort/blob/master/Shaders/ParallelSort/ParallelPrefixScan.comp
 layout(local_size_x = 1024) in;
 
 shared vec2 shared_data[gl_WorkGroupSize.x * 2];

@@ -42,7 +42,7 @@ namespace rgbd
 		gl::ShaderStorageBuffer<float> ssboReductionOutput;
 
 
-
+		glm::mat4 Kmat;
 
 		std::vector<float> makeJTJ(
 			std::vector<float> v

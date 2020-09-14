@@ -48,6 +48,8 @@ void App::initSplatter()
 	{
 		f.create(gconfig.depthFrameSize.x, 
 			gconfig.depthFrameSize.y,
+			desiredColorWidth,
+			desiredColorHeight,
 			GLHelper::numberOfLevels(glm::ivec3(gconfig.depthFrameSize.x, gconfig.depthFrameSize.y, 1)),
 			K, 
 			cameraInterface.getDepthUnit(0) / 1000000.0f,
@@ -149,6 +151,8 @@ void App::initP2PFusion()
 	{
 		f.create(gconfig.depthFrameSize.x, 
 			gconfig.depthFrameSize.y, 
+			desiredColorWidth,
+			desiredColorHeight,
 			GLHelper::numberOfLevels(glm::ivec3(gconfig.depthFrameSize.x, gconfig.depthFrameSize.y, 1)),
 			K,
 			cameraInterface.getDepthUnit(0) / 1000000.0f, 
@@ -219,6 +223,8 @@ void App::initP2VFusion()
 	{
 		f.create(gconfig.depthFrameSize.x, 
 			gconfig.depthFrameSize.y, 
+			desiredColorWidth,
+			desiredColorHeight,
 			GLHelper::numberOfLevels(glm::ivec3(gconfig.depthFrameSize.x, gconfig.depthFrameSize.y, 1)),
 			K, 
 			cameraInterface.getDepthUnit(0) / 1000000.0f, 
@@ -289,12 +295,12 @@ void App::updateFrames()
 		depthMat,
 		sharpnessValue);
 
-	frame[rgbd::FRAME::CURRENT].alignDepthTocolor(
-		cameraInterface.getDepthToColorExtrinsics(0),
-		glm::vec4(cameraInterface.getDepthIntrinsics(0).cx, cameraInterface.getDepthIntrinsics(0).cy, cameraInterface.getDepthIntrinsics(0).fx, cameraInterface.getDepthIntrinsics(0).fy),
-		glm::vec4(cameraInterface.getColorIntrinsics(0).cx, cameraInterface.getColorIntrinsics(0).cy, cameraInterface.getColorIntrinsics(0).fx, cameraInterface.getColorIntrinsics(0).fy),
-		colorVec
-	);
+	//frame[rgbd::FRAME::CURRENT].alignDepthTocolor(
+	//	cameraInterface.getDepthToColorExtrinsics(0),
+	//	glm::vec4(cameraInterface.getDepthIntrinsics(0).cx, cameraInterface.getDepthIntrinsics(0).cy, cameraInterface.getDepthIntrinsics(0).fx, cameraInterface.getDepthIntrinsics(0).fy),
+	//	glm::vec4(cameraInterface.getColorIntrinsics(0).cx, cameraInterface.getColorIntrinsics(0).cy, cameraInterface.getColorIntrinsics(0).fx, cameraInterface.getColorIntrinsics(0).fy),
+	//	colorVec
+	//);
 
 }
 
@@ -329,6 +335,7 @@ bool App::runDTAM(
 		se3Pose = se3Pose * prePose;
 	}
 	
+	currPose = currPose * so3Pose; // this way round
 
 	glEndQuery(GL_TIME_ELAPSED);
 	GLuint available = 0;
@@ -367,6 +374,7 @@ bool App::runRGBOdo(
 			cameraInterface.getDepthIntrinsics(0).fy));
 
 	se3Pose = se3Pose * prePose;
+
 
 	//glEndQuery(GL_TIME_ELAPSED);
 	//GLuint available = 0;
@@ -441,7 +449,7 @@ bool App::runSLAM(
 
 	currPose = currPose * T;
 
-	frame[rgbd::FRAME::VIRTUAL].update();
+	//frame[rgbd::FRAME::VIRTUAL].update();
 
 	glm::mat4 invT = glm::inverse(currPose);
 
@@ -942,54 +950,54 @@ bool App::runP2P(
 	volume->raycast(frame[rgbd::FRAME::VIRTUAL], currPose);
 
 
-	for (int lvl = rgbd::ICPConstParam::MAX_LEVEL - 1; lvl >= 0; lvl--)
-	{
-		for (int iter = 0; iter < rgbd::ICPConstParam::MAX_ITR_NUM[lvl]; iter++)
-		{
+	//for (int lvl = rgbd::ICPConstParam::MAX_LEVEL - 1; lvl >= 0; lvl--)
+	//{
+	//	for (int iter = 0; iter < rgbd::ICPConstParam::MAX_ITR_NUM[lvl]; iter++)
+	//	{
 
-			Eigen::Matrix<float, 6, 6, Eigen::RowMajor> A_icp;
-			Eigen::Matrix<float, 6, 1> b_icp;
-			float AE;
-			uint32_t icpCount;
+	//		Eigen::Matrix<float, 6, 6, Eigen::RowMajor> A_icp;
+	//		Eigen::Matrix<float, 6, 1> b_icp;
+	//		float AE;
+	//		uint32_t icpCount;
 
-			p2picp.track(
-				frame[rgbd::FRAME::CURRENT],
-				frame[rgbd::FRAME::VIRTUAL],
-				currPose,
-				lvl
-			);
+	//		p2picp.track(
+	//			frame[rgbd::FRAME::CURRENT],
+	//			frame[rgbd::FRAME::VIRTUAL],
+	//			currPose,
+	//			lvl
+	//		);
 
-			p2picp.reduce(
-				glm::ivec2(frame[rgbd::FRAME::CURRENT].getWidth(lvl),
-					frame[rgbd::FRAME::CURRENT].getHeight(lvl))
-			);
+	//		p2picp.reduce(
+	//			glm::ivec2(frame[rgbd::FRAME::CURRENT].getWidth(lvl),
+	//				frame[rgbd::FRAME::CURRENT].getHeight(lvl))
+	//		);
 
-			p2picp.getReduction(
-				A_icp.data(),
-				b_icp.data(),
-				AE,
-				icpCount
-			);
+	//		p2picp.getReduction(
+	//			A_icp.data(),
+	//			b_icp.data(),
+	//			AE,
+	//			icpCount
+	//		);
 
-			Eigen::Matrix<double, 6, 1> result;
-			Eigen::Matrix<double, 6, 6, Eigen::RowMajor> dA_icp = A_icp.cast<double>();
-			Eigen::Matrix<double, 6, 1> db_icp = b_icp.cast<double>();
+	//		Eigen::Matrix<double, 6, 1> result;
+	//		Eigen::Matrix<double, 6, 6, Eigen::RowMajor> dA_icp = A_icp.cast<double>();
+	//		Eigen::Matrix<double, 6, 1> db_icp = b_icp.cast<double>();
 
-			result = dA_icp.ldlt().solve(db_icp);
+	//		result = dA_icp.ldlt().solve(db_icp);
 
-			glm::mat4 delta = glm::eulerAngleXYZ(result(3), result(4), result(5));
-			delta[3][0] = result(0);
-			delta[3][1] = result(1);
-			delta[3][2] = result(2);
+	//		glm::mat4 delta = glm::eulerAngleXYZ(result(3), result(4), result(5));
+	//		delta[3][0] = result(0);
+	//		delta[3][1] = result(1);
+	//		delta[3][2] = result(2);
 
-			currPose = delta * currPose;
+	//		currPose = delta * currPose;
 
-			if (result.norm() < 1e-5 && result.norm() != 0)
-				break;
+	//		if (result.norm() < 1e-5 && result.norm() != 0)
+	//			break;
 
-		}// iter
+	//	}// iter
 
-	} // lvl
+	//} // lvl
 
 	if (integratingFlag)
 	{
@@ -1409,6 +1417,16 @@ void App::startRealsense()
 			// need to send target refresh rate, and target horizontal resolution, vertical also perhaps
 			// datatype should be fxed to Y8 IR, Y16 depth, and RGB color
 
+			if (true) { // hack for 515
+
+				desiredWidth = 1024;
+				desiredHeight = 768;
+				desiredRate = 30;
+
+				desiredColorWidth = 1920;
+				desiredColorHeight = 1080;
+			}
+
 			infraProfiles.resize(numberOfCameras, std::make_tuple(desiredWidth, desiredHeight, desiredRate, RS2_FORMAT_Y8));
 			depthProfiles.resize(numberOfCameras, std::make_tuple(desiredWidth, desiredHeight, desiredRate, RS2_FORMAT_Z16));
 			colorProfiles.resize(numberOfCameras, std::make_tuple(desiredColorWidth, desiredColorHeight, desiredColorRate, RS2_FORMAT_RGBA8));
@@ -1425,15 +1443,19 @@ void App::startRealsense()
 			for (int camera = 0; camera < numberOfCameras; camera++)
 			{
 				cameraInterface.startDevice(camera, depthProfiles[camera], infraProfiles[camera], colorProfiles[camera]);
-				cameraInterface.setDepthTable(camera, 50000, 0, 100, 0, 0);
+				
+				if (false) { // HACK FOR 515
+					cameraInterface.setDepthTable(camera, 50000, 0, 100, 0, 0);
+				}
 
 				int wd, hd, rd;
 				int wc, hc, rc;
 				cameraInterface.getDepthProperties(camera, wd, hd, rd);
 				cameraInterface.getColorProperties(camera, wc, hc, rc);
 
-				colorToDepth[camera] = cameraInterface.getColorToDepthExtrinsics(camera);
 				depthToColor[camera] = cameraInterface.getDepthToColorExtrinsics(camera);
+
+				colorToDepth[camera] = cameraInterface.getColorToDepthExtrinsics(camera);
 
 				//gfusion.setDepthToColorExtrinsics(cameraInterface.getDepthToColorExtrinsics(camera), camera);
 				//gfusion.setDepthUnit(cameraInterface.getDepthUnit(camera)); // this may bug out if you have two different cameras with different scales
@@ -2261,20 +2283,20 @@ void App::setUpGPU()
 
 	kRenderInit();
 
-	gFloodInit();
+	//gFloodInit();
 
 	
-	initSplatter();
+	//initSplatter();
 	
-	initP2PFusion();
+	//initP2PFusion();
 
 	initP2VFusion();
 
-	initGradient();
+	//initGradient();
 
-	initDTAM();
+	//initDTAM();
 
-	initRGBodo();
+	//initRGBodo();
 
 
 }
@@ -2519,7 +2541,6 @@ void App::mainLoop()
 
 
 
-
 		if (usingDataFromFile)
 		{
 			frameReady = cameraInterface.collateFramesFromFile();
@@ -2533,6 +2554,9 @@ void App::mainLoop()
 		{
 			updateFrames();
 
+
+
+
 			//gfusion.splatterModel();
 
 			//gfusion.resetTimes();
@@ -2545,13 +2569,20 @@ void App::mainLoop()
 
 			//if ()
 
-			getIncrementalTransform();
+			//if (!emitterStatus) {
+				//getIncrementalTransform();
+			//}
+			//else {
 
-			
+			//}
+
+			//emitterStatus = !emitterStatus;
+
+			//cameraInterface.setEmitterOptions(cameraDevice, emitterStatus, 100.0f);
 
 			if (colorVec.size() > 0)
 			{
-				cv::Mat cMat = cv::Mat(480, 848, CV_8UC4, colorVec.data());
+				//cv::Mat cMat = cv::Mat(480, 848, CV_8UC4, colorVec.data());
 				//cv::imshow("col", cMat);
 				//cv::waitKey(1);
 				//opwrapper.setImage(cMat, 0);
@@ -3019,7 +3050,7 @@ void App::mainLoop()
 
 			//quad.renderMulti(frame[rgbd::FRAME::GLOBAL].getDepthMap(), frame[rgbd::FRAME::GLOBAL].getNormalMap(), useSharp == 1 ? frame[rgbd::FRAME::CURRENT].getColorFilteredMap() : frame[rgbd::FRAME::CURRENT].getColorMap(), frame[rgbd::FRAME::CURRENT].getInfraMap(), frame[rgbd::FRAME::CURRENT].getMappingMap(), gflow.getFlowTextureFrame());
 
-			quad.renderMulti(frame[rgbd::FRAME::GLOBAL].getDepthMap(), frame[rgbd::FRAME::CURRENT].getTestMap(), useSharp == 1 ? frame[rgbd::FRAME::CURRENT].getColorFilteredMap() : frame[rgbd::FRAME::CURRENT].getColorMap(), frame[rgbd::FRAME::CURRENT].getInfraMap(), frame[rgbd::FRAME::CURRENT].getMappingC2DMap(), frame[rgbd::FRAME::CURRENT].getTestMap());
+			quad.renderMulti(frame[rgbd::FRAME::GLOBAL].getDepthMap(), frame[rgbd::FRAME::VIRTUAL].getVertexMap(), useSharp == 1 ? frame[rgbd::FRAME::CURRENT].getColorFilteredMap() : frame[rgbd::FRAME::CURRENT].getColorMap(), frame[rgbd::FRAME::CURRENT].getInfraMap(), frame[rgbd::FRAME::CURRENT].getMappingC2DMap(), frame[rgbd::FRAME::CURRENT].getTestMap());
 			progs["ScreenQuad"]->disuse();
 			glEnable(GL_DEPTH_TEST);
 		}

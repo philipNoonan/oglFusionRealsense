@@ -49,7 +49,7 @@ namespace rgbd
 		//	progs{ { "p2pTrack", progs.at("p2pTrack") },
 		//		   { "p2pReduce", progs.at("p2pReduce") } }
 
-
+		Kmat = K;
 
 		glm::mat4 invK = glm::inverse(K);
 		this->progs["p2pTrack"]->setUniform("K", K);
@@ -86,10 +86,15 @@ namespace rgbd
 	{
 		glm::mat4 invT = glm::inverse(T);
 
+		glm::mat4 projRef = Kmat * invT;
+
+
+
 		progs["p2pTrack"]->use();
 		progs["p2pTrack"]->setUniform("T", T);
 		progs["p2pTrack"]->setUniform("invT", invT);
 		progs["p2pTrack"]->setUniform("mip", level);
+		progs["p2pTrack"]->setUniform("view", projRef);
 
 		currentFrame.getVertexMap(0)->bindImage(0, level, GL_READ_ONLY);
 		currentFrame.getNormalMap(0)->bindImage(1, level, GL_READ_ONLY);

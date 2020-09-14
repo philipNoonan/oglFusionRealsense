@@ -136,7 +136,9 @@ void Realsense2Interface::startDevice(int devNumber, std::tuple<int, int, int, r
 
 	//std::cout << "  " << devNumber << " : Setting intrinsics" << std::endl;
 	setDepthIntrinsics(devNumber);
+
 	setColorIntrinsics(devNumber);
+
 	//// this need references to the threads
 	//m_threads[devNumber] = std::thread(&Realsense2Camera::capture, &m_cameras[devNumber]);
 }
@@ -279,12 +281,24 @@ glm::mat4 Realsense2Interface::getDepthToColorExtrinsics(int devNumber)
 {
 	glm::mat4 dep2Col = glm::mat4(1.0f);
 
-	rs2_extrinsics extrin = m_cameras[devNumber].getDepthToColorExtrinsics();
+	if (true) { // HACK FOR 515
+		glm::mat4 d2c{ 0.999978, 0.00326805, -0.00569149, 0.0f,
+					 -0.00309894, 0.999561, 0.0294727, 0.0f,
+					  0.00578531, -0.0294545, 0.999549, 0.0f,
+					 -9.05889e-05, 0.0137201, -0.00740386, 1.0f };
 
-	dep2Col[0] = glm::vec4(extrin.rotation[0], extrin.rotation[1], extrin.rotation[2], 0.0f);
-	dep2Col[1] = glm::vec4(extrin.rotation[3], extrin.rotation[4], extrin.rotation[5], 0.0f);
-	dep2Col[2] = glm::vec4(extrin.rotation[6], extrin.rotation[7], extrin.rotation[8], 0.0f);
-	dep2Col[3] = glm::vec4(extrin.translation[0], extrin.translation[1], extrin.translation[2], 1.0f);
+		dep2Col = d2c;
+	}
+	else {
+
+		rs2_extrinsics extrin = m_cameras[devNumber].getDepthToColorExtrinsics();
+
+		dep2Col[0] = glm::vec4(extrin.rotation[0], extrin.rotation[1], extrin.rotation[2], 0.0f);
+		dep2Col[1] = glm::vec4(extrin.rotation[3], extrin.rotation[4], extrin.rotation[5], 0.0f);
+		dep2Col[2] = glm::vec4(extrin.rotation[6], extrin.rotation[7], extrin.rotation[8], 0.0f);
+		dep2Col[3] = glm::vec4(extrin.translation[0], extrin.translation[1], extrin.translation[2], 1.0f);
+
+	}
 
 	return dep2Col;
 }
@@ -293,12 +307,33 @@ glm::mat4 Realsense2Interface::getColorToDepthExtrinsics(int devNumber)
 {
 	glm::mat4 col2Dep = glm::mat4(1.0f);
 
-	rs2_extrinsics extrin = m_cameras[devNumber].getColorToDepthExtrinsics();
 
-	col2Dep[0] = glm::vec4(extrin.rotation[0], extrin.rotation[1], extrin.rotation[2], 0.0f);
-	col2Dep[1] = glm::vec4(extrin.rotation[3], extrin.rotation[4], extrin.rotation[5], 0.0f);
-	col2Dep[2] = glm::vec4(extrin.rotation[6], extrin.rotation[7], extrin.rotation[8], 0.0f);
-	col2Dep[3] = glm::vec4(extrin.translation[0], extrin.translation[1], extrin.translation[2], 1.0f);
+
+	if (true) { // HACK FOR 515
+
+		glm::mat4 c2d{ 0.999978, -0.00309894, 0.00578531, 0.0f,
+			 0.00326805, 0.999561, -0.0294545, 0.0f,
+			  -0.00569149, 0.0294727, 0.999549, 0.0f,
+			 0.000175938, -0.0139319, 0.00699563, 1.0f };
+
+		col2Dep = c2d;
+		
+		col2Dep[0] = glm::vec4(0.999978, -0.00309894, 0.00578531, 0.0f);
+		col2Dep[1] = glm::vec4(0.00326805, 0.999561, -0.0294545, 0.0f);
+		col2Dep[2] = glm::vec4(-0.00569149, 0.0294727, 0.999549, 0.0f);
+		col2Dep[3] = glm::vec4(0.000175938, -0.0139319, 0.00699563, 1.0f);
+	}
+	else {
+
+		rs2_extrinsics extrin = m_cameras[devNumber].getColorToDepthExtrinsics();
+
+		col2Dep[0] = glm::vec4(extrin.rotation[0], extrin.rotation[1], extrin.rotation[2], 0.0f);
+		col2Dep[1] = glm::vec4(extrin.rotation[3], extrin.rotation[4], extrin.rotation[5], 0.0f);
+		col2Dep[2] = glm::vec4(extrin.rotation[6], extrin.rotation[7], extrin.rotation[8], 0.0f);
+		col2Dep[3] = glm::vec4(extrin.translation[0], extrin.translation[1], extrin.translation[2], 1.0f);
+	}
+
+
 
 	return col2Dep;
 }
@@ -416,7 +451,7 @@ void Realsense2Interface::setDepthIntrinsics(int devNumber)
 	float fov[2];
 	rs2_fov(&i, fov);
 
-	std::cout << " depth fov : " << fov[0] << " " << fov[1] << std::endl;
+	//std::cout << " depth fov : " << fov[0] << " " << fov[1] << std::endl;
 
 	m_depthIntrinsics[devNumber].cx = i.ppx;
 	m_depthIntrinsics[devNumber].cy = i.ppy;
@@ -436,7 +471,7 @@ void Realsense2Interface::setColorIntrinsics(int devNumber)
 	float fov[2];
 	rs2_fov(&i, fov);
 
-	std::cout << " color fov : " << fov[0] << " " << fov[1] << std::endl;
+	//std::cout << " color fov : " << fov[0] << " " << fov[1] << std::endl;
 
 	if (i.model == RS2_DISTORTION_BROWN_CONRADY)
 	{

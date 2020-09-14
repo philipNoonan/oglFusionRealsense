@@ -13,6 +13,8 @@ namespace rgbd
 	void Frame::create(
 		int width,
 		int height,
+		int colWidth,
+		int colHeight,
 		int maxLevel,
 		glm::mat4 K,
 		float depthScale,
@@ -21,6 +23,8 @@ namespace rgbd
 	{
 		this->width = width;
 		this->height = height;
+		this->colWidth = colWidth;
+		this->colHeight = colHeight;
 		this->K = K;
 
 		frameData.resize(1);
@@ -29,19 +33,19 @@ namespace rgbd
 		// Color needs only "one" level
 		// Note: Color must be 4ch since compute shader does not support rgb8 internal format.
 		frameData[0].colorMap = std::make_shared<gl::Texture>();
-		frameData[0].colorMap->createStorage(numberOfLevels, width, height, 4, GL_RGBA8, gl::TextureType::COLOR, 1);
+		frameData[0].colorMap->createStorage(numberOfLevels, colWidth, colHeight, 4, GL_RGBA8, gl::TextureType::COLOR, 1);
 		//frameData[0].colorMap->create(0, width, height, 4, gl::TextureType::COLOR);
 		frameData[0].colorMap->setFiltering(GL_LINEAR, GL_LINEAR_MIPMAP_NEAREST);
 		frameData[0].colorMap->setWarp(gl::TextureWarp::CLAMP_TO_EDGE);
 
 		frameData[0].colorPreviousMap = std::make_shared<gl::Texture>();
-		frameData[0].colorPreviousMap->createStorage(numberOfLevels, width, height, 4, GL_RGBA8, gl::TextureType::COLOR, 1);
+		frameData[0].colorPreviousMap->createStorage(numberOfLevels, colWidth, colHeight, 4, GL_RGBA8, gl::TextureType::COLOR, 1);
 		//frameData[0].colorPreviousMap->create(0, width, height, 4, gl::TextureType::COLOR);
 		frameData[0].colorPreviousMap->setFiltering(GL_LINEAR, GL_LINEAR_MIPMAP_NEAREST);
 		frameData[0].colorPreviousMap->setWarp(gl::TextureWarp::CLAMP_TO_EDGE);
 
 		frameData[0].colorFilteredMap = std::make_shared<gl::Texture>();
-		frameData[0].colorFilteredMap->createStorage(numberOfLevels, width, height, 4, GL_RGBA8, gl::TextureType::COLOR, 1);
+		frameData[0].colorFilteredMap->createStorage(numberOfLevels, colWidth, colHeight, 4, GL_RGBA8, gl::TextureType::COLOR, 1);
 		//frameData[0].colorFilteredMap->create(0, width, height, 4, gl::TextureType::COLOR);
 		frameData[0].colorFilteredMap->setFiltering(GL_LINEAR, GL_LINEAR_MIPMAP_NEAREST);
 		frameData[0].colorFilteredMap->setWarp(gl::TextureWarp::CLAMP_TO_EDGE);
@@ -217,6 +221,9 @@ namespace rgbd
 			if (infraFrame[camNumber] != NULL)
 			{
 				infraMap->update(infraFrame[camNumber].get_data());
+				cv::Mat irMat = cv::Mat(768, 1024, CV_8UC1, (void*)infraFrame[camNumber].get_data());
+				cv::imshow("ir", irMat);
+				cv::waitKey(1);
 			}
 
 			depthQ[camNumber].poll_for_frame(&depthFrame[camNumber]);

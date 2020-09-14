@@ -48,6 +48,8 @@ namespace rgbd
 	private:
 		int width;
 		int height;
+		int colWidth;
+		int colHeight;
 
 		bool firstFrame = true;
 		bool colorFrameArrived = false;
@@ -84,6 +86,8 @@ namespace rgbd
 		void create(
 			int width,
 			int height,
+			int colWidth,
+			int colHeight,
 			int maxLevel,
 			const glm::mat4 K,
 			float depthScale,

@@ -14,6 +14,7 @@ layout(binding = 5, rgba32f) writeonly uniform image2D testImage;
 uniform mat4 T;
 uniform mat4 invT;
 uniform mat4 K;
+uniform mat4 view;
 uniform float distThresh;
 uniform float normThresh;
 uniform int mip;
@@ -63,11 +64,12 @@ void main()
                 vec4 projectedVertex = T * vec4(imageLoad(inVertex, ivec2(pix)).xyz, 1.0f); // CHECK ME AGAINT THE OLD CRAPPY OPMUL
                                                                                                                       //vec3 projectedVertex = opMul(Ttrack, imageLoad(inVertex, ivec2(pix)).xyz); // CHECK ME AGAINT THE OLD CRAPPY OPMUL
                 // this depth vert in global space is then prejected back to normal depth space
-                //vec4 projectedPos = K * invT * projectedVertex;
+                
+                vec4 projectedPos = view * projectedVertex;
 
-                //vec2 projPixel = vec2(projectedPos.x / projectedPos.z, projectedPos.y / projectedPos.z);
+                vec2 projPixel = vec2(projectedPos.x / projectedPos.z, projectedPos.y / projectedPos.z);
 				
-				vec3 projPixel = projectPointImage(projectedVertex.xyz);
+				//vec3 projPixel = projectPointImage(projectedVertex.xyz);
 
 				//imageStore(testImage, ivec2(pix), vec4(projectedPos));
 
