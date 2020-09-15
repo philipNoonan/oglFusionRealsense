@@ -295,12 +295,12 @@ void App::updateFrames()
 		depthMat,
 		sharpnessValue);
 
-	//frame[rgbd::FRAME::CURRENT].alignDepthTocolor(
-	//	cameraInterface.getDepthToColorExtrinsics(0),
-	//	glm::vec4(cameraInterface.getDepthIntrinsics(0).cx, cameraInterface.getDepthIntrinsics(0).cy, cameraInterface.getDepthIntrinsics(0).fx, cameraInterface.getDepthIntrinsics(0).fy),
-	//	glm::vec4(cameraInterface.getColorIntrinsics(0).cx, cameraInterface.getColorIntrinsics(0).cy, cameraInterface.getColorIntrinsics(0).fx, cameraInterface.getColorIntrinsics(0).fy),
-	//	colorVec
-	//);
+	frame[rgbd::FRAME::CURRENT].alignDepthTocolor(
+		cameraInterface.getDepthToColorExtrinsics(0),
+		glm::vec4(cameraInterface.getDepthIntrinsics(0).cx, cameraInterface.getDepthIntrinsics(0).cy, cameraInterface.getDepthIntrinsics(0).fx, cameraInterface.getDepthIntrinsics(0).fy),
+		glm::vec4(cameraInterface.getColorIntrinsics(0).cx, cameraInterface.getColorIntrinsics(0).cy, cameraInterface.getColorIntrinsics(0).fx, cameraInterface.getColorIntrinsics(0).fy),
+		colorVec
+	);
 
 }
 
@@ -2288,10 +2288,10 @@ void App::setUpGPU()
 
 	kRenderInit();
 
-	//gFloodInit();
+	gFloodInit();
 
 	
-	//initSplatter();
+	initSplatter();
 	
 	initP2PFusion();
 
@@ -2299,9 +2299,9 @@ void App::setUpGPU()
 
 	initGradient();
 
-	//initDTAM();
+	initDTAM();
 
-	//initRGBodo();
+	initRGBodo();
 
 
 }
@@ -3055,7 +3055,7 @@ void App::mainLoop()
 
 			//quad.renderMulti(frame[rgbd::FRAME::GLOBAL].getDepthMap(), frame[rgbd::FRAME::GLOBAL].getNormalMap(), useSharp == 1 ? frame[rgbd::FRAME::CURRENT].getColorFilteredMap() : frame[rgbd::FRAME::CURRENT].getColorMap(), frame[rgbd::FRAME::CURRENT].getInfraMap(), frame[rgbd::FRAME::CURRENT].getMappingMap(), gflow.getFlowTextureFrame());
 
-			quad.renderMulti(frame[rgbd::FRAME::GLOBAL].getDepthMap(), frame[rgbd::FRAME::VIRTUAL].getVertexMap(), useSharp == 1 ? frame[rgbd::FRAME::CURRENT].getColorFilteredMap() : frame[rgbd::FRAME::CURRENT].getColorMap(), frame[rgbd::FRAME::CURRENT].getInfraMap(), frame[rgbd::FRAME::CURRENT].getMappingC2DMap(), frame[rgbd::FRAME::CURRENT].getTestMap());
+			quad.renderMulti(frame[rgbd::FRAME::GLOBAL].getDepthMap(), frame[rgbd::FRAME::VIRTUAL].getVertexMap(), useSharp == 1 ? frame[rgbd::FRAME::CURRENT].getColorFilteredMap() : frame[rgbd::FRAME::CURRENT].getColorMap(), frame[rgbd::FRAME::CURRENT].getInfraMap(), frame[rgbd::FRAME::CURRENT].getMappingC2DMap(), gradFilter.getGradientMap());
 			progs["ScreenQuad"]->disuse();
 			glEnable(GL_DEPTH_TEST);
 		}

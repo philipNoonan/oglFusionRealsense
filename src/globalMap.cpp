@@ -177,7 +177,7 @@ namespace rgbd
 
 		int timestamp = srcFrame.getDepthFrameCount();
 
-		std::cout << "ts " << mapSize << std::endl;
+		//std::cout << "ts " << mapSize << std::endl;
 
 		progs["GlobalMapUpdate"]->use();
 		progs["GlobalMapUpdate"]->setUniform("T", T);
