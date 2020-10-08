@@ -46,11 +46,11 @@ void App::initSplatter()
 
 	for (auto &f : frame)
 	{
-		f.create(gconfig.depthFrameSize.x, 
-			gconfig.depthFrameSize.y,
+		f.create(depthFrameSize[0].x, 
+			depthFrameSize[0].y,
 			desiredColorWidth,
 			desiredColorHeight,
-			GLHelper::numberOfLevels(glm::ivec3(gconfig.depthFrameSize.x, gconfig.depthFrameSize.y, 1)),
+			GLHelper::numberOfLevels(glm::ivec3(depthFrameSize[0].x, depthFrameSize[0].y, 1)),
 			K, 
 			cameraInterface.getDepthUnit(0) / 1000000.0f,
 			progsForSlam);
@@ -149,11 +149,11 @@ void App::initP2PFusion()
 
 	for (auto &f : frame)
 	{
-		f.create(gconfig.depthFrameSize.x, 
-			gconfig.depthFrameSize.y, 
+		f.create(depthFrameSize[0].x,
+			depthFrameSize[0].y,
 			desiredColorWidth,
 			desiredColorHeight,
-			GLHelper::numberOfLevels(glm::ivec3(gconfig.depthFrameSize.x, gconfig.depthFrameSize.y, 1)),
+			GLHelper::numberOfLevels(glm::ivec3(depthFrameSize[0].x, depthFrameSize[0].y, 1)),
 			K,
 			cameraInterface.getDepthUnit(0) / 1000000.0f, 
 			progsForP2P);
@@ -221,11 +221,11 @@ void App::initP2VFusion()
 
 	for (auto &f : frame)
 	{
-		f.create(gconfig.depthFrameSize.x, 
-			gconfig.depthFrameSize.y, 
+		f.create(depthFrameSize[0].x,
+			depthFrameSize[0].y,
 			desiredColorWidth,
 			desiredColorHeight,
-			GLHelper::numberOfLevels(glm::ivec3(gconfig.depthFrameSize.x, gconfig.depthFrameSize.y, 1)),
+			GLHelper::numberOfLevels(glm::ivec3(depthFrameSize[0].x, depthFrameSize[0].y, 1)),
 			K, 
 			cameraInterface.getDepthUnit(0) / 1000000.0f, 
 			progsForP2V);
@@ -1091,6 +1091,11 @@ void App::kRenderInit()
 	progs["ScreenQuad"]->setUniform("isYFlip", 1);
 	progs["ScreenQuad"]->setUniform("maxDepth", rgbd::ICPConstParam::MAX_DEPTH);
 
+
+	krender.setDepthFrameSize(depthFrameSize[0].x, depthFrameSize[0].y);
+	krender.setColorFrameSize(colorFrameSize[0].x, colorFrameSize[0].y);
+
+	
 	krender.SetCallbackFunctions();
 	krender.compileAndLinkShader();
 
@@ -1419,15 +1424,15 @@ void App::startRealsense()
 			// need to send target refresh rate, and target horizontal resolution, vertical also perhaps
 			// datatype should be fxed to Y8 IR, Y16 depth, and RGB color
 
-			if (true) { // hack for 515
+			//if (false) { // hack for 515
 
-				desiredWidth = 1024;
-				desiredHeight = 768;
-				desiredRate = 30;
+			//	desiredWidth = 1024;
+			//	desiredHeight = 768;
+			//	desiredRate = 30;
 
-				desiredColorWidth = 1920;
-				desiredColorHeight = 1080;
-			}
+			//	desiredColorWidth = 1920;
+			//	desiredColorHeight = 1080;
+			//}
 
 			infraProfiles.resize(numberOfCameras, std::make_tuple(desiredWidth, desiredHeight, desiredRate, RS2_FORMAT_Y8));
 			depthProfiles.resize(numberOfCameras, std::make_tuple(desiredWidth, desiredHeight, desiredRate, RS2_FORMAT_Z16));
@@ -1446,8 +1451,8 @@ void App::startRealsense()
 			{
 				cameraInterface.startDevice(camera, depthProfiles[camera], infraProfiles[camera], colorProfiles[camera]);
 				
-				if (false) { // HACK FOR 515
-					cameraInterface.setDepthTable(camera, 500, 0, 100, 0, 0);
+				if (desiredWidth == 848) { // HACK FOR 515
+					cameraInterface.setDepthTable(camera, 50000, 0, 100, 0, 0);
 				}
 
 				int wd, hd, rd;
@@ -1470,6 +1475,8 @@ void App::startRealsense()
 
 				colorFrameSize[camera].x = wc;
 				colorFrameSize[camera].y = hc;
+
+				topRight = glm::vec2(wd, hd);
 			}
 
 			krender.setColorFrameSize(colorFrameSize[0].x, colorFrameSize[0].y);
@@ -1791,7 +1798,12 @@ void App::setUI()
 				desiredHeight = 720;
 				desiredRate = 30;
 			}
-
+			if (ImGui::Button("1024x768"))
+			{
+				desiredWidth = 1024;
+				desiredHeight = 768;
+				desiredRate = 30;
+			}
 			auto textSelection = "Selected Width : " + std::to_string(desiredWidth) + " height : " + std::to_string(desiredHeight) + " rate : " + std::to_string(desiredRate);
 			ImGui::Text(textSelection.c_str());
 
@@ -1834,6 +1846,8 @@ void App::setUI()
 					desiredColorRate = 30;
 				}
 			}
+
+			ImGui::SameLine();
 
 			auto textColorSelection = "Selected Width : " + std::to_string(desiredColorWidth) + " height : " + std::to_string(desiredColorHeight) + " rate : " + std::to_string(desiredColorRate);
 			ImGui::Text(textColorSelection.c_str());

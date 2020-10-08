@@ -517,7 +517,7 @@ uint32_t Realsense2Camera::getDepthUnit()
 
 	float depthScale = m_sensors[0].as<rs2::depth_sensor>().get_depth_scale();
 
-	//return 100;
+	return 100;
 
 	//std::cout << "depth scale : " << depthScale * 1e6 << std::endl;
 	return (uint32_t)(depthScale * 1000000.0f);

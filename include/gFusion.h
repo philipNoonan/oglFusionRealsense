@@ -62,7 +62,6 @@ struct gFusionConfig
 	float normal_threshold;
 	std::vector<int> iterations;
 	float track_threshold;
-	glm::vec2 depthFrameSize;
 	float dMax;
 	float dMin;
 
@@ -81,7 +80,6 @@ struct gFusionConfig
 		iterations.push_back(4);
 		iterations.push_back(6);
 		track_threshold = 0.5f;
-		depthFrameSize = glm::vec2(1024, 768);
 		dMax = 0.01f;
 		dMin = -0.004f;
 	}
